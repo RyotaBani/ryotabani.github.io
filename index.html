@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情報ラボ ｜ 手を動かして学ぶ「情報」の教材サイト</title>
+<meta name="description" content="標本化・量子化・符号化、2進数、ネットワークなど「情報」の仕組みを、実際に操作しながら学べる無料の体験教材サイトです。高校の情報Iにも対応。">
+<link rel="canonical" href="https://joholab.net/">
+<meta property="og:title" content="情報ラボ ｜ 手を動かして学ぶ「情報」の教材サイト">
+<meta property="og:description" content="「情報」の仕組みを、実際に操作しながら学べる無料の体験教材サイト。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://joholab.net/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --muted:#5B6472; --line:#C9D2E0; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--navy);}
+  .wrap{max-width:960px; margin:0 auto; padding:0 20px 60px;}
+
+  /* hero */
+  .hero{background:linear-gradient(170deg,#22345a,#1b2c4d); color:#fff; padding:52px 0 46px; margin-bottom:38px;}
+  .hero .wrap{padding-bottom:0;}
+  .brand{font-size:14px; color:#aebbd6; letter-spacing:.12em; margin:0 0 14px;}
+  h1{font-size:clamp(26px,4.4vw,40px); margin:0 0 16px; line-height:1.35; font-weight:700;}
+  .hero p{margin:0; color:#dbe4f5; font-size:clamp(15px,2vw,17px); max-width:44em;}
+
+  h2{font-size:20px; color:var(--ink); margin:0 0 6px;}
+  .sec-note{margin:0 0 20px; color:var(--muted); font-size:14px;}
+
+  /* cards */
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
+  .card{border:1px solid var(--line); border-radius:12px; padding:20px; background:#fff;
+    display:flex; flex-direction:column; text-decoration:none; color:inherit;
+    transition:border-color .15s, box-shadow .15s;}
+  a.card:hover{border-color:var(--navy); box-shadow:0 2px 14px rgba(47,84,150,.10);}
+  .card .tag{font-size:12px; color:var(--navy); background:var(--panel); border-radius:999px;
+    padding:3px 10px; align-self:flex-start; margin-bottom:10px;}
+  .card h3{margin:0 0 8px; font-size:18px; color:var(--ink);}
+  .card p{margin:0; font-size:14px; color:var(--muted); flex:1;}
+  .card .go{margin-top:14px; font-size:14px; color:var(--navy); font-weight:700;}
+  .card.soon{background:#fafbfd; border-style:dashed;}
+  .card.soon h3{color:var(--muted);}
+  .card.soon .tag{color:var(--muted); background:#eef1f6;}
+
+  /* about */
+  .about{margin-top:46px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:24px 26px;}
+  .about h2{margin-bottom:10px;}
+  .about p{margin:0 0 10px; font-size:15px;}
+  .about p:last-child{margin-bottom:0;}
+
+  footer{margin-top:48px; padding-top:20px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  footer a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="wrap">
+    <p class="brand">情報ラボ</p>
+    <h1>「情報」の仕組みを、<br>手を動かして確かめる。</h1>
+    <p>画像がどうやってデータになるのか、2進数で何が表せるのか。<br>
+       読むだけでは分かりにくい仕組みを、実際に操作して確かめられる教材を集めています。すべて無料・登録不要です。</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <h2>教材一覧</h2>
+  <p class="sec-note">ブラウザですぐ動きます。パソコンでもスマホ・タブレットでも使えます。</p>
+
+  <div class="cards">
+
+    <a class="card" href="/image/">
+      <span class="tag">デジタル化</span>
+      <h3>画像のデジタル化を体験しよう</h3>
+      <p>標本化・量子化・符号化の3ステップを、スライダーを動かしながら確かめる。1マスずつ色をぬる「どっと絵」で、データ量の計算まで体験できます。</p>
+      <span class="go">開く</span>
+    </a>
+
+    <div class="card soon">
+      <span class="tag">準備中</span>
+      <h3>音のデジタル化</h3>
+      <p>標本化周波数と量子化ビット数を変えると、音がどう変わるのか。波形とデータ量の関係を体験できる教材を準備しています。</p>
+    </div>
+
+    <div class="card soon">
+      <span class="tag">準備中</span>
+      <h3>2進数と文字コード</h3>
+      <p>10進数・2進数・16進数の変換、文字がどうやって番号で表されているかを、手を動かして確かめる教材を準備しています。</p>
+    </div>
+
+  </div>
+
+  <div class="about">
+    <h2>このサイトについて</h2>
+    <p>情報ラボは、高校の「情報Ⅰ」で学ぶ内容を中心に、コンピュータやネットワークの仕組みを体験しながら理解するための教材を公開しているサイトです。</p>
+    <p>教科書の図だけでは伝わりにくい「値を変えたらどうなるか」を、その場で動かして確かめられることを大切にしています。授業での利用、自習、復習など、どなたでも自由にお使いいただけます。</p>
+  </div>
+
+  <footer>
+    <span>© 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+  </footer>
+
+</div>
+</body>
+</html>
