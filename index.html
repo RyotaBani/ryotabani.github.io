@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像のデジタル化を体験しよう</title>
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --apple:#C0392B; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --grid:#D3DBEA; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --gold:#B8860B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px; letter-spacing:.01em;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+  .lead b{color:var(--apple);}
+
+  /* tabs */
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line);}
+  .tab{border:none; background:none; padding:11px 18px; font-family:inherit; font-size:15px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  /* controls */
+  .controls{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px; margin-bottom:18px;
+  }
+  .ctl{min-width:0;}
+  .ctl .row{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+  .ctl label{font-weight:700; color:var(--ink); font-size:14px;}
+  .ctl .val{font-size:13px; color:var(--navy); font-weight:700;}
+  .ctl .hint{font-size:12px; color:var(--muted); margin-top:1px;}
+  input[type=range]{width:100%; accent-color:var(--navy); margin-top:8px; height:22px;}
+  .presets{grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .presets .plabel{font-weight:700; color:var(--ink); font-size:14px; margin-right:2px;}
+  button.chip, label.chip{
+    border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:7px 12px; border-radius:999px; font-size:13px; cursor:pointer;
+    font-family:inherit; transition:background .12s,border-color .12s;
+  }
+  button.chip:hover, label.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .toggle-group{display:flex; gap:6px;}
+  .check{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink); cursor:pointer;}
+
+  /* stage */
+  .stage{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;}
+  .frame{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .frame h2{font-size:14px; margin:0 0 10px; color:var(--ink); display:flex; justify-content:space-between; align-items:center;}
+  .frame h2 .sub{font-weight:400; color:var(--muted); font-size:12px;}
+  .canvas-box{display:flex; justify-content:center;}
+  canvas{
+    width:100%; max-width:384px; aspect-ratio:1/1; background:#fff;
+    border:1px solid var(--grid); border-radius:6px; display:block;
+    image-rendering:pixelated;
+  }
+  #digital{cursor:crosshair;}
+  #dotCanvas{cursor:pointer; touch-action:none; max-width:408px;}
+
+  /* encode panel */
+  .encode{
+    background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:18px 20px; margin-bottom:16px;
+  }
+  .encode .etitle{font-size:14px; color:#cdd8ee; margin:0 0 12px;}
+  .flow{display:flex; align-items:center; flex-wrap:wrap; gap:10px;}
+  .node{background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    border-radius:10px; padding:10px 14px; min-width:120px;}
+  .node .k{font-size:11px; color:#aebbd6; margin-bottom:3px;}
+  .node .v{font-size:20px; font-weight:700;}
+  .node .v small{font-size:12px; color:#aebbd6; font-weight:400;}
+  .arrow{color:#8ea3cd; font-size:22px; font-weight:700;}
+  .bin{font-family:ui-monospace,"SF Mono",Consolas,monospace; letter-spacing:2px; color:#ffd97a;}
+  .swatch{width:26px; height:26px; border-radius:5px; border:1px solid rgba(255,255,255,.5);
+    display:inline-block; vertical-align:middle; margin-right:8px;}
+  .datasize{margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.15);
+    font-size:14px; color:#dbe4f5;}
+  .datasize b{color:#fff; font-size:16px;}
+  .datasize .cmp{display:flex; flex-wrap:wrap; gap:8px 24px; margin-bottom:6px;}
+  .datasize .cmp span.act{color:#ffd97a; font-weight:700;}
+  .note{font-size:12px; color:#aebbd6; margin-top:6px;}
+
+  /* steps */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  .step{border:1px solid var(--line); border-radius:12px; padding:14px; background:#fff; transition:border-color .15s, box-shadow .15s;}
+  .step.active{border-color:var(--navy); box-shadow:0 0 0 2px rgba(47,84,150,.12);}
+  .step .n{display:inline-block; font-weight:800; color:#fff; background:var(--navy);
+    width:26px; height:26px; border-radius:7px; text-align:center; line-height:26px; font-size:14px; margin-bottom:8px;}
+  .step h3{margin:0 0 4px; font-size:15px; color:var(--ink);}
+  .step p{margin:0; font-size:13px; color:var(--muted);}
+  .foot{margin-top:22px; font-size:12px; color:var(--muted); text-align:center;}
+
+  /* 広告バナー枠（下部・授業のじゃまにならない位置） */
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .ad-slot a{display:inline-block;} .ad-slot img{max-width:100%; height:auto;}
+
+  /* dot art palette + code */
+  .palette{display:flex; flex-wrap:wrap; gap:7px; align-items:center;}
+  .sw{width:32px; height:32px; border-radius:6px; border:2px solid var(--line); cursor:pointer; padding:0;}
+  .sw[aria-pressed=true]{border-color:var(--navy); box-shadow:0 0 0 2px rgba(47,84,150,.3);}
+  .codewrap{display:flex; justify-content:center; overflow:auto;}
+  table.code{border-collapse:collapse; font-family:ui-monospace,Consolas,monospace; font-size:12px;}
+  table.code th{color:var(--apple); font-weight:700; font-size:12px; width:24px; height:24px; text-align:center;}
+  table.code td{width:24px; height:24px; text-align:center; font-size:12px; color:#3a4757; border:1px solid #e6ebf3; background:#fff;}
+  table.code td.on{background:#dbe4f2;}
+  table.code td.sel{outline:2px solid #ffcf33; outline-offset:-2px; font-weight:700;}
+  .tool-btns{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+
+  @media (max-width:760px){
+    .controls{grid-template-columns:1fr;}
+    .stage{grid-template-columns:1fr;}
+    .steps{grid-template-columns:1fr;}
+    .node{flex:1 1 auto;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<!-- ▼ Google AdSense 読み込み（ca-pub-XXXXXXXXXXXXXXXX を自分のパブリッシャーIDに置き換える） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>画像のデジタル化を体験しよう</h1>
+    <p class="lead">画像は <b>標本化</b> → <b>量子化</b> → <b>符号化</b> の順でデジタルデータになる。手を動かして確かめよう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabDig" aria-selected="true" aria-controls="toolDig">画像をデジタル化</button>
+    <button class="tab" role="tab" id="tabDot" aria-selected="false" aria-controls="toolDot">どっと絵をつくる</button>
+  </div>
+
+  <!-- ============ TOOL 1: 画像をデジタル化 ============ -->
+  <section class="tool show" id="toolDig" role="tabpanel" aria-labelledby="tabDig">
+    <div class="controls">
+      <div class="presets">
+        <span class="plabel">画像</span>
+        <button class="chip" data-preset="apple" aria-pressed="true">りんご</button>
+        <button class="chip" data-preset="gradient" aria-pressed="false">なめらかな階調</button>
+        <button class="chip" data-preset="pattern" aria-pressed="false">模様</button>
+        <label class="chip">画像を選ぶ<input id="upload" type="file" accept="image/*" hidden></label>
+        <span style="flex:1"></span>
+        <span class="toggle-group" role="group" aria-label="表示モード">
+          <button class="chip" id="modeMono" aria-pressed="true">モノクロ（明るさ）</button>
+          <button class="chip" id="modeColor" aria-pressed="false">カラー</button>
+        </span>
+        <label class="check"><input type="checkbox" id="gridChk"> グリッド線</label>
+      </div>
+      <div class="ctl">
+        <div class="row"><label for="sampleR">① 標本化：サンプル数（画素の細かさ）</label>
+          <span class="val" id="sampleV">32 × 32</span></div>
+        <input type="range" id="sampleR" min="0" max="7" step="1" value="4">
+        <div class="hint">画素を細かく取るほど、元の画像に近づく。</div>
+      </div>
+      <div class="ctl">
+        <div class="row"><label for="quantR">② 量子化：階調（明るさの段階）</label>
+          <span class="val" id="quantV">16 段階 / 4 ビット</span></div>
+        <input type="range" id="quantR" min="1" max="8" step="1" value="4">
+        <div class="hint">段階を少なくするほど、明るさがおおざっぱになる。</div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="frame">
+        <h2>元の画像 <span class="sub">アナログ（連続した明るさ）</span></h2>
+        <div class="canvas-box"><canvas id="source" width="384" height="384"></canvas></div>
+      </div>
+      <div class="frame">
+        <h2>デジタル化した画像 <span class="sub">クリックで画素を選ぶ</span></h2>
+        <div class="canvas-box"><canvas id="digital" width="384" height="384"></canvas></div>
+      </div>
+    </div>
+
+    <div class="encode">
+      <p class="etitle">③ 符号化 ― 選んだ画素<span id="cellPos"></span>の明るさを数値にして、2進数で表す</p>
+      <div class="flow">
+        <div class="node"><div class="k"><span class="swatch" id="sw"></span>画素の明るさ</div><div class="v" id="brightV">–</div></div>
+        <span class="arrow">→</span>
+        <div class="node"><div class="k">段階値（0〜<span id="qmax">–</span>）</div><div class="v" id="levelV">–</div></div>
+        <span class="arrow">→</span>
+        <div class="node"><div class="k">2進数（符号）</div><div class="v bin" id="binV">–</div></div>
+      </div>
+      <div class="datasize" id="dataSize">–</div>
+    </div>
+
+    <div class="steps">
+      <div class="step" id="s1"><span class="n">1</span><h3>標本化（サンプリング）</h3>
+        <p>画像を格子に区切り、一定の間隔で明るさを取り出す。区切りが細かいほど元画像に近い。</p></div>
+      <div class="step" id="s2"><span class="n">2</span><h3>量子化</h3>
+        <p>取り出した明るさを、決まった数の段階のうち最も近い値に置きかえて数値にする。</p></div>
+      <div class="step" id="s3"><span class="n">3</span><h3>符号化</h3>
+        <p>段階値を2進数に変換する。1画素あたりのビット数×画素数が、そのデータ量になる。</p></div>
+    </div>
+  </section>
+
+  <!-- ============ TOOL 2: どっと絵をつくる ============ -->
+  <section class="tool" id="toolDot" role="tabpanel" aria-labelledby="tabDot">
+    <div class="controls">
+      <div class="presets">
+        <span class="plabel">色数</span>
+        <button class="chip" id="dm2" aria-pressed="true">白黒 2色（1ビット）</button>
+        <button class="chip" id="dm16" aria-pressed="false">16色（4ビット）</button>
+        <span style="flex:1"></span>
+        <span class="tool-btns">
+          <button class="chip" id="loadApple">りんごの例</button>
+          <button class="chip" id="clearDot">白紙にする</button>
+        </span>
+      </div>
+      <div class="ctl" style="grid-column:1 / -1">
+        <div class="row"><label>色をえらぶ（クリックしてマスをぬる）</label>
+          <span class="val" id="curColor">黒</span></div>
+        <div class="palette" id="palette"></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="frame">
+        <h2>どっと絵（お絵かき） <span class="sub">クリック・ドラッグでぬる</span></h2>
+        <div class="canvas-box"><canvas id="dotCanvas" width="408" height="408"></canvas></div>
+      </div>
+      <div class="frame">
+        <h2>符号（コード） <span class="sub" id="codeSub">白＝0 / 黒＝1</span></h2>
+        <div class="codewrap"><table class="code" id="codeTable"></table></div>
+      </div>
+    </div>
+
+    <div class="encode">
+      <p class="etitle">選んだマス<span id="dcellPos"></span>の色を、番号にして2進数で表す</p>
+      <div class="flow">
+        <div class="node"><div class="k"><span class="swatch" id="dsw"></span>色</div><div class="v" id="dcolorV">–</div></div>
+        <span class="arrow">→</span>
+        <div class="node"><div class="k">色の番号</div><div class="v" id="dnumV">–</div></div>
+        <span class="arrow">→</span>
+        <div class="node"><div class="k">2進数（符号）</div><div class="v bin" id="dbinV">–</div></div>
+      </div>
+      <div class="datasize">
+        <div class="cmp" id="dcmp"></div>
+        <div id="dtotal">–</div>
+        <div class="note">n ビットで 2ⁿ 色を表せる（白黒＝1ビット・2色、16色＝4ビット）。　8 ビット ＝ 1 バイト。</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>1マス＝1画素</h3>
+        <p>縦・横に並んだマス（画素）に色をぬって絵をつくる。マスが多いほど細かい絵になる。</p></div>
+      <div class="step"><span class="n">2</span><h3>色に番号をつける</h3>
+        <p>使える色それぞれに番号をふり、2進数で表す。白黒は2色＝1ビット、16色は4ビットで足りる。</p></div>
+      <div class="step"><span class="n">3</span><h3>データ量が決まる</h3>
+        <p>縦の点 × 横の点 × 1点のビット数 ＝ 全体のビット数。色数が多いほどデータ量は増える。</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 広告バナー枠（下部）=====
+       いま入っているのは Google AdSense の正規の広告ユニットです。
+       AdSense の審査に通ったら、下の2か所を管理画面の値に置き換えるだけで表示されます：
+         ① <head> の script の client=ca-pub-XXXXXXXXXXXXXXXX
+         ② 下の data-ad-client / data-ad-slot
+       ── アフィリエイトや自作教材のバナーにしたい場合は、<ins>…</ins> と <script> を消して
+          <a href="リンク" rel="nofollow sponsored noopener"><img src="バナー画像" alt="PR"></a> に差し替え。
+  -->
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <p class="foot">画像のデジタル化（標本化・量子化・符号化）を体験できる無料ツール</p>
+</div>
+
+<script>
+/* =================== タブ切り替え =================== */
+(() => {
+  const tabs=[['tabDig','toolDig'],['tabDot','toolDot']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+/* =================== TOOL 1: デジタル化 =================== */
+(() => {
+  const S=256, DISP=384, SAMPLES=[4,8,16,32,48,64,96,128];
+  const srcCanvas=document.getElementById('source'), digCanvas=document.getElementById('digital');
+  const sctx=srcCanvas.getContext('2d'), dctx=digCanvas.getContext('2d');
+  const work=document.createElement('canvas'); work.width=S; work.height=S;
+  const wctx=work.getContext('2d',{willReadFrequently:true});
+  let state={preset:'apple',N:32,Q:16,bits:4,color:false,grid:false,sel:{i:16,j:16},srcData:null};
+
+  function drawApple(ctx){
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,S,S);
+    const g=ctx.createRadialGradient(S*0.42,S*0.40,S*0.05,S*0.5,S*0.55,S*0.5);
+    g.addColorStop(0,'#ff6b5a'); g.addColorStop(.45,'#e23b2e'); g.addColorStop(1,'#8f1810');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(S*0.5,S*0.57,S*0.34,S*0.33,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(120,10,10,.35)'; ctx.beginPath(); ctx.ellipse(S*0.5,S*0.27,S*0.10,S*0.05,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.45)'; ctx.beginPath(); ctx.ellipse(S*0.36,S*0.42,S*0.07,S*0.11,-0.5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#5a3210'; ctx.lineWidth=S*0.03; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(S*0.5,S*0.28); ctx.lineTo(S*0.53,S*0.14); ctx.stroke();
+    ctx.fillStyle='#3f8b3f'; ctx.beginPath(); ctx.ellipse(S*0.6,S*0.18,S*0.09,S*0.045,-0.6,0,Math.PI*2); ctx.fill();
+  }
+  function drawGradient(ctx){
+    const g=ctx.createLinearGradient(0,0,S,S);
+    g.addColorStop(0,'#0b1d3a'); g.addColorStop(.5,'#5a86c9'); g.addColorStop(1,'#f3f7ff');
+    ctx.fillStyle=g; ctx.fillRect(0,0,S,S);
+    const g2=ctx.createRadialGradient(S*0.7,S*0.3,10,S*0.7,S*0.3,S*0.6);
+    g2.addColorStop(0,'rgba(255,220,120,.9)'); g2.addColorStop(1,'rgba(255,220,120,0)');
+    ctx.fillStyle=g2; ctx.fillRect(0,0,S,S);
+  }
+  function drawPattern(ctx){
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,S,S);
+    for(let y=0;y<S;y+=S/8){for(let x=0;x<S;x+=S/8){
+      const on=((x/(S/8))+(y/(S/8)))%2===0; ctx.fillStyle=on?'#24406e':'#dfe7f3'; ctx.fillRect(x,y,S/8,S/8);}}
+    ctx.fillStyle='#c0392b'; ctx.beginPath(); ctx.arc(S*0.5,S*0.5,S*0.22,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#f2c744'; ctx.beginPath(); ctx.arc(S*0.5,S*0.5,S*0.10,0,Math.PI*2); ctx.fill();
+  }
+  function renderSource(){
+    if(state.preset==='apple') drawApple(wctx);
+    else if(state.preset==='gradient') drawGradient(wctx);
+    else if(state.preset==='pattern') drawPattern(wctx);
+    sctx.imageSmoothingEnabled=true; sctx.clearRect(0,0,DISP,DISP); sctx.drawImage(work,0,0,DISP,DISP);
+    state.srcData=wctx.getImageData(0,0,S,S).data;
+  }
+  function setImageFromElement(img){
+    wctx.fillStyle='#fff'; wctx.fillRect(0,0,S,S);
+    const r=Math.min(S/img.width,S/img.height), w=img.width*r,h=img.height*r;
+    wctx.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+    sctx.imageSmoothingEnabled=true; sctx.clearRect(0,0,DISP,DISP); sctx.drawImage(work,0,0,DISP,DISP);
+    state.srcData=wctx.getImageData(0,0,S,S).data; state.preset='upload';
+    document.querySelectorAll('#toolDig .chip[data-preset]').forEach(b=>b.setAttribute('aria-pressed','false'));
+    process();
+  }
+  const lum=(r,g,b)=>0.299*r+0.587*g+0.114*b;
+
+  function process(){
+    const {N,Q,color,srcData}=state; if(!srcData) return;
+    const cnt=new Float64Array(N*N),aR=new Float64Array(N*N),aG=new Float64Array(N*N),aB=new Float64Array(N*N);
+    for(let y=0;y<S;y++){const cj=(y*N/S)|0;
+      for(let x=0;x<S;x++){const ci=(x*N/S)|0;const k=cj*N+ci;const p=(y*S+x)*4;
+        aR[k]+=srcData[p];aG[k]+=srcData[p+1];aB[k]+=srcData[p+2];cnt[k]++;}}
+    const step=Q-1; dctx.clearRect(0,0,DISP,DISP); dctx.imageSmoothingEnabled=false;
+    for(let j=0;j<N;j++){for(let i=0;i<N;i++){
+      const k=j*N+i,c=cnt[k]||1,r=aR[k]/c,g=aG[k]/c,b=aB[k]/c; let fill;
+      if(color){const qr=Math.round(r/255*step)/step*255,qg=Math.round(g/255*step)/step*255,qb=Math.round(b/255*step)/step*255;
+        fill=`rgb(${qr|0},${qg|0},${qb|0})`;}
+      else{const br=lum(r,g,b),lv=Math.round(br/255*step),q=lv/step*255; fill=`rgb(${q|0},${q|0},${q|0})`;}
+      const x0=Math.floor(i*DISP/N),x1=Math.floor((i+1)*DISP/N),y0=Math.floor(j*DISP/N),y1=Math.floor((j+1)*DISP/N);
+      dctx.fillStyle=fill; dctx.fillRect(x0,y0,x1-x0,y1-y0);}}
+    if(state.grid&&N<=64){dctx.strokeStyle='rgba(0,0,0,.18)';dctx.lineWidth=1;
+      for(let i=1;i<N;i++){const x=Math.floor(i*DISP/N)+.5;dctx.beginPath();dctx.moveTo(x,0);dctx.lineTo(x,DISP);dctx.stroke();
+        const y=Math.floor(i*DISP/N)+.5;dctx.beginPath();dctx.moveTo(0,y);dctx.lineTo(DISP,y);dctx.stroke();}}
+    drawSelection(); updateEncode(aR,aG,aB,cnt); updateDataSize();
+  }
+  function drawSelection(){
+    const {N,sel}=state; if(sel.i>=N||sel.j>=N){sel.i=Math.min(sel.i,N-1);sel.j=Math.min(sel.j,N-1);}
+    const x0=Math.floor(sel.i*DISP/N),x1=Math.floor((sel.i+1)*DISP/N),y0=Math.floor(sel.j*DISP/N),y1=Math.floor((sel.j+1)*DISP/N);
+    dctx.strokeStyle='#ffd23f';dctx.lineWidth=3;dctx.strokeRect(x0+1.5,y0+1.5,(x1-x0)-3,(y1-y0)-3);
+    dctx.strokeStyle='#000';dctx.lineWidth=1;dctx.strokeRect(x0+.5,y0+.5,(x1-x0)-1,(y1-y0)-1);
+  }
+  function updateEncode(aR,aG,aB,cnt){
+    const {N,Q,bits,color,sel}=state,k=sel.j*N+sel.i,c=cnt[k]||1,r=aR[k]/c,g=aG[k]/c,b=aB[k]/c,step=Q-1;
+    document.getElementById('cellPos').textContent=`（${sel.i+1}, ${sel.j+1}）`;
+    document.getElementById('qmax').textContent=step;
+    const sw=document.getElementById('sw');
+    if(color){
+      const lr=Math.round(r/255*step),lg=Math.round(g/255*step),lb=Math.round(b/255*step);
+      sw.style.background=`rgb(${Math.round(lr/step*255)},${Math.round(lg/step*255)},${Math.round(lb/step*255)})`;
+      document.getElementById('brightV').innerHTML=`R${Math.round(r)} G${Math.round(g)} B${Math.round(b)}`;
+      document.getElementById('levelV').innerHTML=`${lr} / ${lg} / ${lb}`;
+      const bin=v=>v.toString(2).padStart(bits,'0');
+      document.getElementById('binV').innerHTML=`${bin(lr)} ${bin(lg)} ${bin(lb)}`;
+    }else{
+      const br=Math.round(lum(r,g,b)),lv=Math.round(br/255*step);
+      sw.style.background=`rgb(${Math.round(lv/step*255)},${Math.round(lv/step*255)},${Math.round(lv/step*255)})`;
+      document.getElementById('brightV').innerHTML=`${br} <small>/ 255</small>`;
+      document.getElementById('levelV').textContent=`${lv}`;
+      document.getElementById('binV').textContent=lv.toString(2).padStart(bits,'0');
+    }
+  }
+  function updateDataSize(){
+    const {N,bits,color}=state,perPixel=color?bits*3:bits,totalBits=N*N*perPixel,bytes=totalBits/8;
+    let size=bytes<1024?`${bytes.toLocaleString()} バイト`:`${(bytes/1024).toFixed(1)} KB`;
+    const chan=color?`${bits}ビット × 3色`:`${bits}ビット`;
+    document.getElementById('dataSize').innerHTML=`このデータ量 ＝ ${N}×${N} 画素 × ${chan} ＝ <b>${totalBits.toLocaleString()} ビット</b>（約 ${size}）`;
+  }
+  function highlight(id){['s1','s2','s3'].forEach(s=>document.getElementById(s).classList.toggle('active',s===id));}
+
+  const sampleR=document.getElementById('sampleR'),sampleV=document.getElementById('sampleV');
+  sampleR.addEventListener('input',()=>{state.N=SAMPLES[+sampleR.value];sampleV.textContent=`${state.N} × ${state.N}`;highlight('s1');process();});
+  const quantR=document.getElementById('quantR'),quantV=document.getElementById('quantV');
+  quantR.addEventListener('input',()=>{state.bits=+quantR.value;state.Q=2**state.bits;quantV.textContent=`${state.Q} 段階 / ${state.bits} ビット`;highlight('s2');process();});
+  document.querySelectorAll('#toolDig .chip[data-preset]').forEach(btn=>{
+    btn.addEventListener('click',()=>{document.querySelectorAll('#toolDig .chip[data-preset]').forEach(b=>b.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true');state.preset=btn.dataset.preset;renderSource();process();});});
+  document.getElementById('upload').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+    const img=new Image();img.onload=()=>setImageFromElement(img);img.src=URL.createObjectURL(f);});
+  function setMode(color){state.color=color;document.getElementById('modeMono').setAttribute('aria-pressed',String(!color));
+    document.getElementById('modeColor').setAttribute('aria-pressed',String(color));highlight('s2');process();}
+  document.getElementById('modeMono').addEventListener('click',()=>setMode(false));
+  document.getElementById('modeColor').addEventListener('click',()=>setMode(true));
+  document.getElementById('gridChk').addEventListener('change',e=>{state.grid=e.target.checked;process();});
+  digCanvas.addEventListener('click',e=>{const rect=digCanvas.getBoundingClientRect();
+    const cx=(e.clientX-rect.left)/rect.width*DISP,cy=(e.clientY-rect.top)/rect.height*DISP;
+    state.sel.i=Math.max(0,Math.min(state.N-1,(cx*state.N/DISP)|0));
+    state.sel.j=Math.max(0,Math.min(state.N-1,(cy*state.N/DISP)|0));highlight('s3');process();});
+  renderSource(); process();
+})();
+
+/* =================== TOOL 2: どっと絵 =================== */
+(() => {
+  const N=16, HEAD=24, GRID=384, TOTAL=HEAD+GRID, cell=GRID/N;
+  const cv=document.getElementById('dotCanvas'), ctx=cv.getContext('2d');
+  // EGA互換16色（黒=0000, 赤=12=1100 …先生の教材と一致）
+  const PAL16=['#000000','#0000AA','#00AA00','#00AAAA','#AA0000','#AA00AA','#AA5500','#AAAAAA',
+               '#555555','#5555FF','#55FF55','#55FFFF','#FF5555','#FF55FF','#FFFF55','#FFFFFF'];
+  const NAME16=['黒','青','緑','シアン','暗い赤','紫','茶','明るい灰','暗い灰','明るい青','明るい緑','明るいシアン','赤','ピンク','黄','白'];
+  const PAL2=['#FFFFFF','#111111'], NAME2=['白','黒'];
+  let d={mode:'mono', active:1, grid:new Int8Array(N*N), sel:{i:0,j:0}, painting:false};
+
+  const pal=()=> d.mode==='mono'?PAL2:PAL16;
+  const names=()=> d.mode==='mono'?NAME2:NAME16;
+  const bits=()=> d.mode==='mono'?1:4;
+
+  /* --- りんごの形（0/1, 16x16） --- */
+  const APPLE=[
+    "0000000010000000","0000000100000000","0000000100000000","0001110101110000",
+    "0011111111111000","0100011111111100","0100011111111100","0100011111111100",
+    "0110011111111100","0111011111111100","0111011111111100","0111111111111000",
+    "0011111111110000","0001111111110000","0000011111000000","0000000000000000"];
+  function loadApple(){
+    d.grid=new Int8Array(N*N);
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+      const on=APPLE[j][i]==='1';
+      if(d.mode==='mono'){ d.grid[j*N+i]=on?1:0; }
+      else{
+        let v=15; // 白
+        if(on){
+          v=12;                 // 赤（実）
+          if(j<=2) v=6;         // 茎（上部）＝茶
+          if(j>=12) v=4;        // 底の影＝暗い赤
+        }
+        d.grid[j*N+i]=v;
+      }
+    }
+    render(); updateAll();
+  }
+
+  /* --- パレット描画 --- */
+  function buildPalette(){
+    const box=document.getElementById('palette'); box.innerHTML='';
+    pal().forEach((c,idx)=>{
+      const b=document.createElement('button');
+      b.className='sw'; b.style.background=c; b.title=`${idx}：${names()[idx]}`;
+      b.setAttribute('aria-pressed', String(idx===d.active));
+      b.addEventListener('click',()=>{ d.active=idx; buildPalette(); updateCur(); });
+      box.appendChild(b);
+    });
+    updateCur();
+  }
+  function updateCur(){ document.getElementById('curColor').textContent=`${names()[d.active]}（番号 ${d.active}）`; }
+
+  /* --- キャンバス描画 --- */
+  function render(){
+    ctx.clearRect(0,0,TOTAL,TOTAL);
+    // 見出し（0〜F）
+    ctx.fillStyle='#C0392B'; ctx.font='bold 13px ui-monospace,Consolas,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(let k=0;k<N;k++){
+      ctx.fillText(HEX[k], HEAD+k*cell+cell/2, HEAD/2);
+      ctx.fillText(HEX[k], HEAD/2, HEAD+k*cell+cell/2);
+    }
+    // マス
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+      ctx.fillStyle=pal()[d.grid[j*N+i]];
+      ctx.fillRect(HEAD+Math.floor(i*cell),HEAD+Math.floor(j*cell),Math.ceil(cell),Math.ceil(cell));
+    }
+    // 格子
+    ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=1;
+    for(let k=0;k<=N;k++){const p=HEAD+Math.floor(k*cell)+.5;
+      ctx.beginPath();ctx.moveTo(HEAD,p);ctx.lineTo(TOTAL,p);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(p,HEAD);ctx.lineTo(p,TOTAL);ctx.stroke();}
+    // 選択枠
+    const x=HEAD+Math.floor(d.sel.i*cell), y=HEAD+Math.floor(d.sel.j*cell);
+    ctx.strokeStyle='#ffcf33'; ctx.lineWidth=3; ctx.strokeRect(x+1.5,y+1.5,cell-3,cell-3);
+  }
+
+  /* --- コード表 --- */
+  const HEX='0123456789ABCDEF';
+  let cells=[];
+  function buildTable(){
+    const t=document.getElementById('codeTable'); t.innerHTML=''; cells=[];
+    const head=document.createElement('tr'); head.appendChild(document.createElement('th'));
+    for(let i=0;i<N;i++){const th=document.createElement('th');th.textContent=HEX[i];head.appendChild(th);}
+    t.appendChild(head);
+    for(let j=0;j<N;j++){
+      const tr=document.createElement('tr'); const rh=document.createElement('th'); rh.textContent=HEX[j]; tr.appendChild(rh);
+      const row=[];
+      for(let i=0;i<N;i++){const td=document.createElement('td');
+        td.addEventListener('pointerdown',()=>{ d.sel={i,j}; render(); updateSel(); });
+        tr.appendChild(td); row.push(td);}
+      cells.push(row); t.appendChild(tr);
+    }
+    updateTable();
+  }
+  function updateTable(){
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+      const v=d.grid[j*N+i], td=cells[j][i];
+      td.textContent = d.mode==='mono' ? String(v) : HEX[v];
+      td.classList.toggle('on', v!==0 && d.mode==='mono' ? true : (d.mode==='mono'?false:v!==15));
+      td.classList.toggle('sel', d.sel.i===i && d.sel.j===j);
+    }
+  }
+
+  /* --- 符号化パネル＋データ量 --- */
+  function updateSel(){
+    const v=d.grid[d.sel.j*N+d.sel.i];
+    document.getElementById('dcellPos').textContent=`（${d.sel.i}, ${d.sel.j}）`;
+    document.getElementById('dsw').style.background=pal()[v];
+    document.getElementById('dcolorV').textContent=names()[v];
+    document.getElementById('dnumV').textContent=String(v);
+    document.getElementById('dbinV').textContent=v.toString(2).padStart(bits(),'0');
+    updateTable();
+  }
+  function updateData(){
+    const mono=N*N*1, col=N*N*4;
+    const cmp=document.getElementById('dcmp');
+    cmp.innerHTML=
+      `<span class="${d.mode==='mono'?'act':''}">白黒：${N}×${N}×1 ＝ ${mono} ビット（${mono/8} バイト）</span>`+
+      `<span class="${d.mode==='color'?'act':''}">16色：${N}×${N}×4 ＝ ${col} ビット（${col/8} バイト）</span>`;
+    const tot=N*N*bits();
+    document.getElementById('dtotal').innerHTML=
+      `いまの設定 ＝ ${N}×${N} 点 × ${bits()} ビット ＝ <b>${tot} ビット（${tot/8} バイト）</b>`;
+  }
+  function updateAll(){ updateSel(); updateData(); }
+
+  /* --- 塗り操作（マウス／タッチ共通） --- */
+  function paintAt(e){
+    const rect=cv.getBoundingClientRect();
+    const cx=(e.clientX-rect.left)/rect.width*TOTAL, cy=(e.clientY-rect.top)/rect.height*TOTAL;
+    const i=Math.floor((cx-HEAD)/cell), j=Math.floor((cy-HEAD)/cell);
+    if(i<0||j<0||i>=N||j>=N) return;
+    d.grid[j*N+i]=d.active; d.sel={i,j}; render(); updateAll();
+  }
+  cv.addEventListener('pointerdown',e=>{ d.painting=true; cv.setPointerCapture(e.pointerId); paintAt(e); });
+  cv.addEventListener('pointermove',e=>{ if(d.painting) paintAt(e); });
+  cv.addEventListener('pointerup',()=>{ d.painting=false; });
+  cv.addEventListener('pointercancel',()=>{ d.painting=false; });
+
+  /* --- モード切替 --- */
+  function setMode(m){
+    if(d.mode===m) return;
+    const old=d.mode;
+    d.mode=m;
+    document.getElementById('dm2').setAttribute('aria-pressed',String(m==='mono'));
+    document.getElementById('dm16').setAttribute('aria-pressed',String(m==='color'));
+    document.getElementById('codeSub').textContent = m==='mono' ? '白＝0 / 黒＝1' : '各色に番号（0〜15）を4ビットで';
+    // グリッドを新モードへ変換（白同士・黒対応をゆるく引き継ぐ）
+    for(let k=0;k<N*N;k++){
+      if(old==='mono'&&m==='color') d.grid[k]= d.grid[k]===1?0:15;      // 黒→0, 白→15
+      else if(old==='color'&&m==='mono') d.grid[k]= d.grid[k]===15?0:1; // 白→0(白), それ以外→1(黒)
+    }
+    d.active = m==='mono'?1:12;
+    buildPalette(); render(); updateAll();
+  }
+  document.getElementById('dm2').addEventListener('click',()=>setMode('mono'));
+  document.getElementById('dm16').addEventListener('click',()=>setMode('color'));
+  document.getElementById('loadApple').addEventListener('click',loadApple);
+  document.getElementById('clearDot').addEventListener('click',()=>{
+    d.grid=new Int8Array(N*N); if(d.mode==='color') d.grid.fill(15); render(); updateAll();
+  });
+
+  /* --- 初期化 --- */
+  buildPalette(); buildTable(); loadApple();
+})();
+</script>
+</body>
+</html>
