@@ -134,10 +134,12 @@
   .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
   .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
   .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
-  .article table.convtable{width:100%; table-layout:fixed; font-size:13px;}
-  .article table.convtable th{white-space:nowrap; width:5.2em; font-size:12.5px; padding:5px 6px;}
-  .article table.convtable td{padding:5px 2px; font-family:ui-monospace,Consolas,monospace;}
-  .article table.convtable td.bin{font-size:11px; letter-spacing:-.3px; color:var(--navy);}
+  .article table.convtable{width:100%; table-layout:fixed; font-size:13px;
+    font-family:ui-monospace,Consolas,monospace;}
+  .article table.convtable th{white-space:nowrap; width:5.2em; font-size:12.5px; padding:5px 6px;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;}
+  .article table.convtable td{padding:5px 2px; font-size:13px; color:var(--ink);}
+  .article table.convtable td.bin{letter-spacing:0;}
   /* 狭い画面では16列だと2進数が潰れるので、8列ずつ2段に分けて表示する */
   .convtable-split{display:none;}
   .convtable-split table.convtable{margin:0;}
@@ -145,7 +147,7 @@
   @media (max-width:720px){
     .article table.convtable{font-size:12px;}
     .article table.convtable th{width:4.6em; font-size:11px;}
-    .article table.convtable td.bin{font-size:11px; letter-spacing:0;}
+    .article table.convtable td{font-size:12px;}
     .convtable-wide{display:none;}
     .convtable-split{display:block;}
   }
