@@ -86,6 +86,20 @@
   .smp .d{font-size:15px; font-weight:700; color:var(--ink); font-family:ui-monospace,Consolas,monospace;}
   .smp .b{font-size:10.5px; color:var(--navy); font-family:ui-monospace,Consolas,monospace; letter-spacing:.5px;}
 
+  /* 元データのプレビュー */
+  .preview{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:14px;}
+  .preview .pv{flex:0 0 auto; text-align:center;}
+  .preview .pv img, .preview .pv canvas{max-width:180px; max-height:140px; border-radius:8px;
+    border:1px solid var(--line); display:block;}
+  .preview .pv .cap{font-size:11.5px; color:var(--muted); margin-top:5px;}
+  .preview .pt{flex:1 1 260px; min-width:220px;}
+  .preview .pt h3{margin:0 0 6px; font-size:15px; color:var(--ink);}
+  .preview .pt p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.7;}
+  .preview audio{width:100%; margin-top:8px;}
+  .arrowto{align-self:center; font-size:26px; color:#9DB0CE; font-weight:700;}
+
   .status{font-size:13.5px; color:var(--muted); margin-top:10px; min-height:1.5em;}
   .status.err{color:var(--ng);}
 
@@ -141,6 +155,15 @@
         <button class="chip" id="fHex" aria-pressed="false">16進数で見る</button>
       </div>
       <p class="hint">画像でも音楽でも文書でも、どんなファイルでも構いません。パソコンの中では、すべてこの形で記録されています。</p>
+    </div>
+
+    <div class="preview" id="fPrev" style="display:none;">
+      <div class="pv" id="fPrevMedia"></div>
+      <div class="arrowto">→</div>
+      <div class="pt">
+        <h3>これが、下の0と1の正体です</h3>
+        <p id="fPrevText">読み込んだファイルの中身を、そのまま0と1で表示しています。</p>
+      </div>
     </div>
 
     <div class="fileinfo" id="fInfo" style="display:none;"></div>
@@ -222,6 +245,14 @@
         <button class="chip" id="sColor" aria-pressed="false">カラー</button>
       </div>
       <p class="hint">音の1つ1つの数値を、画素の明るさ（0〜255）として左上から順に並べます。</p>
+    </div>
+
+    <div class="preview" id="sPrev" style="display:none;">
+      <div class="pt">
+        <h3 id="sPrevName">読み込んだ音</h3>
+        <p>再生して耳で確かめてから、下の画像を見てみましょう。高い音・にぎやかな音ほど、縞が細かくなります。</p>
+        <audio id="sAudio" controls></audio>
+      </div>
     </div>
 
     <div class="canvasrow">
@@ -389,10 +420,54 @@ function sampleImageCanvas(w=256,h=256){
     document.getElementById('fShown').textContent=n;
   }
 
-  function load(buf, fname, size, type){
+  function showPreview(file, kindName){
+    const box=document.getElementById('fPrev');
+    const media=document.getElementById('fPrevMedia');
+    const text=document.getElementById('fPrevText');
+    media.innerHTML=''; box.style.display='none';
+    if(!file) return;
+    const t=file.type||'';
+    if(t.startsWith('image/')){
+      const img=document.createElement('img');
+      img.alt='読み込んだ画像';
+      img.src=URL.createObjectURL(file);
+      img.onload=()=>URL.revokeObjectURL(img.src);
+      const cap=document.createElement('div'); cap.className='cap'; cap.textContent='読み込んだ画像';
+      media.append(img,cap);
+      text.textContent='この画像が、下に並んでいる0と1です。画像そのものが入っているのではなく、0と1の並びとして記録されています。';
+      box.style.display='flex';
+    }else if(t.startsWith('audio/')){
+      const au=document.createElement('audio'); au.controls=true; au.style.width='220px';
+      au.src=URL.createObjectURL(file);
+      const cap=document.createElement('div'); cap.className='cap'; cap.textContent='読み込んだ音';
+      media.append(au,cap);
+      text.textContent='この音が、下に並んでいる0と1です。再生して聞こえる音も、記録されているのは数値の列だけです。';
+      box.style.display='flex';
+    }else if(t.startsWith('video/')){
+      const vd=document.createElement('video'); vd.controls=true; vd.style.maxWidth='180px';
+      vd.src=URL.createObjectURL(file);
+      const cap=document.createElement('div'); cap.className='cap'; cap.textContent='読み込んだ動画';
+      media.append(vd,cap);
+      text.textContent='この動画が、下に並んでいる0と1です。';
+      box.style.display='flex';
+    }else{
+      const d=document.createElement('div');
+      d.style.cssText='width:120px;height:120px;display:flex;align-items:center;justify-content:center;'+
+        'background:#F2F5FA;border:1px solid #C9D2E0;border-radius:8px;font-size:34px;color:#9AA3B0;';
+      d.textContent='📄';
+      const cap=document.createElement('div'); cap.className='cap';
+      cap.textContent=kindName||'このファイル';
+      media.append(d,cap);
+      text.textContent='このファイルの中身が、下に並んでいる0と1です。文書でも表計算でも、記録されているのは同じ0と1の列です。';
+      box.style.display='flex';
+    }
+  }
+
+  function load(buf, fname, size, type, file){
     bytes=new Uint8Array(buf);
     name=fname;
     const d=detect(bytes);
+    showPreview(file, d?d.name:null);
     const bits=size*8;
     document.getElementById('fInfo').style.display='flex';
     document.getElementById('fInfo').innerHTML=
@@ -410,7 +485,7 @@ function sampleImageCanvas(w=256,h=256){
   document.getElementById('fPick').addEventListener('change',e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
-    r.onload=()=>load(r.result,f.name,f.size,f.type);
+    r.onload=()=>load(r.result,f.name,f.size,f.type,f);
     r.onerror=()=>{ document.getElementById('fStatus').className='status err';
       document.getElementById('fStatus').textContent='ファイルを読み込めませんでした。'; };
     r.readAsArrayBuffer(f.slice(0,4096));
@@ -419,7 +494,8 @@ function sampleImageCanvas(w=256,h=256){
   document.getElementById('fSample').addEventListener('click',()=>{
     sampleImageCanvas(160,160).toBlob(blob=>{
       const r=new FileReader();
-      r.onload=()=>load(r.result,'sample-apple.png',blob.size,'image/png');
+      r.onload=()=>load(r.result,'sample-apple.png',blob.size,'image/png',
+        new File([blob],'sample-apple.png',{type:'image/png'}));
       r.readAsArrayBuffer(blob);
     },'image/png');
   });
@@ -515,12 +591,15 @@ function sampleImageCanvas(w=256,h=256){
   }
   document.getElementById('iVol').addEventListener('input',setVol);
 
+  let drawn=null; // 画像の描画位置（マーカー用）
   function fromCanvas(c){
     // 表示
     ix.fillStyle='#fff'; ix.fillRect(0,0,iImg.width,iImg.height);
     const r=Math.min(iImg.width/c.width, iImg.height/c.height);
     const w=c.width*r, h=c.height*r;
-    ix.drawImage(c,(iImg.width-w)/2,(iImg.height-h)/2,w,h);
+    const ox=(iImg.width-w)/2, oy=(iImg.height-h)/2;
+    ix.drawImage(c,ox,oy,w,h);
+    drawn={src:c, ox, oy, w, h};
 
     // 画素値 → 音のサンプル（明るさを -1..1 に）
     const small=document.createElement('canvas');
@@ -584,14 +663,45 @@ function sampleImageCanvas(w=256,h=256){
     srcNode=ctx.createBufferSource(); srcNode.buffer=buf;
     gain=ctx.createGain(); setVol();
     srcNode.connect(gain).connect(ctx.destination);
-    srcNode.onended=()=>{ document.getElementById('iStop').disabled=true; };
+    srcNode.onended=()=>{ document.getElementById('iStop').disabled=true; stopMarker(); };
+    startedAt=ctx.currentTime; totalSec=samples.length/RATE;
     srcNode.start();
     document.getElementById('iStop').disabled=false;
     st.className='status';
-    st.textContent=`再生中（約 ${(samples.length/RATE).toFixed(1)} 秒）。色が一様な部分は低い音、細かい部分は高い音になります。`;
+    st.textContent=`再生中（約 ${totalSec.toFixed(1)} 秒）。黄色い線が、いま鳴っている場所です。`;
+    runMarker();
   });
+  let startedAt=0, totalSec=0, mraf=null;
+  function redrawImage(){
+    if(!drawn) return;
+    ix.fillStyle='#fff'; ix.fillRect(0,0,iImg.width,iImg.height);
+    ix.drawImage(drawn.src, drawn.ox, drawn.oy, drawn.w, drawn.h);
+  }
+  function runMarker(){
+    if(!drawn||!srcNode){ return; }
+    const ctx=audioCtx();
+    const prog=Math.min(1,(ctx.currentTime-startedAt)/totalSec);
+    redrawImage();
+    // 画像上：いま鳴っている行
+    const y=drawn.oy + prog*drawn.h;
+    ix.strokeStyle='#E8B21F'; ix.lineWidth=3;
+    ix.beginPath(); ix.moveTo(drawn.ox,y); ix.lineTo(drawn.ox+drawn.w,y); ix.stroke();
+    ix.fillStyle='rgba(0,0,0,.35)';
+    ix.fillRect(drawn.ox, drawn.oy, drawn.w, Math.max(0,y-drawn.oy));
+    // 波形上：同じ位置
+    drawWave();
+    const wxp=prog*iWave.width;
+    wx.strokeStyle='#E8B21F'; wx.lineWidth=2;
+    wx.beginPath(); wx.moveTo(wxp,0); wx.lineTo(wxp,iWave.height); wx.stroke();
+    if(prog<1) mraf=requestAnimationFrame(runMarker);
+  }
+  function stopMarker(){
+    if(mraf) cancelAnimationFrame(mraf);
+    mraf=null; redrawImage(); if(samples) drawWave();
+  }
   function stop(){
     if(srcNode){ try{srcNode.stop();}catch(e){} srcNode=null; }
+    stopMarker();
     document.getElementById('iStop').disabled=true;
   }
   document.getElementById('iStop').addEventListener('click',()=>{ stop(); st.textContent='とめました。'; });
@@ -624,6 +734,12 @@ function sampleImageCanvas(w=256,h=256){
 
   document.getElementById('sPick').addEventListener('change',async e=>{
     const f=e.target.files[0]; if(!f) return;
+    // 元の音を聴けるようにする
+    const au=document.getElementById('sAudio');
+    if(au.src) URL.revokeObjectURL(au.src);
+    au.src=URL.createObjectURL(f);
+    document.getElementById('sPrevName').textContent='読み込んだ音：'+f.name;
+    document.getElementById('sPrev').style.display='flex';
     st.className='status'; st.textContent='読み込み中…';
     try{
       const buf=await f.arrayBuffer();
@@ -659,7 +775,8 @@ function sampleImageCanvas(w=256,h=256){
       };
       loop();
       document.getElementById('sMicStop').disabled=false;
-      st.textContent='マイクの音を画像にしています。高い音ほど細かい縞になります。';
+      document.getElementById('sPrev').style.display='none';
+      st.textContent='マイクの音を画像にしています。声を出したり口笛を吹いたりすると、縞が変わります。';
     }catch(err){
       st.className='status err'; st.textContent='マイクを使えませんでした。（'+err.name+'）';
     }
