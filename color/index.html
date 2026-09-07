@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>色の表し方を体験しよう（RGB・CMYK・HSV）｜情報ラボ</title>
+<meta name="description" content="RGB・CMYK・HSV（HSB）の3つの表し方を同じ画面で連動させて確かめられる無料ツール。光の三原色と色の三原色の違い、色相・彩度・明度、カラーコードのしくみを体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/color/">
+<meta property="og:title" content="色の表し方を体験しよう（RGB・CMYK・HSV）｜情報ラボ">
+<meta property="og:description" content="RGB・CMYK・HSVを連動させて確かめる無料教材。色相・彩度・明度のしくみが分かります。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/color/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+
+  /* 色見本 */
+  .swatchbar{display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; margin-bottom:16px;}
+  .bigswatch{flex:0 0 200px; height:150px; border-radius:12px; border:1px solid var(--line);}
+  .codes{flex:1 1 320px; background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:14px 18px; display:flex; flex-wrap:wrap; gap:10px;}
+  .code{flex:1 1 130px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    border-radius:8px; padding:8px 12px;}
+  .code .k{font-size:10.5px; color:#aebbd6;}
+  .code .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace;
+    letter-spacing:.5px; overflow-wrap:anywhere;}
+  .code .v.gold{color:#ffd97a;}
+
+  /* スライダー */
+  .sl{margin-bottom:12px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:15px; font-weight:700; color:var(--navy);}
+  .sl .bin{font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:var(--muted);}
+  .sl input[type=range]{width:100%; height:26px; margin-top:2px;
+    -webkit-appearance:none; appearance:none; background:transparent;}
+  .sl input[type=range]::-webkit-slider-runnable-track{height:14px; border-radius:7px; border:1px solid var(--line);}
+  .sl input[type=range]::-moz-range-track{height:14px; border-radius:7px; border:1px solid var(--line);}
+  .sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:22px; height:22px;
+    border-radius:50%; background:#fff; border:2px solid var(--navy); margin-top:-5px; cursor:pointer;}
+  .sl input[type=range]::-moz-range-thumb{width:20px; height:20px; border-radius:50%;
+    background:#fff; border:2px solid var(--navy); cursor:pointer;}
+
+  .cols{display:flex; gap:16px; flex-wrap:wrap;}
+  .col{flex:1 1 300px; min-width:270px;}
+
+  canvas{display:block; border-radius:10px; border:1px solid var(--line); background:#fff; max-width:100%;}
+  .cvwrap{display:flex; gap:18px; flex-wrap:wrap; justify-content:center; align-items:flex-start;}
+  .cvbox{text-align:center;}
+  .cvbox .cap{font-size:12.5px; color:var(--muted); margin-top:6px;}
+  #hueWheel, #svBox{cursor:crosshair; touch-action:none;}
+
+  .presets{display:flex; gap:7px; flex-wrap:wrap; margin-top:12px;}
+  .ps{width:36px; height:36px; border-radius:8px; border:2px solid var(--line); cursor:pointer; padding:0;}
+  .ps:hover{border-color:var(--navy);}
+
+  /* 記事 */
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<!-- ▼ Google AdSense（ca-pub-XXXXXXXXXXXXXXXX を自分のIDに置き換える） -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 色の表し方</p>
+    <h1>色の表し方を体験しよう</h1>
+    <p class="lead">同じ1つの色を、RGB・CMYK・HSV の3つの方法で表せます。どれかを動かすと、残りも同時に変わります。</p>
+  </header>
+
+  <!-- 共通の色見本 -->
+  <div class="swatchbar">
+    <div class="bigswatch" id="swatch"></div>
+    <div class="codes">
+      <div class="code"><div class="k">カラーコード（16進数）</div><div class="v gold" id="cHex">#000000</div></div>
+      <div class="code"><div class="k">RGB（光の三原色）</div><div class="v" id="cRgb">0, 0, 0</div></div>
+      <div class="code"><div class="k">HSV（色相・彩度・明度）</div><div class="v" id="cHsv">0°, 0%, 0%</div></div>
+      <div class="code"><div class="k">CMYK（インクの割合）</div><div class="v" id="cCmyk">0, 0, 0, 100</div></div>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabRgb" aria-selected="true" aria-controls="toolRgb">RGB（光の三原色）</button>
+    <button class="tab" role="tab" id="tabHsv" aria-selected="false" aria-controls="toolHsv">HSV（色相・彩度・明度）</button>
+    <button class="tab" role="tab" id="tabCmyk" aria-selected="false" aria-controls="toolCmyk">CMYK（色の三原色）</button>
+    <button class="tab" role="tab" id="tabMix" aria-selected="false" aria-controls="toolMix">混ぜ方のちがい</button>
+  </div>
+
+  <!-- ===== RGB ===== -->
+  <section class="tool show" id="toolRgb" role="tabpanel" aria-labelledby="tabRgb">
+    <div class="panel">
+      <h2>光の三原色を、それぞれ 0〜255 の強さで混ぜる</h2>
+      <div class="sl">
+        <div class="top"><label for="rR">R（赤）</label>
+          <span><span class="val" id="rRv">0</span> <span class="bin" id="rRb">00000000</span></span></div>
+        <input type="range" id="rR" min="0" max="255" value="0">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="rG">G（緑）</label>
+          <span><span class="val" id="rGv">0</span> <span class="bin" id="rGb">00000000</span></span></div>
+        <input type="range" id="rG" min="0" max="255" value="0">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="rB">B（青）</label>
+          <span><span class="val" id="rBv">0</span> <span class="bin" id="rBb">00000000</span></span></div>
+        <input type="range" id="rB" min="0" max="255" value="0">
+      </div>
+      <p class="hint">それぞれ8ビット（256段階）なので、合わせて24ビット。表せる色は 256×256×256 ＝ 約1677万色です。</p>
+      <div class="presets" id="rgbPresets"></div>
+    </div>
+  </section>
+
+  <!-- ===== HSV ===== -->
+  <section class="tool" id="toolHsv" role="tabpanel" aria-labelledby="tabHsv">
+    <div class="panel">
+      <h2>色あい・鮮やかさ・明るさで指定する</h2>
+      <div class="cvwrap">
+        <div class="cvbox">
+          <canvas id="hueWheel" width="260" height="260"></canvas>
+          <p class="cap">色相環（クリックで色あいを選ぶ）</p>
+        </div>
+        <div class="cvbox">
+          <canvas id="svBox" width="260" height="260"></canvas>
+          <p class="cap">彩度（横）と明度（縦）</p>
+        </div>
+      </div>
+
+      <div class="cols" style="margin-top:16px;">
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="hH">H：色相（色あい）</label><span class="val" id="hHv">0°</span></div>
+            <input type="range" id="hH" min="0" max="360" value="0">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="hS">S：彩度（鮮やかさ）</label><span class="val" id="hSv">0%</span></div>
+            <input type="range" id="hS" min="0" max="100" value="0">
+          </div>
+        </div>
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="hV">V：明度（明るさ）</label><span class="val" id="hVv">0%</span></div>
+            <input type="range" id="hV" min="0" max="100" value="0">
+          </div>
+          <p class="hint" style="margin-top:18px;">
+            H は0〜360度の角度で色あいを表します。S を下げると白っぽく、V を下げると黒っぽくなります。
+            HSB とも呼ばれ、B（Brightness）は V と同じ意味です。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CMYK ===== -->
+  <section class="tool" id="toolCmyk" role="tabpanel" aria-labelledby="tabCmyk">
+    <div class="panel">
+      <h2>インクの量で指定する（印刷の考え方）</h2>
+      <div class="sl">
+        <div class="top"><label for="cC">C（シアン）</label><span class="val" id="cCv">0%</span></div>
+        <input type="range" id="cC" min="0" max="100" value="0">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="cM">M（マゼンタ）</label><span class="val" id="cMv">0%</span></div>
+        <input type="range" id="cM" min="0" max="100" value="0">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="cY">Y（イエロー）</label><span class="val" id="cYv">0%</span></div>
+        <input type="range" id="cY" min="0" max="100" value="0">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="cK">K（黒）</label><span class="val" id="cKv">0%</span></div>
+        <input type="range" id="cK" min="0" max="100" value="0">
+      </div>
+      <p class="hint">C・M・Y を全部混ぜても、理論上の黒にはなりません。そのため実際の印刷では黒インク（K）を別に使います。</p>
+    </div>
+  </section>
+
+  <!-- ===== 混ぜ方のちがい ===== -->
+  <section class="tool" id="toolMix" role="tabpanel" aria-labelledby="tabMix">
+    <div class="panel">
+      <h2>光は混ぜると明るく、インクは混ぜると暗くなる</h2>
+      <div class="cvwrap">
+        <div class="cvbox">
+          <canvas id="addMix" width="300" height="300"></canvas>
+          <p class="cap"><strong>加法混色</strong>（光・ディスプレイ）<br>混ぜるほど明るく、3つ揃うと白</p>
+        </div>
+        <div class="cvbox">
+          <canvas id="subMix" width="300" height="300"></canvas>
+          <p class="cap"><strong>減法混色</strong>（インク・印刷）<br>混ぜるほど暗く、3つ揃うと黒に近づく</p>
+        </div>
+      </div>
+      <p class="hint">
+        ディスプレイは自分で光を出すので、光を足していく「加法混色」。
+        紙は光を出さず、インクが光を吸収するので、反射する光を減らしていく「減法混色」です。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>コンピュータはどうやって色を表しているのか</h2>
+    <p>ディスプレイに映るすべての色は、赤・緑・青の3つの光の組み合わせでできています。画面を虫めがねで拡大すると、この3色の小さな点が並んでいるのが見えます。人の目はそれらを混ざった1つの色として感じるため、たった3色でさまざまな色を表せます。</p>
+    <p>この赤（Red）・緑（Green）・青（Blue）を光の三原色といい、頭文字を取って RGB と呼びます。コンピュータは、それぞれの強さを数値で記録することで色を表しています。</p>
+
+    <h3>1画素は24ビット</h3>
+    <p>一般的な方式では、R・G・B それぞれを8ビット（0〜255の256段階）で表します。3つ合わせると24ビットです。</p>
+    <div class="formula">256 × 256 × 256 ＝ 16,777,216 通り（約1677万色）</div>
+    <p>これがフルカラーと呼ばれる状態です。人間が見分けられる色の数を超えているため、写真も自然に見えます。透明度（アルファ値）を加えて32ビットで扱う場合もあります。</p>
+
+    <h3>カラーコードは16進数</h3>
+    <p>ウェブサイトの色指定でよく見る <span class="mono">#FF6600</span> のような表記は、RGB の値を16進数で並べたものです。2桁ずつ区切って、赤・緑・青に対応します。</p>
+    <table>
+      <tr><th>表記</th><th>赤</th><th>緑</th><th>青</th></tr>
+      <tr><td class="mono">#FF6600</td><td class="mono">FF ＝ 255</td><td class="mono">66 ＝ 102</td><td class="mono">00 ＝ 0</td></tr>
+    </table>
+    <p>16進数の2桁は、ちょうど8ビット（0〜255）を表せます。2進数で書くと <span class="mono">11111111 01100110 00000000</span> となり、24桁になります。16進数を使うのは、この長い2進数を短く書くためです。</p>
+
+    <h2>HSV（HSB）― 人の感覚に近い表し方</h2>
+    <p>RGB は機械にとっては扱いやすい方式ですが、人間には直感的ではありません。「もう少し明るい赤にしたい」と思ったとき、R・G・B をそれぞれいくつにすればよいかは、すぐには分かりません。</p>
+    <p>そこで使われるのが HSV です。HSB とも呼ばれ、次の3つで色を指定します。</p>
+    <ul>
+      <li><strong>H（Hue／色相）</strong>：色あい。赤・黄・緑・青といった色の種類を、0〜360度の角度で表します。円をぐるりと回ると、虹の色が順に現れます。</li>
+      <li><strong>S（Saturation／彩度）</strong>：鮮やかさ。100%で最も鮮やか、0%にすると色みが消えて灰色になります。</li>
+      <li><strong>V（Value／明度）</strong>：明るさ。0%にすると、他の値に関わらず黒になります。Brightness の B と同じ意味です。</li>
+    </ul>
+    <p>教科書に載っている円錐の図は、この3つの関係を表したものです。円錐を上から見た円周が色相、中心から外へ向かう方向が彩度、上下方向が明度にあたります。円錐の先端（下）が黒になるのは、明度が0だとどんな色相・彩度でも黒になるからです。</p>
+    <p>画像編集ソフトの色選択画面が、円や四角の組み合わせになっているのはこのためです。上のツールでも、色相環をクリックして色あいを選び、四角の中で鮮やかさと明るさを調整できます。RGB のスライダーを動かしたときに HSV の値がどう変わるかも、同時に確認してみてください。</p>
+
+    <h2>CMYK ― 印刷で使う表し方</h2>
+    <p>ディスプレイと紙では、色ができるしくみが違います。ディスプレイは自分で光を出していますが、紙は光を出しません。紙に当たった光のうち、インクが吸収しなかった分だけが反射して目に届きます。</p>
+    <p>そのため印刷では、シアン（C）・マゼンタ（M）・イエロー（Y）という<strong>色の三原色</strong>を使います。インクを重ねるほど吸収される光が増え、暗くなっていきます。</p>
+    <table>
+      <tr><th></th><th>RGB（光）</th><th>CMY（インク）</th></tr>
+      <tr><td>混ぜ方</td><td>加法混色</td><td>減法混色</td></tr>
+      <tr><td>混ぜると</td><td>明るくなる</td><td>暗くなる</td></tr>
+      <tr><td>3つ全部で</td><td>白</td><td>黒（に近い色）</td></tr>
+      <tr><td>何もないと</td><td>黒</td><td>白（紙の色）</td></tr>
+    </table>
+    <p>ただし実際のインクは理想通りではなく、C・M・Y を全部混ぜても濁った茶色っぽい黒にしかなりません。文字を黒く印刷するのに3色も使うのは、インクの無駄でもあります。そこで黒（Key plate の K）を独立させたのが CMYK です。プリンタのインクが4色なのは、この理由によります。</p>
+    <p>なお、ディスプレイで表せる色と印刷で表せる色の範囲は完全には一致しません。画面で見た鮮やかな色が、印刷すると少しくすんで見えることがあるのはこのためです。</p>
+
+    <h2>色を減らすとどうなるか</h2>
+    <p>1画素に24ビットも使わず、もっと少ないビット数で色を表す方法もあります。たとえば1画素4ビットなら16色、8ビットなら256色です。使える色が少ないほどデータ量は減りますが、そのぶん元の色を正確に再現できなくなります。</p>
+    <p>色数が足りないとき、なめらかなグラデーションは境目のはっきりした縞模様になります。これをトーンジャンプやバンディングと呼びます。写真の空の部分などで起こりやすい現象です。</p>
+    <p>限られた色数でも自然に見せる工夫として、ディザリングという手法があります。近い色の点を細かく散らして混ぜ、離れて見たときに中間色に見せるやり方です。新聞の写真が網点でできているのも、同じ考え方によるものです。</p>
+
+    <h2>Webセーフカラーという考え方</h2>
+    <p>かつてパソコンの性能が低かった頃は、同時に表示できる色が256色しかない環境が普通でした。そのため、どの環境でも同じように見える色として216色を選んだWebセーフカラーという取り決めがありました。</p>
+    <p>現在ではほとんどの機器がフルカラーに対応しているため、この制約を意識する必要はほぼありません。ただし、機器によって色の見え方に差があること自体は今も変わりません。同じカラーコードを指定しても、ディスプレイの種類や設定によって微妙に違って見えます。正確な色が求められる仕事では、機器ごとに色を合わせるキャリブレーションという作業が行われます。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li>どのタブで値を変えても、上の色見本と4つの表記がすべて連動して変わります。</li>
+      <li><strong>RGB</strong>：スライダーの右に2進数も表示されます。カラーコードとの対応を確かめてみてください。</li>
+      <li><strong>HSV</strong>：色相環をクリックして色あいを選び、四角の中で鮮やかさと明るさを決められます。</li>
+      <li><strong>CMYK</strong>：インクの割合で指定します。K を上げると全体が暗くなります。</li>
+      <li><strong>混ぜ方のちがい</strong>：光とインクで、重なった部分の色がどう変わるかを比べられます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/color/">色の表し方</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabHsv') drawSV();
+      if(tid==='tabMix') drawMix();
+    });
+  });
+})();
+
+/* ===== 色の変換 ===== */
+function rgb2hsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0;
+  if(d!==0){
+    if(mx===r) h=((g-b)/d)%6;
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  const s = mx===0 ? 0 : d/mx;
+  return {h:Math.round(h), s:Math.round(s*100), v:Math.round(mx*100)};
+}
+function hsv2rgb(h,s,v){
+  s/=100; v/=100;
+  const c=v*s, x=c*(1-Math.abs(((h/60)%2)-1)), m=v-c;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;}
+  else if(h<180){g=c;b=x;} else if(h<240){g=x;b=c;}
+  else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  return {r:Math.round((r+m)*255), g:Math.round((g+m)*255), b:Math.round((b+m)*255)};
+}
+function rgb2cmyk(r,g,b){
+  r/=255; g/=255; b/=255;
+  const k=1-Math.max(r,g,b);
+  if(k===1) return {c:0,m:0,y:0,k:100};
+  return {
+    c:Math.round((1-r-k)/(1-k)*100),
+    m:Math.round((1-g-k)/(1-k)*100),
+    y:Math.round((1-b-k)/(1-k)*100),
+    k:Math.round(k*100)
+  };
+}
+function cmyk2rgb(c,m,y,k){
+  c/=100; m/=100; y/=100; k/=100;
+  return {
+    r:Math.round(255*(1-c)*(1-k)),
+    g:Math.round(255*(1-m)*(1-k)),
+    b:Math.round(255*(1-y)*(1-k))
+  };
+}
+const hex2=v=>v.toString(16).toUpperCase().padStart(2,'0');
+const bin8=v=>v.toString(2).padStart(8,'0');
+
+/* ===== 状態 ===== */
+let R=44, G=84, B=150; // 初期はサイトの紺色
+let updating=false;
+
+function setFromRgb(r,g,b,src){
+  R=Math.max(0,Math.min(255,Math.round(r)));
+  G=Math.max(0,Math.min(255,Math.round(g)));
+  B=Math.max(0,Math.min(255,Math.round(b)));
+  syncAll(src);
+}
+
+function syncAll(src){
+  if(updating) return;
+  updating=true;
+
+  const hsv=rgb2hsv(R,G,B), cmyk=rgb2cmyk(R,G,B);
+  const hex='#'+hex2(R)+hex2(G)+hex2(B);
+
+  // 共通表示
+  document.getElementById('swatch').style.background=hex;
+  document.getElementById('cHex').textContent=hex;
+  document.getElementById('cRgb').textContent=`${R}, ${G}, ${B}`;
+  document.getElementById('cHsv').textContent=`${hsv.h}°, ${hsv.s}%, ${hsv.v}%`;
+  document.getElementById('cCmyk').textContent=`${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}`;
+
+  // RGBタブ
+  if(src!=='rgb'){
+    document.getElementById('rR').value=R;
+    document.getElementById('rG').value=G;
+    document.getElementById('rB').value=B;
+  }
+  document.getElementById('rRv').textContent=R; document.getElementById('rRb').textContent=bin8(R);
+  document.getElementById('rGv').textContent=G; document.getElementById('rGb').textContent=bin8(G);
+  document.getElementById('rBv').textContent=B; document.getElementById('rBb').textContent=bin8(B);
+  paintTrack('rR', `linear-gradient(90deg, rgb(0,${G},${B}), rgb(255,${G},${B}))`);
+  paintTrack('rG', `linear-gradient(90deg, rgb(${R},0,${B}), rgb(${R},255,${B}))`);
+  paintTrack('rB', `linear-gradient(90deg, rgb(${R},${G},0), rgb(${R},${G},255))`);
+
+  // HSVタブ
+  if(src!=='hsv'){
+    document.getElementById('hH').value=hsv.h;
+    document.getElementById('hS').value=hsv.s;
+    document.getElementById('hV').value=hsv.v;
+  }
+  document.getElementById('hHv').textContent=hsv.h+'°';
+  document.getElementById('hSv').textContent=hsv.s+'%';
+  document.getElementById('hVv').textContent=hsv.v+'%';
+  paintTrack('hH','linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)');
+  const pure=hsv2rgb(hsv.h,100,100);
+  paintTrack('hS',`linear-gradient(90deg, #bbb, rgb(${pure.r},${pure.g},${pure.b}))`);
+  paintTrack('hV',`linear-gradient(90deg, #000, rgb(${pure.r},${pure.g},${pure.b}))`);
+  curH=hsv.h; curS=hsv.s; curV=hsv.v;
+  drawWheel(); drawSV();
+
+  // CMYKタブ
+  if(src!=='cmyk'){
+    document.getElementById('cC').value=cmyk.c;
+    document.getElementById('cM').value=cmyk.m;
+    document.getElementById('cY').value=cmyk.y;
+    document.getElementById('cK').value=cmyk.k;
+  }
+  document.getElementById('cCv').textContent=cmyk.c+'%';
+  document.getElementById('cMv').textContent=cmyk.m+'%';
+  document.getElementById('cYv').textContent=cmyk.y+'%';
+  document.getElementById('cKv').textContent=cmyk.k+'%';
+  paintTrack('cC','linear-gradient(90deg,#fff,#0FF)');
+  paintTrack('cM','linear-gradient(90deg,#fff,#F0F)');
+  paintTrack('cY','linear-gradient(90deg,#fff,#FF0)');
+  paintTrack('cK','linear-gradient(90deg,#fff,#000)');
+
+  updating=false;
+}
+function paintTrack(id,grad){
+  const el=document.getElementById(id);
+  if(el) el.style.background=grad;
+}
+
+/* ===== スライダー ===== */
+['rR','rG','rB'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    setFromRgb(+document.getElementById('rR').value,
+               +document.getElementById('rG').value,
+               +document.getElementById('rB').value,'rgb');
+  });
+});
+['hH','hS','hV'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    const c=hsv2rgb(+document.getElementById('hH').value,
+                    +document.getElementById('hS').value,
+                    +document.getElementById('hV').value);
+    setFromRgb(c.r,c.g,c.b,'hsv');
+  });
+});
+['cC','cM','cY','cK'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    const c=cmyk2rgb(+document.getElementById('cC').value,
+                     +document.getElementById('cM').value,
+                     +document.getElementById('cY').value,
+                     +document.getElementById('cK').value);
+    setFromRgb(c.r,c.g,c.b,'cmyk');
+  });
+});
+
+/* ===== プリセット ===== */
+(() => {
+  const list=[['#E63946','赤'],['#F4A261','オレンジ'],['#F6D55C','黄'],['#2E7D4F','緑'],
+              ['#2F5496','青'],['#7B4FA0','紫'],['#111111','黒'],['#FFFFFF','白']];
+  const box=document.getElementById('rgbPresets');
+  list.forEach(([hex,name])=>{
+    const b=document.createElement('button');
+    b.className='ps'; b.style.background=hex; b.title=name; b.setAttribute('aria-label',name);
+    b.addEventListener('click',()=>{
+      setFromRgb(parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16),null);
+    });
+    box.appendChild(b);
+  });
+})();
+
+/* ===== 色相環 ===== */
+let curH=0, curS=100, curV=100;
+const wheel=document.getElementById('hueWheel'), wc=wheel.getContext('2d');
+function drawWheel(){
+  const W=wheel.width, C=W/2, RO=C-8, RI=C-42;
+  wc.clearRect(0,0,W,W);
+  for(let a=0;a<360;a++){
+    const c=hsv2rgb(a,100,100);
+    wc.beginPath();
+    wc.strokeStyle=`rgb(${c.r},${c.g},${c.b})`;
+    wc.lineWidth=RO-RI;
+    wc.arc(C,C,(RO+RI)/2,(a-90.5)*Math.PI/180,(a-88.5)*Math.PI/180);
+    wc.stroke();
+  }
+  // 選択位置
+  const rad=(curH-90)*Math.PI/180, rr=(RO+RI)/2;
+  const x=C+Math.cos(rad)*rr, y=C+Math.sin(rad)*rr;
+  wc.beginPath(); wc.arc(x,y,11,0,Math.PI*2);
+  wc.strokeStyle='#fff'; wc.lineWidth=4; wc.stroke();
+  wc.strokeStyle='#1F3864'; wc.lineWidth=2; wc.stroke();
+  // 中央に現在色
+  wc.beginPath(); wc.arc(C,C,RI-10,0,Math.PI*2);
+  const cur=hsv2rgb(curH,curS,curV);
+  wc.fillStyle=`rgb(${cur.r},${cur.g},${cur.b})`; wc.fill();
+  wc.strokeStyle='#C9D2E0'; wc.lineWidth=1; wc.stroke();
+  wc.fillStyle = (curV>55&&curS<75) ? '#333' : '#fff';
+  wc.font='bold 20px ui-monospace,Consolas,monospace';
+  wc.textAlign='center'; wc.textBaseline='middle';
+  wc.fillText(curH+'°',C,C);
+}
+function pickHue(e){
+  const r=wheel.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*wheel.width - wheel.width/2;
+  const y=(e.clientY-r.top)/r.height*wheel.height - wheel.height/2;
+  let a=Math.atan2(y,x)*180/Math.PI+90;
+  if(a<0) a+=360;
+  const c=hsv2rgb(Math.round(a)%360,curS,curV);
+  setFromRgb(c.r,c.g,c.b,null);
+}
+wheel.addEventListener('pointerdown',e=>{ wheel.setPointerCapture(e.pointerId); pickHue(e); });
+wheel.addEventListener('pointermove',e=>{ if(e.buttons) pickHue(e); });
+
+/* ===== 彩度・明度の四角 ===== */
+const sv=document.getElementById('svBox'), sc=sv.getContext('2d');
+function drawSV(){
+  const W=sv.width, H=sv.height;
+  const img=sc.createImageData(W,H);
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const c=hsv2rgb(curH, x/(W-1)*100, (1-y/(H-1))*100);
+      const p=(y*W+x)*4;
+      img.data[p]=c.r; img.data[p+1]=c.g; img.data[p+2]=c.b; img.data[p+3]=255;
+    }
+  }
+  sc.putImageData(img,0,0);
+  const x=curS/100*(W-1), y=(1-curV/100)*(H-1);
+  sc.beginPath(); sc.arc(x,y,10,0,Math.PI*2);
+  sc.strokeStyle='#fff'; sc.lineWidth=3; sc.stroke();
+  sc.strokeStyle='#1F3864'; sc.lineWidth=2; sc.stroke();
+}
+function pickSV(e){
+  const r=sv.getBoundingClientRect();
+  const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  const y=Math.max(0,Math.min(1,(e.clientY-r.top)/r.height));
+  const c=hsv2rgb(curH, x*100, (1-y)*100);
+  setFromRgb(c.r,c.g,c.b,null);
+}
+sv.addEventListener('pointerdown',e=>{ sv.setPointerCapture(e.pointerId); pickSV(e); });
+sv.addEventListener('pointermove',e=>{ if(e.buttons) pickSV(e); });
+
+/* ===== 混色の図 ===== */
+function drawMix(){
+  const a=document.getElementById('addMix'), ac=a.getContext('2d');
+  const s=document.getElementById('subMix'), sc2=s.getContext('2d');
+  const W=a.width, r=W*0.24;
+  const pts=[[W/2,W*0.36],[W*0.35,W*0.63],[W*0.65,W*0.63]];
+
+  // 加法混色（黒背景に光を足す）
+  ac.fillStyle='#000'; ac.fillRect(0,0,W,W);
+  ac.globalCompositeOperation='lighter';
+  [['rgb(255,0,0)'],['rgb(0,255,0)'],['rgb(0,0,255)']].forEach(([col],i)=>{
+    ac.fillStyle=col; ac.beginPath();
+    ac.arc(pts[i][0],pts[i][1],r,0,Math.PI*2); ac.fill();
+  });
+  ac.globalCompositeOperation='source-over';
+  ac.fillStyle='#fff'; ac.font='bold 15px sans-serif'; ac.textAlign='center';
+  ac.fillText('R',pts[0][0],pts[0][1]-r*0.55);
+  ac.fillText('G',pts[1][0]-r*0.55,pts[1][1]+r*0.6);
+  ac.fillText('B',pts[2][0]+r*0.55,pts[2][1]+r*0.6);
+
+  // 減法混色（白背景にインクを重ねる）
+  sc2.fillStyle='#fff'; sc2.fillRect(0,0,W,W);
+  sc2.globalCompositeOperation='multiply';
+  [['rgb(0,255,255)'],['rgb(255,0,255)'],['rgb(255,255,0)']].forEach(([col],i)=>{
+    sc2.fillStyle=col; sc2.beginPath();
+    sc2.arc(pts[i][0],pts[i][1],r,0,Math.PI*2); sc2.fill();
+  });
+  sc2.globalCompositeOperation='source-over';
+  sc2.fillStyle='#333'; sc2.font='bold 15px sans-serif'; sc2.textAlign='center';
+  sc2.fillText('C',pts[0][0],pts[0][1]-r*0.55);
+  sc2.fillText('M',pts[1][0]-r*0.55,pts[1][1]+r*0.6);
+  sc2.fillText('Y',pts[2][0]+r*0.55,pts[2][1]+r*0.6);
+}
+
+/* ===== 初期化 ===== */
+syncAll(null);
+drawMix();
+</script>
+</body>
+</html>
