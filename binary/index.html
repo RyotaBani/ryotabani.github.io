@@ -135,6 +135,15 @@
   .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
   .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
   .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article table.convtable{width:100%; table-layout:fixed; font-size:13px;}
+  .article table.convtable th{white-space:nowrap; width:5.2em; font-size:12.5px; padding:5px 6px;}
+  .article table.convtable td{padding:5px 2px; font-family:ui-monospace,Consolas,monospace;}
+  .article table.convtable td.bin{font-size:11px; letter-spacing:-.3px; color:var(--navy);}
+  @media (max-width:720px){
+    .article table.convtable{font-size:11px;}
+    .article table.convtable th{width:4.2em; font-size:10.5px;}
+    .article table.convtable td.bin{font-size:9px;}
+  }
   .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:center;}
   .article th{background:var(--panel); color:var(--ink);}
   .article td{font-family:ui-monospace,Consolas,monospace;}
@@ -324,11 +333,10 @@
     <h2>16進数とは</h2>
     <p>2進数は0と1だけで表せる反面、桁数がとても長くなります。「11111111」と書くより「FF」と書けたほうが扱いやすい。そこで使われるのが16進数です。</p>
     <p>16進数は0〜9の数字に加えて、A・B・C・D・E・Fの6文字を使い、16個で1桁を表します。Aが10、Bが11、と続いてFが15にあたります。</p>
-    <table>
-      <tr><th>10進</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
-      <tr><th>16進</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
-      <tr><th>10進</th><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
-      <tr><th>16進</th><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+    <table class="convtable">
+      <tr><th>10進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
+      <tr><th>16進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+      <tr><th>2進数</th><td class="bin">0000</td><td class="bin">0001</td><td class="bin">0010</td><td class="bin">0011</td><td class="bin">0100</td><td class="bin">0101</td><td class="bin">0110</td><td class="bin">0111</td><td class="bin">1000</td><td class="bin">1001</td><td class="bin">1010</td><td class="bin">1011</td><td class="bin">1100</td><td class="bin">1101</td><td class="bin">1110</td><td class="bin">1111</td></tr>
     </table>
 
     <h3>2進数と16進数は相性がいい</h3>
