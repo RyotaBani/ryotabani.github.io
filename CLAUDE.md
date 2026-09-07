@@ -16,9 +16,17 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── robots.txt
 ├── sitemap.xml         教材を追加したら必ずURLを追記する
 ├── CNAME               joholab.net（GitHubが自動生成。消さない）
+├── _config.yml         Jekyllの設定。CLAUDE.md を公開対象から外している
+├── _tools/             作業用スクリプト（apply-zip.py）。「_」始まりなので公開されない
+├── _work/              zipとその展開物の置き場。gitignore済み
 ├── image/index.html    画像のデジタル化（標本化・量子化・符号化＋どっと絵）
-└── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
+├── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
+└── bits/index.html     データはすべて0と1（ファイルの中身／画像を音に／音を画像に）
 ```
+
+`CLAUDE.md` は Claude Code が起動時に読み込むため、リポジトリ直下から動かさない。
+サブフォルダに置くと起動時に読まれなくなる（読み込まれるのは作業ディレクトリと
+その上位階層のみ）。公開だけを止めたいので `_config.yml` の `exclude` で除外している。
 
 ## 新しい教材を追加する手順
 

@@ -1,0 +1,17 @@
+# GitHub Pages（Jekyll）の設定。
+# 公開サイトに含めたくないファイルをここで除外する。
+# 「_」で始まるフォルダ（_tools/ _work/）は Jekyll が既定で除外するため記載不要。
+exclude:
+  - CLAUDE.md
+  - _config.yml
+  # 以下は Jekyll の既定値。exclude を書くと既定が上書きされるので残しておく
+  - Gemfile
+  - Gemfile.lock
+  - gemfiles
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .sass-cache
+  - .jekyll-cache

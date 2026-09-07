@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /CLAUDE.md
 
 Sitemap: https://joholab.net/sitemap.xml

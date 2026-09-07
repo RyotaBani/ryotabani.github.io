@@ -829,7 +829,10 @@ function sampleImageCanvas(w=256,h=256){
   // 初期表示
   cx.fillStyle='#F2F5FA'; cx.fillRect(0,0,cv.width,cv.height);
   cx.fillStyle='#9AA3B0'; cx.font='14px sans-serif'; cx.textAlign='center';
-  cx.fillText('音声ファイルを選ぶか、マイクを使ってください', cv.width/2, cv.height/2);
+  // 1行だとcanvasの幅(256px)に収まらず見切れるので2行に分ける
+  ['音声ファイルを選ぶか、','マイクを使ってください'].forEach((line,i)=>{
+    cx.fillText(line, cv.width/2, cv.height/2 - 10 + i*20);
+  });
 })();
 </script>
 </body>
