@@ -51,7 +51,6 @@
   }
   .bit button[aria-pressed=true]{background:var(--navy); border-color:var(--navy); color:#fff;}
   .bit button:focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
-  .bit .weight{font-size:11px; color:var(--muted);}
 
   /* 表示パネル */
   .readout{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
@@ -139,10 +138,16 @@
   .article table.convtable th{white-space:nowrap; width:5.2em; font-size:12.5px; padding:5px 6px;}
   .article table.convtable td{padding:5px 2px; font-family:ui-monospace,Consolas,monospace;}
   .article table.convtable td.bin{font-size:11px; letter-spacing:-.3px; color:var(--navy);}
+  /* 狭い画面では16列だと2進数が潰れるので、8列ずつ2段に分けて表示する */
+  .convtable-split{display:none;}
+  .convtable-split table.convtable{margin:0;}
+  .convtable-split table.convtable + table.convtable{margin-top:10px;}
   @media (max-width:720px){
-    .article table.convtable{font-size:11px;}
-    .article table.convtable th{width:4.2em; font-size:10.5px;}
-    .article table.convtable td.bin{font-size:9px;}
+    .article table.convtable{font-size:12px;}
+    .article table.convtable th{width:4.6em; font-size:11px;}
+    .article table.convtable td.bin{font-size:11px; letter-spacing:0;}
+    .convtable-wide{display:none;}
+    .convtable-split{display:block;}
   }
   .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:center;}
   .article th{background:var(--panel); color:var(--ink);}
@@ -159,7 +164,7 @@
   .sitefoot a{color:var(--muted);}
   @media (max-width:560px){
     .bit button{width:40px; height:52px; font-size:20px;}
-    .bit .place{font-size:12px;} .bit .weight{font-size:10px;}
+    .bit .place{font-size:12px;}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
@@ -329,15 +334,28 @@
     <p>nビットあれば、2のn乗通りの値を表せます。</p>
     <div class="formula">1ビット → 2通り（0〜1）　4ビット → 16通り（0〜15）　8ビット → 256通り（0〜255）</div>
     <p>8ビット、つまり1バイトで0から255までの256通りが表せます。画像の明るさを256段階で表す、文字コードで文字に番号をふるなど、身近なところで使われている単位です。</p>
+    <p>逆に言えば、8ビットで表せるのは255までで、それより大きい数は入りません。決められた桁数に収まらなくなることを桁あふれ（オーバーフロー）といいます。何ビット使うかを決めることは、どこまでの大きさを扱えるかを決めることでもあります。</p>
 
     <h2>16進数とは</h2>
     <p>2進数は0と1だけで表せる反面、桁数がとても長くなります。「11111111」と書くより「FF」と書けたほうが扱いやすい。そこで使われるのが16進数です。</p>
     <p>16進数は0〜9の数字に加えて、A・B・C・D・E・Fの6文字を使い、16個で1桁を表します。Aが10、Bが11、と続いてFが15にあたります。</p>
-    <table class="convtable">
+    <table class="convtable convtable-wide">
       <tr><th>10進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
       <tr><th>16進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
       <tr><th>2進数</th><td class="bin">0000</td><td class="bin">0001</td><td class="bin">0010</td><td class="bin">0011</td><td class="bin">0100</td><td class="bin">0101</td><td class="bin">0110</td><td class="bin">0111</td><td class="bin">1000</td><td class="bin">1001</td><td class="bin">1010</td><td class="bin">1011</td><td class="bin">1100</td><td class="bin">1101</td><td class="bin">1110</td><td class="bin">1111</td></tr>
     </table>
+    <div class="convtable-split">
+      <table class="convtable">
+        <tr><th>10進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+        <tr><th>16進数</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+        <tr><th>2進数</th><td class="bin">0000</td><td class="bin">0001</td><td class="bin">0010</td><td class="bin">0011</td><td class="bin">0100</td><td class="bin">0101</td><td class="bin">0110</td><td class="bin">0111</td></tr>
+      </table>
+      <table class="convtable">
+        <tr><th>10進数</th><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
+        <tr><th>16進数</th><td>8</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+        <tr><th>2進数</th><td class="bin">1000</td><td class="bin">1001</td><td class="bin">1010</td><td class="bin">1011</td><td class="bin">1100</td><td class="bin">1101</td><td class="bin">1110</td><td class="bin">1111</td></tr>
+      </table>
+    </div>
 
     <h3>2進数と16進数は相性がいい</h3>
     <p>16は2の4乗なので、<strong>2進数の4桁が16進数のちょうど1桁</strong>に対応します。この性質のおかげで、2進数と16進数は右から4桁ずつ区切るだけで変換できます。</p>
@@ -350,6 +368,16 @@
 
     <h3>2進数から10進数へ</h3>
     <p>1が立っている桁の重みを足すだけです。この計算は上のツールで実際に確認できます。</p>
+
+    <h3>2進数と16進数のあいだ</h3>
+    <p>4桁ずつ区切って、上の対応表に当てはめるだけです。2進数の「11010110」なら、1101 と 0110 に分けると、それぞれ D と 6 なので D6 になります。逆に16進数の「2F」を2進数に直すときは、2 が 0010、F が 1111 なので 00101111 です。左側の桁数が足りないときは0で埋めて4桁にそろえます。</p>
+
+    <h2>16進数は身近なところで使われている</h2>
+    <p>16進数は、コンピュータが扱う長い2進数を人間が読み書きするための表記として、いろいろな場面で使われています。</p>
+    <p>ウェブサイトの色指定に使う「#FF6600」は、赤・緑・青の明るさをそれぞれ8ビット（0〜255）で表し、16進数2桁ずつ並べたものです。FF は255で最も明るく、00 は0で最も暗いことを表します。</p>
+    <p>文字コードでも使われます。Unicodeでは、ひらがなの「あ」に U+3042 という番号が割り当てられています。この 3042 も16進数の表記です。</p>
+    <p>ネットワーク機器を見分けるMACアドレスは、6バイト（48ビット）を16進数2桁ずつ、区切り記号をはさんで並べたものです。</p>
+    <p>ファイルの中身をのぞくときにも16進数が使われます。<a href="/bits/">データはすべて0と1</a>では、実際のファイルの中身を2進数と16進数の両方で見ることができます。</p>
 
     <h2>使い方</h2>
     <ul>
