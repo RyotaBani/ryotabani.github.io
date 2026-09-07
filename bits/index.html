@@ -346,6 +346,35 @@
 })();
 
 let sharedCtx=null;
+// マイクが使えないときの案内を、原因別に組み立てる
+function micErrorMessage(err){
+  const name=(err && err.name) ? err.name : '';
+  if(name==='NotAllowedError' || name==='SecurityError'){
+    // file:// で開くと安全なページとみなされず、許可を求める前に断られる
+    if(location.protocol==='file:'){
+      return 'マイクは https のページでのみ使えます。localhost か本番URLで開いてください。';
+    }
+    return 'ブラウザのアドレスバー左のアイコンからマイクを許可してください。';
+  }
+  if(name==='NotFoundError' || name==='DevicesNotFoundError'){
+    return 'マイクが見つかりません。マイクがつながっているか確認してください。';
+  }
+  if(name==='NotReadableError'){
+    return 'マイクを開けませんでした。ほかのアプリがマイクを使っていないか確認してください。';
+  }
+  return 'マイクを使えませんでした。（'+(name||'原因不明')+'）';
+}
+
+// マイクを取得する。file:// では navigator.mediaDevices 自体が無いことがあるので、
+// その場合も NotAllowedError として扱い、上の案内に合流させる
+function getMicStream(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    const e=new Error('mediaDevices unavailable'); e.name='NotAllowedError';
+    return Promise.reject(e);
+  }
+  return navigator.mediaDevices.getUserMedia({audio:true});
+}
+
 function audioCtx(){
   if(!sharedCtx) sharedCtx=new (window.AudioContext||window.webkitAudioContext)();
   if(sharedCtx.state==='suspended') sharedCtx.resume();
@@ -547,7 +576,7 @@ function sampleImageCanvas(w=256,h=256){
   document.getElementById('mStart').addEventListener('click',async()=>{
     st.className='status'; st.textContent='マイクの使用許可を待っています…';
     try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      stream=await getMicStream();
       const ctx=audioCtx();
       const src=ctx.createMediaStreamSource(stream);
       an=ctx.createAnalyser(); an.fftSize=1024;
@@ -558,7 +587,7 @@ function sampleImageCanvas(w=256,h=256){
       st.textContent='マイクの音を表示しています。声を出したり手をたたいたりしてみてください。';
     }catch(err){
       st.className='status err';
-      st.textContent='マイクを使えませんでした。ブラウザの許可設定を確認してください。（'+err.name+'）';
+      st.textContent=micErrorMessage(err);
     }
   });
   document.getElementById('mStop').addEventListener('click',()=>{
@@ -759,7 +788,7 @@ function sampleImageCanvas(w=256,h=256){
   document.getElementById('sMic').addEventListener('click',async()=>{
     st.className='status'; st.textContent='マイクの使用許可を待っています…';
     try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      stream=await getMicStream();
       const ctx=audioCtx();
       const src=ctx.createMediaStreamSource(stream);
       an=ctx.createAnalyser(); an.fftSize=2048;
@@ -778,7 +807,7 @@ function sampleImageCanvas(w=256,h=256){
       document.getElementById('sPrev').style.display='none';
       st.textContent='マイクの音を画像にしています。声を出したり口笛を吹いたりすると、縞が変わります。';
     }catch(err){
-      st.className='status err'; st.textContent='マイクを使えませんでした。（'+err.name+'）';
+      st.className='status err'; st.textContent=micErrorMessage(err);
     }
   });
   document.getElementById('sMicStop').addEventListener('click',()=>{
