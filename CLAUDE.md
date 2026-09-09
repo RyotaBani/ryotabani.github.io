@@ -12,7 +12,7 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ```
 /
 ├── index.html          トップページ（教材一覧）
-├── ads.txt             AdSense用（pub-IDは審査通過後に差し替え）
+├── ads.txt             AdSense用（pub-ID設定済み）
 ├── robots.txt
 ├── sitemap.xml         教材を追加したら必ずURLを追記する
 ├── CNAME               joholab.net（GitHubが自動生成。消さない）
@@ -102,7 +102,7 @@ python3 _tools/apply-zip.py joholab_v8.zip --apply  # 反映する
 
 `<head>`:
 ```html
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
 ```
 本文末（フッターの前）:
 ```html
@@ -110,13 +110,16 @@ python3 _tools/apply-zip.py joholab_v8.zip --apply  # 反映する
   <span class="ad-label">広告 / PR</span>
   <div class="ad-placeholder">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
   <ins class="adsbygoogle" style="display:block"
-       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"
+       data-ad-client="ca-pub-7076767152814369" data-ad-slot="XXXXXXXXXX"
        data-ad-format="auto" data-full-width-responsive="true"></ins>
   <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
 </div>
 ```
 - **「広告 / PR」の表記は必ず残す**（景表法のステマ規制対応）
-- AdSense審査通過後、`ca-pub-…` と `data-ad-slot` を全ページ＋`ads.txt` で差し替える
+- パブリッシャーID `ca-pub-7076767152814369` は設定済み（全ページ＋`ads.txt`）。
+  新しい教材にもこのIDをそのまま書く
+- `data-ad-slot` は未作成のため `XXXXXXXXXX` のまま。広告ユニットを作ったら
+  全ページで差し替える
 
 ## 内容の正確さ
 
@@ -135,5 +138,6 @@ python3 _tools/apply-zip.py joholab_v8.zip --apply  # 反映する
 - [ ] 音のデジタル化（標本化周波数・量子化ビット数・波形・データ量）
 - [ ] 文字コード（ASCII / Unicode、文字と番号の対応）
 - [ ] ネットワーク（IPアドレス、サブネット）
-- [ ] AdSense申込・審査通過後のID差し替え
+- [x] AdSense申込・パブリッシャーIDの差し替え
+- [ ] 広告ユニット作成後、`data-ad-slot` を全ページで差し替え
 - [ ] Google Search Console にサイトマップを登録
