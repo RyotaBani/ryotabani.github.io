@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パスワードの強さを体験しよう（総当たり攻撃と解読時間）｜情報ラボ</title>
+<meta name="description" content="文字数と文字の種類を変えると、パスワードの組み合わせ数と解読時間がどう変わるかを体験できる無料ツール。使い回しの危険やパスキーとの比較も学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/password/">
+<meta property="og:title" content="パスワードの強さを体験しよう｜情報ラボ">
+<meta property="og:description" content="文字数と種類で解読時間がどれだけ変わるかを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/password/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --warn:#D9822B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:17px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .checks{display:flex; gap:8px; flex-wrap:wrap;}
+  .chk{display:inline-flex; align-items:center; gap:7px; background:#fff; border:1px solid var(--line);
+    border-radius:10px; padding:9px 14px; font-size:14px; cursor:pointer; color:var(--ink);}
+  .chk input{accent-color:var(--navy); width:17px; height:17px;}
+  .chk .n{font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--muted);}
+
+  /* 結果 */
+  .result{border-radius:12px; padding:20px 22px; margin-bottom:16px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d); transition:background .3s;}
+  .result.lv0{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .result.lv1{background:linear-gradient(180deg,#A8621C,#864a12);}
+  .result.lv2{background:linear-gradient(180deg,#7A6A1E,#5d5115);}
+  .result.lv3{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .result.lv4{background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .result .lab{font-size:12px; color:rgba(255,255,255,.75); margin-bottom:4px;}
+  .result .big{font-size:clamp(26px,5vw,42px); font-weight:700; line-height:1.25;
+    font-family:ui-monospace,Consolas,monospace; margin-bottom:6px;}
+  .result .sub{font-size:15px; color:rgba(255,255,255,.9);}
+  .result .grid{display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;
+    padding-top:14px; border-top:1px solid rgba(255,255,255,.18);}
+  .result .g{flex:1 1 150px;}
+  .result .g .k{font-size:11px; color:rgba(255,255,255,.7);}
+  .result .g .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+
+  .bar{height:12px; border-radius:999px; background:rgba(255,255,255,.2); overflow:hidden; margin-top:14px;}
+  .bar i{display:block; height:100%; background:#ffd97a; transition:width .3s;}
+
+  /* 比較表 */
+  table.t{border-collapse:collapse; width:100%; font-size:14px;}
+  table.t th, table.t td{border:1px solid var(--line); padding:8px 12px; text-align:center;}
+  table.t thead th{background:var(--navy); color:#fff;}
+  table.t tbody th{background:var(--panel); color:var(--ink); text-align:left; font-weight:700;}
+  table.t td{font-family:ui-monospace,Consolas,monospace; font-size:13px;}
+  td.d0{background:#FBEEEE; color:#8E2B22;}
+  td.d1{background:#FDF3E8; color:#A8621C;}
+  td.d2{background:#FBF8E8; color:#6d6112;}
+  td.d3{background:#EAF3EE; color:#1f5c3f;}
+  td.d4{background:#E9EFF9; color:#1F3864;}
+
+  .note{font-size:13px; color:var(--muted); margin-top:10px;}
+
+  /* 使い回し */
+  .sites{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .site{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:12px; text-align:center; transition:all .3s;}
+  .site .ico{font-size:26px;}
+  .site .nm{font-size:13.5px; font-weight:700; color:var(--ink); margin-top:4px;}
+  .site .st{font-size:12px; color:var(--muted); margin-top:3px;}
+  .site.hacked{border-color:var(--ng); background:#FBEEEE;}
+  .site.hacked .st{color:var(--ng); font-weight:700;}
+  .site.safe{border-color:var(--ok); background:#F1F8F3;}
+  .site.safe .st{color:var(--ok); font-weight:700;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+  .src{font-size:12.5px; color:var(--muted); font-style:italic; margin-top:-6px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ パスワードの強さ</p>
+    <h1>パスワードの強さを体験しよう</h1>
+    <p class="lead">文字を1つ増やすだけで、破るのにかかる時間はどれだけ変わるのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabCalc" aria-selected="true" aria-controls="toolCalc">強さを計算する</button>
+    <button class="tab" role="tab" id="tabTable" aria-selected="false" aria-controls="toolTable">一覧で比べる</button>
+    <button class="tab" role="tab" id="tabReuse" aria-selected="false" aria-controls="toolReuse">使い回すとどうなるか</button>
+  </div>
+
+  <!-- ===== 計算 ===== -->
+  <section class="tool show" id="toolCalc" role="tabpanel" aria-labelledby="tabCalc">
+    <div class="panel">
+      <div class="sl">
+        <div class="top"><label for="pLen">文字数</label><span class="val" id="pLenV">8 文字</span></div>
+        <input type="range" id="pLen" min="4" max="20" step="1" value="8">
+      </div>
+      <h2 style="margin-top:18px;">使う文字の種類</h2>
+      <div class="checks">
+        <label class="chk"><input type="checkbox" id="kNum" checked> 数字 <span class="n">10種</span></label>
+        <label class="chk"><input type="checkbox" id="kLow" checked> 英小文字 <span class="n">26種</span></label>
+        <label class="chk"><input type="checkbox" id="kUp"> 英大文字 <span class="n">26種</span></label>
+        <label class="chk"><input type="checkbox" id="kSym"> 記号 <span class="n">32種</span></label>
+      </div>
+      <p class="hint">1文字に使える文字が何種類あるかで、組み合わせの数が決まります。</p>
+    </div>
+
+    <div class="result" id="pResult">
+      <div class="lab">破られるまでにかかる時間（弱い保存方式の場合）</div>
+      <div class="big" id="pTime">–</div>
+      <div class="sub" id="pJudge">–</div>
+      <div class="bar"><i id="pBar" style="width:0%"></i></div>
+      <div class="grid">
+        <div class="g"><div class="k">1文字あたりの種類</div><div class="v" id="pKinds">–</div></div>
+        <div class="g"><div class="k">組み合わせの数</div><div class="v" id="pCombo">–</div></div>
+        <div class="g"><div class="k">強い保存方式なら</div><div class="v" id="pBcrypt">–</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>計算のしかた</h2>
+      <p style="margin:0;font-size:14.5px;" id="pFormula"></p>
+      <p class="hint" id="pNote"></p>
+    </div>
+
+    <div class="panel">
+      <h2>よくある例で試す</h2>
+      <div class="row">
+        <button class="chip" data-preset="4,1,0,0,0">数字4桁（暗証番号）</button>
+        <button class="chip" data-preset="8,1,1,0,0">英数字8文字</button>
+        <button class="chip" data-preset="8,1,1,1,1">全種類8文字</button>
+        <button class="chip" data-preset="12,1,1,1,1">全種類12文字</button>
+        <button class="chip" data-preset="16,0,1,0,0">英小文字16文字</button>
+      </div>
+      <p class="hint">最後の例は「英小文字だけでも長ければ強い」ことを示しています。覚えやすい言葉をつなげる方法（パスフレーズ）の考え方です。</p>
+    </div>
+  </section>
+
+  <!-- ===== 一覧 ===== -->
+  <section class="tool" id="toolTable" role="tabpanel" aria-labelledby="tabTable">
+    <div class="panel">
+      <h2>文字数と種類による解読時間の一覧</h2>
+      <div style="overflow-x:auto;"><table class="t" id="tTable"></table></div>
+      <p class="note">
+        高性能なGPU（GeForce RTX 4090）1台で、MD5という古い方式で保存されたパスワードを
+        総当たりで破る場合の目安です。実際の時間は保存方式や機器によって大きく変わります。
+      </p>
+      <p class="src">参考：Hive Systems「Password Table」（2024年）／NVIDIA RTX 4090 での測定値をもとに算出</p>
+    </div>
+
+    <div class="panel">
+      <h2>読み取れること</h2>
+      <ul style="margin:0;padding-left:1.3em;font-size:15px;line-height:1.9;">
+        <li>文字を<strong>1つ増やす</strong>と、時間は文字種類の数だけ倍になります（英小文字なら26倍）。</li>
+        <li>種類を増やすより、<strong>長くするほうが効果が大きい</strong>場合が多くあります。</li>
+        <li>8文字はもはや安全とはいえません。<strong>12文字以上</strong>が目安です。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 使い回し ===== -->
+  <section class="tool" id="toolReuse" role="tabpanel" aria-labelledby="tabReuse">
+    <div class="panel">
+      <h2>同じパスワードを使い回すと、何が起きるか</h2>
+      <div class="row">
+        <button class="chip" id="rSame" aria-pressed="true">全部同じパスワード</button>
+        <button class="chip" id="rDiff" aria-pressed="false">サービスごとに別</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="rLeak">通販サイトから流出させる</button>
+        <button class="chip" id="rReset">リセット</button>
+      </div>
+      <div class="sites" id="rSites"></div>
+      <p class="hint" id="rMsg">「通販サイトから流出させる」を押すと、何が起きるか分かります。</p>
+    </div>
+
+    <div class="panel">
+      <h2>この攻撃には名前があります</h2>
+      <p style="margin:0;font-size:15px;">
+        流出したIDとパスワードの組を、別のサービスで次々と試す攻撃を
+        <strong>パスワードリスト攻撃</strong>（クレデンシャルスタッフィング）といいます。
+        1か所でも漏れると、使い回している他のサービスがすべて危険にさらされます。
+        パスワードそのものの強さとは関係なく成立してしまうのが、この攻撃の厄介なところです。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>パスワードはどうやって破られるのか</h2>
+    <p>攻撃者がパスワードを手に入れる方法はいくつかあります。代表的なのが総当たり攻撃（ブルートフォース攻撃）です。考えられるすべての組み合わせを、片端から試していく方法です。</p>
+    <p>単純な方法ですが、コンピュータの速さがあれば十分に成立します。特にGPU（画像処理用の高性能な部品）は、同じ計算を並行して大量にこなせるため、この種の攻撃に向いています。</p>
+
+    <h3>組み合わせの数</h3>
+    <p>パスワードの組み合わせの数は、次の式で求められます。</p>
+    <div class="formula">組み合わせの数 ＝ （1文字に使える文字の種類）<sup>文字数</sup></div>
+    <p>数字だけの4桁なら、10の4乗で1万通りです。英小文字と数字を使った8文字なら、36の8乗で約2兆8000億通りになります。数字が急激に増えるのは、文字数が指数の位置にあるからです。</p>
+    <p>ここが重要な点です。<strong>文字の種類を増やすより、文字数を増やすほうが効きます。</strong> 種類を2倍にしても組み合わせは2倍にしかなりませんが、文字を1つ増やすと種類の数だけ倍になります。</p>
+
+    <h2>保存方式によって時間が桁違いに変わる</h2>
+    <p>サービス側は、パスワードをそのままの形では保存しません。ハッシュ関数という計算で変換した値を保存します。もとに戻せない一方向の計算なので、流出しても直接は使えません。</p>
+    <p>ただし、どのハッシュ関数を使うかで安全性が大きく変わります。</p>
+    <table>
+      <tr><th>方式</th><th>特徴</th><th>8文字（全種類）の解読時間</th></tr>
+      <tr><td class="mono">MD5</td><td>計算が速い。古い方式で、現在は推奨されない</td><td>約1時間</td></tr>
+      <tr><td class="mono">bcrypt</td><td>わざと時間がかかるよう設計されている</td><td>約99年</td></tr>
+    </table>
+    <p class="src">出典：Hive Systems の調査（GeForce RTX 4090 を使用した場合の最長時間）</p>
+    <p>同じパスワードでも、保存方式が違うだけで1時間と99年という差が出ます。利用者側からは選べない部分ですが、サービスを作る側にとっては重大な設計判断です。</p>
+
+    <h2>使い回しがなぜ危険なのか</h2>
+    <p>どれだけ強いパスワードを作っても、使い回していると意味が薄れます。1つのサービスから流出すれば、同じ組み合わせを他のサービスで試されるからです。</p>
+    <p>この攻撃をパスワードリスト攻撃（クレデンシャルスタッフィング）といいます。攻撃者は流出したIDとパスワードの一覧を手に入れ、自動化した仕組みで他のサービスに次々ログインを試みます。パスワードの強さは関係ありません。正解を知っているのですから。</p>
+    <p>実際、確認された情報漏えいのうち相当な割合が、盗まれた認証情報を入口としています。強いパスワードを1つ作って使い回すより、そこそこの強さでもサービスごとに変えるほうが安全です。</p>
+
+    <h2>では、どうすればよいか</h2>
+
+    <h3>長くする</h3>
+    <p>覚えやすさと強さを両立させる方法として、単語をつなげるパスフレーズがあります。無関係な単語を4つほどつなげると、20文字前後になり、総当たりでは現実的に破れません。「正しい 馬 電池 ホッチキス」のような、意味のつながらない組み合わせが有効です。</p>
+
+    <h3>使い回さない</h3>
+    <p>すべてを記憶するのは無理なので、パスワード管理ソフト（パスワードマネージャー）を使うのが現実的です。1つのマスターパスワードだけ覚えれば、残りは自動で管理されます。ブラウザに内蔵されているものでも構いません。</p>
+
+    <h3>二段階認証を使う</h3>
+    <p>パスワードに加えて、スマートフォンに届く確認コードなどを組み合わせる方法です。パスワードが漏れても、それだけではログインできなくなります。</p>
+
+    <h3>パスキーに移行する</h3>
+    <p>そもそもパスワードを使わない方法もあります。パスキーは、端末の中の秘密鍵で本人確認を行う仕組みです。パスワードのように「合言葉を相手に渡す」必要がないため、流出も使い回しも原理的に起こりません。</p>
+    <p>Apple、Google、Microsoftが共通の標準として進めており、対応するサービスも増えています。パスワードの限界を根本から解決する方向として注目されています。</p>
+
+    <h2>NISTの考え方の変化</h2>
+    <p>かつては「大文字・小文字・数字・記号をすべて混ぜること」「90日ごとに変更すること」が推奨されていました。しかし現在では、この考え方は見直されています。</p>
+    <p>アメリカ国立標準技術研究所（NIST）が示した指針では、複雑さを強制するより長さを重視すること、定期的な変更を強制しないことが推奨されています。理由は単純で、複雑さを求めすぎると利用者が覚えられず、紙に書いたり単純な変形（Password1 → Password2）を繰り返したりして、かえって弱くなるからです。</p>
+    <p>大切なのは、無理なく続けられる方法を選ぶことです。長いパスフレーズと管理ソフトの組み合わせは、この観点からも理にかなっています。</p>
+
+    <h2>よく使われるパスワードは避ける</h2>
+    <p>総当たり攻撃の前に、攻撃者はまず「よくあるパスワードの一覧」を試します。これを辞書攻撃といいます。</p>
+    <p>毎年公開される調査では、「123456」「password」「qwerty」といった単純な文字列が上位を占め続けています。誕生日、名前、電話番号なども同様です。どれだけ文字数が多くても、一覧に載っている組み合わせなら一瞬で破られます。</p>
+    <p>上のツールで計算される時間は、あくまで「完全にランダムな文字列」を総当たりする場合の値です。意味のある単語をそのまま使っている場合は、この計算より遥かに早く破られると考えてください。</p>
+
+    <h2>注意していただきたいこと</h2>
+    <p>このページのツールに、実際に使っているパスワードを入力する必要はありません。文字数と種類を選ぶだけで計算できるようにしてあります。一般に、自分のパスワードを診断サイトなどに入力するのは避けるべきです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>強さを計算する</strong>：文字数と種類を変えると、組み合わせ数と解読時間が変わります。文字を1つ増やしたときの変化に注目してください。</li>
+      <li><strong>一覧で比べる</strong>：文字数と種類の組み合わせを表で確認できます。色が濃いほど危険です。</li>
+      <li><strong>使い回すとどうなるか</strong>：1つのサービスから流出したとき、他のサービスがどうなるかを再現します。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabCalc','toolCalc'],['tabTable','toolTable'],['tabReuse','toolReuse']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabTable') buildTable();
+      if(tid==='tabReuse') renderSites();
+    });
+  });
+})();
+
+/* 攻撃速度の想定（1秒あたりの試行回数）
+   Hive Systems の RTX 4090 実測にあわせて調整：
+   全種類(94)8文字 ≒ 94^8 / speed ≒ 59分 となる値 */
+const SPEED_MD5 = 1.65e12;      // 約1.65兆回/秒
+const SPEED_BCRYPT = SPEED_MD5/ 8.7e5; // bcryptは桁違いに遅い（8文字全種類で約99年）
+
+function fmtTime(sec){
+  if(sec < 1) return '一瞬';
+  const M=60, H=3600, D=86400, Y=31557600;
+  if(sec < M) return Math.round(sec)+' 秒';
+  if(sec < H) return Math.round(sec/M)+' 分';
+  if(sec < D) return Math.round(sec/H)+' 時間';
+  if(sec < Y) return Math.round(sec/D)+' 日';
+  const y=sec/Y;
+  if(y < 1000) return Math.round(y).toLocaleString()+' 年';
+  if(y < 1e6) return (y/1000).toFixed(1)+' 千年';
+  if(y < 1e9) return (y/1e6).toFixed(1)+' 百万年';
+  if(y < 1e12) return (y/1e9).toFixed(1)+' 十億年';
+  if(y < 1e15) return (y/1e12).toFixed(1)+' 兆年';
+  return '事実上、破れない';
+}
+function fmtCombo(n){
+  if(n < 1e4) return Math.round(n).toLocaleString()+' 通り';
+  if(n < 1e8) return Math.round(n).toLocaleString()+' 通り';
+  if(n < 1e12) return (n/1e8).toFixed(1)+' 億通り';
+  if(n < 1e16) return (n/1e12).toFixed(1)+' 兆通り';
+  if(n < 1e20) return (n/1e16).toFixed(1)+' 京通り';
+  return n.toExponential(2)+' 通り';
+}
+
+function kinds(){
+  let k=0;
+  if(document.getElementById('kNum').checked) k+=10;
+  if(document.getElementById('kLow').checked) k+=26;
+  if(document.getElementById('kUp').checked) k+=26;
+  if(document.getElementById('kSym').checked) k+=32;
+  return k;
+}
+
+function calc(){
+  const len=+document.getElementById('pLen').value;
+  const k=kinds();
+  document.getElementById('pLenV').textContent=len+' 文字';
+
+  const res=document.getElementById('pResult');
+  if(k===0){
+    document.getElementById('pTime').textContent='—';
+    document.getElementById('pJudge').textContent='文字の種類を1つ以上選んでください。';
+    document.getElementById('pKinds').textContent='0';
+    document.getElementById('pCombo').textContent='—';
+    document.getElementById('pBcrypt').textContent='—';
+    document.getElementById('pBar').style.width='0%';
+    document.getElementById('pFormula').textContent='';
+    res.className='result';
+    return;
+  }
+
+  const combo=Math.pow(k,len);
+  const secMd5=combo/SPEED_MD5;
+  const secBc=combo/SPEED_BCRYPT;
+
+  document.getElementById('pTime').textContent=fmtTime(secMd5);
+  document.getElementById('pKinds').textContent=k+' 種類';
+  document.getElementById('pCombo').textContent=fmtCombo(combo);
+  document.getElementById('pBcrypt').textContent=fmtTime(secBc);
+
+  // 判定
+  let lv, msg;
+  const Y=31557600;
+  if(secMd5 < 3600){ lv=0; msg='危険です。すぐに破られてしまいます。'; }
+  else if(secMd5 < 86400*30){ lv=1; msg='弱いです。本気で狙われれば破られます。'; }
+  else if(secMd5 < Y*10){ lv=2; msg='まだ不十分です。もう少し長くしましょう。'; }
+  else if(secMd5 < Y*1e6){ lv=3; msg='十分な強さがあります。'; }
+  else { lv=4; msg='総当たりでは、現実的に破れません。'; }
+  res.className='result lv'+lv;
+  document.getElementById('pJudge').textContent=msg;
+  document.getElementById('pBar').style.width=(lv+1)/5*100+'%';
+
+  document.getElementById('pFormula').innerHTML=
+    `${k} 種類 の ${len} 乗 ＝ <strong>${fmtCombo(combo)}</strong>　`+
+    `これを1秒あたり約1.65兆回のペースで試すと <strong>${fmtTime(secMd5)}</strong> かかります。`;
+
+  // 1文字増やすとどうなるか
+  const next=Math.pow(k,len+1)/SPEED_MD5;
+  document.getElementById('pNote').textContent=
+    `文字を1つ増やして ${len+1} 文字にすると、${fmtTime(next)} になります（${k}倍）。`;
+}
+document.getElementById('pLen').addEventListener('input',calc);
+['kNum','kLow','kUp','kSym'].forEach(id=>
+  document.getElementById(id).addEventListener('change',calc));
+document.querySelectorAll('[data-preset]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const [len,n,l,u,s]=b.dataset.preset.split(',').map(Number);
+    document.getElementById('pLen').value=len;
+    document.getElementById('kNum').checked=!!n;
+    document.getElementById('kLow').checked=!!l;
+    document.getElementById('kUp').checked=!!u;
+    document.getElementById('kSym').checked=!!s;
+    calc();
+  });
+});
+
+/* ===== 一覧表 ===== */
+function buildTable(){
+  const t=document.getElementById('tTable');
+  if(t.dataset.done==='1') return;
+  const cols=[
+    {n:'数字のみ',k:10},{n:'英小文字',k:26},{n:'英大小文字',k:52},
+    {n:'英数字',k:62},{n:'全種類（記号あり）',k:94}
+  ];
+  const lens=[4,6,8,10,12,14,16,18];
+  let h='<thead><tr><th>文字数</th>'+cols.map(c=>`<th>${c.n}</th>`).join('')+'</tr></thead><tbody>';
+  lens.forEach(L=>{
+    h+=`<tr><th>${L} 文字</th>`;
+    cols.forEach(c=>{
+      const sec=Math.pow(c.k,L)/SPEED_MD5;
+      const Y=31557600;
+      let d;
+      if(sec<3600) d=0; else if(sec<86400*30) d=1;
+      else if(sec<Y*10) d=2; else if(sec<Y*1e6) d=3; else d=4;
+      h+=`<td class="d${d}">${fmtTime(sec)}</td>`;
+    });
+    h+='</tr>';
+  });
+  h+='</tbody>';
+  t.innerHTML=h;
+  t.dataset.done='1';
+}
+
+/* ===== 使い回し ===== */
+const SITES=[
+  {ico:'🛒',nm:'通販サイト',src:true},
+  {ico:'✉️',nm:'メール'},
+  {ico:'💬',nm:'SNS'},
+  {ico:'🎮',nm:'ゲーム'},
+  {ico:'🏦',nm:'ネット銀行'}
+];
+let reuseSame=true, leaked=false;
+function renderSites(){
+  const box=document.getElementById('rSites');
+  box.innerHTML='';
+  SITES.forEach(s=>{
+    const d=document.createElement('div');
+    let cls='site', st='安全';
+    if(leaked){
+      if(s.src){ cls+=' hacked'; st='パスワード流出'; }
+      else if(reuseSame){ cls+=' hacked'; st='侵入された'; }
+      else { cls+=' safe'; st='無事'; }
+    }
+    d.className=cls;
+    d.innerHTML=`<div class="ico">${s.ico}</div><div class="nm">${s.nm}</div><div class="st">${st}</div>`;
+    box.appendChild(d);
+  });
+  const msg=document.getElementById('rMsg');
+  if(!leaked){
+    msg.textContent= reuseSame
+      ? '5つのサービスで、同じパスワードを使っている状態です。'
+      : '5つのサービスで、それぞれ別のパスワードを使っている状態です。';
+  }else if(reuseSame){
+    msg.innerHTML='通販サイトから流出したパスワードを他のサービスでも試され、<strong style="color:var(--ng)">すべて突破されました</strong>。銀行口座まで危険にさらされています。';
+  }else{
+    msg.innerHTML='流出したのは通販サイトのぶんだけです。他のサービスは<strong style="color:var(--ok)">無事</strong>でした。パスワードを分けていたおかげです。';
+  }
+}
+document.getElementById('rSame').addEventListener('click',()=>{
+  reuseSame=true;
+  document.getElementById('rSame').setAttribute('aria-pressed','true');
+  document.getElementById('rDiff').setAttribute('aria-pressed','false');
+  renderSites();
+});
+document.getElementById('rDiff').addEventListener('click',()=>{
+  reuseSame=false;
+  document.getElementById('rSame').setAttribute('aria-pressed','false');
+  document.getElementById('rDiff').setAttribute('aria-pressed','true');
+  renderSites();
+});
+document.getElementById('rLeak').addEventListener('click',()=>{ leaked=true; renderSites(); });
+document.getElementById('rReset').addEventListener('click',()=>{ leaked=false; renderSites(); });
+
+/* ===== 初期化 ===== */
+calc(); renderSites();
+</script>
+</body>
+</html>

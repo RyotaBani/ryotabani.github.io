@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>暗号のしくみを体験しよう（シーザー暗号・共通鍵・公開鍵）｜情報ラボ</title>
+<meta name="description" content="シーザー暗号で実際に文章を暗号化・解読し、共通鍵と公開鍵の違いを図で確かめられる無料ツール。鍵配送問題やHTTPSのしくみまで体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/crypto/">
+<meta property="og:title" content="暗号のしくみを体験しよう｜情報ラボ">
+<meta property="og:description" content="シーザー暗号の解読から公開鍵暗号まで、暗号のしくみを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/crypto/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+
+  input.txt, textarea.txt{font-size:17px; padding:11px 13px; width:100%;
+    border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  input.txt:focus, textarea.txt:focus{outline:none; border-color:var(--navy);}
+  .mono{font-family:ui-monospace,Consolas,monospace;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:18px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .out{background:#141c2e; color:#ffd97a; border-radius:10px; padding:14px 16px;
+    font-family:ui-monospace,Consolas,monospace; font-size:17px; word-break:break-all;
+    min-height:3em; line-height:1.8; letter-spacing:1px;}
+  .out.plain{color:#8fd6a8;}
+
+  /* 文字対応表 */
+  .maptbl{overflow-x:auto; margin-top:12px;}
+  table.mp{border-collapse:collapse; font-family:ui-monospace,Consolas,monospace; font-size:12.5px;}
+  table.mp th{background:var(--panel); color:var(--navy); padding:4px 6px; border:1px solid var(--line);}
+  table.mp td{border:1px solid var(--line); padding:4px 6px; text-align:center; background:#fff;}
+  table.mp tr.enc td{background:#EEF3FB; color:var(--navy); font-weight:700;}
+
+  /* 解読 */
+  .cracks{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:8px; margin-top:12px;}
+  .ck{background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 12px;
+    font-family:ui-monospace,Consolas,monospace; font-size:13px; cursor:pointer;}
+  .ck:hover{background:var(--panel2);}
+  .ck .k{color:var(--muted); font-size:11px;}
+  .ck.hit{border-color:var(--ok); background:#F1F8F3;}
+  .ck.hit .k{color:var(--ok); font-weight:700;}
+
+  /* 鍵のやりとり図 */
+  .flow{display:flex; gap:12px; align-items:stretch; flex-wrap:wrap; margin-top:8px;}
+  .actor{flex:1 1 190px; background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:14px; text-align:center;}
+  .actor .ico{font-size:34px;}
+  .actor .nm{font-weight:700; color:var(--ink); margin-top:4px;}
+  .actor .key{font-family:ui-monospace,Consolas,monospace; font-size:13px; margin-top:8px;
+    padding:6px; border-radius:6px; background:var(--panel);}
+  .actor.bad{border-color:var(--ng); background:#FBEEEE;}
+  .actor .st{font-size:12.5px; margin-top:6px; min-height:2.4em;}
+  .arrowcol{flex:0 0 90px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; color:var(--muted); font-size:12px; text-align:center;}
+  .arrowcol .a{font-size:28px; color:var(--navy); line-height:1;}
+
+  .verdict{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:14px 18px; margin-top:14px; font-size:14.5px;}
+  .verdict b{color:#ffd97a;}
+  .verdict.warn{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .verdict.good{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 暗号のしくみ</p>
+    <h1>暗号のしくみを体験しよう</h1>
+    <p class="lead">文字をずらすだけの古典的な暗号から、いまインターネットを支えている公開鍵暗号まで。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabCaesar" aria-selected="true" aria-controls="toolCaesar">シーザー暗号</button>
+    <button class="tab" role="tab" id="tabCrack" aria-selected="false" aria-controls="toolCrack">暗号を解読する</button>
+    <button class="tab" role="tab" id="tabKey" aria-selected="false" aria-controls="toolKey">鍵をどう渡すか</button>
+  </div>
+
+  <!-- ===== シーザー暗号 ===== -->
+  <section class="tool show" id="toolCaesar" role="tabpanel" aria-labelledby="tabCaesar">
+    <div class="panel">
+      <h2>文字を決まった数だけずらす暗号</h2>
+      <input class="txt mono" id="cText" type="text" value="HELLO WORLD" maxlength="60"
+             autocomplete="off" spellcheck="false" placeholder="英字を入力">
+      <div class="sl" style="margin-top:16px;">
+        <div class="top"><label for="cShift">ずらす数（鍵）</label><span class="val" id="cShiftV">3</span></div>
+        <input type="range" id="cShift" min="0" max="25" step="1" value="3">
+      </div>
+      <div class="row">
+        <button class="chip" data-ex="HELLO WORLD">HELLO WORLD</button>
+        <button class="chip" data-ex="ATTACK AT DAWN">ATTACK AT DAWN</button>
+        <button class="chip" data-ex="JOHOLAB">JOHOLAB</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>結果</h2>
+      <p style="margin:0 0 6px;font-size:13px;color:var(--muted);">元の文（平文）</p>
+      <div class="out plain" id="cPlain"></div>
+      <p style="margin:12px 0 6px;font-size:13px;color:var(--muted);">暗号化した文（暗号文）</p>
+      <div class="out" id="cCipher"></div>
+      <div class="maptbl">
+        <p style="margin:12px 0 6px;font-size:13px;color:var(--muted);">文字の対応表</p>
+        <table class="mp" id="cMap"></table>
+      </div>
+    </div>
+
+    <div class="verdict" id="cVerdict"></div>
+  </section>
+
+  <!-- ===== 解読 ===== -->
+  <section class="tool" id="toolCrack" role="tabpanel" aria-labelledby="tabCrack">
+    <div class="panel">
+      <h2>鍵を知らなくても、総当たりで解読できます</h2>
+      <input class="txt mono" id="kText" type="text" value="WKLV LV D VHFUHW" maxlength="60"
+             autocomplete="off" spellcheck="false" placeholder="暗号文を入力">
+      <div class="row" style="margin-top:12px;">
+        <button class="chip" data-ct="WKLV LV D VHFUHW">例1</button>
+        <button class="chip" data-ct="MPS TLNCLE">例2</button>
+        <button class="chip" data-ct="ZKDW WLPH LV LW">例3</button>
+      </div>
+      <p class="hint">ずらす数は25通りしかないので、すべて試せば必ず解けます。意味の通る行を探してください。</p>
+    </div>
+
+    <div class="panel">
+      <h2>25通りすべて試した結果</h2>
+      <div class="cracks" id="kList"></div>
+      <p class="hint">緑で示した行は、英語としてありそうな単語を含んでいるものです。</p>
+    </div>
+
+    <div class="verdict warn">
+      <b>ここが弱点です。</b>　鍵の種類が25通りしかないため、総当たりで一瞬に解かれてしまいます。
+      現代の暗号が鍵を長くしているのは、この総当たりを現実的に不可能にするためです。
+    </div>
+  </section>
+
+  <!-- ===== 鍵をどう渡すか ===== -->
+  <section class="tool" id="toolKey" role="tabpanel" aria-labelledby="tabKey">
+    <div class="panel">
+      <h2>方式を選んでください</h2>
+      <div class="row">
+        <button class="chip" id="mCommon" aria-pressed="true">共通鍵暗号（同じ鍵を使う）</button>
+        <button class="chip" id="mPublic" aria-pressed="false">公開鍵暗号（2つの鍵を使う）</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="mStep">次のステップへ</button>
+        <button class="chip" id="mReset">最初から</button>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="actor" id="aAlice">
+        <div class="ico">👩</div><div class="nm">送信者</div>
+        <div class="key" id="aAliceKey">—</div>
+        <div class="st" id="aAliceSt"></div>
+      </div>
+      <div class="arrowcol"><div class="a" id="aArrow1">→</div><div id="aArrow1L"></div></div>
+      <div class="actor bad" id="aEve">
+        <div class="ico">🕵️</div><div class="nm">盗み見する人</div>
+        <div class="key" id="aEveKey">—</div>
+        <div class="st" id="aEveSt"></div>
+      </div>
+      <div class="arrowcol"><div class="a" id="aArrow2">→</div><div id="aArrow2L"></div></div>
+      <div class="actor" id="aBob">
+        <div class="ico">🧑</div><div class="nm">受信者</div>
+        <div class="key" id="aBobKey">—</div>
+        <div class="st" id="aBobSt"></div>
+      </div>
+    </div>
+
+    <div class="verdict" id="mVerdict"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>2つの方式の比較</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14.5px;">
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);width:9em;">　</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">共通鍵暗号</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">公開鍵暗号</th></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">鍵の数</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;">1つ（同じ鍵で暗号化と復号）</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">2つ（公開鍵と秘密鍵の組）</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">鍵を渡す必要</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;">ある（ここが弱点）</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;">ない（公開鍵は公開してよい）</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">処理の速さ</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;">速い</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;">遅い</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">代表的な方式</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;" class="mono">AES</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;" class="mono">RSA、楕円曲線暗号</td></tr>
+      </table>
+      <p class="hint">実際のHTTPS通信では、両方を組み合わせています。最初に公開鍵暗号で共通鍵を安全に渡し、そのあとは速い共通鍵暗号でやり取りする、という方法です。</p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>暗号とは何か</h2>
+    <p>手紙を誰かに届けたいとき、途中で誰かに読まれては困る内容があります。そこで、決まった規則で文章を別の形に変え、規則を知らない人には意味が分からなくします。これが暗号です。</p>
+    <p>元の文章を平文、変換したものを暗号文、変換の規則で使う情報を鍵といいます。暗号文から平文に戻すことを復号といいます。</p>
+
+    <h2>シーザー暗号 ― 最も古い暗号のひとつ</h2>
+    <p>古代ローマの将軍ユリウス・カエサル（シーザー）が使ったと伝えられる方法です。アルファベットを決まった数だけずらすだけの、単純な仕組みです。</p>
+    <p>3つずらす場合、AはDに、BはEに、CはFになります。ZまでいったらAに戻ります。「HELLO」なら「KHOOR」です。</p>
+    <div class="formula">暗号化：（文字の番号 ＋ 鍵）を26で割った余り</div>
+    <p>この方式では、ずらす数が鍵にあたります。受け取った側は同じ数だけ逆にずらせば、元の文章に戻せます。</p>
+
+    <h3>なぜ現代では使えないのか</h3>
+    <p>鍵の種類が25通りしかないからです。ずらす数は1から25までのどれかなので、全部試しても25回で済みます。人間が手作業でやっても数分、コンピュータなら一瞬です。</p>
+    <p>暗号の強さは、鍵の種類の多さで決まります。現代の暗号では、鍵の候補が天文学的な数になるよう設計されています。たとえばAESという方式では、128ビットの鍵を使います。組み合わせは2の128乗、約340澗（かん）通りです。すべて試すのは、現在のコンピュータでは不可能です。</p>
+
+    <h2>共通鍵暗号 ― 同じ鍵を共有する</h2>
+    <p>暗号化と復号に同じ鍵を使う方式です。シーザー暗号もこの仲間です。現代ではAES（エーイーエス）が広く使われています。</p>
+    <p>計算が速いという大きな利点があります。大量のデータをやり取りする通信では、この速さが重要になります。</p>
+
+    <h3>鍵配送問題</h3>
+    <p>しかし、根本的な問題があります。<strong>相手に鍵をどうやって渡すのか</strong>という問題です。</p>
+    <p>鍵を通信路で送れば、途中で盗み見される可能性があります。暗号文を守るために暗号を使うのに、その鍵を守る手段がない。これを鍵配送問題といいます。</p>
+    <p>直接会って手渡しできるならよいのですが、インターネットで初めてアクセスするサイトと、事前に鍵を共有しておくことはできません。上のツールで実際に何が起きるか確かめられます。</p>
+
+    <h2>公開鍵暗号 ― 発想の転換</h2>
+    <p>この問題を解決したのが公開鍵暗号です。1970年代に考案された、暗号史における大きな転換点でした。</p>
+    <p>鍵を2つ用意します。<strong>公開鍵</strong>と<strong>秘密鍵</strong>です。この2つは対になっていて、次の性質を持ちます。</p>
+    <ul>
+      <li>公開鍵で暗号化したものは、対になる秘密鍵でしか復号できない</li>
+      <li>公開鍵から秘密鍵を計算で求めることは、現実的な時間ではできない</li>
+    </ul>
+    <p>そのため、公開鍵は誰に見られても構いません。むしろ公開してよいので「公開鍵」と呼びます。秘密鍵だけを自分の手元に隠しておけば安全です。</p>
+    <p>受信者は公開鍵を配り、送信者はそれで暗号化して送ります。途中で盗み見されても、復号できるのは秘密鍵を持つ受信者だけです。<strong>鍵を渡す必要がなくなった</strong>のが、この方式の画期的な点です。</p>
+
+    <h3>なぜ元に戻せないのか</h3>
+    <p>公開鍵暗号は、計算しやすいが逆算しにくい問題を利用しています。RSAという方式では、素因数分解の難しさを使っています。</p>
+    <p>大きな素数を2つ掛け合わせるのは簡単です。しかし、その積から元の2つの素数を求めるのは、桁数が大きくなると現実的な時間では不可能になります。この非対称性が、公開鍵と秘密鍵の関係を支えています。</p>
+
+    <h2>実際のインターネットでは</h2>
+    <p>公開鍵暗号には欠点があります。計算が遅いのです。ウェブページのすべてのデータをこの方式で暗号化すると、通信に時間がかかりすぎます。</p>
+    <p>そこでHTTPS（TLS）では、両方の良いところを組み合わせています。</p>
+    <ol style="font-size:15.5px;line-height:1.9;padding-left:1.3em;">
+      <li>最初に、公開鍵暗号を使って共通鍵を安全に共有する</li>
+      <li>そのあとの通信は、速い共通鍵暗号でやり取りする</li>
+    </ol>
+    <p>これをハイブリッド暗号方式といいます。ブラウザのアドレスバーに鍵マークが表示されているとき、裏側でこの仕組みが動いています。</p>
+    <p>さらにTLSでは、通信相手が本物かを確かめる認証と、途中で書きかえられていないかを確かめる改ざん検知も同時に行っています。暗号化だけでは「相手が偽物」という問題は防げないためです。</p>
+
+    <h2>電子署名 ― 暗号のもう一つの使い方</h2>
+    <p>公開鍵暗号には、暗号化とは逆の使い方もあります。<strong>秘密鍵で処理し、公開鍵で確かめる</strong>という方法です。</p>
+    <p>秘密鍵を持っているのは本人だけなので、正しく処理できたということは本人が作成したことの証明になります。これが電子署名です。紙の書類における印鑑やサインにあたります。</p>
+    <p>電子署名は2つのことを同時に示します。1つは、その人が作成したという<strong>本人性</strong>。もう1つは、途中で書きかえられていないという<strong>完全性</strong>です。ソフトウェアの配布元が正しいかを確かめる仕組みや、ウェブサイトの証明書にも使われています。</p>
+
+    <h2>ハッシュ関数</h2>
+    <p>暗号と関係の深い技術に、ハッシュ関数があります。任意の長さのデータから、決まった長さの値を計算する関数です。</p>
+    <p>特徴は3つあります。同じデータからは必ず同じ値が出ること、少しでもデータが違えば全く違う値になること、そして値から元のデータを求められないことです。</p>
+    <p>この性質から、パスワードの保存やファイルの改ざん検出に使われます。パスワードそのものを保存せず、ハッシュ値だけを保存しておけば、流出しても直接は悪用されません。暗号と違い、もとに戻すことを目的としていないのが大きな違いです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>シーザー暗号</strong>：文章を入力し、ずらす数を変えると暗号文が変わります。文字の対応表も表示されます。</li>
+      <li><strong>暗号を解読する</strong>：鍵を知らない暗号文を、25通りすべて試して解読できます。総当たりの手軽さが体感できます。</li>
+      <li><strong>鍵をどう渡すか</strong>：共通鍵と公開鍵で、盗み見する人がいたときに何が起きるかを比べられます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabCaesar','toolCaesar'],['tabCrack','toolCrack'],['tabKey','toolKey']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabCrack') crack();
+      if(tid==='tabKey') renderFlow();
+    });
+  });
+})();
+
+const AZ='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function shift(s,n){
+  return [...s.toUpperCase()].map(c=>{
+    const i=AZ.indexOf(c);
+    return i<0 ? c : AZ[(i+n+26)%26];
+  }).join('');
+}
+
+/* ===== シーザー暗号 ===== */
+function caesar(){
+  const t=document.getElementById('cText').value;
+  const n=+document.getElementById('cShift').value;
+  document.getElementById('cShiftV').textContent=n;
+  document.getElementById('cPlain').textContent=t.toUpperCase()||'（入力してください）';
+  document.getElementById('cCipher').textContent=shift(t,n)||'—';
+
+  // 対応表
+  let h='<tr><th>元</th>'+[...AZ].map(c=>`<td>${c}</td>`).join('')+'</tr>';
+  h+='<tr class="enc"><th>↓</th>'+[...AZ].map(c=>`<td>${AZ[(AZ.indexOf(c)+n)%26]}</td>`).join('')+'</tr>';
+  document.getElementById('cMap').innerHTML=h;
+
+  const v=document.getElementById('cVerdict');
+  if(n===0){
+    v.className='verdict warn';
+    v.innerHTML='<b>鍵が0です。</b>　まったく変換されていないので、暗号になっていません。';
+  }else{
+    v.className='verdict';
+    v.innerHTML=`鍵は <b>${n}</b> です。受け取った人が同じ「${n}」を知っていれば、逆に${n}だけ戻して読めます。`+
+      `　鍵の候補は1〜25の <b>25通りしかありません</b>。`;
+  }
+}
+document.getElementById('cText').addEventListener('input',caesar);
+document.getElementById('cShift').addEventListener('input',caesar);
+document.querySelectorAll('[data-ex]').forEach(b=>{
+  b.addEventListener('click',()=>{ document.getElementById('cText').value=b.dataset.ex; caesar(); });
+});
+
+/* ===== 解読 ===== */
+const WORDS=['THE','THIS','IS','SECRET','ATTACK','HELLO','WORLD','WHAT','TIME','IT','AT','DAWN','AND','YOU','MY'];
+function crack(){
+  const ct=document.getElementById('kText').value.toUpperCase();
+  const box=document.getElementById('kList');
+  box.innerHTML='';
+  for(let n=1;n<=25;n++){
+    const dec=shift(ct,-n);
+    const words=dec.split(/\s+/).filter(Boolean);
+    const hit = words.length>0 && words.some(w=>WORDS.includes(w)) &&
+                words.filter(w=>WORDS.includes(w)).length >= Math.min(2,words.length);
+    const d=document.createElement('div');
+    d.className='ck'+(hit?' hit':'');
+    d.innerHTML=`<div class="k">ずらす数 ${n} ${hit?'← 意味が通ります':''}</div>${dec}`;
+    d.addEventListener('click',()=>{
+      document.getElementById('cText').value=dec;
+      document.getElementById('cShift').value=n;
+      document.getElementById('tabCaesar').click();
+      caesar();
+    });
+    box.appendChild(d);
+  }
+}
+document.getElementById('kText').addEventListener('input',crack);
+document.querySelectorAll('[data-ct]').forEach(b=>{
+  b.addEventListener('click',()=>{ document.getElementById('kText').value=b.dataset.ct; crack(); });
+});
+
+/* ===== 鍵の受け渡し ===== */
+let mode='common', step=0;
+function renderFlow(){
+  const A=document.getElementById('aAliceKey'), B=document.getElementById('aBobKey'),
+        E=document.getElementById('aEveKey');
+  const As=document.getElementById('aAliceSt'), Bs=document.getElementById('aBobSt'),
+        Es=document.getElementById('aEveSt');
+  const a1=document.getElementById('aArrow1'), a2=document.getElementById('aArrow2');
+  const a1l=document.getElementById('aArrow1L'), a2l=document.getElementById('aArrow2L');
+  const v=document.getElementById('mVerdict');
+  const eve=document.getElementById('aEve');
+
+  a1.textContent='→'; a2.textContent='→';
+  a1l.textContent=''; a2l.textContent='';
+  eve.className='actor bad';
+  v.className='verdict';
+
+  if(mode==='common'){
+    const steps=[
+      ()=>{ A.textContent='🔑 共通鍵'; B.textContent='鍵がない'; E.textContent='—';
+        As.textContent='鍵を作りました'; Bs.textContent='まだ読めません'; Es.textContent='';
+        v.innerHTML='送信者が鍵を作りました。この鍵を受信者にも渡さないと、暗号文を読んでもらえません。'; },
+      ()=>{ A.textContent='🔑 共通鍵'; B.textContent='🔑 共通鍵'; E.textContent='🔑 共通鍵';
+        As.textContent='鍵を送りました'; Bs.textContent='鍵を受け取りました';
+        Es.textContent='通信を見て、鍵をコピーしました';
+        a1l.textContent='鍵を送る'; a2l.textContent='そのまま届く';
+        v.className='verdict warn';
+        v.innerHTML='<b>問題が起きました。</b>　鍵を通信路で送ったので、盗み見していた人にもコピーされました。'; },
+      ()=>{ A.textContent='🔑 共通鍵'; B.textContent='🔑 共通鍵'; E.textContent='🔑 共通鍵';
+        As.textContent='暗号文を送りました'; Bs.textContent='読めました';
+        Es.textContent='同じ鍵で読めてしまいます';
+        a1l.textContent='暗号文'; a2l.textContent='暗号文';
+        v.className='verdict warn';
+        v.innerHTML='<b>暗号の意味がありません。</b>　これが<b>鍵配送問題</b>です。'+
+          '鍵を安全に渡す方法がないと、共通鍵暗号だけでは成り立ちません。'; }
+    ];
+    steps[Math.min(step,steps.length-1)]();
+  }else{
+    const steps=[
+      ()=>{ A.textContent='鍵がない'; B.textContent='🔑 秘密鍵 ＋ 📋 公開鍵'; E.textContent='—';
+        As.textContent='これから送ります'; Bs.textContent='2つの鍵を作りました'; Es.textContent='';
+        v.innerHTML='受信者が、対になる2つの鍵を作りました。秘密鍵は自分だけが持ち、公開鍵は誰に渡しても構いません。'; },
+      ()=>{ A.textContent='📋 公開鍵'; B.textContent='🔑 秘密鍵'; E.textContent='📋 公開鍵';
+        As.textContent='公開鍵をもらいました'; Bs.textContent='秘密鍵は手元にあります';
+        Es.textContent='公開鍵は見えますが、それだけです';
+        a1.textContent='←'; a2.textContent='←';
+        a1l.textContent='公開鍵'; a2l.textContent='公開鍵を配る';
+        v.innerHTML='公開鍵は盗み見されても問題ありません。<b>これで暗号化はできても、復号はできない</b>からです。'; },
+      ()=>{ A.textContent='📋 公開鍵で暗号化'; B.textContent='🔑 秘密鍵で復号'; E.textContent='📋 公開鍵だけ';
+        As.textContent='暗号文を送りました'; Bs.textContent='読めました';
+        Es.textContent='読めません';
+        eve.className='actor';
+        a1l.textContent='暗号文'; a2l.textContent='暗号文';
+        v.className='verdict good';
+        v.innerHTML='<b>安全に届きました。</b>　鍵を渡す必要がないので、鍵配送問題が起きません。'+
+          'これが公開鍵暗号の画期的な点です。'; }
+    ];
+    steps[Math.min(step,steps.length-1)]();
+  }
+}
+document.getElementById('mCommon').addEventListener('click',()=>{
+  mode='common'; step=0;
+  document.getElementById('mCommon').setAttribute('aria-pressed','true');
+  document.getElementById('mPublic').setAttribute('aria-pressed','false');
+  renderFlow();
+});
+document.getElementById('mPublic').addEventListener('click',()=>{
+  mode='public'; step=0;
+  document.getElementById('mCommon').setAttribute('aria-pressed','false');
+  document.getElementById('mPublic').setAttribute('aria-pressed','true');
+  renderFlow();
+});
+document.getElementById('mStep').addEventListener('click',()=>{ step=Math.min(step+1,2); renderFlow(); });
+document.getElementById('mReset').addEventListener('click',()=>{ step=0; renderFlow(); });
+
+/* ===== 初期化 ===== */
+caesar(); crack(); renderFlow();
+</script>
+</body>
+</html>

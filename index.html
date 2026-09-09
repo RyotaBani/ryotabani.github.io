@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>情報ラボ ｜ 手を動かして学ぶ「情報」の教材サイト</title>
-<meta name="description" content="標本化・量子化・符号化、2進数、ネットワークなど「情報」の仕組みを、実際に操作しながら学べる無料の体験教材サイトです。高校の情報Iにも対応。">
+<meta name="description" content="デジタル化のしくみ、2進数、暗号、パスワード、セキュリティ。高校の情報Iで学ぶ内容を、実際に操作しながら学べる無料の体験教材を公開しています。">
 <link rel="canonical" href="https://joholab.net/">
 <meta property="og:title" content="情報ラボ ｜ 手を動かして学ぶ「情報」の教材サイト">
 <meta property="og:description" content="「情報」の仕組みを、実際に操作しながら学べる無料の体験教材サイト。">
@@ -13,7 +13,8 @@
 <style>
   :root{
     --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
-    --panel:#F2F5FA; --muted:#5B6472; --line:#C9D2E0; --gold:#C49A2B;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --gold:#C49A2B; --ok:#2E7D4F;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -25,44 +26,52 @@
   a{color:var(--navy);}
   .wrap{max-width:1060px; margin:0 auto; padding:0 20px 60px;}
 
-  /* hero */
-  .hero{background:linear-gradient(170deg,#22345a,#1b2c4d); color:#fff; padding:52px 0 46px; margin-bottom:38px;}
+  .hero{background:linear-gradient(170deg,#22345a,#1b2c4d); color:#fff;
+    padding:54px 0 46px; margin-bottom:36px;}
   .hero .wrap{padding-bottom:0;}
   .brand{font-size:14px; color:#aebbd6; letter-spacing:.12em; margin:0 0 14px;}
   h1{font-size:clamp(26px,4.4vw,40px); margin:0 0 16px; line-height:1.35; font-weight:700;}
-  .hero p{margin:0; color:#dbe4f5; font-size:clamp(15px,2vw,17px); max-width:52em;}
+  .hero p{margin:0 0 18px; color:#dbe4f5; font-size:clamp(15px,2vw,17px); max-width:50em;}
+  .hero .stats{display:flex; gap:26px; flex-wrap:wrap; font-size:14px; color:#aebbd6;
+    padding-top:16px; border-top:1px solid rgba(255,255,255,.15);}
+  .hero .stats b{color:#fff; font-size:20px; font-family:ui-monospace,Consolas,monospace;
+    display:block; line-height:1.3;}
 
-  h2{font-size:20px; color:var(--ink); margin:0 0 6px;}
-  .sec-note{margin:0 0 20px; color:var(--muted); font-size:14px;}
+  .cat{margin-bottom:40px;}
+  .cat-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    padding-bottom:8px; border-bottom:2px solid var(--navy); margin-bottom:6px;}
+  .cat-head h2{font-size:20px; color:var(--navy); margin:0;}
+  .cat-head .n{font-size:13px; color:var(--muted);}
+  .cat-note{margin:0 0 18px; color:var(--muted); font-size:14px;}
 
-  /* cards */
-  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px;}
   .card{border:1px solid var(--line); border-radius:12px; padding:20px; background:#fff;
     display:flex; flex-direction:column; text-decoration:none; color:inherit;
-    transition:border-color .15s, box-shadow .15s;}
-  a.card:hover{border-color:var(--navy); box-shadow:0 2px 14px rgba(47,84,150,.10);}
-  .card .tag{font-size:12px; color:var(--navy); background:var(--panel); border-radius:999px;
-    padding:3px 10px; align-self:flex-start; margin-bottom:10px;}
-  .card h3{margin:0 0 8px; font-size:18px; color:var(--ink);}
+    transition:border-color .15s, box-shadow .15s, transform .15s;}
+  a.card:hover{border-color:var(--navy); box-shadow:0 3px 16px rgba(47,84,150,.12);
+    transform:translateY(-2px);}
+  .card .top{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .card .ico{font-size:26px; line-height:1;}
+  .card .tag{font-size:11.5px; color:var(--navy); background:var(--panel);
+    border-radius:999px; padding:3px 10px;}
+  .card h3{margin:0 0 8px; font-size:17.5px; color:var(--ink); line-height:1.4;}
   .card p{margin:0; font-size:14px; color:var(--muted); flex:1;}
   .card .go{margin-top:14px; font-size:14px; color:var(--navy); font-weight:700;}
-  .card.soon{background:#fafbfd; border-style:dashed;}
-  .card.soon h3{color:var(--muted);}
-  .card.soon .tag{color:var(--muted); background:#eef1f6;}
 
-  /* about */
-  .about{margin-top:46px; background:var(--panel); border:1px solid var(--line);
-    border-radius:12px; padding:24px 26px;}
-  .about h2{margin-bottom:10px;}
-  .about p{margin:0 0 10px; font-size:15px;}
+  .about{margin-top:10px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:26px 28px;}
+  .about h2{margin:0 0 12px; font-size:19px; color:var(--ink);}
+  .about p{margin:0 0 12px; font-size:15px;}
   .about p:last-child{margin-bottom:0;}
+  .about ul{margin:0 0 12px; padding-left:1.3em; font-size:15px;}
 
-  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
-    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
-  .sitefoot a{color:var(--muted);}
+  footer{margin-top:44px; padding-top:22px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted);}
+  .flinks{display:flex; flex-wrap:wrap; gap:8px 18px; margin-bottom:12px;}
+  .flinks a{color:var(--muted); text-decoration:none;}
+  .flinks a:hover{color:var(--navy); text-decoration:underline;}
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
-<!-- ▼ Google AdSense -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -71,87 +80,157 @@
   <div class="wrap">
     <p class="brand">情報ラボ</p>
     <h1>「情報」の仕組みを、<br>手を動かして確かめる。</h1>
-    <p>画像がどうやってデータになるのか、2進数で何が表せるのか。<br>
-       読むだけでは分かりにくい仕組みを、実際に操作して確かめられる教材を集めています。すべて無料・登録不要です。</p>
+    <p>画像がどうやってデータになるのか。パスワードはなぜ長いほうがいいのか。
+       読むだけでは分かりにくい仕組みを、実際に操作して確かめられる教材を集めています。
+       すべて無料・登録不要で、スマートフォンでも使えます。</p>
+    <div class="stats">
+      <div><b>11</b>の体験教材</div>
+      <div><b>無料</b>登録も不要</div>
+      <div><b>情報Ⅰ</b>の内容に対応</div>
+    </div>
   </div>
 </div>
 
 <div class="wrap">
 
-  <h2>教材一覧</h2>
-  <p class="sec-note">ブラウザですぐ動きます。パソコンでもスマホ・タブレットでも使えます。</p>
+  <section class="cat">
+    <div class="cat-head"><h2>デジタル化のしくみ</h2><span class="n">4教材</span></div>
+    <p class="cat-note">身のまわりの情報が、どうやって0と1になるのか。</p>
+    <div class="cards">
 
-  <div class="cards">
+      <a class="card" href="/image/">
+        <div class="top"><span class="ico">🖼️</span><span class="tag">画像</span></div>
+        <h3>画像のデジタル化を体験しよう</h3>
+        <p>標本化・量子化・符号化の3ステップを、スライダーを動かしながら確かめる。1マスずつ色をぬる「どっと絵」で、データ量の計算まで体験できます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/image/">
-      <span class="tag">デジタル化</span>
-      <h3>画像のデジタル化を体験しよう</h3>
-      <p>標本化・量子化・符号化の3ステップを、スライダーを動かしながら確かめる。1マスずつ色をぬる「どっと絵」で、データ量の計算まで体験できます。</p>
-      <span class="go">開く</span>
-    </a>
+      <a class="card" href="/sound/">
+        <div class="top"><span class="ico">🔊</span><span class="tag">音声</span></div>
+        <h3>音のデジタル化を体験しよう</h3>
+        <p>標本化周波数と量子化ビット数を変えて、音の変化を実際に聴き比べられます。波形の変化とデータ量の計算まで確かめられます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/bits/">
-      <span class="tag">データの正体</span>
-      <h3>データはすべて0と1</h3>
-      <p>ファイルの中身を0と1で表示し、画像を音として再生、音を画像として表示できます。デジタルデータの正体を体験で確かめられます。</p>
-      <span class="go">開く</span>
-    </a>
+      <a class="card" href="/vector/">
+        <div class="top"><span class="ico">🔍</span><span class="tag">画像</span></div>
+        <h3>ラスタとベクタのちがい</h3>
+        <p>2つの方式を並べて拡大し、ギザギザの出方の違いを確かめられます。解像度・dpi・ppiの意味も整理できます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/sound/">
-      <span class="tag">デジタル化</span>
-      <h3>音のデジタル化を体験しよう</h3>
-      <p>標本化周波数と量子化ビット数を変えて、音の変化を実際に聴き比べられます。波形の変化とデータ量の計算まで確かめられます。</p>
-      <span class="go">開く</span>
-    </a>
+      <a class="card" href="/color/">
+        <div class="top"><span class="ico">🎨</span><span class="tag">色</span></div>
+        <h3>色の表し方を体験しよう</h3>
+        <p>RGB・CMYK・HSVの3つを連動させて確かめられます。光とインクの混色の違い、カラーコードのしくみも学べます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/vector/">
-      <span class="tag">画像のしくみ</span>
-      <h3>ラスタとベクタのちがい</h3>
-      <p>2つの方式を並べて拡大し、ギザギザの出方の違いを確かめられます。解像度・dpi・ppiの意味も整理できます。</p>
-      <span class="go">開く</span>
-    </a>
+    </div>
+  </section>
 
-    <a class="card" href="/charcode/">
-      <span class="tag">文字のしくみ</span>
-      <h3>文字コードを体験しよう</h3>
-      <p>文字が数値でどう表されるかを1文字ずつ確認できます。ASCII表、UTF-8のバイト数、文字化けのしくみまで体験できます。</p>
-      <span class="go">開く</span>
-    </a>
+  <section class="cat">
+    <div class="cat-head"><h2>数とデータの表し方</h2><span class="n">3教材</span></div>
+    <p class="cat-note">コンピュータが0と1で何を表しているのか。</p>
+    <div class="cards">
 
+      <a class="card" href="/binary/">
+        <div class="top"><span class="ico">🔢</span><span class="tag">2進数</span></div>
+        <h3>2進数・16進数を体験しよう</h3>
+        <p>ビットを押して2進数のしくみを確かめる。変換の練習問題と、制限時間つきの2つのゲームで反復練習できます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/binary/">
-      <span class="tag">数のしくみ</span>
-      <h3>2進数・16進数を体験しよう</h3>
-      <p>ビットを押して2進数のしくみを確かめる。10進数・2進数・16進数の変換練習と、制限時間つきのビットゲームで反復練習できます。</p>
-      <span class="go">開く</span>
-    </a>
+      <a class="card" href="/charcode/">
+        <div class="top"><span class="ico">🔤</span><span class="tag">文字</span></div>
+        <h3>文字コードを体験しよう</h3>
+        <p>文字が数値でどう表されるかを1文字ずつ確認できます。ASCII表、UTF-8のバイト数、文字化けのしくみまで体験できます。</p>
+        <span class="go">開く</span>
+      </a>
 
-    <a class="card" href="/color/">
-      <span class="tag">色のしくみ</span>
-      <h3>色の表し方を体験しよう</h3>
-      <p>RGB・CMYK・HSVの3つの表し方を連動させて確かめる。どれかを動かすと残りも同時に変わるので、光の三原色と色の三原色のちがいが分かります。</p>
-      <span class="go">開く</span>
-    </a>
+      <a class="card" href="/bits/">
+        <div class="top"><span class="ico">💾</span><span class="tag">データの正体</span></div>
+        <h3>データはすべて0と1</h3>
+        <p>ファイルの中身を0と1で表示し、画像を音として再生、音を画像として表示できます。デジタルデータの正体を体験で確かめられます。</p>
+        <span class="go">開く</span>
+      </a>
 
+    </div>
+  </section>
 
-  </div>
+  <section class="cat">
+    <div class="cat-head"><h2>情報セキュリティ</h2><span class="n">3教材</span></div>
+    <p class="cat-note">自分の情報を守るために、知っておきたいこと。</p>
+    <div class="cards">
+
+      <a class="card" href="/password/">
+        <div class="top"><span class="ico">🔑</span><span class="tag">認証</span></div>
+        <h3>パスワードの強さを体験しよう</h3>
+        <p>文字数と種類を変えると、破られるまでの時間がどれだけ変わるかを計算できます。使い回しの危険も再現します。</p>
+        <span class="go">開く</span>
+      </a>
+
+      <a class="card" href="/crypto/">
+        <div class="top"><span class="ico">🔐</span><span class="tag">暗号</span></div>
+        <h3>暗号のしくみを体験しよう</h3>
+        <p>シーザー暗号で実際に暗号化・解読し、共通鍵と公開鍵の違いを図で確かめられます。鍵配送問題も体験できます。</p>
+        <span class="go">開く</span>
+      </a>
+
+      <a class="card" href="/phishing/">
+        <div class="top"><span class="ico">🎣</span><span class="tag">詐欺対策</span></div>
+        <h3>あやしいメールを見分けよう</h3>
+        <p>本物と偽物のメールを見比べて、フィッシングを見分ける練習ができます。URLの読み方も身につきます。</p>
+        <span class="go">開く</span>
+      </a>
+
+    </div>
+  </section>
+
+  <section class="cat">
+    <div class="cat-head"><h2>計算してみる</h2><span class="n">1教材</span></div>
+    <p class="cat-note">数字にすると、実感がわきます。</p>
+    <div class="cards">
+
+      <a class="card" href="/datasize/">
+        <div class="top"><span class="ico">📊</span><span class="tag">データ量</span></div>
+        <h3>データ量を計算しよう</h3>
+        <p>画像・音声・動画のデータ量を条件から計算できます。保存できる数や、転送にかかる時間も分かります。</p>
+        <span class="go">開く</span>
+      </a>
+
+    </div>
+  </section>
 
   <div class="about">
     <h2>このサイトについて</h2>
     <p>情報ラボは、高校の「情報Ⅰ」で学ぶ内容を中心に、コンピュータやネットワークの仕組みを体験しながら理解するための教材を公開しているサイトです。</p>
-    <p>教科書の図だけでは伝わりにくい「値を変えたらどうなるか」を、その場で動かして確かめられることを大切にしています。授業での利用、自習、復習など、どなたでも自由にお使いいただけます。</p>
+    <p>教科書の図だけでは伝わりにくい「値を変えたらどうなるか」を、その場で動かして確かめられることを大切にしています。</p>
+    <ul>
+      <li>すべて無料で、登録も不要です</li>
+      <li>パソコン、スマートフォン、タブレットで使えます</li>
+      <li>授業での利用、自習、復習など、どなたでも自由にお使いいただけます</li>
+      <li>入力したデータは、すべてお使いの機器の中だけで処理されます</li>
+    </ul>
+    <p>掲載している数値や規格は、公的機関や標準化団体の資料をもとにしています。</p>
   </div>
 
-  <footer class="sitefoot">
-    <span>© 2026 情報ラボ</span>
-    <a href="/">ホーム</a>
-    <a href="/image/">画像のデジタル化</a>
-    <a href="/binary/">2進数・16進数</a>
-    <a href="/bits/">データはすべて0と1</a>
-    <a href="/color/">色の表し方</a>
-    <a href="/sound/">音のデジタル化</a>
-    <a href="/vector/">ラスタとベクタ</a>
-    <a href="/charcode/">文字コード</a>
+  <footer>
+    <div class="flinks">
+      <a href="/">ホーム</a>
+      <a href="/image/">画像のデジタル化</a>
+      <a href="/sound/">音のデジタル化</a>
+      <a href="/vector/">ラスタとベクタ</a>
+      <a href="/color/">色の表し方</a>
+      <a href="/binary/">2進数・16進数</a>
+      <a href="/charcode/">文字コード</a>
+      <a href="/bits/">データはすべて0と1</a>
+      <a href="/password/">パスワードの強さ</a>
+      <a href="/crypto/">暗号のしくみ</a>
+      <a href="/phishing/">あやしいメールを見分ける</a>
+      <a href="/datasize/">データ量の計算</a>
+    </div>
+    <div>&copy; 2026 情報ラボ</div>
   </footer>
 
 </div>

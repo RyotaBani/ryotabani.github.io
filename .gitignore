@@ -3,5 +3,5 @@
 
 # 作業用（zipの展開物・配布アーカイブ）。公開サイトには含めない
 _work/
-joholab_v*/
-joholab_v*.zip
+joholab_*/
+joholab_*.zip

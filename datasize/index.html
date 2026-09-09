@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>データ量を計算しよう（画像・音声・動画・通信時間）｜情報ラボ</title>
+<meta name="description" content="画像・音声・動画のデータ量を条件から計算し、保存できる数や転送にかかる時間まで確かめられる無料ツール。ビットとバイトの関係も学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/datasize/">
+<meta property="og:title" content="データ量を計算しよう｜情報ラボ">
+<meta property="og:description" content="画像・音声・動画のデータ量と、保存数・転送時間を計算できる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/datasize/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .sl{margin-bottom:14px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .cols{display:flex; gap:16px; flex-wrap:wrap;}
+  .col{flex:1 1 300px; min-width:270px;}
+
+  .result{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:20px 22px; margin-bottom:16px;}
+  .result .lab{font-size:12px; color:rgba(255,255,255,.75);}
+  .result .big{font-size:clamp(28px,5vw,44px); font-weight:700;
+    font-family:ui-monospace,Consolas,monospace; line-height:1.2; margin:4px 0 8px;}
+  .result .big small{font-size:.5em; color:#ffd97a;}
+  .result .calc{font-size:14px; color:#dbe4f5; padding-top:12px;
+    border-top:1px solid rgba(255,255,255,.18);}
+  .result .calc b{color:#fff;}
+  .result .grid{display:flex; flex-wrap:wrap; gap:12px; margin-top:14px;}
+  .result .g{flex:1 1 140px; background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18); border-radius:9px; padding:10px 14px;}
+  .result .g .k{font-size:11px; color:rgba(255,255,255,.7);}
+  .result .g .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+
+  .compare{display:flex; flex-direction:column; gap:8px;}
+  .cbar{background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px;}
+  .cbar .t{display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:5px;}
+  .cbar .t .n{color:var(--ink); font-weight:700;}
+  .cbar .t .s{color:var(--navy); font-family:ui-monospace,Consolas,monospace;}
+  .cbar .b{height:9px; background:var(--panel2); border-radius:999px; overflow:hidden;}
+  .cbar .b i{display:block; height:100%; background:var(--navy);}
+  .cbar.me{border-color:var(--gold); background:#FFFCF3;}
+  .cbar.me .b i{background:var(--gold);}
+
+  table.t{border-collapse:collapse; width:100%; font-size:14px;}
+  table.t th, table.t td{border:1px solid var(--line); padding:9px 12px;}
+  table.t thead th{background:var(--navy); color:#fff;}
+  table.t tbody th{background:var(--panel); color:var(--ink); text-align:left; font-weight:700;}
+  table.t td{font-family:ui-monospace,Consolas,monospace; text-align:right;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ データ量の計算</p>
+    <h1>データ量を計算しよう</h1>
+    <p class="lead">写真1枚、曲1つ、動画1本。それぞれどれくらいの大きさになるのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabImg" aria-selected="true" aria-controls="toolImg">画像</button>
+    <button class="tab" role="tab" id="tabSnd" aria-selected="false" aria-controls="toolSnd">音声</button>
+    <button class="tab" role="tab" id="tabMov" aria-selected="false" aria-controls="toolMov">動画</button>
+    <button class="tab" role="tab" id="tabNet" aria-selected="false" aria-controls="toolNet">保存と転送</button>
+  </div>
+
+  <!-- ===== 画像 ===== -->
+  <section class="tool show" id="toolImg" role="tabpanel" aria-labelledby="tabImg">
+    <div class="panel">
+      <div class="cols">
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="iW">横の画素数</label><span class="val" id="iWv">1920</span></div>
+            <input type="range" id="iW" min="0" max="6" step="1" value="3">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="iBit">1画素あたりのビット数</label><span class="val" id="iBitv">24 ビット</span></div>
+            <input type="range" id="iBit" min="0" max="4" step="1" value="3">
+            <div class="hint" id="iBitN" style="margin-top:2px;"></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="iN">枚数</label><span class="val" id="iNv">1 枚</span></div>
+            <input type="range" id="iN" min="1" max="200" step="1" value="1">
+          </div>
+          <div class="row">
+            <button class="chip" data-ip="3,3,1">フルHD</button>
+            <button class="chip" data-ip="4,3,1">スマホ写真（1200万画素）</button>
+            <button class="chip" data-ip="6,3,1">4K</button>
+            <button class="chip" data-ip="0,0,1">白黒アイコン</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result" id="iResult"></div>
+    <div class="panel"><h2>身近なものとの比較</h2><div class="compare" id="iCmp"></div></div>
+  </section>
+
+  <!-- ===== 音声 ===== -->
+  <section class="tool" id="toolSnd" role="tabpanel" aria-labelledby="tabSnd">
+    <div class="panel">
+      <div class="cols">
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="sR">標本化周波数</label><span class="val" id="sRv">44,100 Hz</span></div>
+            <input type="range" id="sR" min="0" max="4" step="1" value="3">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="sB">量子化ビット数</label><span class="val" id="sBv">16 ビット</span></div>
+            <input type="range" id="sB" min="0" max="3" step="1" value="2">
+          </div>
+        </div>
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="sC">チャンネル数</label><span class="val" id="sCv">2（ステレオ）</span></div>
+            <input type="range" id="sC" min="1" max="2" step="1" value="2">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="sT">長さ</label><span class="val" id="sTv">3 分 00 秒</span></div>
+            <input type="range" id="sT" min="10" max="3600" step="10" value="180">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="chip" data-sp="3,2,2,180">CD品質・3分</button>
+        <button class="chip" data-sp="1,1,1,180">電話品質・3分</button>
+        <button class="chip" data-sp="4,3,2,180">ハイレゾ・3分</button>
+        <button class="chip" data-sp="3,2,2,3600">CD品質・1時間</button>
+      </div>
+    </div>
+
+    <div class="result" id="sResult"></div>
+    <div class="panel"><h2>身近なものとの比較</h2><div class="compare" id="sCmp"></div></div>
+  </section>
+
+  <!-- ===== 動画 ===== -->
+  <section class="tool" id="toolMov" role="tabpanel" aria-labelledby="tabMov">
+    <div class="panel">
+      <div class="cols">
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="mW">解像度</label><span class="val" id="mWv">1920×1080</span></div>
+            <input type="range" id="mW" min="0" max="4" step="1" value="2">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="mF">1秒あたりのコマ数</label><span class="val" id="mFv">30 fps</span></div>
+            <input type="range" id="mF" min="0" max="3" step="1" value="1">
+          </div>
+        </div>
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="mT">長さ</label><span class="val" id="mTv">1 分 00 秒</span></div>
+            <input type="range" id="mT" min="10" max="600" step="10" value="60">
+          </div>
+          <div class="sl">
+            <div class="top"><label for="mZ">圧縮率</label><span class="val" id="mZv">1/100</span></div>
+            <input type="range" id="mZ" min="0" max="3" step="1" value="2">
+            <div class="hint" id="mZN" style="margin-top:2px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result" id="mResult"></div>
+    <div class="panel">
+      <h2>圧縮しない場合との比較</h2>
+      <div class="compare" id="mCmp"></div>
+      <p class="hint">動画は、圧縮なしではほとんど扱えない大きさになります。だから動画には必ず圧縮が使われています。</p>
+    </div>
+  </section>
+
+  <!-- ===== 保存と転送 ===== -->
+  <section class="tool" id="toolNet" role="tabpanel" aria-labelledby="tabNet">
+    <div class="panel">
+      <div class="cols">
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="nSize">データの大きさ</label><span class="val" id="nSizev">100 MB</span></div>
+            <input type="range" id="nSize" min="1" max="120" step="1" value="60">
+          </div>
+        </div>
+        <div class="col">
+          <div class="sl">
+            <div class="top"><label for="nSpd">通信速度</label><span class="val" id="nSpdv">100 Mbps</span></div>
+            <input type="range" id="nSpd" min="0" max="6" step="1" value="4">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result" id="nResult"></div>
+
+    <div class="panel">
+      <h2>この大きさなら、どれだけ保存できるか</h2>
+      <table class="t" id="nTable"></table>
+      <p class="hint">実際の記録媒体は、表示容量より少し少なくなります（1KB＝1000バイトで計算される場合があるため）。</p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>ビットとバイト</h2>
+    <p>データ量を考えるとき、まず単位を正しく理解しておく必要があります。</p>
+    <p>0か1かの情報1つ分をビット（bit）といいます。これがデータの最小単位です。そして8ビットをまとめたものをバイト（byte）といいます。</p>
+    <div class="formula">8 ビット ＝ 1 バイト</div>
+    <p>ファイルの大きさは通常バイトで、通信速度は通常ビットで表されます。ここを混同すると8倍の差が出るので注意が必要です。100Mbps（メガビット毎秒）の回線は、1秒あたり約12.5MB（メガバイト）を送れる計算になります。</p>
+
+    <h3>大きな単位</h3>
+    <table>
+      <tr><th>単位</th><th>読み方</th><th>大きさ</th><th>目安</th></tr>
+      <tr><td class="mono">KB</td><td>キロバイト</td><td class="mono">約1,000バイト</td><td>短い文書</td></tr>
+      <tr><td class="mono">MB</td><td>メガバイト</td><td class="mono">約100万バイト</td><td>写真1枚、曲1つ</td></tr>
+      <tr><td class="mono">GB</td><td>ギガバイト</td><td class="mono">約10億バイト</td><td>映画1本</td></tr>
+      <tr><td class="mono">TB</td><td>テラバイト</td><td class="mono">約1兆バイト</td><td>ハードディスク</td></tr>
+    </table>
+    <p>厳密には、コンピュータの世界では1024倍ずつ大きくなる数え方（KiB、MiB など）も使われます。1024は2の10乗で、2進数と相性がよいためです。文脈によって使い分けられているため、多少の差が出ることがあります。</p>
+
+    <h2>画像のデータ量</h2>
+    <div class="formula">データ量 ＝ 縦の画素数 × 横の画素数 × 1画素あたりのビット数</div>
+    <p>フルHD（1920×1080）のフルカラー（24ビット）写真を計算してみます。</p>
+    <div class="formula">1920 × 1080 × 24 ＝ 49,766,400 ビット ＝ 約5.9 MB</div>
+    <p>これは圧縮しない場合の値です。実際のJPEG写真が1〜3MB程度で済むのは、圧縮されているからです。</p>
+
+    <h2>音声のデータ量</h2>
+    <div class="formula">データ量 ＝ 標本化周波数 × 量子化ビット数 × チャンネル数 × 秒数</div>
+    <p>CD品質で3分の曲なら、44,100 × 16 × 2 × 180 ＝ 254,016,000ビット、約30MBです。CD1枚（約74分）が約740MBなのは、この計算によります。</p>
+
+    <h2>動画のデータ量</h2>
+    <p>動画は、画像を1秒間に何十枚も並べたものです。そのため、画像1枚の何十倍ものデータ量になります。</p>
+    <div class="formula">データ量 ＝ 1コマの画像のデータ量 × コマ数（fps） × 秒数</div>
+    <p>フルHDで30fpsの動画を1分間、圧縮せずに記録すると、次のようになります。</p>
+    <div class="formula">5.9 MB × 30 × 60 ＝ 約10.6 GB</div>
+    <p>1分でDVD2枚分を超えます。この大きさでは扱えないため、動画には必ず圧縮が使われます。実際のスマートフォンの動画は、1分あたり100MB程度です。100分の1ほどに圧縮されている計算になります。</p>
+
+    <h3>なぜそこまで圧縮できるのか</h3>
+    <p>動画には、大量の無駄があるためです。連続するコマの多くは、前のコマとほとんど同じです。背景が動かない場面なら、変化した部分だけを記録すれば済みます。</p>
+    <p>この考え方をフレーム間予測といい、動画圧縮の中心的な技術です。動きの少ない映像ほどよく圧縮でき、激しく動く映像は圧縮しにくくなります。</p>
+
+    <h2>通信にかかる時間</h2>
+    <div class="formula">時間 ＝ データ量（ビット） ÷ 通信速度（bps）</div>
+    <p>ここでもビットとバイトの区別が重要です。ファイルの大きさはバイト、通信速度はビットなので、8倍して揃える必要があります。</p>
+    <p>100MBのファイルを100Mbpsの回線で送る場合、100MB＝800Mビットなので、800 ÷ 100 ＝ 8秒です。実際には通信の効率や混雑があるため、これより時間がかかります。</p>
+
+    <h2>圧縮という考え方</h2>
+    <p>ここまでの計算はすべて、圧縮しない場合の値です。実際のファイルはほぼ必ず圧縮されています。</p>
+    <table>
+      <tr><th>種類</th><th>もとに戻せるか</th><th>例</th></tr>
+      <tr><td>可逆圧縮</td><td>完全に戻せる</td><td class="mono">ZIP、PNG、FLAC</td></tr>
+      <tr><td>非可逆圧縮</td><td>完全には戻せない</td><td class="mono">JPEG、MP3、MP4</td></tr>
+    </table>
+    <p>写真や音楽、動画では、人が気づきにくい情報を捨てることで大幅にデータ量を減らしています。文書やプログラムでは1ビットの違いが致命的なので、可逆圧縮しか使えません。</p>
+
+    <h2>なぜ通信量を意識するのか</h2>
+    <p>スマートフォンの契約には、月に使える通信量の上限が決められていることがあります。上限を超えると速度が大幅に制限されるため、何にどれだけ使っているかを知っておくと役立ちます。</p>
+    <table>
+      <tr><th>内容</th><th>1時間あたりの目安</th></tr>
+      <tr><td>音楽のストリーミング</td><td class="mono">約 60〜150 MB</td></tr>
+      <tr><td>動画（標準画質）</td><td class="mono">約 0.5〜1 GB</td></tr>
+      <tr><td>動画（高画質・フルHD）</td><td class="mono">約 2〜3 GB</td></tr>
+      <tr><td>ビデオ通話</td><td class="mono">約 0.5〜1 GB</td></tr>
+    </table>
+    <p>動画が突出して大きいことが分かります。月3GBの契約なら、高画質の動画を1〜2時間見ただけで使い切ってしまう計算です。画質を落とすだけで通信量が数分の1になるのは、この教材で計算したとおりの理由によります。</p>
+
+    <h2>単位の混乱に注意</h2>
+    <p>データ量の単位には、まぎらわしい点が2つあります。</p>
+    <p>1つは、<strong>ビットとバイト</strong>です。通信速度は bps（ビット毎秒）、ファイルの大きさはバイトで表されるのが慣例です。8倍の違いがあるので、「100Mbpsだから100MBのファイルが1秒」ではありません。正しくは8秒かかります。</p>
+    <p>もう1つは、<strong>1000倍か1024倍か</strong>という問題です。記録媒体の容量表示は1000倍で計算されることが多く、パソコンの表示は1024倍で計算されます。そのため「1TBのハードディスク」をパソコンにつなぐと、931GBと表示されます。壊れているわけでも、だまされているわけでもありません。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>画像・音声・動画</strong>：条件を変えると、データ量が自動で計算されます。身近なファイルとの比較も表示されます。</li>
+      <li><strong>保存と転送</strong>：データの大きさから、保存できる数と転送にかかる時間を計算できます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+(() => {
+  const tabs=[['tabImg','toolImg'],['tabSnd','toolSnd'],['tabMov','toolMov'],['tabNet','toolNet']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+/* ===== 単位 ===== */
+function fmtBytes(b){
+  if(b<1024) return Math.round(b)+' バイト';
+  if(b<1024**2) return (b/1024).toFixed(1)+' KB';
+  if(b<1024**3) return (b/1024**2).toFixed(1)+' MB';
+  if(b<1024**4) return (b/1024**3).toFixed(2)+' GB';
+  return (b/1024**4).toFixed(2)+' TB';
+}
+function fmtBits(n){
+  if(n<1e4) return n.toLocaleString();
+  if(n<1e8) return n.toLocaleString();
+  if(n<1e12) return (n/1e8).toFixed(1)+'億';
+  return (n/1e12).toFixed(1)+'兆';
+}
+function bars(el, items, meIdx){
+  const max=Math.max(...items.map(x=>x.b));
+  el.innerHTML=items.map((x,i)=>
+    `<div class="cbar${i===meIdx?' me':''}">
+      <div class="t"><span class="n">${x.n}</span><span class="s">${fmtBytes(x.b)}</span></div>
+      <div class="b"><i style="width:${Math.max(1,x.b/max*100)}%"></i></div>
+    </div>`).join('');
+}
+
+/* ===== 画像 ===== */
+const IW=[[64,64,'アイコン'],[640,480,'小さい写真'],[1280,960,'スマホ写真（低）'],[1920,1080,'フルHD'],
+          [4032,3024,'スマホ写真（1200万画素）'],[6000,4000,'一眼カメラ（2400万画素）'],[3840,2160,'4K']];
+const IB=[1,4,8,24,32];
+const IBN=['白黒2色','16色','256色','フルカラー（約1677万色）','フルカラー＋透明度'];
+function calcImg(){
+  const wi=+document.getElementById('iW').value, bi=+document.getElementById('iBit').value;
+  const n=+document.getElementById('iN').value;
+  const [W,H,name]=IW[wi], bit=IB[bi];
+  document.getElementById('iWv').textContent=`${W}×${H}`;
+  document.getElementById('iBitv').textContent=bit+' ビット';
+  document.getElementById('iBitN').textContent=IBN[bi];
+  document.getElementById('iNv').textContent=n+' 枚';
+
+  const bitsOne=W*H*bit, bytesOne=bitsOne/8, total=bytesOne*n;
+  document.getElementById('iResult').innerHTML=
+    `<div class="lab">${name}（${W}×${H}）を ${n}枚（圧縮しない場合）</div>
+     <div class="big">${fmtBytes(total)}</div>
+     <div class="grid">
+       <div class="g"><div class="k">画素数</div><div class="v">${(W*H).toLocaleString()}</div></div>
+       <div class="g"><div class="k">1枚あたり</div><div class="v">${fmtBytes(bytesOne)}</div></div>
+       <div class="g"><div class="k">全体のビット数</div><div class="v">${fmtBits(bitsOne*n)}</div></div>
+     </div>
+     <div class="calc">${W} × ${H} × ${bit} ＝ <b>${bitsOne.toLocaleString()} ビット</b>
+       → 8で割って <b>${fmtBytes(bytesOne)}</b>${n>1?` → ×${n}枚 で <b>${fmtBytes(total)}</b>`:''}</div>`;
+
+  bars(document.getElementById('iCmp'),[
+    {n:'いまの設定',b:total},
+    {n:'JPEG写真（実際・約1/10）',b:total/10},
+    {n:'フロッピーディスク1枚',b:1.44*1024*1024},
+    {n:'CD-ROM 1枚',b:700*1024*1024}
+  ],0);
+}
+['iW','iBit','iN'].forEach(id=>document.getElementById(id).addEventListener('input',calcImg));
+document.querySelectorAll('[data-ip]').forEach(b=>b.addEventListener('click',()=>{
+  const [w,bit,n]=b.dataset.ip.split(',').map(Number);
+  document.getElementById('iW').value=w; document.getElementById('iBit').value=bit;
+  document.getElementById('iN').value=n; calcImg();
+}));
+
+/* ===== 音声 ===== */
+const SR=[8000,11025,22050,44100,96000];
+const SB=[8,12,16,24];
+function calcSnd(){
+  const r=SR[+document.getElementById('sR').value], b=SB[+document.getElementById('sB').value];
+  const c=+document.getElementById('sC').value, t=+document.getElementById('sT').value;
+  document.getElementById('sRv').textContent=r.toLocaleString()+' Hz';
+  document.getElementById('sBv').textContent=b+' ビット';
+  document.getElementById('sCv').textContent=c===1?'1（モノラル）':'2（ステレオ）';
+  const m=Math.floor(t/60), sec=t%60;
+  document.getElementById('sTv').textContent=`${m} 分 ${String(sec).padStart(2,'0')} 秒`;
+
+  const bits=r*b*c*t, bytes=bits/8;
+  document.getElementById('sResult').innerHTML=
+    `<div class="lab">この条件で録音した場合（圧縮しない場合）</div>
+     <div class="big">${fmtBytes(bytes)}</div>
+     <div class="grid">
+       <div class="g"><div class="k">1秒あたり</div><div class="v">${fmtBytes(r*b*c/8)}</div></div>
+       <div class="g"><div class="k">全体のビット数</div><div class="v">${fmtBits(bits)}</div></div>
+       <div class="g"><div class="k">MP3なら（約1/10）</div><div class="v">${fmtBytes(bytes/10)}</div></div>
+     </div>
+     <div class="calc">${r.toLocaleString()} × ${b} × ${c} × ${t} ＝ <b>${bits.toLocaleString()} ビット</b>
+       → 8で割って <b>${fmtBytes(bytes)}</b></div>`;
+
+  bars(document.getElementById('sCmp'),[
+    {n:'いまの設定',b:bytes},
+    {n:'MP3で圧縮（約1/10）',b:bytes/10},
+    {n:'CD 1枚（74分・CD品質）',b:44100*16*2*74*60/8},
+    {n:'CD-ROM 1枚の容量',b:700*1024*1024}
+  ],0);
+}
+['sR','sB','sC','sT'].forEach(id=>document.getElementById(id).addEventListener('input',calcSnd));
+document.querySelectorAll('[data-sp]').forEach(b=>b.addEventListener('click',()=>{
+  const [r,bb,c,t]=b.dataset.sp.split(',').map(Number);
+  document.getElementById('sR').value=r; document.getElementById('sB').value=bb;
+  document.getElementById('sC').value=c; document.getElementById('sT').value=t; calcSnd();
+}));
+
+/* ===== 動画 ===== */
+const MW=[[640,480,'SD'],[1280,720,'HD'],[1920,1080,'フルHD'],[2560,1440,'2K'],[3840,2160,'4K']];
+const MF=[24,30,60,120];
+const MZ=[[1,'圧縮しない'],[10,'1/10'],[100,'1/100'],[500,'1/500']];
+function calcMov(){
+  const wi=+document.getElementById('mW').value, fi=+document.getElementById('mF').value;
+  const t=+document.getElementById('mT').value, zi=+document.getElementById('mZ').value;
+  const [W,H,name]=MW[wi], fps=MF[fi], [z,zn]=MZ[zi];
+  document.getElementById('mWv').textContent=`${W}×${H}`;
+  document.getElementById('mFv').textContent=fps+' fps';
+  const m=Math.floor(t/60), sec=t%60;
+  document.getElementById('mTv').textContent=`${m} 分 ${String(sec).padStart(2,'0')} 秒`;
+  document.getElementById('mZv').textContent = z===1?'なし':'1/'+z;
+  document.getElementById('mZN').textContent = z===1?'生のデータ量です'
+    : (z===10?'高画質な保存の目安':(z===100?'一般的な動画の目安':'配信サービスの目安'));
+
+  const oneFrame=W*H*24/8;
+  const raw=oneFrame*fps*t;
+  const size=raw/z;
+  document.getElementById('mResult').innerHTML=
+    `<div class="lab">${name}（${W}×${H}）・${fps}fps・${m}分${sec}秒</div>
+     <div class="big">${fmtBytes(size)}</div>
+     <div class="grid">
+       <div class="g"><div class="k">1コマあたり</div><div class="v">${fmtBytes(oneFrame)}</div></div>
+       <div class="g"><div class="k">総コマ数</div><div class="v">${(fps*t).toLocaleString()}</div></div>
+       <div class="g"><div class="k">1秒あたり</div><div class="v">${fmtBytes(size/t)}</div></div>
+     </div>
+     <div class="calc">${fmtBytes(oneFrame)} × ${fps}コマ × ${t}秒 ＝ <b>${fmtBytes(raw)}</b>
+       ${z>1?` → ${zn}に圧縮して <b>${fmtBytes(size)}</b>`:''}</div>`;
+
+  bars(document.getElementById('mCmp'),[
+    {n:'圧縮しない場合',b:raw},
+    {n:'いまの設定',b:size},
+    {n:'DVD 1枚',b:4.7*1000**3},
+    {n:'ブルーレイ 1枚',b:25*1000**3}
+  ],1);
+}
+['mW','mF','mT','mZ'].forEach(id=>document.getElementById(id).addEventListener('input',calcMov));
+
+/* ===== 保存と転送 ===== */
+const SPD=[[1,'1 Mbps'],[10,'10 Mbps'],[30,'30 Mbps'],[50,'50 Mbps'],[100,'100 Mbps'],
+           [1000,'1 Gbps'],[10000,'10 Gbps']];
+function fmtSec(s){
+  if(s<1) return '1秒未満';
+  if(s<60) return Math.round(s)+' 秒';
+  if(s<3600) return Math.floor(s/60)+' 分 '+Math.round(s%60)+' 秒';
+  if(s<86400) return (s/3600).toFixed(1)+' 時間';
+  return (s/86400).toFixed(1)+' 日';
+}
+function calcNet(){
+  const mb=+document.getElementById('nSize').value*10; // 10MB刻み
+  const [spd,spdN]=SPD[+document.getElementById('nSpd').value];
+  document.getElementById('nSizev').textContent = mb>=1024 ? (mb/1024).toFixed(1)+' GB' : mb+' MB';
+  document.getElementById('nSpdv').textContent=spdN;
+
+  const bytes=mb*1024*1024;
+  const bits=bytes*8;
+  const sec=bits/(spd*1e6);
+  document.getElementById('nResult').innerHTML=
+    `<div class="lab">この大きさのデータを送るのにかかる時間</div>
+     <div class="big">${fmtSec(sec)}</div>
+     <div class="grid">
+       <div class="g"><div class="k">データ量（ビット）</div><div class="v">${fmtBits(bits)}</div></div>
+       <div class="g"><div class="k">1秒あたりに送れる量</div><div class="v">${fmtBytes(spd*1e6/8)}</div></div>
+       <div class="g"><div class="k">通信速度</div><div class="v">${spdN}</div></div>
+     </div>
+     <div class="calc">${bits.toLocaleString()} ビット ÷ ${(spd*1e6).toLocaleString()} bps ＝ <b>${fmtSec(sec)}</b>
+       　※理論上の値です。実際は混雑などでこれより時間がかかります。</div>`;
+
+  const MEDIA=[['USBメモリ',32*1000**3],['DVD',4.7*1000**3],['ブルーレイ',25*1000**3],
+               ['スマホ（128GB）',128*1000**3],['ハードディスク（1TB）',1000**4]];
+  document.getElementById('nTable').innerHTML=
+    '<thead><tr><th>記録媒体</th><th>容量</th><th>保存できる数</th></tr></thead><tbody>'+
+    MEDIA.map(([n,cap])=>
+      `<tr><th>${n}</th><td>${fmtBytes(cap)}</td><td>${Math.floor(cap/bytes).toLocaleString()} 個</td></tr>`
+    ).join('')+'</tbody>';
+}
+['nSize','nSpd'].forEach(id=>document.getElementById(id).addEventListener('input',calcNet));
+
+/* ===== 初期化 ===== */
+calcImg(); calcSnd(); calcMov(); calcNet();
+</script>
+</body>
+</html>

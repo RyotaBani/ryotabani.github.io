@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あやしいメールを見分けよう（フィッシング対策）｜情報ラボ</title>
+<meta name="description" content="本物と偽物のメールやURLを見比べて、フィッシングを見分ける練習ができる無料ツール。ドメインの読み方や手口の特徴を体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/phishing/">
+<meta property="og:title" content="あやしいメールを見分けよう｜情報ラボ">
+<meta property="og:description" content="フィッシングを見分ける力を、判定クイズで身につける無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/phishing/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.big{padding:14px 30px; border-radius:12px; font-size:16px; font-weight:700;
+    cursor:pointer; font-family:inherit; border:2px solid transparent; color:#fff;}
+  button.safe{background:var(--ok);} button.safe:hover{background:#3a9160;}
+  button.danger{background:var(--ng);} button.danger:hover{background:#d94b3a;}
+  button.big:disabled{opacity:.5; cursor:not-allowed;}
+
+  /* メール表示 */
+  .mail{background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+    margin-bottom:16px;}
+  .mail .head{padding:14px 18px; border-bottom:1px solid var(--line); background:#FAFBFD;}
+  .mail .hrow{display:flex; gap:10px; font-size:13.5px; margin-bottom:5px; flex-wrap:wrap;}
+  .mail .hrow .k{color:var(--muted); flex:0 0 4.5em;}
+  .mail .hrow .v{color:var(--ink); word-break:break-all;}
+  .mail .hrow .v.mono{font-family:ui-monospace,Consolas,monospace; font-size:13px;}
+  .mail .subj{font-size:17px; font-weight:700; color:var(--ink); margin-top:8px;}
+  .mail .body{padding:18px; font-size:15px; line-height:1.9; white-space:pre-wrap;}
+  .mail .link{display:inline-block; margin-top:10px; padding:10px 18px; background:var(--navy);
+    color:#fff; border-radius:8px; font-size:14.5px; text-decoration:none;}
+  .mail .urlhint{font-family:ui-monospace,Consolas,monospace; font-size:12.5px;
+    color:var(--muted); margin-top:8px; word-break:break-all;}
+
+  .progress{display:flex; gap:16px; align-items:center; flex-wrap:wrap; font-size:14px;
+    color:var(--muted); margin-bottom:12px;}
+  .progress b{color:var(--ink); font-size:18px;}
+  .dots{display:flex; gap:5px;}
+  .dots i{width:11px; height:11px; border-radius:50%; background:var(--line); display:block;}
+  .dots i.ok{background:var(--ok);} .dots i.ng{background:var(--ng);}
+  .dots i.now{background:var(--navy);}
+
+  .judge{border-radius:12px; padding:18px 20px; color:#fff; margin-bottom:16px;}
+  .judge.correct{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .judge.wrong{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .judge .t{font-size:19px; font-weight:700; margin-bottom:8px;}
+  .judge .d{font-size:14.5px; line-height:1.85;}
+  .judge .pt{margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,.2);
+    font-size:14px;}
+  .judge .pt b{color:#ffd97a;}
+
+  .result{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff; border-radius:12px;
+    padding:24px; text-align:center;}
+  .result .sc{font-size:44px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .result .msg{font-size:16px; margin-top:8px;}
+
+  /* URL比較 */
+  .urls{display:flex; flex-direction:column; gap:10px;}
+  .u{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px;
+    cursor:pointer; transition:all .15s;}
+  .u:hover{border-color:var(--navy);}
+  .u .addr{font-family:ui-monospace,Consolas,monospace; font-size:15px; word-break:break-all;}
+  .u .ans{font-size:13px; margin-top:6px; display:none;}
+  .u.open .ans{display:block;}
+  .u.real{border-color:var(--ok); background:#F1F8F3;}
+  .u.fake{border-color:var(--ng); background:#FBEEEE;}
+  .u.real .ans{color:var(--ok);} .u.fake .ans{color:var(--ng);}
+  .u .hl{background:#FFE9A8; padding:1px 2px; border-radius:3px; font-weight:700;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px; font-family:ui-monospace,Consolas,monospace;}
+  .src{font-size:12.5px; color:var(--muted); font-style:italic; margin-top:-6px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ あやしいメールを見分ける</p>
+    <h1>あやしいメールを見分けよう</h1>
+    <p class="lead">本物そっくりの偽メールが届いたとき、どこを見れば気づけるでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabQuiz" aria-selected="true" aria-controls="toolQuiz">判定クイズ</button>
+    <button class="tab" role="tab" id="tabUrl" aria-selected="false" aria-controls="toolUrl">URLを見分ける</button>
+    <button class="tab" role="tab" id="tabPoint" aria-selected="false" aria-controls="toolPoint">チェックリスト</button>
+  </div>
+
+  <!-- ===== 判定クイズ ===== -->
+  <section class="tool show" id="toolQuiz" role="tabpanel" aria-labelledby="tabQuiz">
+    <div class="progress">
+      <span>問題 <b id="qNum">1</b> / <b id="qTotal">8</b></span>
+      <span>正解 <b id="qScore">0</b></span>
+      <div class="dots" id="qDots"></div>
+    </div>
+
+    <div id="qArea">
+      <div class="mail" id="qMail"></div>
+      <div class="row" style="justify-content:center;">
+        <button class="big safe" id="qSafe">本物だと思う</button>
+        <button class="big danger" id="qFake">あやしいと思う</button>
+      </div>
+      <div id="qJudge"></div>
+      <div class="row" style="justify-content:center;margin-top:14px;">
+        <button class="chip" id="qNext" style="display:none;">次の問題へ</button>
+      </div>
+    </div>
+
+    <div id="qResult" style="display:none;">
+      <div class="result">
+        <div class="sc" id="rScore">–</div>
+        <div class="msg" id="rMsg">–</div>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:16px;">
+        <button class="chip" id="qRestart">もう一度挑戦する</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== URL ===== -->
+  <section class="tool" id="toolUrl" role="tabpanel" aria-labelledby="tabUrl">
+    <div class="panel">
+      <h2>どれが本物のURLでしょうか</h2>
+      <p class="hint" style="margin-top:0;">クリックすると答えと解説が表示されます。</p>
+    </div>
+    <div class="urls" id="uList"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>URLの読み方</h2>
+      <p style="margin:0 0 10px;font-size:15px;">URLで最も重要なのは、最初の「/」までの部分です。ここがドメイン名で、どこのサイトかを決めています。</p>
+      <div class="formula">https://<span style="background:#FFE9A8;padding:2px 4px;border-radius:3px;">www.example.co.jp</span>/login/index.html</div>
+      <p style="margin:0;font-size:15px;">さらにドメイン名は、<strong>右から</strong>読みます。上の例なら「jp（日本）の co（企業）の example」という組織です。左側の www は、その組織が自由に付けられる部分です。</p>
+      <p class="hint">つまり <code>example.co.jp.evil.com</code> は、example とは無関係の <strong>evil.com</strong> のサイトです。左側だけ見て安心してはいけません。</p>
+    </div>
+  </section>
+
+  <!-- ===== チェックリスト ===== -->
+  <section class="tool" id="toolPoint" role="tabpanel" aria-labelledby="tabPoint">
+    <div class="panel">
+      <h2>あやしいメールに共通する特徴</h2>
+      <div id="pList"></div>
+    </div>
+    <div class="panel">
+      <h2>迷ったときの行動</h2>
+      <ol style="margin:0;padding-left:1.3em;font-size:15px;line-height:1.95;">
+        <li><strong>メールのリンクを押さない。</strong> 用があるなら、いつも使っているアプリやブックマークから自分でアクセスする。</li>
+        <li><strong>すぐに判断しない。</strong> 急がせるのは相手の手口です。時間を置くだけで冷静になれます。</li>
+        <li><strong>誰かに相談する。</strong> 家族や先生に見せるだけで、多くの被害は防げます。</li>
+        <li><strong>押してしまったら、情報を入力せずに閉じる。</strong> 入力してしまった場合は、すぐにそのサービスのパスワードを変更し、カード会社などに連絡します。</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>フィッシングとは</h2>
+    <p>実在する企業や公的機関になりすまし、偽のメールやメッセージを送って、偽のサイトへ誘導する詐欺をフィッシングといいます。そこでIDやパスワード、クレジットカード番号を入力させて盗み取ります。</p>
+    <p>語源は釣り（fishing）ですが、洗練された（sophisticated）という語と混ざって phishing と綴られるようになったといわれます。魚を釣るように、大量にばらまいて引っかかる人を待つ手口です。</p>
+    <p>フィッシング対策協議会への報告件数は年間100万件を超える規模で推移しており、身近な脅威になっています。特にスマートフォンでは画面が狭くURLが省略されて表示されるため、見分けにくくなります。</p>
+
+    <h2>なぜ気づきにくいのか</h2>
+    <p>近年のフィッシングメールは、非常によくできています。企業の本物のメールをそのままコピーして、リンク先だけ差し替えているものも多くあります。</p>
+    <p>かつては「日本語が不自然」という見分け方が有効でしたが、いまは通用しません。自動翻訳や生成AIの普及により、自然な日本語の偽メールが簡単に作れるようになったためです。文章の巧拙で判断するのは、もはや危険です。</p>
+
+    <h2>見分ける鍵はURLにある</h2>
+    <p>文面が完璧でも、変えられないものがあります。<strong>リンク先のURL</strong>です。本物のドメインは持ち主がいるので、攻撃者は使えません。だから似せた別のドメインを用意するしかないのです。</p>
+
+    <h3>ドメイン名は右から読む</h3>
+    <p>URLの構造を正しく理解しておくことが、最大の防御になります。</p>
+    <div class="formula">https://www.example.co.jp/login</div>
+    <p>最初の「//」から次の「/」までがドメイン名です。そして、<strong>ドメイン名は右から読みます</strong>。上の例は「jp の co の example」という組織を指します。左端の www は、その組織が自由に決められる部分にすぎません。</p>
+    <p>この性質を悪用したのが、次のような偽装です。</p>
+    <table>
+      <tr><th>URL</th><th>実際にどこか</th></tr>
+      <tr><td class="mono">amazon.co.jp.security-check.com</td><td>security-check.com（無関係）</td></tr>
+      <tr><td class="mono">arnazon.co.jp</td><td>arnazon（rn を m に見せている）</td></tr>
+      <tr><td class="mono">amazon-support.net</td><td>amazon-support.net（別組織）</td></tr>
+    </table>
+    <p>1つ目は、左側に本物の文字列を置いて安心させる手口です。2つ目は、r と n を並べて m に見せる視覚的なトリックです。フォントによっては、ほぼ区別がつきません。</p>
+
+    <h3>鍵マークがあっても安全とは限らない</h3>
+    <p>「httpsで鍵マークがあれば安全」と説明されることがありますが、これは正確ではありません。鍵マークが意味するのは<strong>通信が暗号化されていること</strong>だけです。</p>
+    <p>証明書は無料で取得できるため、詐欺サイトもhttpsに対応しています。実際、フィッシングサイトの大半がhttpsを使っています。「暗号化されて安全に偽サイトへ送られている」という状態になりうるのです。</p>
+    <p>鍵マークは「盗み見されていない」ことの証明であって、「相手が信頼できる」ことの証明ではありません。ここを混同しないことが重要です。</p>
+
+    <h2>心理を突く手口</h2>
+    <p>フィッシングは技術だけでなく、人の心理を利用します。よく使われるのは次の3つです。</p>
+    <ul>
+      <li><strong>不安</strong>：「アカウントを停止しました」「不正利用を検知しました」</li>
+      <li><strong>期限</strong>：「24時間以内に手続きしないと失効します」</li>
+      <li><strong>欲</strong>：「当選しました」「返金があります」</li>
+    </ul>
+    <p>いずれも、冷静に考える時間を奪うことが狙いです。<strong>急がせるメールは疑う</strong>というだけで、多くの被害は防げます。本当に重要な連絡なら、メール以外の手段でも届きますし、公式アプリを開けば確認できます。</p>
+
+    <h2>いちばん確実な対策</h2>
+    <p>結論はとても単純です。<strong>メールのリンクを押さない</strong>ことです。</p>
+    <p>気になる連絡が来たら、そのメールは閉じて、いつも使っているアプリやブックマークから自分でアクセスします。本当にアカウントに問題があるなら、公式サイトにログインすれば必ず表示されます。この習慣ひとつで、フィッシングはほぼ防げます。</p>
+    <p>加えて、二段階認証を設定しておくと、万一パスワードを入力してしまっても被害を防げる可能性が高まります。パスキーを使えば、そもそも偽サイトでは認証が成立しないため、より根本的な対策になります。</p>
+
+    <h2>スミッシングとビッシング</h2>
+    <p>フィッシングはメールだけではありません。手段によって呼び名があります。</p>
+    <p>SMS（ショートメッセージ）を使うものをスミッシング（SMS + phishing）といいます。宅配便の不在通知を装うものが多く、スマートフォンでは送信元が電話番号で表示されるため、正規の通知と見分けにくいのが特徴です。</p>
+    <p>電話をかけてくるものはビッシング（voice + phishing）と呼ばれます。銀行や警察を名乗り、口頭で情報を聞き出したり、操作を指示したりします。「今すぐATMへ」といった指示が典型です。</p>
+    <p>手段は違っても、狙いと対策は同じです。相手が名乗った組織に、自分が知っている連絡先から確認する。これだけで防げます。</p>
+
+    <h2>被害にあってしまったら</h2>
+    <p>気づいた時点で、すぐに行動することが被害を小さくします。</p>
+    <ul>
+      <li>入力してしまったサービスの<strong>パスワードをすぐ変更</strong>する。同じパスワードを他でも使っていたなら、そちらも変更する</li>
+      <li>クレジットカード情報を入力したなら、<strong>カード会社に連絡</strong>して利用停止を依頼する</li>
+      <li>身に覚えのない請求がないか、<strong>利用明細を確認</strong>する</li>
+      <li>一人で抱えず、<strong>家族や先生に相談</strong>する</li>
+    </ul>
+    <p>相談窓口として、消費者ホットライン（188）や、都道府県警察のサイバー犯罪相談窓口があります。恥ずかしいことではありません。巧妙な手口に引っかかるのは誰にでも起こりうることで、早く相談するほど被害を抑えられます。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>判定クイズ</strong>：8通のメールを見て、本物かあやしいかを判定します。答えのあとに、どこを見るべきだったかが表示されます。</li>
+      <li><strong>URLを見分ける</strong>：似たURLを並べています。クリックすると、どこが偽装されているかが分かります。</li>
+      <li><strong>チェックリスト</strong>：あやしいメールに共通する特徴をまとめています。</li>
+    </ul>
+    <p>ここで扱っているメールやURLは、すべて学習用に作成した架空のものです。実在の企業を装う意図はありません。</p>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabQuiz','toolQuiz'],['tabUrl','toolUrl'],['tabPoint','toolPoint']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+/* ===== クイズ（すべて架空の教材用データ） ===== */
+const QUIZ=[
+  { fake:true,
+    from:'カード安心サポート <info@card-anshin-support.net>',
+    to:'あなた',
+    subj:'【重要】カードのご利用を一時停止しました',
+    body:'いつもご利用ありがとうございます。\n\nお客様のカードに不審な取引が確認されたため、ご利用を一時停止いたしました。\n24時間以内に下記より本人確認をお願いいたします。\n手続きがない場合、カードは失効となります。',
+    url:'https://card-anshin-support.net/verify',
+    points:['差出人が公式ドメインではない（card-anshin-support.net という聞いたことのない組織）',
+            '「24時間以内」と期限を切って急がせている',
+            '不安をあおる文面になっている'],
+    ans:'カード会社を名乗っていますが、ドメインが公式のものではありません。本物なら、カード会社の正式なドメインが使われます。' },
+
+  { fake:false,
+    from:'情報ラボ <noreply@joholab.net>',
+    to:'あなた',
+    subj:'教材ページを更新しました',
+    body:'情報ラボをご利用いただきありがとうございます。\n\n新しい教材ページを公開しました。\nご意見・ご要望がありましたら、サイトのお問い合わせからお知らせください。\n\n※このメールに返信はできません。',
+    url:'https://joholab.net/',
+    points:['差出人のドメインと、リンク先のドメインが一致している',
+            '個人情報の入力を求めていない',
+            '期限を切って急がせていない'],
+    ans:'差出人とリンク先が同じドメインで、入力を求める内容もありません。あやしい要素は見当たりません。' },
+
+  { fake:true,
+    from:'配送センター <delivery@jp-post-info.com>',
+    to:'あなた',
+    subj:'お荷物のお届けにあがりましたが不在でした',
+    body:'お荷物のお届けにあがりましたが、ご不在のため持ち帰りました。\n\n下記より再配達のお手続きをお願いします。\n※期限内に手続きされない場合、荷物は返送されます。',
+    url:'https://jp-post-info.com/redelivery',
+    points:['心当たりのない荷物の通知',
+            '公式の配送業者のドメインではない',
+            '再配達なのに「返送される」と急がせている'],
+    ans:'不在通知を装う手口は非常に多く使われています。実際の配送業者は、公式アプリや投函される不在票で通知します。' },
+
+  { fake:true,
+    from:'Amazon <account-update@amazon.co.jp.secure-login.com>',
+    to:'あなた',
+    subj:'アカウント情報の確認が必要です',
+    body:'お客様のアカウントで、通常と異なる場所からのログインが検出されました。\n\nアカウントを保護するため、パスワードの再設定をお願いします。',
+    url:'https://amazon.co.jp.secure-login.com/signin',
+    points:['ドメインは右から読む。実際の相手は secure-login.com',
+            '左側に amazon.co.jp と書いて安心させる典型的な手口',
+            'ログイン情報の入力を求めている'],
+    ans:'一見すると amazon.co.jp に見えますが、ドメインは右から読みます。この場合の相手は secure-login.com という無関係な組織です。' },
+
+  { fake:false,
+    from:'学校事務室 <jimu@example-school.ed.jp>',
+    to:'保護者のみなさま',
+    subj:'保護者会の日程について',
+    body:'保護者のみなさま\n\n来月の保護者会の日程をお知らせいたします。\n日時：10月15日（水）14時より\n場所：本校 体育館\n\nご不明な点は、学校までお電話ください。',
+    url:null,
+    points:['リンクも添付ファイルもない',
+            '個人情報の入力を求めていない',
+            '問い合わせ先が電話になっている'],
+    ans:'リンクも入力要求もなく、連絡事項のみです。あやしい要素はありません。' },
+
+  { fake:true,
+    from:'セキュリティ通知 <alert@arnazon.co.jp>',
+    to:'あなた',
+    subj:'【緊急】お客様のアカウントが凍結されます',
+    body:'不正アクセスの疑いがあるため、アカウントを凍結する予定です。\n\n凍結を回避するには、下記より本人確認を完了してください。\n本日中に手続きが必要です。',
+    url:'https://arnazon.co.jp/verify',
+    points:['amazon ではなく arnazon（r と n を並べて m に見せている）',
+            '「緊急」「本日中」と強く急がせている',
+            'アカウント凍結という不安をあおっている'],
+    ans:'よく見ると amazon ではなく arnazon です。r と n を並べると m に見えるという、視覚的なトリックが使われています。' },
+
+  { fake:true,
+    from:'国税庁 <info@nta-refund.jp>',
+    to:'あなた',
+    subj:'還付金のお受け取り手続きについて',
+    body:'税金の還付金が発生しております。\n\n受け取りには口座情報の登録が必要です。\n下記よりお手続きください。\n\n金額：38,540円',
+    url:'https://nta-refund.jp/form',
+    points:['公的機関が、メールで口座情報の入力を求めることはない',
+            '公式ドメイン（go.jp）ではない',
+            '金額を示して「得をする」と思わせている'],
+    ans:'公的機関の正式なドメインは go.jp です。また、行政機関がメールで口座情報を求めることはありません。' },
+
+  { fake:false,
+    from:'図書館 <library@example-city.lg.jp>',
+    to:'あなた',
+    subj:'貸出期間の終了が近づいています',
+    body:'ご利用ありがとうございます。\n\n借りている本の返却期限が3日後です。\n延長をご希望の場合は、図書館の窓口またはお電話でお申し出ください。\n\n返却期限：10月12日',
+    url:null,
+    points:['リンクも入力要求もない',
+            '自治体の正式なドメイン（lg.jp）',
+            '手続きは窓口か電話と案内している'],
+    ans:'lg.jp は地方公共団体の正式なドメインです。リンクや入力要求もありません。' }
+];
+
+let qi=0, score=0, answered=false, results=[];
+
+function renderDots(){
+  const d=document.getElementById('qDots');
+  d.innerHTML='';
+  for(let i=0;i<QUIZ.length;i++){
+    const e=document.createElement('i');
+    if(i<results.length) e.className = results[i]?'ok':'ng';
+    else if(i===qi) e.className='now';
+    d.appendChild(e);
+  }
+}
+
+function showQ(){
+  answered=false;
+  const q=QUIZ[qi];
+  document.getElementById('qNum').textContent=qi+1;
+  document.getElementById('qTotal').textContent=QUIZ.length;
+  document.getElementById('qScore').textContent=score;
+  renderDots();
+
+  let h=`<div class="head">
+    <div class="hrow"><span class="k">差出人</span><span class="v mono">${esc(q.from)}</span></div>
+    <div class="hrow"><span class="k">宛先</span><span class="v">${esc(q.to)}</span></div>
+    <div class="subj">${esc(q.subj)}</div>
+  </div><div class="body">${esc(q.body)}`;
+  if(q.url){
+    h+=`<br><span class="link">手続きはこちら</span>
+        <div class="urlhint">リンク先：${esc(q.url)}</div>`;
+  }
+  h+='</div>';
+  document.getElementById('qMail').innerHTML=h;
+  document.getElementById('qJudge').innerHTML='';
+  document.getElementById('qNext').style.display='none';
+  document.getElementById('qSafe').disabled=false;
+  document.getElementById('qFake').disabled=false;
+}
+function esc(s){ return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function answer(saidFake){
+  if(answered) return;
+  answered=true;
+  const q=QUIZ[qi];
+  const correct = saidFake===q.fake;
+  if(correct) score++;
+  results.push(correct);
+  document.getElementById('qScore').textContent=score;
+  renderDots();
+
+  const j=document.getElementById('qJudge');
+  j.innerHTML=
+    `<div class="judge ${correct?'correct':'wrong'}">
+      <div class="t">${correct?'正解':'不正解'}　—　これは${q.fake?'あやしいメール':'問題のないメール'}です</div>
+      <div class="d">${esc(q.ans)}</div>
+      <div class="pt"><b>見るべきポイント</b><br>${q.points.map(p=>'・'+esc(p)).join('<br>')}</div>
+    </div>`;
+  document.getElementById('qSafe').disabled=true;
+  document.getElementById('qFake').disabled=true;
+  document.getElementById('qNext').style.display='';
+  document.getElementById('qNext').textContent = (qi<QUIZ.length-1)?'次の問題へ':'結果を見る';
+}
+document.getElementById('qSafe').addEventListener('click',()=>answer(false));
+document.getElementById('qFake').addEventListener('click',()=>answer(true));
+document.getElementById('qNext').addEventListener('click',()=>{
+  if(qi<QUIZ.length-1){ qi++; showQ(); }
+  else{
+    document.getElementById('qArea').style.display='none';
+    document.getElementById('qResult').style.display='';
+    document.getElementById('rScore').textContent=`${score} / ${QUIZ.length}`;
+    let m;
+    if(score===QUIZ.length) m='全問正解です。ドメインの見方が身についています。';
+    else if(score>=QUIZ.length-2) m='よくできました。見落としたポイントを確認しておきましょう。';
+    else if(score>=QUIZ.length/2) m='もう少しです。ドメインは右から読むことを意識してみてください。';
+    else m='URLの読み方から確認しましょう。「URLを見分ける」タブが役立ちます。';
+    document.getElementById('rMsg').textContent=m;
+  }
+});
+document.getElementById('qRestart').addEventListener('click',()=>{
+  qi=0; score=0; results=[];
+  document.getElementById('qArea').style.display='';
+  document.getElementById('qResult').style.display='none';
+  showQ();
+});
+
+/* ===== URL見分け ===== */
+const URLS=[
+  {u:'https://www.amazon.co.jp/',ok:true,
+   note:'本物です。ドメインを右から読むと「jp の co の amazon」。正しい構造です。'},
+  {u:'https://amazon.co.jp.secure-login.com/',ok:false,hl:'secure-login.com',
+   note:'偽物です。右から読むと相手は secure-login.com。amazon.co.jp は左側に置かれただけの飾りです。'},
+  {u:'https://arnazon.co.jp/',ok:false,hl:'arnazon',
+   note:'偽物です。amazon ではなく arnazon。r と n を並べて m に見せています。'},
+  {u:'https://www.jnb.co.jp.login-secure.net/',ok:false,hl:'login-secure.net',
+   note:'偽物です。実際の相手は login-secure.net です。'},
+  {u:'https://www.nta.go.jp/',ok:true,
+   note:'本物の構造です。go.jp は日本の政府機関にのみ割り当てられるドメインです。'},
+  {u:'https://nta-refund.jp/',ok:false,hl:'nta-refund.jp',
+   note:'偽物です。政府機関を名乗るなら go.jp のはずです。誰でも取得できる .jp が使われています。'},
+  {u:'https://joholab.net/binary/',ok:true,
+   note:'本物です。このサイトのドメインです。'},
+  {u:'https://joholab.net.verify-user.com/',ok:false,hl:'verify-user.com',
+   note:'偽物です。右から読むと verify-user.com。このサイトとは無関係です。'}
+];
+function buildUrls(){
+  const box=document.getElementById('uList');
+  box.innerHTML='';
+  URLS.forEach(x=>{
+    const d=document.createElement('div');
+    d.className='u';
+    let disp=esc(x.u);
+    if(x.hl) disp=disp.replace(esc(x.hl),`<span class="hl">${esc(x.hl)}</span>`);
+    d.innerHTML=`<div class="addr">${disp}</div>
+      <div class="ans">${x.ok?'○ 本物の構造':'× 偽装されています'}　${esc(x.note)}</div>`;
+    d.addEventListener('click',()=>{
+      d.classList.add('open', x.ok?'real':'fake');
+    });
+    box.appendChild(d);
+  });
+}
+
+/* ===== チェックリスト ===== */
+const POINTS=[
+  ['差出人のドメインを見る','表示名は自由に設定できます。「Amazon」と表示されていても、@より後ろが公式ドメインかを確認します。'],
+  ['リンク先のURLを確かめる','押す前に、長押し（スマホ）やマウスを重ねる（PC）とリンク先が表示されます。ドメインは右から読みます。'],
+  ['急がせる文面を疑う','「24時間以内」「本日中」「アカウント停止」。冷静に考える時間を奪うのが狙いです。'],
+  ['心当たりを確認する','注文していない荷物、使っていないサービスからの通知は、まず疑ってかかります。'],
+  ['入力を求められたら止まる','パスワード、カード番号、口座情報。メールから飛んだ先で入力するのは避けます。'],
+  ['鍵マークを過信しない','httpsは通信が暗号化されている証明で、相手が信頼できる証明ではありません。偽サイトもhttpsを使っています。'],
+  ['日本語の自然さで判断しない','翻訳や生成AIの普及で、不自然な日本語という手がかりは通用しなくなりました。']
+];
+function buildPoints(){
+  const box=document.getElementById('pList');
+  box.innerHTML=POINTS.map((p,i)=>
+    `<div style="background:#fff;border:1px solid var(--line);border-radius:10px;
+      padding:13px 16px;margin-bottom:9px;">
+      <div style="font-weight:700;color:var(--navy);font-size:15px;">${i+1}. ${esc(p[0])}</div>
+      <div style="font-size:14.5px;color:var(--ink);margin-top:4px;">${esc(p[1])}</div>
+    </div>`).join('');
+}
+
+/* ===== 初期化 ===== */
+showQ(); buildUrls(); buildPoints();
+</script>
+</body>
+</html>
