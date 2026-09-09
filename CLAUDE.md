@@ -115,6 +115,8 @@ python3 _tools/apply-zip.py joholab_v8.zip --apply  # 反映する
   <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
 </div>
 ```
+- トップページ（`index.html`）は `<head>` のローダーのみで、広告枠は置かない。
+  教材一覧で独自の内容が少ないため。所有権の確認はローダーだけで足りる
 - **「広告 / PR」の表記は必ず残す**（景表法のステマ規制対応）
 - パブリッシャーID `ca-pub-7076767152814369` は設定済み（全ページ＋`ads.txt`）。
   新しい教材にもこのIDをそのまま書く
