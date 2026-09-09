@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ラスタとベクタのちがいを体験しよう｜情報ラボ</title>
+<meta name="description" content="ラスタ画像とベクタ画像を並べて拡大し、ギザギザの出方の違いを実際に確かめられる無料ツール。解像度・dpi・ppiの意味も体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/vector/">
+<meta property="og:title" content="ラスタとベクタのちがいを体験しよう｜情報ラボ">
+<meta property="og:description" content="拡大したときの差を並べて確かめる無料教材。解像度・dpi・ppiも学べます。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/vector/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .side{display:flex; gap:16px; flex-wrap:wrap;}
+  .side .s{flex:1 1 300px; min-width:270px;}
+  .side .s h3{margin:0 0 8px; font-size:16px; text-align:center;}
+  .side .s.raster h3{color:var(--ng);}
+  .side .s.vector h3{color:var(--ok);}
+  .viewbox{position:relative; width:100%; aspect-ratio:1/1; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; background:#fff;}
+  .viewbox canvas, .viewbox svg{position:absolute; inset:0; width:100%; height:100%;}
+  .viewbox canvas{image-rendering:pixelated;}
+  .side .s .cap{font-size:12.5px; color:var(--muted); text-align:center; margin-top:8px; min-height:3em;}
+
+  .verdict{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:14px 18px; margin-top:14px; font-size:14.5px;}
+  .verdict b{color:#ffd97a;}
+
+  table.cmp{border-collapse:collapse; width:100%; font-size:14.5px;}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:10px 14px; text-align:left;}
+  table.cmp thead th{background:var(--navy); color:#fff; text-align:center;}
+  table.cmp tbody th{background:var(--panel); color:var(--ink); width:9em; font-weight:700;}
+  table.cmp td.r{background:#FBEEEE;}
+  table.cmp td.v{background:#EAF3EE;}
+
+  .resbox{display:flex; gap:14px; flex-wrap:wrap; justify-content:center;}
+  .resbox .r{text-align:center;}
+  .resbox canvas{border:1px solid var(--line); border-radius:8px; image-rendering:pixelated;
+    width:150px; height:150px; background:#fff;}
+  .resbox .lab{font-size:12.5px; color:var(--muted); margin-top:6px;}
+  .resbox .lab b{color:var(--ink); font-size:14px; display:block;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ ラスタとベクタ</p>
+    <h1>ラスタとベクタのちがいを体験しよう</h1>
+    <p class="lead">画像の記録のしかたには2つの方式があります。拡大すると、その差がはっきり見えます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabZoom" aria-selected="true" aria-controls="toolZoom">拡大して比べる</button>
+    <button class="tab" role="tab" id="tabRes" aria-selected="false" aria-controls="toolRes">解像度を変える</button>
+    <button class="tab" role="tab" id="tabTable" aria-selected="false" aria-controls="toolTable">使い分け</button>
+  </div>
+
+  <!-- ===== 拡大して比べる ===== -->
+  <section class="tool show" id="toolZoom" role="tabpanel" aria-labelledby="tabZoom">
+    <div class="panel">
+      <div class="sl">
+        <div class="top"><label for="zZoom">拡大率</label><span class="val" id="zZoomV">1 倍</span></div>
+        <input type="range" id="zZoom" min="1" max="16" step="0.1" value="1">
+      </div>
+      <div class="row">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">絵を選ぶ</span>
+        <button class="chip" data-fig="apple" aria-pressed="true">りんご</button>
+        <button class="chip" data-fig="star" aria-pressed="false">星</button>
+        <button class="chip" data-fig="text" aria-pressed="false">文字</button>
+        <span style="flex:1"></span>
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">元の画素数</span>
+        <button class="chip" data-px="32" aria-pressed="false">32×32</button>
+        <button class="chip" data-px="64" aria-pressed="true">64×64</button>
+        <button class="chip" data-px="128" aria-pressed="false">128×128</button>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="s raster">
+        <h3>ラスタ画像（点の集まり）</h3>
+        <div class="viewbox"><canvas id="zRaster" width="512" height="512"></canvas></div>
+        <p class="cap" id="zRasterCap"></p>
+      </div>
+      <div class="s vector">
+        <h3>ベクタ画像（計算で描く）</h3>
+        <div class="viewbox" id="zVectorBox"></div>
+        <p class="cap">形は「座標と数式」で記録されているので、拡大するときに描き直されます。何倍にしてもなめらかなままです。</p>
+      </div>
+    </div>
+
+    <div class="verdict" id="zVerdict"></div>
+  </section>
+
+  <!-- ===== 解像度 ===== -->
+  <section class="tool" id="toolRes" role="tabpanel" aria-labelledby="tabRes">
+    <div class="panel">
+      <h2>画素数を減らすと、どこまで分かるか</h2>
+      <p class="hint" style="margin-top:0;">同じ絵を、いろいろな画素数で表示しています。どこまで減らすと分からなくなるでしょうか。</p>
+    </div>
+
+    <div class="resbox" id="rBox"></div>
+
+    <div class="panel" style="margin-top:18px;">
+      <h2>解像度という言葉は、2つの意味で使われます</h2>
+      <div class="side">
+        <div class="s">
+          <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;">
+            <h3 style="color:var(--navy);text-align:left;margin-bottom:6px;">① 画素の総数</h3>
+            <p style="margin:0;font-size:14.5px;">「横1920×縦1080」のように、点が何個並んでいるかを表します。カメラの「1200万画素」もこれです。<strong>画像の大きさ</strong>の話です。</p>
+          </div>
+        </div>
+        <div class="s">
+          <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;">
+            <h3 style="color:var(--navy);text-align:left;margin-bottom:6px;">② 点の密度（dpi・ppi）</h3>
+            <p style="margin:0;font-size:14.5px;">1インチ（2.54cm）の中に点が何個入るかを表します。<strong>きめ細かさ</strong>の話です。同じ画像でも、大きく印刷すれば密度は下がります。</p>
+          </div>
+        </div>
+      </div>
+      <div class="verdict" style="margin-top:14px;">
+        <b>dpi と ppi のちがい</b>　どちらも「1インチあたりの点の数」で、考え方は同じです。
+        印刷はインクの点なので <b>dpi</b>（dots per inch）、画面は画素なので <b>ppi</b>（pixels per inch）と呼び分けています。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 使い分け ===== -->
+  <section class="tool" id="toolTable" role="tabpanel" aria-labelledby="tabTable">
+    <div class="panel">
+      <h2>どちらを使うかは、目的で決まります</h2>
+      <table class="cmp">
+        <thead>
+          <tr><th style="background:var(--panel);"></th><th>ラスタ画像</th><th>ベクタ画像</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>記録のしかた</th>
+            <td class="r">画素を1つずつ、色の数値で記録</td>
+            <td class="v">点の座標と、線や面の計算式で記録</td></tr>
+          <tr><th>拡大したとき</th>
+            <td class="r">ギザギザになる（ジャギー）</td>
+            <td class="v">なめらかなまま</td></tr>
+          <tr><th>得意なもの</th>
+            <td class="r">写真、複雑な色合いの絵</td>
+            <td class="v">ロゴ、イラスト、図面、文字</td></tr>
+          <tr><th>苦手なもの</th>
+            <td class="r">拡大、あとからの形の修正</td>
+            <td class="v">写真のような複雑な階調</td></tr>
+          <tr><th>データ量</th>
+            <td class="r">画素数×ビット数で決まる<br>（絵の内容によらない）</td>
+            <td class="v">形の複雑さで決まる<br>（単純な図形なら小さい）</td></tr>
+          <tr><th>主な形式</th>
+            <td class="r">JPEG、PNG、GIF、BMP</td>
+            <td class="v">SVG、AI、EPS、PDF</td></tr>
+          <tr><th>ソフトの例</th>
+            <td class="r">ペイント、Photoshop</td>
+            <td class="v">Google図形描画、Illustrator</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">写真をベクタで表すことも技術的には可能ですが、色の変化が複雑すぎて現実的ではありません。逆にロゴをラスタで作ると、看板サイズに引き伸ばしたときに粗くなります。</p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>画像を記録する2つの方法</h2>
+    <p>コンピュータで画像を扱うとき、記録のしかたには大きく2つの方式があります。ラスタ形式とベクタ形式です。同じ絵に見えても、中身の持ち方がまったく違います。</p>
+
+    <h3>ラスタ形式（ビットマップ形式）</h3>
+    <p>画像を細かい格子に区切り、1マスずつ色を数値で記録する方式です。デジタルカメラで撮った写真も、スキャナで読み取った画像も、すべてこの形式です。</p>
+    <p>この方式では、記録されているのは「どの位置が何色か」という情報だけです。そこに何が描かれているかをコンピュータは知りません。りんごの絵も、ただの色の数値の並びとして扱われます。</p>
+
+    <h3>ベクタ形式</h3>
+    <p>点の座標と、それらを結ぶ線や面の情報を、数式として記録する方式です。たとえば円なら「中心の座標が(100, 100)、半径50、塗りは赤」という具合に、描き方の指示として持っています。</p>
+    <p>画面に表示するときは、その指示にしたがってその場で描き直します。拡大するときも、大きなサイズで計算し直すので、輪郭はなめらかなままです。</p>
+
+    <h2>拡大したときの差</h2>
+    <p>この違いが最もはっきり出るのが、拡大したときです。</p>
+    <p>ラスタ画像を拡大するとき、コンピュータは元にない情報を作り出せません。1つの画素を4倍に引き伸ばせば、同じ色の大きな四角になるだけです。斜めの線や曲線の輪郭が階段状にギザギザになる現象を、ジャギーと呼びます。</p>
+    <p>一方ベクタ画像は、拡大されると「半径50の円」を「半径200の円」として描き直します。もとの指示から計算し直すので、何倍にしてもなめらかです。上のツールで拡大率を上げていくと、この差が一目で分かります。</p>
+
+    <h2>解像度という言葉</h2>
+    <p>解像度という言葉は、文脈によって2つの異なる意味で使われます。混同されやすいところです。</p>
+
+    <h3>画素の総数としての解像度</h3>
+    <p>「横1920×縦1080」のように、画像が何個の点でできているかを表します。デジタルカメラの「1200万画素」も、横と縦の画素数を掛けた総数です。これは<strong>画像の大きさ</strong>を表す数値です。</p>
+
+    <h3>密度としての解像度（dpi・ppi）</h3>
+    <p>1インチ（2.54センチメートル）の中に点が何個並んでいるかを表します。こちらは<strong>きめ細かさ</strong>を表す数値です。</p>
+    <table>
+      <tr><th>単位</th><th>正式名称</th><th>使う場面</th></tr>
+      <tr><td class="mono">dpi</td><td>dots per inch</td><td>プリンタ、印刷（インクの点）</td></tr>
+      <tr><td class="mono">ppi</td><td>pixels per inch</td><td>ディスプレイ（画素）</td></tr>
+    </table>
+    <p>考え方はどちらも同じで、対象が印刷のインクか画面の画素かで呼び分けているだけです。iPadのディスプレイが264ppiというのは、1インチの中に264個の画素が並んでいるという意味です。</p>
+    <p>注意したいのは、密度は表示する大きさによって変わるという点です。同じ1920×1080の画像でも、小さく印刷すれば密度は高く、大きく引き伸ばせば密度は下がって粗く見えます。総数と密度は別の指標です。</p>
+    <div class="formula">印刷したときの大きさ（インチ） ＝ 画素数 ÷ dpi</div>
+    <p>たとえば横1200画素の画像を300dpiで印刷すると、1200 ÷ 300 ＝ 4インチ（約10cm）になります。もっと大きく印刷したければ、画素数を増やすか、密度を下げて粗さを受け入れるかのどちらかです。</p>
+
+    <h2>使い分けの考え方</h2>
+    <p>ラスタとベクタは優劣ではなく、向き不向きで選びます。</p>
+    <ul>
+      <li><strong>写真はラスタ</strong>。色が細かく変化する自然の風景を、数式で表すのは現実的ではありません。</li>
+      <li><strong>ロゴや図面はベクタ</strong>。名刺にも看板にも同じデータを使えます。あとから形や色を修正するのも簡単です。</li>
+      <li><strong>文字はベクタ</strong>。パソコンのフォントはベクタ形式で作られています。だからどんな大きさにしても、輪郭がなめらかに表示されます。</li>
+    </ul>
+    <p>ペイントソフトで描いた絵はラスタ、Google図形描画やIllustratorで描いた図はベクタです。同じ「絵を描くソフト」でも、中身の持ち方が違うことを知っておくと、目的に合った道具を選べます。</p>
+
+    <h2>データ量の考え方も違う</h2>
+    <p>2つの方式は、データ量の決まり方も異なります。</p>
+    <p>ラスタ画像のデータ量は、画素数と1画素あたりのビット数だけで決まります。真っ白な画像でも、複雑な風景写真でも、同じ画素数なら同じ大きさです（圧縮しない場合）。描かれている内容には関係しません。</p>
+    <div class="formula">ラスタ：データ量 ＝ 縦の画素数 × 横の画素数 × 1画素あたりのビット数</div>
+    <p>ベクタ画像は、形の複雑さで決まります。円が1つだけなら、記録する情報は中心の座標と半径と色だけなので、ごく小さなデータで済みます。しかし細かい曲線が何千本もある絵になると、その分だけ大きくなります。</p>
+    <p>そのため、単純な図形やロゴではベクタのほうが圧倒的に小さく、写真のような複雑な絵ではラスタのほうが現実的、という使い分けになります。</p>
+
+    <h2>拡大したときの補間</h2>
+    <p>実際の画像編集ソフトでラスタ画像を拡大すると、上のツールほど極端なギザギザにはなりません。周囲の画素の色から中間の色を推測して埋める、補間という処理が行われるためです。</p>
+    <p>補間を使うと輪郭のギザギザは目立たなくなりますが、代わりに全体がぼやけます。もともとない情報を作り出しているだけなので、失われた細部が戻るわけではありません。上のツールでは、しくみを分かりやすく示すために補間をあえて行っていません。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>拡大して比べる</strong>：スライダーで拡大率を変えると、左のラスタ画像だけがギザギザになっていきます。元の画素数も変えられます。</li>
+      <li><strong>解像度を変える</strong>：画素数を減らしたときに、どこまで絵が分かるかを確かめられます。dpiとppiの違いも解説しています。</li>
+      <li><strong>使い分け</strong>：両者の特徴を表で比較できます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/charcode/">文字コード</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabZoom','toolZoom'],['tabRes','toolRes'],['tabTable','toolTable']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabZoom') render();
+      if(tid==='tabRes') renderRes();
+    });
+  });
+})();
+
+/* ===== 図形の定義（SVGで持つ＝ベクタの本体） ===== */
+const FIGS={
+  apple:`<circle cx="50" cy="58" r="30" fill="#D93A2B"/>
+    <ellipse cx="40" cy="45" rx="7" ry="11" fill="#ffffff" opacity=".45" transform="rotate(-25 40 45)"/>
+    <path d="M50 30 Q52 18 55 12" stroke="#5A3210" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="61" cy="20" rx="10" ry="5" fill="#3F8B3F" transform="rotate(-25 61 20)"/>`,
+  star:`<path d="M50 12 L61 39 L90 41 L67 59 L75 87 L50 71 L25 87 L33 59 L10 41 L39 39 Z"
+    fill="#E8B21F" stroke="#B8860B" stroke-width="2" stroke-linejoin="round"/>`,
+  text:`<text x="50" y="66" font-size="52" font-weight="700" text-anchor="middle"
+    fill="#2F5496" font-family="Helvetica,Arial,sans-serif">Ai</text>`
+};
+let figKind='apple', basePx=64;
+
+function svgMarkup(fig, size){
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">
+    <rect width="100" height="100" fill="#ffffff"/>${FIGS[fig]}</svg>`;
+}
+
+/* SVGを指定サイズのcanvasに描く（ラスタ化） */
+function rasterize(fig, px){
+  return new Promise(res=>{
+    const img=new Image();
+    const blob=new Blob([svgMarkup(fig,px)],{type:'image/svg+xml'});
+    const url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=px; c.height=px;
+      const x=c.getContext('2d');
+      x.fillStyle='#fff'; x.fillRect(0,0,px,px);
+      x.drawImage(img,0,0,px,px);
+      URL.revokeObjectURL(url);
+      res(c);
+    };
+    img.onerror=()=>res(null);
+    img.src=url;
+  });
+}
+
+let cachedRaster=null, cachedKey='';
+async function render(){
+  const zoom=+document.getElementById('zZoom').value;
+  document.getElementById('zZoomV').textContent=zoom.toFixed(1).replace(/\.0$/,'')+' 倍';
+
+  const key=figKind+'_'+basePx;
+  if(cachedKey!==key){
+    cachedRaster=await rasterize(figKind, basePx);
+    cachedKey=key;
+  }
+
+  // ラスタ側：小さい画像を拡大（補間なし＝ジャギーが出る）
+  const cv=document.getElementById('zRaster'), c=cv.getContext('2d');
+  const S=cv.width;
+  c.imageSmoothingEnabled=false;
+  c.fillStyle='#fff'; c.fillRect(0,0,S,S);
+  if(cachedRaster){
+    const src=basePx/zoom;           // 切り出す範囲（拡大するほど狭く）
+    const off=(basePx-src)/2;
+    c.drawImage(cachedRaster, off, off, src, src, 0, 0, S, S);
+  }
+
+  // ベクタ側：SVGのviewBoxを狭める＝その都度描き直す
+  const view=100/zoom, o=(100-view)/2;
+  document.getElementById('zVectorBox').innerHTML=
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${o} ${o} ${view} ${view}">
+      <rect x="0" y="0" width="100" height="100" fill="#ffffff"/>${FIGS[figKind]}</svg>`;
+
+  // 説明文
+  const effective=Math.round(basePx/zoom);
+  document.getElementById('zRasterCap').textContent =
+    zoom<=1 ? `${basePx}×${basePx}画素で記録された画像です。`
+            : `拡大すると、元の ${effective}×${effective}画素ぶんを引き伸ばすことになります。1画素が大きな四角として見えています。`;
+
+  const v=document.getElementById('zVerdict');
+  if(zoom<1.5){
+    v.innerHTML='等倍では、どちらもほとんど同じに見えます。<b>拡大率を上げてみてください。</b>';
+  }else if(zoom<5){
+    v.innerHTML='左のラスタ画像に、輪郭の<b>ギザギザ（ジャギー）</b>が見えてきました。右のベクタ画像はなめらかなままです。';
+  }else{
+    v.innerHTML=`ラスタ画像は1画素が四角として見えるまで粗くなりました。もとの画像に<b>${basePx}×${basePx}個ぶんの情報しかない</b>ので、拡大しても増やせません。`+
+      `　ベクタ画像は<b>計算し直している</b>ので、何倍にしても輪郭がなめらかです。`;
+  }
+}
+document.getElementById('zZoom').addEventListener('input',render);
+document.querySelectorAll('[data-fig]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); figKind=b.dataset.fig; render();
+  });
+});
+document.querySelectorAll('[data-px]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-px]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); basePx=+b.dataset.px; render();
+  });
+});
+
+/* ===== 解像度タブ ===== */
+async function renderRes(){
+  const box=document.getElementById('rBox');
+  if(box.dataset.done==='1') return;
+  const sizes=[128,64,32,16,8];
+  box.innerHTML='';
+  for(const s of sizes){
+    const small=await rasterize(figKind==='text'?'apple':figKind, s);
+    const d=document.createElement('div'); d.className='r';
+    const cv=document.createElement('canvas'); cv.width=150; cv.height=150;
+    const c=cv.getContext('2d');
+    c.imageSmoothingEnabled=false;
+    c.fillStyle='#fff'; c.fillRect(0,0,150,150);
+    if(small) c.drawImage(small,0,0,150,150);
+    const lab=document.createElement('div'); lab.className='lab';
+    lab.innerHTML=`<b>${s}×${s}</b>${(s*s).toLocaleString()} 画素`;
+    d.append(cv,lab); box.appendChild(d);
+  }
+  box.dataset.done='1';
+}
+
+/* ===== 初期化 ===== */
+render();
+</script>
+</body>
+</html>

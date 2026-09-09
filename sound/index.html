@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音のデジタル化を体験しよう（標本化周波数・量子化ビット数）｜情報ラボ</title>
+<meta name="description" content="標本化周波数と量子化ビット数を変えて、音の変化を実際に聴き比べられる無料ツール。波形の変化とデータ量の計算まで体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/sound/">
+<meta property="og:title" content="音のデジタル化を体験しよう｜情報ラボ">
+<meta property="og:description" content="標本化周波数と量子化ビット数を変えて、音の変化を聴き比べる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/sound/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  button.danger{background:var(--ng);} button.danger:hover{background:#d94b3a;}
+
+  .warn{background:#FFF8E6; border:1px solid #E6C86A; border-radius:10px;
+    padding:10px 14px; font-size:13.5px; color:#6b4e00; margin-bottom:14px;}
+  .warn b{color:#8a5b00;}
+
+  .sl{margin-bottom:14px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:15px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+  .sl .note{font-size:12.5px; color:var(--muted);}
+
+  .readout{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:16px 18px; margin-bottom:16px;
+    display:flex; flex-wrap:wrap; gap:12px;}
+  .ro{flex:1 1 150px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    border-radius:9px; padding:10px 14px;}
+  .ro .k{font-size:10.5px; color:#aebbd6; margin-bottom:3px;}
+  .ro .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .ro .v.gold{color:#ffd97a;}
+  .calc{width:100%; font-size:13.5px; color:#dbe4f5; padding-top:8px;
+    border-top:1px solid rgba(255,255,255,.15);}
+  .calc b{color:#fff;}
+
+  canvas{display:block; border-radius:10px; border:1px solid var(--line); background:#fff;
+    width:100%; max-width:100%;}
+  .cap{font-size:12.5px; color:var(--muted); text-align:center; margin:6px 0 14px;}
+
+  .cmp{display:flex; gap:16px; flex-wrap:wrap;}
+  .cmp .c{flex:1 1 300px; min-width:260px;}
+
+  .status{font-size:13.5px; color:var(--muted); margin-top:10px; min-height:1.5em;}
+  .status.err{color:var(--ng);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 音のデジタル化</p>
+    <h1>音のデジタル化を体験しよう</h1>
+    <p class="lead">音は空気の振動です。それをどうやって0と1にするのか、実際に聴き比べながら確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabWave" aria-selected="true" aria-controls="toolWave">波を数値にする</button>
+    <button class="tab" role="tab" id="tabListen" aria-selected="false" aria-controls="toolListen">音質を聴き比べる</button>
+    <button class="tab" role="tab" id="tabData" aria-selected="false" aria-controls="toolData">データ量を計算する</button>
+  </div>
+
+  <!-- ===== 波を数値にする ===== -->
+  <section class="tool show" id="toolWave" role="tabpanel" aria-labelledby="tabWave">
+    <div class="panel">
+      <h2>標本化と量子化のようすを見る</h2>
+      <div class="sl">
+        <div class="top"><label for="wRate">標本化：1秒あたり何回はかるか</label>
+          <span class="val" id="wRateV">16 回</span></div>
+        <input type="range" id="wRate" min="4" max="64" step="1" value="16">
+        <div class="note">この画面では、波1つ分（1周期）を何点で拾うかとして表示しています。</div>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="wBits">量子化：何段階で表すか</label>
+          <span class="val" id="wBitsV">4 段階 / 2 ビット</span></div>
+        <input type="range" id="wBits" min="1" max="6" step="1" value="2">
+      </div>
+      <div class="row">
+        <button class="chip" id="wSine" aria-pressed="true">なめらかな波</button>
+        <button class="chip" id="wComplex" aria-pressed="false">複雑な波</button>
+        <span style="flex:1"></span>
+        <label style="font-size:13.5px;color:var(--ink);cursor:pointer;">
+          <input type="checkbox" id="wShowOrig" checked> 元の波を重ねて表示</label>
+      </div>
+    </div>
+
+    <canvas id="wCanvas" width="1000" height="380"></canvas>
+    <p class="cap">青い線が元の音の波、赤い点が標本化で取り出した値、青い階段が量子化した結果</p>
+
+    <div class="readout">
+      <div class="ro"><div class="k">取り出した点の数</div><div class="v" id="wPts">16</div></div>
+      <div class="ro"><div class="k">段階の数</div><div class="v" id="wSteps">4</div></div>
+      <div class="ro"><div class="k">1点あたり</div><div class="v gold" id="wBit">2 ビット</div></div>
+      <div class="calc" id="wCalc"></div>
+    </div>
+  </section>
+
+  <!-- ===== 聴き比べ ===== -->
+  <section class="tool" id="toolListen" role="tabpanel" aria-labelledby="tabListen">
+    <div class="warn">
+      <b>音量に注意。</b> 音が鳴ります。イヤホンを使うときは、先に音量を下げてください。
+      設定を粗くすると、ざらついた音になります。
+    </div>
+
+    <div class="panel">
+      <h2>音の種類を選ぶ</h2>
+      <div class="row">
+        <button class="chip" data-snd="tone" aria-pressed="true">単純な音（440Hz）</button>
+        <button class="chip" data-snd="chord" aria-pressed="false">和音</button>
+        <button class="chip" data-snd="sweep" aria-pressed="false">上がっていく音</button>
+        <button class="chip" data-snd="melody" aria-pressed="false">かんたんなメロディ</button>
+        <span style="flex:1"></span>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;">
+          音量 <input type="range" id="lVol" min="0" max="60" value="20" style="width:120px;accent-color:var(--navy);">
+          <span id="lVolV">20%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>設定を変えて聴き比べる</h2>
+      <div class="sl">
+        <div class="top"><label for="lRate">標本化周波数</label>
+          <span class="val" id="lRateV">44,100 Hz</span></div>
+        <input type="range" id="lRate" min="0" max="5" step="1" value="5">
+        <div class="note" id="lRateN">CDと同じ品質です。</div>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="lBits">量子化ビット数</label>
+          <span class="val" id="lBitsV">16 ビット（65,536段階）</span></div>
+        <input type="range" id="lBits" min="1" max="16" step="1" value="16">
+        <div class="note" id="lBitsN">CDと同じ品質です。</div>
+      </div>
+      <div class="row">
+        <button class="primary" id="lPlay">この設定で聴く</button>
+        <button class="primary" id="lPlayCD" style="background:var(--ok)">CD品質と比べる</button>
+        <button class="primary danger" id="lStop" disabled>とめる</button>
+      </div>
+      <p class="hint">標本化周波数を下げると高い音から失われ、ビット数を下げるとザラザラした雑音が混じります。</p>
+    </div>
+
+    <canvas id="lCanvas" width="1000" height="240"></canvas>
+    <p class="cap">いまの設定で作られる波形</p>
+    <div class="status" id="lStatus"></div>
+  </section>
+
+  <!-- ===== データ量 ===== -->
+  <section class="tool" id="toolData" role="tabpanel" aria-labelledby="tabData">
+    <div class="panel">
+      <h2>条件を決めると、データ量が計算されます</h2>
+      <div class="sl">
+        <div class="top"><label for="dRate">標本化周波数</label><span class="val" id="dRateV">44,100 Hz</span></div>
+        <input type="range" id="dRate" min="0" max="5" step="1" value="5">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="dBits">量子化ビット数</label><span class="val" id="dBitsV">16 ビット</span></div>
+        <input type="range" id="dBits" min="1" max="4" step="1" value="3">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="dCh">チャンネル数</label><span class="val" id="dChV">2（ステレオ）</span></div>
+        <input type="range" id="dCh" min="1" max="2" step="1" value="2">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="dSec">長さ</label><span class="val" id="dSecV">3 分 00 秒</span></div>
+        <input type="range" id="dSec" min="10" max="600" step="10" value="180">
+      </div>
+    </div>
+
+    <div class="readout">
+      <div class="ro"><div class="k">1秒あたり</div><div class="v" id="dPerSec">–</div></div>
+      <div class="ro"><div class="k">全体のビット数</div><div class="v" id="dBitsTotal">–</div></div>
+      <div class="ro"><div class="k">ファイルの大きさ</div><div class="v gold" id="dSize">–</div></div>
+      <div class="calc" id="dCalc"></div>
+    </div>
+
+    <div class="panel">
+      <h2>目安との比較</h2>
+      <div id="dCompare"></div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>音とは何か</h2>
+    <p>音の正体は、空気の振動です。太鼓の皮が震えると、まわりの空気が押されたり引かれたりして、その変化が波となって耳に届きます。この空気の圧力の変化を、時間とともに描いたものが波形です。</p>
+    <p>波形の上下は空気の圧力の強さ、つまり音の大きさを表します。波が細かく振動していれば高い音、ゆっくり振動していれば低い音です。1秒あたりに何回振動するかを周波数といい、単位はヘルツ（Hz）です。ピアノの中央のラの音は440Hz、つまり1秒間に440回振動しています。</p>
+    <p>この波は、時間的にも大きさ的にも切れ目なく連続しています。つまりアナログの量です。コンピュータで扱うには、0と1に置きかえる必要があります。</p>
+
+    <h2>音のデジタル化の3ステップ</h2>
+    <p>画像のときと同じで、標本化・量子化・符号化の順に進みます。</p>
+
+    <h3>1. 標本化（サンプリング）</h3>
+    <p>連続している波を、一定の時間間隔で区切り、その瞬間の値を取り出します。1秒間に何回はかるかを標本化周波数（サンプリング周波数）といいます。</p>
+    <p>CDでは44,100Hz、つまり1秒間に44,100回はかっています。1回あたり約0.0000227秒という細かさです。</p>
+    <p>この回数が少ないと、波の細かい変化を拾いきれません。特に高い音は波が細かいので、先に失われます。上のツールで標本化周波数を下げていくと、シャリシャリした高音成分が消えて、こもった音になるのが確かめられます。</p>
+
+    <h3>標本化定理という決まり</h3>
+    <p>どこまで下げてよいかには、はっきりした基準があります。<strong>再現したい音の最も高い周波数の、2倍より高い周波数で標本化する必要がある</strong>というものです。これを標本化定理（サンプリング定理）といいます。</p>
+    <div class="formula">標本化周波数 ＞ 再現したい最高周波数 × 2</div>
+    <p>人が聞き取れる音は、およそ20Hzから20,000Hzまでといわれます。その上限の20,000Hzを再現するには40,000Hzより高い標本化周波数が必要です。CDの44,100Hzという数字は、この条件を満たすように決められています。</p>
+    <p>逆に、電話は約8,000Hzで標本化しています。再現できるのは4,000Hzまでですが、人の話し声を聞き分けるにはこれで足ります。電話の声が少しこもって聞こえるのは、このためです。</p>
+
+    <h3>2. 量子化</h3>
+    <p>取り出した値を、決められた段階のうち最も近いものに置きかえます。何段階で表すかを量子化ビット数で決めます。</p>
+    <table>
+      <tr><th>ビット数</th><th>段階数</th><th>使われる場面</th></tr>
+      <tr><td class="mono">8ビット</td><td class="mono">256</td><td>昔のゲーム機の音など</td></tr>
+      <tr><td class="mono">16ビット</td><td class="mono">65,536</td><td>CD、一般的な音楽ファイル</td></tr>
+      <tr><td class="mono">24ビット</td><td class="mono">16,777,216</td><td>音楽制作の現場、ハイレゾ</td></tr>
+    </table>
+    <p>段階が少ないと、本来の値との間にずれが生じます。このずれは量子化誤差と呼ばれ、耳にはザラザラした雑音として聞こえます。上のツールでビット数を下げていくと、この雑音が増えていくのが分かります。</p>
+
+    <h3>3. 符号化</h3>
+    <p>量子化で求めた段階の値を、2進数に変換します。16ビットなら、1つの点が16桁の0と1で表されます。この数値の並びが、音楽ファイルの中身そのものです。</p>
+
+    <h2>データ量の計算</h2>
+    <p>音のデータ量は、次の式で求められます。</p>
+    <div class="formula">データ量 ＝ 標本化周波数 × 量子化ビット数 × チャンネル数 × 秒数</div>
+    <p>チャンネル数は、モノラルなら1、ステレオなら2です。左右の音を別々に記録するので、ステレオは2倍のデータ量になります。</p>
+    <p>CD品質で3分の曲を計算してみます。</p>
+    <div class="formula">44,100 × 16 × 2 × 180 ＝ 254,016,000 ビット ＝ 約30.3メガバイト</div>
+    <p>3分の曲1つで30メガバイト以上です。CD1枚（約74分）が約740メガバイトなのは、この計算によります。</p>
+
+    <h2>圧縮という工夫</h2>
+    <p>実際に配信されている音楽ファイルは、これよりずっと小さくなっています。MP3やAACといった形式で圧縮されているからです。</p>
+    <p>これらは、人間の耳の性質を利用しています。大きな音の直後の小さな音は聞こえにくい、聞こえる範囲を超えた高い音は削ってもわからない。そうした「聞こえない部分」のデータを削ることで、音質をあまり損なわずにデータ量を10分の1程度まで減らせます。もとに完全には戻せないので、非可逆圧縮と呼ばれます。</p>
+    <p>一方、ZIPのようにもとに完全に戻せる圧縮を可逆圧縮といいます。音楽ではFLACなどがこれにあたり、CD品質のまま6割程度まで小さくできます。</p>
+
+    <h2>ハイレゾという言葉</h2>
+    <p>音楽配信サービスで「ハイレゾ」と表示されているものがあります。これは高解像度（High-Resolution）の略で、CDを超える品質という意味です。</p>
+    <p>具体的には、標本化周波数が96,000Hz以上、量子化ビット数が24ビット以上といった規格が使われます。CDの44,100Hz・16ビットと比べると、時間方向にも音の大きさ方向にも、より細かく記録していることになります。</p>
+    <p>ただし、人が聞き取れる音の上限は約20,000Hzです。標本化定理からすると、CDの44,100Hzでその範囲は十分カバーできています。それでもハイレゾが使われるのは、標本化するときに必要な処理の余裕が生まれることや、量子化ビット数を増やすことで小さな音の表現が細かくなることに理由があります。データ量はCDの3倍以上になるので、音質と容量のどちらを優先するかという判断になります。</p>
+
+    <h2>アナログとデジタルの使い分け</h2>
+    <p>デジタル化には、はっきりした利点があります。何度コピーしても劣化しないこと、ノイズが混入しにくいこと、コンピュータで加工や検索ができることです。カセットテープは再生やダビングを重ねると音が悪くなりますが、デジタルデータは何度コピーしても同じです。</p>
+    <p>一方で、デジタル化は必ず情報の一部を捨てます。標本化で時間の隙間の情報が失われ、量子化で細かな値の差が失われます。どこまで細かくするかは、必要な品質とデータ量のバランスで決めることになります。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>波を数値にする</strong>：スライダーを動かすと、標本化と量子化のようすが図で確かめられます。粗くすると、元の波から離れていくのが見えます。</li>
+      <li><strong>音質を聴き比べる</strong>：実際に音を鳴らします。設定を変えて聴き、CD品質と比べてみてください。</li>
+      <li><strong>データ量を計算する</strong>：条件を変えると、ファイルの大きさが自動で計算されます。身近なファイルとの比較も表示されます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/charcode/">文字コード</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabWave','toolWave'],['tabListen','toolListen'],['tabData','toolData']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabWave') drawWave();
+      if(tid==='tabListen') drawListen();
+    });
+  });
+})();
+
+let ctxA=null;
+function audioCtx(){
+  if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctxA.state==='suspended') ctxA.resume();
+  return ctxA;
+}
+
+/* ===== 波を数値にする ===== */
+let wKind='sine';
+function waveValue(t, kind){
+  if(kind==='sine') return Math.sin(2*Math.PI*t);
+  return 0.6*Math.sin(2*Math.PI*t) + 0.3*Math.sin(2*Math.PI*3*t) + 0.15*Math.sin(2*Math.PI*5*t);
+}
+function drawWave(){
+  const cv=document.getElementById('wCanvas'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=30;
+  const n=+document.getElementById('wRate').value;
+  const bits=+document.getElementById('wBits').value;
+  const steps=2**bits;
+  const showOrig=document.getElementById('wShowOrig').checked;
+
+  c.clearRect(0,0,W,H);
+  // 目盛り
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=0;k<=steps;k++){
+    const y=PAD+(H-PAD*2)*(k/steps);
+    c.beginPath(); c.moveTo(PAD,y); c.lineTo(W-PAD,y); c.stroke();
+  }
+  c.strokeStyle='#D3DBEA';
+  c.beginPath(); c.moveTo(PAD,H/2); c.lineTo(W-PAD,H/2); c.stroke();
+
+  const X=t=>PAD+(W-PAD*2)*t;
+  const Y=v=>PAD+(H-PAD*2)*(1-(v+1)/2);
+  const q=v=>{ const lv=Math.round((v+1)/2*(steps-1)); return lv/(steps-1)*2-1; };
+
+  // 量子化後の階段
+  c.strokeStyle='#2F5496'; c.lineWidth=2.5; c.beginPath();
+  for(let i=0;i<n;i++){
+    const t0=i/n, t1=(i+1)/n;
+    const v=q(waveValue(t0+0.5/n, wKind));
+    if(i===0) c.moveTo(X(t0),Y(v)); else c.lineTo(X(t0),Y(v));
+    c.lineTo(X(t1),Y(v));
+  }
+  c.stroke();
+
+  // 元の波
+  if(showOrig){
+    c.strokeStyle='rgba(47,84,150,.35)'; c.lineWidth=2; c.beginPath();
+    for(let px=0;px<=W-PAD*2;px++){
+      const t=px/(W-PAD*2);
+      const y=Y(waveValue(t,wKind));
+      px?c.lineTo(PAD+px,y):c.moveTo(PAD+px,y);
+    }
+    c.stroke();
+  }
+
+  // 標本点
+  c.fillStyle='#C0392B';
+  for(let i=0;i<n;i++){
+    const t=i/n+0.5/n;
+    const v=waveValue(t,wKind);
+    c.beginPath(); c.arc(X(t),Y(v),Math.max(2.5,Math.min(5,120/n)),0,Math.PI*2); c.fill();
+  }
+
+  document.getElementById('wRateV').textContent=n+' 回';
+  document.getElementById('wBitsV').textContent=`${steps} 段階 / ${bits} ビット`;
+  document.getElementById('wPts').textContent=n;
+  document.getElementById('wSteps').textContent=steps;
+  document.getElementById('wBit').textContent=bits+' ビット';
+  document.getElementById('wCalc').innerHTML=
+    `波1つ分を <b>${n}点</b> で拾い、それぞれを <b>${steps}段階</b> に当てはめています。`+
+    `　点を増やすほど横方向が、段階を増やすほど縦方向が、元の波に近づきます。`;
+}
+['wRate','wBits'].forEach(id=>document.getElementById(id).addEventListener('input',drawWave));
+document.getElementById('wShowOrig').addEventListener('change',drawWave);
+document.getElementById('wSine').addEventListener('click',()=>{
+  wKind='sine';
+  document.getElementById('wSine').setAttribute('aria-pressed','true');
+  document.getElementById('wComplex').setAttribute('aria-pressed','false');
+  drawWave();
+});
+document.getElementById('wComplex').addEventListener('click',()=>{
+  wKind='complex';
+  document.getElementById('wSine').setAttribute('aria-pressed','false');
+  document.getElementById('wComplex').setAttribute('aria-pressed','true');
+  drawWave();
+});
+
+/* ===== 聴き比べ ===== */
+const RATES=[2000,4000,8000,11025,22050,44100];
+const RATE_NOTES=[
+  'かなり粗い設定です。高い音がほとんど失われます。',
+  '波の形がかなり崩れます。',
+  '電話とほぼ同じです。話し声は聞き取れますが、音楽はこもります。',
+  '昔のパソコンの音声などで使われた品質です。',
+  'FMラジオ程度の品質です。',
+  'CDと同じ品質です。'
+];
+let sndKind='tone', srcNode=null, gainNode=null;
+
+function bitsNote(b){
+  if(b>=16) return 'CDと同じ品質です。';
+  if(b>=12) return 'ほとんど違いは分かりません。';
+  if(b>=8) return '注意して聴くとザラつきが分かります。';
+  if(b>=4) return 'はっきりと雑音が混じります。';
+  return '元の音が判別しづらいほど粗くなります。';
+}
+
+function updateListenLabels(){
+  const r=RATES[+document.getElementById('lRate').value];
+  const b=+document.getElementById('lBits').value;
+  document.getElementById('lRateV').textContent=r.toLocaleString()+' Hz';
+  document.getElementById('lRateN').textContent=RATE_NOTES[+document.getElementById('lRate').value];
+  document.getElementById('lBitsV').textContent=`${b} ビット（${(2**b).toLocaleString()}段階）`;
+  document.getElementById('lBitsN').textContent=bitsNote(b);
+  drawListen();
+}
+['lRate','lBits'].forEach(id=>document.getElementById(id).addEventListener('input',updateListenLabels));
+document.getElementById('lVol').addEventListener('input',()=>{
+  const v=+document.getElementById('lVol').value;
+  document.getElementById('lVolV').textContent=v+'%';
+  if(gainNode) gainNode.gain.value=v/100;
+});
+document.querySelectorAll('[data-snd]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-snd]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    sndKind=b.dataset.snd;
+    drawListen();
+  });
+});
+
+/* 元の音を作る（連続な値を返す関数） */
+function sourceSample(t){
+  if(sndKind==='tone') return Math.sin(2*Math.PI*440*t);
+  if(sndKind==='chord')
+    return (Math.sin(2*Math.PI*440*t)+Math.sin(2*Math.PI*554.37*t)+Math.sin(2*Math.PI*659.25*t))/3;
+  if(sndKind==='sweep'){
+    const f=220*Math.pow(2, t*1.5);
+    return Math.sin(2*Math.PI*f*t);
+  }
+  // melody: ドミソド
+  const notes=[261.63,329.63,392.00,523.25];
+  const idx=Math.min(notes.length-1,Math.floor(t/0.5));
+  const local=t-idx*0.5;
+  const env=Math.min(1,local*20)*Math.exp(-local*2.2);
+  return Math.sin(2*Math.PI*notes[idx]*t)*env;
+}
+
+function buildBuffer(rate,bits,seconds){
+  const ctx=audioCtx();
+  const OUT=44100;
+  const n=Math.floor(OUT*seconds);
+  const buf=ctx.createBuffer(1,n,OUT);
+  const ch=buf.getChannelData(0);
+  const steps=2**bits;
+  const hold=OUT/rate; // 何サンプル同じ値を保つか
+  let last=0;
+  for(let i=0;i<n;i++){
+    if(i % Math.max(1,Math.round(hold)) === 0){
+      const t=i/OUT;
+      let v=sourceSample(t);
+      v=Math.max(-1,Math.min(1,v));
+      const lv=Math.round((v+1)/2*(steps-1));
+      last=lv/(steps-1)*2-1;
+    }
+    ch[i]=last*0.9;
+  }
+  // 端のノイズ防止
+  const fade=Math.min(600,Math.floor(n/20));
+  for(let i=0;i<fade;i++){ ch[i]*=i/fade; ch[n-1-i]*=i/fade; }
+  return buf;
+}
+
+function play(rate,bits,label){
+  stop();
+  const ctx=audioCtx();
+  const sec = sndKind==='melody' ? 2.0 : (sndKind==='sweep' ? 2.0 : 1.5);
+  const buf=buildBuffer(rate,bits,sec);
+  srcNode=ctx.createBufferSource(); srcNode.buffer=buf;
+  gainNode=ctx.createGain();
+  gainNode.gain.value=(+document.getElementById('lVol').value)/100;
+  srcNode.connect(gainNode).connect(ctx.destination);
+  srcNode.onended=()=>{ document.getElementById('lStop').disabled=true; };
+  srcNode.start();
+  document.getElementById('lStop').disabled=false;
+  const st=document.getElementById('lStatus');
+  st.className='status';
+  st.textContent=`${label}：標本化 ${rate.toLocaleString()}Hz ／ ${bits}ビットで再生中`;
+}
+function stop(){
+  if(srcNode){ try{srcNode.stop();}catch(e){} srcNode=null; }
+  document.getElementById('lStop').disabled=true;
+}
+document.getElementById('lPlay').addEventListener('click',()=>{
+  play(RATES[+document.getElementById('lRate').value], +document.getElementById('lBits').value, 'いまの設定');
+});
+document.getElementById('lPlayCD').addEventListener('click',()=>{ play(44100,16,'CD品質'); });
+document.getElementById('lStop').addEventListener('click',()=>{
+  stop(); document.getElementById('lStatus').textContent='とめました。';
+});
+
+function drawListen(){
+  const cv=document.getElementById('lCanvas'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=20;
+  const rate=RATES[+document.getElementById('lRate').value];
+  const bits=+document.getElementById('lBits').value;
+  const steps=2**bits;
+  c.clearRect(0,0,W,H);
+  c.strokeStyle='#D3DBEA'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+
+  const SHOW=0.01; // 10ms 表示
+  const Y=v=>PAD+(H-PAD*2)*(1-(v+1)/2);
+  // 元の波（薄く）
+  c.strokeStyle='rgba(47,84,150,.3)'; c.lineWidth=1.5; c.beginPath();
+  for(let px=0;px<W;px++){
+    const t=px/W*SHOW;
+    const y=Y(Math.max(-1,Math.min(1,sourceSample(t))));
+    px?c.lineTo(px,y):c.moveTo(px,y);
+  }
+  c.stroke();
+  // 量子化・標本化後
+  c.strokeStyle='#2F5496'; c.lineWidth=2; c.beginPath();
+  const dt=1/rate;
+  let started=false;
+  for(let t=0;t<SHOW;t+=dt){
+    let v=Math.max(-1,Math.min(1,sourceSample(t)));
+    const lv=Math.round((v+1)/2*(steps-1));
+    v=lv/(steps-1)*2-1;
+    const x0=t/SHOW*W, x1=Math.min(W,(t+dt)/SHOW*W);
+    if(!started){ c.moveTo(x0,Y(v)); started=true; } else c.lineTo(x0,Y(v));
+    c.lineTo(x1,Y(v));
+  }
+  c.stroke();
+}
+
+/* ===== データ量 ===== */
+const D_BITS=[8,12,16,24];
+function updateData(){
+  const rate=RATES[+document.getElementById('dRate').value];
+  const bits=D_BITS[+document.getElementById('dBits').value-1];
+  const ch=+document.getElementById('dCh').value;
+  const sec=+document.getElementById('dSec').value;
+
+  document.getElementById('dRateV').textContent=rate.toLocaleString()+' Hz';
+  document.getElementById('dBitsV').textContent=bits+' ビット';
+  document.getElementById('dChV').textContent= ch===1?'1（モノラル）':'2（ステレオ）';
+  const m=Math.floor(sec/60), s=sec%60;
+  document.getElementById('dSecV').textContent=`${m} 分 ${String(s).padStart(2,'0')} 秒`;
+
+  const perSec=rate*bits*ch;
+  const total=perSec*sec;
+  const bytes=total/8;
+  const mb=bytes/1024/1024;
+
+  document.getElementById('dPerSec').textContent=(perSec/1000).toFixed(1)+' k bit';
+  document.getElementById('dBitsTotal').textContent=total.toLocaleString();
+  document.getElementById('dSize').textContent =
+    mb>=1 ? mb.toFixed(1)+' MB' : (bytes/1024).toFixed(0)+' KB';
+  document.getElementById('dCalc').innerHTML=
+    `${rate.toLocaleString()} × ${bits} × ${ch} × ${sec} ＝ <b>${total.toLocaleString()} ビット</b>`+
+    `　→ 8で割って <b>${Math.round(bytes).toLocaleString()} バイト</b>`;
+
+  const cd=44100*16*2*sec/8/1024/1024;
+  const mp3=perSec*sec/8/1024/1024/10;
+  document.getElementById('dCompare').innerHTML=
+    `<p style="margin:0 0 8px;font-size:14.5px;">同じ長さで比べると：</p>`+
+    `<ul style="margin:0;padding-left:1.3em;font-size:14.5px;line-height:1.9;">`+
+    `<li>いまの設定：<strong>${mb.toFixed(1)} MB</strong></li>`+
+    `<li>CD品質（44,100Hz・16ビット・ステレオ）：${cd.toFixed(1)} MB</li>`+
+    `<li>MP3で圧縮した場合の目安（約10分の1）：${mp3.toFixed(1)} MB</li>`+
+    `</ul>`;
+}
+['dRate','dBits','dCh','dSec'].forEach(id=>document.getElementById(id).addEventListener('input',updateData));
+
+/* ===== 初期化 ===== */
+drawWave(); updateListenLabels(); updateData();
+</script>
+</body>
+</html>

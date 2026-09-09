@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文字コードを体験しよう（ASCII・Unicode・文字化け）｜情報ラボ</title>
+<meta name="description" content="文字が数値でどう表されているかを実際に変換して確かめられる無料ツール。ASCII表、UTF-8のバイト数、文字化けのしくみまで体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/charcode/">
+<meta property="og:title" content="文字コードを体験しよう｜情報ラボ">
+<meta property="og:description" content="文字と数値の対応、UTF-8のしくみ、文字化けの原因を体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/charcode/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  input.txt{font-size:20px; padding:12px 14px; width:100%;
+    border:2px solid var(--line); border-radius:10px; font-family:inherit;}
+  input.txt:focus{outline:none; border-color:var(--navy);}
+
+  /* 文字カード */
+  .chars{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px;}
+  .cc{background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; text-align:center; min-width:104px;}
+  .cc .g{font-size:30px; font-weight:700; color:var(--ink); line-height:1.2; margin-bottom:6px;
+    word-break:break-all;}
+  .cc .k{font-size:10.5px; color:var(--muted);}
+  .cc .v{font-family:ui-monospace,Consolas,monospace; font-size:13px; color:var(--navy);}
+  .cc .bytes{font-family:ui-monospace,Consolas,monospace; font-size:11px; color:var(--muted);
+    margin-top:4px; word-break:break-all;}
+  .cc.b1{border-color:#9CC7AE; background:#F4FAF6;}
+  .cc.b2{border-color:#E0C58A; background:#FDF9F0;}
+  .cc.b3{border-color:#A8BEE0; background:#F4F7FD;}
+  .cc.b4{border-color:#E0A3A3; background:#FDF4F4;}
+
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:12px;}
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:13px; height:13px; border-radius:3px; display:inline-block; border:1px solid var(--line);}
+
+  .readout{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:12px; padding:16px 18px; margin:16px 0; display:flex; flex-wrap:wrap; gap:12px;}
+  .ro{flex:1 1 140px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+    border-radius:9px; padding:10px 14px;}
+  .ro .k{font-size:10.5px; color:#aebbd6; margin-bottom:3px;}
+  .ro .v{font-size:20px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .ro .v.gold{color:#ffd97a;}
+  .calc{width:100%; font-size:13.5px; color:#dbe4f5; padding-top:8px;
+    border-top:1px solid rgba(255,255,255,.15);}
+  .calc b{color:#fff;}
+
+  /* ASCII表 */
+  .ascii{overflow-x:auto;}
+  table.at{border-collapse:collapse; font-size:12.5px; font-family:ui-monospace,Consolas,monospace;}
+  table.at th{background:var(--panel); color:var(--navy); padding:4px 7px; border:1px solid var(--line);
+    font-weight:700;}
+  table.at td{border:1px solid var(--line); padding:4px 7px; text-align:center; cursor:pointer;
+    background:#fff;}
+  table.at td:hover{background:var(--panel2);}
+  table.at td.sel{background:var(--navy); color:#fff;}
+  table.at td.ctl{color:#9AA3B0; font-size:10px;}
+
+  /* 文字化け */
+  .garble{display:flex; gap:16px; flex-wrap:wrap;}
+  .garble .g{flex:1 1 300px; min-width:270px; background:#fff; border:1px solid var(--line);
+    border-radius:10px; padding:14px;}
+  .garble .g h3{margin:0 0 8px; font-size:15px;}
+  .garble .g .out{font-size:19px; min-height:2.4em; word-break:break-all; line-height:1.5;
+    padding:10px; background:var(--panel); border-radius:8px;}
+  .garble .ok h3{color:var(--ok);} .garble .ng h3{color:var(--ng);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 文字コード</p>
+    <h1>文字コードを体験しよう</h1>
+    <p class="lead">「あ」も「A」も、コンピュータの中では番号です。どんな番号なのか、確かめてみましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabConv" aria-selected="true" aria-controls="toolConv">文字を数値にする</button>
+    <button class="tab" role="tab" id="tabAscii" aria-selected="false" aria-controls="toolAscii">ASCII表</button>
+    <button class="tab" role="tab" id="tabGarble" aria-selected="false" aria-controls="toolGarble">文字化けのしくみ</button>
+  </div>
+
+  <!-- ===== 変換 ===== -->
+  <section class="tool show" id="toolConv" role="tabpanel" aria-labelledby="tabConv">
+    <div class="panel">
+      <h2>文字を入力すると、1文字ずつ番号に変換されます</h2>
+      <input class="txt" id="cInput" type="text" value="A あ 情報" maxlength="40"
+             autocomplete="off" spellcheck="false" placeholder="ここに文字を入力">
+      <div class="row" style="margin-top:12px;">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">例：</span>
+        <button class="chip" data-ex="Hello">Hello</button>
+        <button class="chip" data-ex="あいう">あいう</button>
+        <button class="chip" data-ex="情報Ⅰ">情報Ⅰ</button>
+        <button class="chip" data-ex="👍🎓">絵文字</button>
+        <button class="chip" data-ex="ABC123">英数字</button>
+      </div>
+      <p class="hint">枠の色は、その文字がUTF-8で何バイト必要かを表しています。</p>
+      <div class="legend">
+        <span><i style="background:#F4FAF6;border-color:#9CC7AE;"></i>1バイト</span>
+        <span><i style="background:#FDF9F0;border-color:#E0C58A;"></i>2バイト</span>
+        <span><i style="background:#F4F7FD;border-color:#A8BEE0;"></i>3バイト</span>
+        <span><i style="background:#FDF4F4;border-color:#E0A3A3;"></i>4バイト</span>
+      </div>
+    </div>
+
+    <div class="chars" id="cChars"></div>
+
+    <div class="readout">
+      <div class="ro"><div class="k">文字数</div><div class="v" id="cLen">–</div></div>
+      <div class="ro"><div class="k">UTF-8 のバイト数</div><div class="v gold" id="cUtf8">–</div></div>
+      <div class="ro"><div class="k">UTF-16 のバイト数</div><div class="v" id="cUtf16">–</div></div>
+      <div class="ro"><div class="k">全体のビット数</div><div class="v" id="cBits">–</div></div>
+      <div class="calc" id="cCalc"></div>
+    </div>
+  </section>
+
+  <!-- ===== ASCII表 ===== -->
+  <section class="tool" id="toolAscii" role="tabpanel" aria-labelledby="tabAscii">
+    <div class="panel">
+      <h2>ASCIIコード表（0〜127）</h2>
+      <p class="hint" style="margin-top:0;">マスをクリックすると、その文字の番号が下に表示されます。縦が上位、横が下位の16進数です。</p>
+      <div class="ascii"><table class="at" id="aTable"></table></div>
+    </div>
+
+    <div class="readout">
+      <div class="ro"><div class="k">選んだ文字</div><div class="v" id="aChar" style="font-size:26px;">A</div></div>
+      <div class="ro"><div class="k">10進数</div><div class="v" id="aDec">65</div></div>
+      <div class="ro"><div class="k">16進数</div><div class="v" id="aHex">41</div></div>
+      <div class="ro"><div class="k">2進数</div><div class="v gold" id="aBin">01000001</div></div>
+      <div class="calc" id="aCalc"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ASCIIの並びには規則があります</h2>
+      <p class="hint" style="margin-top:0;">
+        数字の 0〜9 は 48〜57、大文字 A〜Z は 65〜90、小文字 a〜z は 97〜122 と、連続して並んでいます。
+        大文字と小文字は32だけ離れているので、2進数で見ると6桁目が違うだけです。
+        この規則のおかげで、文字の並べ替えや大文字小文字の変換が簡単な計算でできます。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 文字化け ===== -->
+  <section class="tool" id="toolGarble" role="tabpanel" aria-labelledby="tabGarble">
+    <div class="panel">
+      <h2>なぜ文字化けが起きるのか</h2>
+      <input class="txt" id="gInput" type="text" value="情報の授業" maxlength="24"
+             autocomplete="off" spellcheck="false">
+      <p class="hint">同じ数値の並びを、違うルールで読み取るとどうなるかを再現します。</p>
+    </div>
+
+    <div class="garble">
+      <div class="g ok">
+        <h3>○ 正しく読んだ場合</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin:0 0 6px;">UTF-8で書いて、UTF-8で読む</p>
+        <div class="out" id="gOk"></div>
+      </div>
+      <div class="g ng">
+        <h3>× ちがうルールで読んだ場合</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin:0 0 6px;">UTF-8で書いたものを、1バイトずつの文字として読む</p>
+        <div class="out" id="gNg"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>実際に送られている数値の並び</h2>
+      <div class="out" id="gBytes" style="font-family:ui-monospace,Consolas,monospace;
+        font-size:14px; background:#141c2e; color:#ffd97a; padding:12px 14px; border-radius:8px;
+        word-break:break-all; line-height:1.9;"></div>
+      <p class="hint">データそのものは同じです。違うのは「どう区切って、どう読むか」というルールだけです。</p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>文字も数値で表されている</h2>
+    <p>コンピュータが扱えるのは0と1だけです。では、文字はどうやって扱っているのでしょうか。答えは単純で、<strong>文字の一つ一つに番号をふっている</strong>のです。</p>
+    <p>「A」は65番、「B」は66番、というように、あらかじめ対応表を決めておきます。この対応表を文字コードといいます。コンピュータは65という数値を受け取ると、対応表を見て「A」という形を画面に描きます。</p>
+    <p>大切なのは、書き手と読み手が<strong>同じ対応表を使っている必要がある</strong>という点です。違う表を使うと、まったく別の文字として解釈されてしまいます。</p>
+
+    <h2>ASCII ― 最初の共通ルール</h2>
+    <p>1963年にアメリカで定められたのがASCII（アスキー）です。アルファベット、数字、記号など128種類の文字に、0から127までの番号をふりました。</p>
+    <p>128種類なので、7ビットあれば表せます。実際には扱いやすさから8ビット（1バイト）を1文字に使うのが一般的です。</p>
+    <table>
+      <tr><th>文字</th><th>10進数</th><th>16進数</th><th>2進数</th></tr>
+      <tr><td>A</td><td class="mono">65</td><td class="mono">41</td><td class="mono">01000001</td></tr>
+      <tr><td>a</td><td class="mono">97</td><td class="mono">61</td><td class="mono">01100001</td></tr>
+      <tr><td>0</td><td class="mono">48</td><td class="mono">30</td><td class="mono">00110000</td></tr>
+      <tr><td>空白</td><td class="mono">32</td><td class="mono">20</td><td class="mono">00100000</td></tr>
+    </table>
+    <p>この並び方には工夫があります。数字の0〜9、大文字のA〜Z、小文字のa〜zが、それぞれ連続した番号になっているのです。おかげで、名前をあいうえお順（アルファベット順）に並べ替える処理が、単なる数値の大小比較で済みます。</p>
+    <p>さらに、大文字と小文字はちょうど32だけ離れています。32は2進数で100000なので、6桁目のビットを切り替えるだけで大文字と小文字を変換できます。</p>
+
+    <h2>日本語をどう扱うか</h2>
+    <p>ASCIIは128文字しか表せません。ひらがな、カタカナ、漢字を含む日本語には、まったく足りません。常用漢字だけでも2000字以上あります。</p>
+    <p>そこで日本では、1文字に2バイト（16ビット）使う方式が作られました。2バイトあれば65,536種類を表せるので、漢字も収まります。ただし、複数の方式が並行して使われたことが、のちの混乱の原因になりました。</p>
+    <table>
+      <tr><th>方式</th><th>特徴</th></tr>
+      <tr><td>JISコード</td><td>電子メールなどで使われた</td></tr>
+      <tr><td>Shift_JIS</td><td>Windowsで長く使われた日本独自の方式</td></tr>
+      <tr><td>EUC-JP</td><td>UNIX系のシステムで使われた</td></tr>
+    </table>
+    <p>同じ「あ」という文字でも、方式によって違う数値が割り当てられています。これが文字化けを生みました。</p>
+
+    <h2>Unicode ― 世界中の文字を1つの表に</h2>
+    <p>国ごとに違う文字コードを使っていては、国際的なやり取りで必ず問題が起きます。そこで、世界中のあらゆる文字を1つの対応表にまとめようという試みが始まりました。それがUnicode（ユニコード）です。</p>
+    <p>Unicodeでは、漢字もアラビア文字もハングルも絵文字も、すべて同じ表の中に番号を持っています。現在では15万字以上が登録されています。</p>
+    <p>各文字の番号は、U+3042（「あ」）のように「U+」に続く16進数で表記します。この番号をコードポイントといいます。</p>
+
+    <h3>UTF-8 ― 実際の記録のしかた</h3>
+    <p>Unicodeは番号を決めただけで、それをどうバイトの並びにするかは別に決める必要があります。その方式の一つがUTF-8で、現在ウェブページのほとんどがこれを使っています。</p>
+    <p>UTF-8の工夫は、<strong>文字によってバイト数を変える</strong>点にあります。</p>
+    <table>
+      <tr><th>バイト数</th><th>表せる文字</th><th>例</th></tr>
+      <tr><td class="mono">1バイト</td><td>ASCIIと同じ範囲</td><td>A、0、記号</td></tr>
+      <tr><td class="mono">2バイト</td><td>ヨーロッパの文字など</td><td>é、Й</td></tr>
+      <tr><td class="mono">3バイト</td><td>日本語・中国語・韓国語</td><td>あ、漢、한</td></tr>
+      <tr><td class="mono">4バイト</td><td>絵文字、珍しい漢字</td><td>絵文字全般</td></tr>
+    </table>
+    <p>英数字は1バイトのまま扱えるので、ASCIIで書かれた古いデータをそのまま読めます。この互換性が、UTF-8が広く普及した理由の一つです。一方で日本語は3バイト必要なので、同じ文字数でも英語よりデータ量が大きくなります。</p>
+
+    <h2>文字化けはなぜ起きるのか</h2>
+    <p>文字化けの原因は、単純です。<strong>書いたときのルールと、読むときのルールが違う</strong>からです。</p>
+    <p>たとえば「情報」をUTF-8で書くと、6バイトの数値の並びになります。この数値を受け取った側が「1バイトが1文字だ」というルールで読むと、6文字の意味不明な記号として表示されます。データ自体は壊れていません。読み方が違うだけです。</p>
+    <p>上のツールで実際に確かめられます。同じ数値の並びが、読み方によってまったく違う見た目になることが分かります。</p>
+    <p>この問題を避けるため、HTMLファイルの先頭には必ず文字コードの宣言を書きます。</p>
+    <div class="formula">&lt;meta charset="UTF-8"&gt;</div>
+    <p>この1行が「このページはUTF-8で書かれています」とブラウザに伝えています。これがないと、ブラウザが推測で判断するため、文字化けが起きることがあります。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>文字を数値にする</strong>：好きな文字を入力すると、1文字ずつコードポイントとUTF-8のバイト列が表示されます。枠の色でバイト数が分かります。</li>
+      <li><strong>ASCII表</strong>：マスをクリックすると、その文字の10進数・16進数・2進数が確認できます。</li>
+      <li><strong>文字化けのしくみ</strong>：正しく読んだ場合と、違うルールで読んだ場合を並べて比較できます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/charcode/">文字コード</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabConv','toolConv'],['tabAscii','toolAscii'],['tabGarble','toolGarble']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+const enc=new TextEncoder();
+const hex2=v=>v.toString(16).toUpperCase().padStart(2,'0');
+
+/* ===== 文字を数値にする ===== */
+function renderConv(){
+  const s=document.getElementById('cInput').value;
+  const box=document.getElementById('cChars');
+  box.innerHTML='';
+  const chars=[...s]; // サロゲートペアを1文字として扱う
+  let utf8=0, utf16=0;
+  chars.forEach(ch=>{
+    const cp=ch.codePointAt(0);
+    const bytes=enc.encode(ch);
+    utf8+=bytes.length;
+    utf16+=(cp>0xFFFF?4:2);
+    const d=document.createElement('div');
+    d.className='cc b'+bytes.length;
+    d.innerHTML=
+      `<div class="g">${ch===' '?'␣':escapeHtml(ch)}</div>`+
+      `<div class="k">コードポイント</div>`+
+      `<div class="v">U+${cp.toString(16).toUpperCase().padStart(4,'0')}</div>`+
+      `<div class="k" style="margin-top:5px;">10進数</div>`+
+      `<div class="v">${cp}</div>`+
+      `<div class="bytes">${[...bytes].map(hex2).join(' ')}<br>(${bytes.length}バイト)</div>`;
+    box.appendChild(d);
+  });
+  document.getElementById('cLen').textContent=chars.length+' 字';
+  document.getElementById('cUtf8').textContent=utf8+' バイト';
+  document.getElementById('cUtf16').textContent=utf16+' バイト';
+  document.getElementById('cBits').textContent=(utf8*8).toLocaleString();
+  const only1=chars.every(c=>enc.encode(c).length===1);
+  document.getElementById('cCalc').innerHTML=
+    `UTF-8では <b>${utf8}バイト（${utf8*8}ビット）</b> になります。`+
+    (only1 ? '　すべて1バイトで表せる文字なので、ASCIIと同じ大きさです。'
+           : '　日本語は1文字3バイト必要なので、英数字より大きくなります。');
+}
+function escapeHtml(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+document.getElementById('cInput').addEventListener('input',renderConv);
+document.querySelectorAll('[data-ex]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.getElementById('cInput').value=b.dataset.ex; renderConv();
+  });
+});
+
+/* ===== ASCII表 ===== */
+const CTRL={0:'NUL',7:'BEL',8:'BS',9:'TAB',10:'LF',13:'CR',27:'ESC',32:'SP',127:'DEL'};
+function buildAscii(){
+  const t=document.getElementById('aTable');
+  let html='<tr><th></th>';
+  for(let lo=0;lo<16;lo++) html+=`<th>${lo.toString(16).toUpperCase()}</th>`;
+  html+='</tr>';
+  for(let hi=0;hi<8;hi++){
+    html+=`<tr><th>${hi.toString(16).toUpperCase()}</th>`;
+    for(let lo=0;lo<16;lo++){
+      const code=hi*16+lo;
+      const isCtl = code<32 || code===127;
+      const label = isCtl ? (CTRL[code]||'') : (code===32?'SP':String.fromCharCode(code));
+      html+=`<td data-code="${code}" class="${isCtl?'ctl':''}">${escapeHtml(label)}</td>`;
+    }
+    html+='</tr>';
+  }
+  t.innerHTML=html;
+  t.querySelectorAll('td').forEach(td=>{
+    td.addEventListener('click',()=>selectAscii(+td.dataset.code));
+  });
+  selectAscii(65);
+}
+function selectAscii(code){
+  document.querySelectorAll('#aTable td').forEach(td=>
+    td.classList.toggle('sel', +td.dataset.code===code));
+  const isCtl = code<32 || code===127;
+  const ch = isCtl ? (CTRL[code]||'制御') : (code===32?'空白':String.fromCharCode(code));
+  document.getElementById('aChar').textContent=ch;
+  document.getElementById('aDec').textContent=code;
+  document.getElementById('aHex').textContent=hex2(code);
+  document.getElementById('aBin').textContent=code.toString(2).padStart(8,'0');
+  let note='';
+  if(code>=48&&code<=57) note='数字の0〜9は、48から連続して並んでいます。';
+  else if(code>=65&&code<=90) note=`大文字です。小文字の「${String.fromCharCode(code+32)}」は ${code+32} 番で、32だけ大きい値です。`;
+  else if(code>=97&&code<=122) note=`小文字です。大文字の「${String.fromCharCode(code-32)}」は ${code-32} 番で、32だけ小さい値です。`;
+  else if(isCtl) note='画面に表示されない制御文字です。改行やタブなどの指示に使われます。';
+  else note='記号や空白にも、それぞれ番号が割り当てられています。';
+  document.getElementById('aCalc').innerHTML=note;
+}
+
+/* ===== 文字化け ===== */
+function renderGarble(){
+  const s=document.getElementById('gInput').value;
+  document.getElementById('gOk').textContent=s;
+  const bytes=enc.encode(s);
+  // 1バイト=1文字として読む（Latin-1相当）
+  let wrong='';
+  bytes.forEach(b=>{
+    // 表示できない範囲は代替文字に
+    wrong += (b>=32 && b!==127) ? String.fromCharCode(b) : '□';
+  });
+  document.getElementById('gNg').textContent=wrong;
+  document.getElementById('gBytes').textContent=
+    [...bytes].map(hex2).join(' ') + `　（全 ${bytes.length} バイト）`;
+}
+document.getElementById('gInput').addEventListener('input',renderGarble);
+
+/* ===== 初期化 ===== */
+renderConv(); buildAscii(); renderGarble();
+</script>
+</body>
+</html>
