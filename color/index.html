@@ -87,6 +87,25 @@
   .ps{width:36px; height:36px; border-radius:8px; border:2px solid var(--line); cursor:pointer; padding:0;}
   .ps:hover{border-color:var(--navy);}
 
+  /* カラーフィルタ */
+  .fstage{background:#0d1220; border-radius:12px; padding:20px 16px; overflow-x:auto;}
+  .frow{display:flex; align-items:center; gap:6px; min-width:640px; justify-content:center;}
+  .fitem{text-align:center; flex:0 0 auto;}
+  .fitem .lb{font-size:11.5px; color:#aebbd6; margin-bottom:6px;}
+  .lamp{width:74px; height:74px; border-radius:50%; border:2px solid rgba(255,255,255,.35);}
+  .beam{width:56px; height:26px; border-radius:3px;}
+  .filt{width:60px; height:96px; border-radius:6px; border:2px solid rgba(255,255,255,.55);
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
+    color:rgba(255,255,255,.9);}
+  .eye{width:74px; height:74px; border-radius:12px; border:2px solid rgba(255,255,255,.35);
+    display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .fbtns{display:flex; gap:7px; flex-wrap:wrap;}
+  .fb{padding:8px 14px; border-radius:9px; border:2px solid var(--line); cursor:pointer;
+    font-family:inherit; font-size:13.5px; background:#fff; color:var(--ink);}
+  .fb[aria-pressed=true]{border-color:var(--navy); box-shadow:0 0 0 2px rgba(47,84,150,.25);}
+  .fb .dot{display:inline-block; width:13px; height:13px; border-radius:50%;
+    margin-right:6px; vertical-align:-2px; border:1px solid rgba(0,0,0,.2);}
+
   /* 画面拡大 */
   .zoomwrap{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; justify-content:center;}
   .zoombox{flex:1 1 300px; min-width:280px; text-align:center;}
@@ -151,6 +170,7 @@
       <div class="code"><div class="k">RGB（光の三原色）</div><div class="v" id="cRgb">0, 0, 0</div></div>
       <div class="code"><div class="k">HSV（色相・彩度・明度）</div><div class="v" id="cHsv">0°, 0%, 0%</div></div>
       <div class="code"><div class="k">CMYK（インクの割合）</div><div class="v" id="cCmyk">0, 0, 0, 100</div></div>
+      <div class="code"><div class="k">HSL（明度の取り方が別）</div><div class="v" id="cHsl">0°, 0%, 0%</div></div>
     </div>
   </div>
 
@@ -159,6 +179,7 @@
     <button class="tab" role="tab" id="tabHsv" aria-selected="false" aria-controls="toolHsv">HSV（色相・彩度・明度）</button>
     <button class="tab" role="tab" id="tabCmyk" aria-selected="false" aria-controls="toolCmyk">CMYK（色の三原色）</button>
     <button class="tab" role="tab" id="tabMix" aria-selected="false" aria-controls="toolMix">混ぜ方のちがい</button>
+    <button class="tab" role="tab" id="tabFilter" aria-selected="false" aria-controls="toolFilter">カラーフィルタ</button>
     <button class="tab" role="tab" id="tabZoom" aria-selected="false" aria-controls="toolZoom">画面を拡大する</button>
     <button class="tab" role="tab" id="tabSplit" aria-selected="false" aria-controls="toolSplit">色に分解する</button>
   </div>
@@ -254,20 +275,67 @@
   <!-- ===== 混ぜ方のちがい ===== -->
   <section class="tool" id="toolMix" role="tabpanel" aria-labelledby="tabMix">
     <div class="panel">
-      <h2>光は混ぜると明るく、インクは混ぜると暗くなる</h2>
-      <div class="cvwrap">
-        <div class="cvbox">
-          <canvas id="addMix" width="300" height="300"></canvas>
-          <p class="cap"><strong>加法混色</strong>（光・ディスプレイ）<br>混ぜるほど明るく、3つ揃うと白</p>
-        </div>
-        <div class="cvbox">
-          <canvas id="subMix" width="300" height="300"></canvas>
-          <p class="cap"><strong>減法混色</strong>（インク・印刷）<br>混ぜるほど暗く、3つ揃うと黒に近づく</p>
-        </div>
+      <h2>円をドラッグして、重なりを変えてみましょう</h2>
+      <div class="row">
+        <button class="chip" id="mixAdd" aria-pressed="true">加法混色（光）</button>
+        <button class="chip" id="mixSub" aria-pressed="false">減法混色（インク）</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="mixReset">位置を戻す</button>
       </div>
-      <p class="hint">
-        ディスプレイは自分で光を出すので、光を足していく「加法混色」。
-        紙は光を出さず、インクが光を吸収するので、反射する光を減らしていく「減法混色」です。
+      <p class="hint" id="mixHint"></p>
+    </div>
+
+    <div class="cvwrap">
+      <div class="cvbox">
+        <canvas id="mixCv" width="440" height="380" style="cursor:grab; touch-action:none;"></canvas>
+        <p class="cap" id="mixCap"></p>
+      </div>
+    </div>
+
+    <div class="verdict" id="mixVerdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
+      color:#fff;border-radius:12px;padding:14px 18px;margin-top:14px;font-size:14.5px;"></div>
+  </section>
+
+  <!-- ===== カラーフィルタ ===== -->
+  <section class="tool" id="toolFilter" role="tabpanel" aria-labelledby="tabFilter">
+    <div class="panel">
+      <h2>光にフィルタをかけると、何が起きるか</h2>
+      <div class="row" style="margin-bottom:12px;">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);flex:0 0 5.5em;">当てる光</span>
+        <div class="fbtns" id="fLightBtns"></div>
+      </div>
+      <div class="row">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);flex:0 0 5.5em;">フィルタ</span>
+        <div class="fbtns" id="fFiltBtns"></div>
+      </div>
+    </div>
+
+    <div class="fstage">
+      <div class="frow">
+        <div class="fitem"><div class="lb">光源</div><div class="lamp" id="fLamp"></div></div>
+        <div class="fitem"><div class="lb">　</div><div class="beam" id="fBeam1"></div></div>
+        <div class="fitem"><div class="lb">フィルタ</div><div class="filt" id="fFilt">赤</div></div>
+        <div class="fitem"><div class="lb">　</div><div class="beam" id="fBeam2"></div></div>
+        <div class="fitem"><div class="lb">目に届く光</div><div class="eye" id="fEye"></div></div>
+      </div>
+    </div>
+
+    <div class="zinfo" style="margin-top:14px;">
+      <div class="zi"><div class="k">当てた光</div><div class="v" id="fInName">白</div></div>
+      <div class="zi"><div class="k">フィルタが通す色</div><div class="v" id="fPass">赤</div></div>
+      <div class="zi"><div class="k">目に届く色</div><div class="v" id="fOut">赤</div></div>
+    </div>
+
+    <div class="verdict" id="fVerdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
+      color:#fff;border-radius:12px;padding:14px 18px;margin-top:14px;font-size:14.5px;"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>フィルタは「色をつける」のではなく「色を取り除く」</h2>
+      <p style="margin:0;font-size:15px;">
+        赤いセロハンは、赤い光を作り出しているのではありません。
+        当たった光のうち<strong>緑と青を吸収し、赤だけを通している</strong>だけです。
+        だから青い光に赤いフィルタをかけると、通る光がなくなって真っ暗になります。
+        インクや絵の具も同じ原理で、これが減法混色の正体です。
       </p>
     </div>
   </section>
@@ -306,35 +374,24 @@
   <!-- ===== 色に分解する ===== -->
   <section class="tool" id="toolSplit" role="tabpanel" aria-labelledby="tabSplit">
     <div class="panel">
-      <h2>画像は、赤・緑・青の3枚が重なってできています</h2>
+      <h2>画像は、何枚かの「色の板」が重なってできています</h2>
       <div class="row">
         <button class="chip" data-fig="apple" aria-pressed="true">りんご</button>
         <button class="chip" data-fig="flower" aria-pressed="false">花</button>
         <button class="chip" data-fig="sky" aria-pressed="false">空と草原</button>
         <label class="chip" style="cursor:pointer;">画像を選ぶ<input id="spPick" type="file" accept="image/*" hidden></label>
         <span style="flex:1"></span>
-        <button class="chip" id="spColor" aria-pressed="true">色つきで見る</button>
+        <button class="chip" id="spRGB" aria-pressed="true">光の3色（RGB）</button>
+        <button class="chip" id="spCMYK" aria-pressed="false">インクの4色（CMYK）</button>
         <button class="chip" id="spGray" aria-pressed="false">明るさで見る</button>
       </div>
       <p class="hint">「明るさで見る」に切り替えると、その色の光がどれだけ強いかが白黒の濃さで分かります。</p>
     </div>
 
-    <div class="splitgrid">
-      <div class="sp"><canvas id="spAll" width="220" height="220"></canvas>
-        <div class="lb">元の画像</div><div class="sub">3つが重なった状態</div></div>
-      <div class="sp r"><canvas id="spR" width="220" height="220"></canvas>
-        <div class="lb">赤（R）だけ</div><div class="sub" id="spRs">–</div></div>
-      <div class="sp g"><canvas id="spG" width="220" height="220"></canvas>
-        <div class="lb">緑（G）だけ</div><div class="sub" id="spGs">–</div></div>
-      <div class="sp b"><canvas id="spB" width="220" height="220"></canvas>
-        <div class="lb">青（B）だけ</div><div class="sub" id="spBs">–</div></div>
-    </div>
+    <div class="splitgrid" id="spGrid"></div>
 
-    <div class="verdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
-      color:#fff;border-radius:12px;padding:14px 18px;margin-top:16px;font-size:14.5px;">
-      1つの画素には、<b style="color:#ffd97a;">赤・緑・青それぞれの強さ</b>が数値で記録されています。
-      3枚を重ねると、元の画像に戻ります。赤い部分は赤の板が明るく、青い部分は青の板が明るくなっています。
-    </div>
+    <div class="verdict" id="spVerdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
+      color:#fff;border-radius:12px;padding:14px 18px;margin-top:16px;font-size:14.5px;"></div>
   </section>
 
   <!-- ===== 解説 ===== -->
@@ -403,15 +460,32 @@
     <p>上のツールで実際に分解できます。りんごの画像なら、赤の板では実の部分が明るく、青の板では暗くなります。3枚を重ねると元の画像に戻ります。</p>
     <p>この考え方は、画像処理の基本です。色の調整、特定の色だけを取り出す処理、写真の加工などは、この3枚それぞれに操作を加えることで実現されています。</p>
 
+    <h2>カラーフィルタのしくみ</h2>
+    <p>赤いセロハンを通して景色を見ると、赤く見えます。ここで誤解しやすいのは、<strong>セロハンが赤い光を作り出しているわけではない</strong>という点です。</p>
+    <p>フィルタがしているのは、逆のことです。当たった光のうち、緑と青の成分を吸収し、赤の成分だけを通しています。つまり<strong>色を足すのではなく、引いている</strong>のです。</p>
+    <p>この性質から、意外な結果が起こります。青い光に赤いフィルタをかけると、通れる成分がないため<strong>真っ暗</strong>になります。上のツールで実際に確かめられます。</p>
+    <p>インクや絵の具も、まったく同じ原理です。赤い絵の具は、当たった白色光のうち緑と青を吸収し、赤だけを反射しています。だから絵の具を混ぜるほど吸収される光が増え、暗くなっていきます。これが減法混色の正体です。</p>
+
+    <h2>印刷は4枚の版を重ねている</h2>
+    <p>カラー印刷では、シアン・マゼンタ・イエロー・黒の4枚の版を、順番に紙へ刷り重ねています。上のツールの「インクの4色（CMYK）」で、実際にどう分解されるかを確認できます。</p>
+    <p>赤いりんごの画像を分解すると、シアンの版にはほとんど何も写らず、マゼンタとイエローの版に実の部分が濃く出ます。赤は、マゼンタとイエローを重ねて作られる色だからです。</p>
+    <p>印刷物を虫めがねで見ると、細かい点が並んでいるのが見えます。網点といい、点の大きさでインクの濃さを表現しています。4色の網点が少しずつ角度をずらして重ねられ、離れて見ると混ざった色に感じられる仕組みです。</p>
+
+    <h2>HSLという表し方</h2>
+    <p>HSVによく似た方式に、HSLがあります。H（色相）とS（彩度）は同じですが、3つ目がL（Lightness／輝度）になっています。</p>
+    <p>違いは、最も明るい状態の扱いです。HSVではV=100%で最も鮮やかな色になりますが、HSLではL=100%にすると白になります。L=50%のときが最も鮮やかです。</p>
+    <p>どちらが優れているというものではなく、用途で使い分けられています。ウェブページの色指定ではHSLがよく使われ、画像編集ソフトではHSVが主流です。上部の表示で、同じ色がHSVとHSLでどう違う数値になるかを見比べられます。</p>
+
     <h2>使い方</h2>
     <ul>
       <li>どのタブで値を変えても、上の色見本と4つの表記がすべて連動して変わります。</li>
       <li><strong>RGB</strong>：スライダーの右に2進数も表示されます。カラーコードとの対応を確かめてみてください。</li>
       <li><strong>HSV</strong>：色相環をクリックして色あいを選び、四角の中で鮮やかさと明るさを決められます。</li>
       <li><strong>CMYK</strong>：インクの割合で指定します。K を上げると全体が暗くなります。</li>
-      <li><strong>混ぜ方のちがい</strong>：光とインクで、重なった部分の色がどう変わるかを比べられます。</li>
+      <li><strong>混ぜ方のちがい</strong>：3つの円をドラッグして動かせます。光とインクを切り替えて、重なった部分の色を比べてみてください。</li>
+      <li><strong>カラーフィルタ</strong>：光とフィルタの組み合わせを変えると、目に届く色が変わります。真っ暗になる組み合わせも探してみてください。</li>
       <li><strong>画面を拡大する</strong>：ディスプレイの1画素を拡大して、赤・緑・青の3本組が見える様子を確かめられます。</li>
-      <li><strong>色に分解する</strong>：画像を赤・緑・青の3枚に分けて表示します。自分の画像を読み込んで試すこともできます。</li>
+      <li><strong>色に分解する</strong>：画像を光の3色（RGB）または印刷の4色（CMYK）に分けて表示します。自分の画像を読み込んで試すこともできます。</li>
     </ul>
   </section>
 
@@ -447,7 +521,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix'],['tabZoom','toolZoom'],['tabSplit','toolSplit']];
+  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix'],['tabFilter','toolFilter'],['tabZoom','toolZoom'],['tabSplit','toolSplit']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -457,6 +531,7 @@
       });
       if(tid==='tabHsv') drawSV();
       if(tid==='tabMix') drawMix();
+      if(tid==='tabFilter') drawFilter();
       if(tid==='tabZoom') drawZoom();
       if(tid==='tabSplit') drawSplit();
     });
@@ -485,6 +560,20 @@ function hsv2rgb(h,s,v){
   else if(h<180){g=c;b=x;} else if(h<240){g=x;b=c;}
   else if(h<300){r=x;b=c;} else {r=c;b=x;}
   return {r:Math.round((r+m)*255), g:Math.round((g+m)*255), b:Math.round((b+m)*255)};
+}
+function rgb2hsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn;
+  let h=0;
+  if(d!==0){
+    if(mx===r) h=((g-b)/d)%6;
+    else if(mx===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  const l=(mx+mn)/2;
+  const sat = d===0 ? 0 : d/(1-Math.abs(2*l-1));
+  return {h:Math.round(h), s:Math.round(sat*100), l:Math.round(l*100)};
 }
 function rgb2cmyk(r,g,b){
   r/=255; g/=255; b/=255;
@@ -532,6 +621,8 @@ function syncAll(src){
   document.getElementById('cRgb').textContent=`${R}, ${G}, ${B}`;
   document.getElementById('cHsv').textContent=`${hsv.h}°, ${hsv.s}%, ${hsv.v}%`;
   document.getElementById('cCmyk').textContent=`${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}`;
+  const hsl=rgb2hsl(R,G,B);
+  document.getElementById('cHsl').textContent=`${hsl.h}°, ${hsl.s}%, ${hsl.l}%`;
 
   // RGBタブ
   if(src!=='rgb'){
@@ -696,38 +787,183 @@ function pickSV(e){
 sv.addEventListener('pointerdown',e=>{ sv.setPointerCapture(e.pointerId); pickSV(e); });
 sv.addEventListener('pointermove',e=>{ if(e.buttons) pickSV(e); });
 
-/* ===== 混色の図 ===== */
+/* ===== 混色（ドラッグできる円） ===== */
+let mixMode='add';
+const MIXR=78;
+let circles=[{x:220,y:130},{x:172,y:216},{x:268,y:216}];
+const HOME=[{x:220,y:130},{x:172,y:216},{x:268,y:216}];
+let dragIdx=-1;
+
 function drawMix(){
-  const a=document.getElementById('addMix'), ac=a.getContext('2d');
-  const s=document.getElementById('subMix'), sc2=s.getContext('2d');
-  const W=a.width, r=W*0.24;
-  const pts=[[W/2,W*0.36],[W*0.35,W*0.63],[W*0.65,W*0.63]];
+  const cv=document.getElementById('mixCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const add = mixMode==='add';
 
-  // 加法混色（黒背景に光を足す）
-  ac.fillStyle='#000'; ac.fillRect(0,0,W,W);
-  ac.globalCompositeOperation='lighter';
-  [['rgb(255,0,0)'],['rgb(0,255,0)'],['rgb(0,0,255)']].forEach(([col],i)=>{
-    ac.fillStyle=col; ac.beginPath();
-    ac.arc(pts[i][0],pts[i][1],r,0,Math.PI*2); ac.fill();
-  });
-  ac.globalCompositeOperation='source-over';
-  ac.fillStyle='#fff'; ac.font='bold 15px sans-serif'; ac.textAlign='center';
-  ac.fillText('R',pts[0][0],pts[0][1]-r*0.55);
-  ac.fillText('G',pts[1][0]-r*0.55,pts[1][1]+r*0.6);
-  ac.fillText('B',pts[2][0]+r*0.55,pts[2][1]+r*0.6);
+  c.globalCompositeOperation='source-over';
+  c.fillStyle = add ? '#000000' : '#ffffff';
+  c.fillRect(0,0,W,H);
 
-  // 減法混色（白背景にインクを重ねる）
-  sc2.fillStyle='#fff'; sc2.fillRect(0,0,W,W);
-  sc2.globalCompositeOperation='multiply';
-  [['rgb(0,255,255)'],['rgb(255,0,255)'],['rgb(255,255,0)']].forEach(([col],i)=>{
-    sc2.fillStyle=col; sc2.beginPath();
-    sc2.arc(pts[i][0],pts[i][1],r,0,Math.PI*2); sc2.fill();
+  const cols = add
+    ? ['rgb(255,0,0)','rgb(0,255,0)','rgb(0,0,255)']
+    : ['rgb(0,255,255)','rgb(255,0,255)','rgb(255,255,0)'];
+  const labs = add ? ['R','G','B'] : ['C','M','Y'];
+
+  c.globalCompositeOperation = add ? 'lighter' : 'multiply';
+  circles.forEach((p,i)=>{
+    c.fillStyle=cols[i];
+    c.beginPath(); c.arc(p.x,p.y,MIXR,0,Math.PI*2); c.fill();
   });
-  sc2.globalCompositeOperation='source-over';
-  sc2.fillStyle='#333'; sc2.font='bold 15px sans-serif'; sc2.textAlign='center';
-  sc2.fillText('C',pts[0][0],pts[0][1]-r*0.55);
-  sc2.fillText('M',pts[1][0]-r*0.55,pts[1][1]+r*0.6);
-  sc2.fillText('Y',pts[2][0]+r*0.55,pts[2][1]+r*0.6);
+  c.globalCompositeOperation='source-over';
+
+  // ラベル
+  c.font='bold 15px sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  circles.forEach((p,i)=>{
+    c.fillStyle = add ? '#fff' : '#333';
+    c.fillText(labs[i], p.x, p.y-MIXR-14);
+  });
+
+  // 重なりの状態を判定
+  const d=(a,b)=>Math.hypot(circles[a].x-circles[b].x, circles[a].y-circles[b].y);
+  const ov=[d(0,1)<MIXR*2, d(0,2)<MIXR*2, d(1,2)<MIXR*2];
+  const all = ov[0]&&ov[1]&&ov[2] &&
+              Math.hypot((circles[0].x+circles[1].x+circles[2].x)/3-circles[0].x,
+                         (circles[0].y+circles[1].y+circles[2].y)/3-circles[0].y) < MIXR;
+  const cnt=ov.filter(Boolean).length;
+
+  const cap=document.getElementById('mixCap');
+  const vd=document.getElementById('mixVerdict');
+  const hint=document.getElementById('mixHint');
+
+  if(add){
+    hint.textContent='ディスプレイは自分で光を出すので、光を足していく「加法混色」です。';
+    cap.textContent='円をドラッグして、重ね方を変えてみましょう（光の三原色）';
+    if(all) vd.innerHTML='3つがすべて重なった部分は <b style="color:#ffd97a;">白</b> になりました。光は混ぜるほど明るくなります。';
+    else if(cnt>0) vd.innerHTML='2つが重なると、<b style="color:#ffd97a;">黄・シアン・マゼンタ</b>という二次色ができます。3つすべて重ねると白になります。';
+    else vd.innerHTML='円を動かして重ねてみてください。何もない部分が<b style="color:#ffd97a;">黒</b>なのは、光がまったく来ていないからです。';
+  }else{
+    hint.textContent='紙は光を出さず、インクが光を吸収するので、反射する光を減らしていく「減法混色」です。';
+    cap.textContent='円をドラッグして、重ね方を変えてみましょう（色の三原色）';
+    if(all) vd.innerHTML='3つがすべて重なった部分は <b style="color:#ffd97a;">黒に近い色</b> になりました。インクは混ぜるほど暗くなります。';
+    else if(cnt>0) vd.innerHTML='2つが重なると、<b style="color:#ffd97a;">赤・緑・青</b>ができます。光の三原色とちょうど逆の関係です。';
+    else vd.innerHTML='円を動かして重ねてみてください。何もない部分が<b style="color:#ffd97a;">白</b>なのは、紙の色がそのまま見えているからです。';
+  }
+}
+function mixPos(e){
+  const cv=document.getElementById('mixCv');
+  const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)/r.width*cv.width, y:(e.clientY-r.top)/r.height*cv.height};
+}
+(() => {
+  const cv=document.getElementById('mixCv');
+  cv.addEventListener('pointerdown',e=>{
+    const p=mixPos(e);
+    for(let i=circles.length-1;i>=0;i--){
+      if(Math.hypot(p.x-circles[i].x,p.y-circles[i].y)<MIXR){ dragIdx=i; break; }
+    }
+    if(dragIdx>=0){ cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing'; }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(dragIdx<0) return;
+    const p=mixPos(e);
+    circles[dragIdx]={x:Math.max(MIXR*0.3,Math.min(cv.width-MIXR*0.3,p.x)),
+                      y:Math.max(MIXR*0.3+18,Math.min(cv.height-MIXR*0.3,p.y))};
+    drawMix();
+  });
+  const up=()=>{ dragIdx=-1; cv.style.cursor='grab'; };
+  cv.addEventListener('pointerup',up);
+  cv.addEventListener('pointercancel',up);
+})();
+document.getElementById('mixAdd').addEventListener('click',()=>{
+  mixMode='add';
+  document.getElementById('mixAdd').setAttribute('aria-pressed','true');
+  document.getElementById('mixSub').setAttribute('aria-pressed','false');
+  drawMix();
+});
+document.getElementById('mixSub').addEventListener('click',()=>{
+  mixMode='sub';
+  document.getElementById('mixAdd').setAttribute('aria-pressed','false');
+  document.getElementById('mixSub').setAttribute('aria-pressed','true');
+  drawMix();
+});
+document.getElementById('mixReset').addEventListener('click',()=>{
+  circles=HOME.map(p=>({...p})); drawMix();
+});
+
+/* ===== カラーフィルタ ===== */
+const LIGHTS=[
+  {n:'白',   r:255,g:255,b:255},
+  {n:'赤',   r:255,g:0,  b:0},
+  {n:'緑',   r:0,  g:255,b:0},
+  {n:'青',   r:0,  g:0,  b:255},
+  {n:'黄',   r:255,g:255,b:0},
+  {n:'シアン',r:0,  g:255,b:255}
+];
+const FILTERS=[
+  {n:'なし',   r:1,g:1,b:1},
+  {n:'赤',     r:1,g:0,b:0},
+  {n:'緑',     r:0,g:1,b:0},
+  {n:'青',     r:0,g:0,b:1},
+  {n:'黄',     r:1,g:1,b:0},
+  {n:'シアン', r:0,g:1,b:1},
+  {n:'マゼンタ',r:1,g:0,b:1}
+];
+let fL=0, fF=1;
+function buildFBtns(){
+  const lb=document.getElementById('fLightBtns'), fb=document.getElementById('fFiltBtns');
+  lb.innerHTML=''; fb.innerHTML='';
+  LIGHTS.forEach((x,i)=>{
+    const b=document.createElement('button');
+    b.className='fb'; b.setAttribute('aria-pressed',String(i===fL));
+    b.innerHTML=`<span class="dot" style="background:rgb(${x.r},${x.g},${x.b})"></span>${x.n}`;
+    b.addEventListener('click',()=>{ fL=i; buildFBtns(); drawFilter(); });
+    lb.appendChild(b);
+  });
+  FILTERS.forEach((x,i)=>{
+    const b=document.createElement('button');
+    b.className='fb'; b.setAttribute('aria-pressed',String(i===fF));
+    const col = x.n==='なし' ? '#ffffff' : `rgb(${x.r*255},${x.g*255},${x.b*255})`;
+    b.innerHTML=`<span class="dot" style="background:${col}"></span>${x.n}`;
+    b.addEventListener('click',()=>{ fF=i; buildFBtns(); drawFilter(); });
+    fb.appendChild(b);
+  });
+}
+function drawFilter(){
+  const L=LIGHTS[fL], F=FILTERS[fF];
+  const out={r:L.r*F.r, g:L.g*F.g, b:L.b*F.b};
+  const lampC=`rgb(${L.r},${L.g},${L.b})`;
+  const outC=`rgb(${out.r},${out.g},${out.b})`;
+  const filtC= F.n==='なし' ? 'rgba(255,255,255,.15)' : `rgba(${F.r*255},${F.g*255},${F.b*255},.75)`;
+
+  document.getElementById('fLamp').style.background=lampC;
+  document.getElementById('fBeam1').style.background=lampC;
+  document.getElementById('fFilt').style.background=filtC;
+  document.getElementById('fFilt').textContent=F.n;
+  document.getElementById('fBeam2').style.background=outC;
+  const eye=document.getElementById('fEye');
+  eye.style.background=outC;
+  const dark = out.r+out.g+out.b === 0;
+  eye.style.color = dark ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.6)';
+  eye.textContent = dark ? '真っ暗' : '';
+
+  const name=v=>{
+    const k=`${v.r},${v.g},${v.b}`;
+    return {'255,255,255':'白','255,0,0':'赤','0,255,0':'緑','0,0,255':'青',
+            '255,255,0':'黄','0,255,255':'シアン','255,0,255':'マゼンタ','0,0,0':'黒（真っ暗）'}[k] || 'その色';
+  };
+  document.getElementById('fInName').textContent=L.n;
+  document.getElementById('fPass').textContent = F.n==='なし' ? 'すべて' : F.n+'の成分';
+  document.getElementById('fOut').textContent=name(out);
+
+  const v=document.getElementById('fVerdict');
+  if(F.n==='なし'){
+    v.innerHTML='フィルタがないので、光はそのまま目に届きます。フィルタを選んでみてください。';
+  }else if(dark){
+    v.innerHTML=`<b style="color:#ffd97a;">真っ暗になりました。</b> ${L.n}の光には、${F.n}のフィルタが通せる成分が含まれていないためです。フィルタは色を作らず、<b>取り除くことしかできません</b>。`;
+  }else if(L.n===name(out)){
+    v.innerHTML=`光がそのまま通りました。${L.n}の光の成分が、${F.n}のフィルタを通り抜けられるためです。`;
+  }else{
+    v.innerHTML=`${L.n}の光から一部が吸収され、<b style="color:#ffd97a;">${name(out)}</b>だけが通りました。フィルタは<b>通す色を決める</b>ものです。`;
+  }
 }
 
 /* ===== 画面を拡大する（サブピクセル） ===== */
@@ -814,7 +1050,7 @@ function drawZoom(){
 document.getElementById('zLv').addEventListener('input',drawZoom);
 
 /* ===== 色に分解する ===== */
-let spFig='apple', spMode='color', spSrc=null;
+let spFig='apple', spMode='rgb', spGrayView=false, spSrc=null;
 
 function makeFig(kind,S){
   const c=document.createElement('canvas'); c.width=S; c.height=S;
@@ -830,7 +1066,6 @@ function makeFig(kind,S){
     x.beginPath(); x.ellipse(S*.61,S*.18,S*.10,S*.05,-0.6,0,Math.PI*2); x.fill();
   }else if(kind==='flower'){
     x.fillStyle='#EAF3EE'; x.fillRect(0,0,S,S);
-    // 花びら
     for(let i=0;i<6;i++){
       const a=i/6*Math.PI*2;
       x.fillStyle= i%2 ? '#E7469A' : '#F06AAE';
@@ -840,11 +1075,9 @@ function makeFig(kind,S){
     }
     x.fillStyle='#F6D55C';
     x.beginPath(); x.arc(S*.5,S*.5,S*.12,0,Math.PI*2); x.fill();
-    // 葉
     x.fillStyle='#2E7D4F';
     x.beginPath(); x.ellipse(S*.30,S*.80,S*.13,S*.06,-0.5,0,Math.PI*2); x.fill();
   }else{
-    // 空と草原
     const sky=x.createLinearGradient(0,0,0,S*.55);
     sky.addColorStop(0,'#2F6FD0'); sky.addColorStop(1,'#9CC9F0');
     x.fillStyle=sky; x.fillRect(0,0,S,S*.55);
@@ -861,35 +1094,70 @@ function makeFig(kind,S){
 }
 
 function drawSplit(){
-  const S=220;
+  const S=210;
   const src = spSrc || makeFig(spFig,S);
-  const all=document.getElementById('spAll'), ac=all.getContext('2d');
+  const grid=document.getElementById('spGrid');
+
+  const plates = spMode==='rgb'
+    ? [{id:'R',lb:'赤（R）だけ',cls:'r'},{id:'G',lb:'緑（G）だけ',cls:'g'},{id:'B',lb:'青（B）だけ',cls:'b'}]
+    : [{id:'C',lb:'シアン（C）',cls:''},{id:'M',lb:'マゼンタ（M）',cls:''},
+       {id:'Y',lb:'イエロー（Y）',cls:''},{id:'K',lb:'黒（K）',cls:''}];
+
+  grid.innerHTML =
+    `<div class="sp"><canvas id="spAll" width="${S}" height="${S}"></canvas>
+      <div class="lb">元の画像</div><div class="sub">${plates.length}枚が重なった状態</div></div>` +
+    plates.map(p=>
+      `<div class="sp ${p.cls}"><canvas id="sp${p.id}" width="${S}" height="${S}"></canvas>
+        <div class="lb">${p.lb}</div><div class="sub" id="sp${p.id}s">–</div></div>`).join('');
+
+  const all=document.getElementById('spAll'), ac=all.getContext('2d',{willReadFrequently:true});
   ac.fillStyle='#fff'; ac.fillRect(0,0,S,S);
   const r=Math.min(S/src.width,S/src.height);
   const w=src.width*r, h=src.height*r;
   ac.drawImage(src,(S-w)/2,(S-h)/2,w,h);
-
   const data=ac.getImageData(0,0,S,S).data;
-  const chans=[['spR',0,'spRs'],['spG',1,'spGs'],['spB',2,'spBs']];
-  chans.forEach(([id,ch,statId])=>{
-    const cv=document.getElementById(id), c=cv.getContext('2d');
+
+  plates.forEach(pl=>{
+    const cv=document.getElementById('sp'+pl.id), c=cv.getContext('2d');
     const img=c.createImageData(S,S);
     let sum=0;
     for(let i=0;i<S*S;i++){
-      const p=i*4, v=data[p+ch];
-      sum+=v;
-      if(spMode==='gray'){
-        img.data[p]=img.data[p+1]=img.data[p+2]=v;
+      const p=i*4;
+      const R=data[p], G=data[p+1], B=data[p+2];
+      let v, col;
+      if(spMode==='rgb'){
+        v = pl.id==='R'?R : pl.id==='G'?G : B;
+        sum+=v;
+        if(spGrayView){ col=[v,v,v]; }
+        else col = pl.id==='R'?[v,0,0] : pl.id==='G'?[0,v,0] : [0,0,v];
       }else{
-        img.data[p]  = ch===0?v:0;
-        img.data[p+1]= ch===1?v:0;
-        img.data[p+2]= ch===2?v:0;
+        // RGB → CMYK
+        const rr=R/255, gg=G/255, bb=B/255;
+        const k=1-Math.max(rr,gg,bb);
+        const den = (1-k)||1;
+        const cc = k===1?0:(1-rr-k)/den, mm = k===1?0:(1-gg-k)/den, yy = k===1?0:(1-bb-k)/den;
+        const amt = pl.id==='C'?cc : pl.id==='M'?mm : pl.id==='Y'?yy : k;
+        v=Math.round(amt*255); sum+=v;
+        if(spGrayView){ const g2=255-v; col=[g2,g2,g2]; }
+        else {
+          // インクの色を、量に応じて白地に載せる
+          const ink = pl.id==='C'?[0,255,255] : pl.id==='M'?[255,0,255] :
+                      pl.id==='Y'?[255,255,0] : [0,0,0];
+          col=[Math.round(255-(255-ink[0])*amt), Math.round(255-(255-ink[1])*amt),
+               Math.round(255-(255-ink[2])*amt)];
+        }
       }
-      img.data[p+3]=255;
+      img.data[p]=col[0]; img.data[p+1]=col[1]; img.data[p+2]=col[2]; img.data[p+3]=255;
     }
     c.putImageData(img,0,0);
-    document.getElementById(statId).textContent='平均の強さ '+Math.round(sum/(S*S));
+    const avg=Math.round(sum/(S*S));
+    document.getElementById('sp'+pl.id+'s').textContent =
+      spMode==='rgb' ? '平均の強さ '+avg : 'インク量の平均 '+Math.round(avg/255*100)+'%';
   });
+
+  document.getElementById('spVerdict').innerHTML = spMode==='rgb'
+    ? '1つの画素には、<b style="color:#ffd97a;">赤・緑・青それぞれの強さ</b>が数値で記録されています。3枚を重ねると元の画像に戻ります。'
+    : 'カラー印刷では、<b style="color:#ffd97a;">4色の版</b>を順に刷り重ねて色を作ります。実際の印刷機も、この4枚を別々に刷っています。黒（K）を独立させることで、文字がくっきりし、インクの節約にもなります。';
 }
 document.querySelectorAll('[data-fig]').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -911,22 +1179,21 @@ document.getElementById('spPick').addEventListener('change',e=>{
   };
   img.src=URL.createObjectURL(f);
 });
-document.getElementById('spColor').addEventListener('click',()=>{
-  spMode='color';
-  document.getElementById('spColor').setAttribute('aria-pressed','true');
-  document.getElementById('spGray').setAttribute('aria-pressed','false');
+function setSplitMode(m,gray){
+  spMode=m; spGrayView=gray;
+  document.getElementById('spRGB').setAttribute('aria-pressed',String(m==='rgb'&&!gray));
+  document.getElementById('spCMYK').setAttribute('aria-pressed',String(m==='cmyk'&&!gray));
+  document.getElementById('spGray').setAttribute('aria-pressed',String(gray));
   drawSplit();
-});
-document.getElementById('spGray').addEventListener('click',()=>{
-  spMode='gray';
-  document.getElementById('spColor').setAttribute('aria-pressed','false');
-  document.getElementById('spGray').setAttribute('aria-pressed','true');
-  drawSplit();
-});
+}
+document.getElementById('spRGB').addEventListener('click',()=>setSplitMode('rgb',false));
+document.getElementById('spCMYK').addEventListener('click',()=>setSplitMode('cmyk',false));
+document.getElementById('spGray').addEventListener('click',()=>setSplitMode(spMode,true));
 
 /* ===== 初期化 ===== */
 syncAll(null);
 drawMix();
+buildFBtns(); drawFilter();
 buildZBtns(); drawZoom(); drawSplit();
 </script>
 </body>
