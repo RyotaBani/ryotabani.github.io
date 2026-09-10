@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アルゴリズムを体験しよう（探索・整列・計算量）｜情報ラボ</title>
+<meta name="description" content="線形探索と二分探索、いろいろな整列アルゴリズムを動かして比べられる無料ツール。計算量の違いを回数で確かめられます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/algorithm/">
+<meta property="og:title" content="アルゴリズムを体験しよう｜情報ラボ">
+<meta property="og:description" content="探索と整列を実際に動かして、手順の違いと速さを比べる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/algorithm/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  /* 探索の箱 */
+  .boxes{display:flex; gap:5px; flex-wrap:wrap; justify-content:center;}
+  .bx{width:46px; height:52px; border-radius:8px; border:2px solid var(--line); background:#fff;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:ui-monospace,Consolas,monospace; transition:all .15s;}
+  .bx .v{font-size:15px; font-weight:700; color:var(--ink);}
+  .bx .i{font-size:9px; color:var(--muted);}
+  .bx.check{border-color:var(--gold); background:#FFF6DC;}
+  .bx.out{opacity:.28;}
+  .bx.found{border-color:var(--ok); background:#EAF3EE;}
+  .bx.found .v{color:var(--ok);}
+  .bx.mid{border-color:var(--navy); background:#EEF3FB;}
+
+  /* 整列バー */
+  .bars{display:flex; gap:3px; align-items:flex-end; justify-content:center; height:220px;
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px;}
+  .bar{flex:1; max-width:34px; background:var(--navy); border-radius:3px 3px 0 0; transition:height .1s;
+    position:relative;}
+  .bar.cmp{background:var(--gold);}
+  .bar.swap{background:var(--ng);}
+  .bar.done{background:var(--ok);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:20px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+
+  table.cmp{border-collapse:collapse; width:100%; font-size:14px;}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px; text-align:center;}
+  table.cmp thead th{background:var(--navy); color:#fff;}
+  table.cmp tbody th{background:var(--panel); color:var(--ink); text-align:left;}
+  table.cmp td{font-family:ui-monospace,Consolas,monospace;}
+  td.good{background:#EAF3EE; color:#1f5c3f; font-weight:700;}
+  td.bad{background:#FBEEEE; color:#8E2B22;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ アルゴリズム</p>
+    <h1>アルゴリズムを体験しよう</h1>
+    <p class="lead">同じ答えにたどり着くのでも、手順が違えば速さがまったく変わります。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabSearch" aria-selected="true" aria-controls="toolSearch">探す（探索）</button>
+    <button class="tab" role="tab" id="tabSort" aria-selected="false" aria-controls="toolSort">並べる（整列）</button>
+    <button class="tab" role="tab" id="tabCost" aria-selected="false" aria-controls="toolCost">計算量を比べる</button>
+  </div>
+
+  <!-- ===== 探索 ===== -->
+  <section class="tool show" id="toolSearch" role="tabpanel" aria-labelledby="tabSearch">
+    <div class="panel">
+      <h2>目的の数を見つけるまで、何回調べるか</h2>
+      <div class="row">
+        <button class="chip" id="seLinear" aria-pressed="true">線形探索</button>
+        <button class="chip" id="seBinary" aria-pressed="false">二分探索</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="seNew">別のデータにする</button>
+      </div>
+      <div class="sl" style="margin-top:14px;">
+        <div class="top"><label for="seTarget">探す数</label><span class="val" id="seTargetV">–</span></div>
+        <input type="range" id="seTarget" min="0" max="19" step="1" value="0">
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <button class="primary" id="seRun">探しはじめる</button>
+        <button class="chip" id="seStep">1回ずつ進める</button>
+      </div>
+      <p class="hint" id="seHint"></p>
+    </div>
+
+    <div class="boxes" id="seBoxes"></div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">調べた回数</div><div class="v" id="seCount">0</div></div>
+      <div class="stt"><div class="k">データの個数</div><div class="v" id="seN">20</div></div>
+      <div class="stt"><div class="k">最悪の場合</div><div class="v" id="seWorst">–</div></div>
+    </div>
+
+    <div class="msg" id="seMsg"></div>
+  </section>
+
+  <!-- ===== 整列 ===== -->
+  <section class="tool" id="toolSort" role="tabpanel" aria-labelledby="tabSort">
+    <div class="panel">
+      <h2>バラバラの数を、小さい順に並べます</h2>
+      <div class="row">
+        <button class="chip" data-sort="bubble" aria-pressed="true">交換法（バブルソート）</button>
+        <button class="chip" data-sort="select">選択法</button>
+        <button class="chip" data-sort="insert">挿入法</button>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="soRun">並べかえる</button>
+        <button class="chip" id="soNew">シャッフル</button>
+        <span style="flex:1"></span>
+        <span style="font-size:13.5px;color:var(--ink);">速さ</span>
+        <input type="range" id="soSpeed" min="1" max="10" value="6" style="width:120px;accent-color:var(--navy);">
+      </div>
+      <p class="hint" id="soDesc"></p>
+    </div>
+
+    <div class="bars" id="soBars"></div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">比べた回数</div><div class="v" id="soCmp">0</div></div>
+      <div class="stt"><div class="k">入れかえた回数</div><div class="v" id="soSwap">0</div></div>
+      <div class="stt"><div class="k">データの個数</div><div class="v" id="soN">20</div></div>
+    </div>
+
+    <div class="msg" id="soMsg"></div>
+  </section>
+
+  <!-- ===== 計算量 ===== -->
+  <section class="tool" id="toolCost" role="tabpanel" aria-labelledby="tabCost">
+    <div class="panel">
+      <h2>データが増えると、どれだけ時間がかかるか</h2>
+      <div class="sl">
+        <div class="top"><label for="coN">データの個数</label><span class="val" id="coNv">1,000</span></div>
+        <input type="range" id="coN" min="0" max="6" step="1" value="3">
+      </div>
+      <p class="hint">同じ処理でも、手順によって必要な回数が大きく変わります。</p>
+    </div>
+
+    <div class="panel">
+      <table class="cmp" id="coTable"></table>
+    </div>
+
+    <div class="msg" id="coMsg"></div>
+
+    <div class="panel">
+      <h2>オーダー記法</h2>
+      <p style="margin:0;font-size:15px;">
+        データの個数を n としたとき、処理にかかる回数がどう増えるかを表す書き方を
+        <strong>オーダー記法</strong>といい、O(n) のように書きます。
+        細かい係数は無視して、増え方の性質だけを見るのが特徴です。
+        データが少ないうちは差が出なくても、大きくなると決定的な違いになります。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>アルゴリズムとは</h2>
+    <p>ある問題を解くための、決まった手順のことをアルゴリズムといいます。料理のレシピに似ています。同じ料理でも、作り方は何通りもあり、手際のよい手順とそうでない手順があります。</p>
+    <p>コンピュータのプログラムも同じです。同じ答えを出すのでも、手順の選び方で処理時間が何百倍も変わることがあります。だからアルゴリズムを学ぶ意味があるのです。</p>
+    <p>アルゴリズムに求められる条件は3つです。手順が明確であること、必ず終わること、正しい答えが出ることです。</p>
+
+    <h2>探索 ― 目的のものを見つける</h2>
+
+    <h3>線形探索</h3>
+    <p>最も素直な方法です。先頭から順に、1つずつ調べていきます。見つかったら終了、最後まで見つからなければ「ない」と答えます。</p>
+    <p>単純で、どんなデータにも使えるのが利点です。並んでいなくても構いません。ただし、データが多いと時間がかかります。1000個のデータなら、最悪1000回調べることになります。</p>
+
+    <h3>二分探索</h3>
+    <p>データが小さい順に並んでいるとき使える方法です。手順はこうです。</p>
+    <ol>
+      <li>まん中を調べる</li>
+      <li>目的の数より大きければ、後ろ半分は捨てる</li>
+      <li>小さければ、前半分を捨てる</li>
+      <li>残った範囲で、また1に戻る</li>
+    </ol>
+    <p>1回調べるごとに、探す範囲が半分になります。これが決定的な差を生みます。</p>
+    <div class="formula">1000個 → 500 → 250 → 125 → 63 → 32 → 16 → 8 → 4 → 2 → 1（10回）</div>
+    <p>1000個のデータでも、たった10回で見つかります。線形探索なら最悪1000回かかるところです。データが100万個になると、線形探索は100万回、二分探索は20回。差は歴然です。</p>
+    <p>ただし条件があります。<strong>あらかじめ並んでいること</strong>です。並んでいないデータには使えません。辞書や電話帳で目的の項目をすぐ探せるのは、五十音順に並んでいるからです。</p>
+
+    <h2>整列 ― 順番に並べかえる</h2>
+    <p>二分探索を使うには、まず並べる必要があります。この並べかえを整列（ソート）といいます。</p>
+
+    <h3>交換法（バブルソート）</h3>
+    <p>となり合う2つを比べ、順序が逆なら入れかえます。これを繰り返すと、大きい数が泡のように後ろへ移動していきます。</p>
+    <p>仕組みが分かりやすい反面、効率はよくありません。n個のデータに対して、比較の回数はおよそ n² に比例します。</p>
+
+    <h3>選択法</h3>
+    <p>まだ並んでいない範囲から最小のものを探し、先頭と交換します。次は2番目から同じことを繰り返します。</p>
+    <p>入れかえの回数が少ないのが特徴です。比較は多いものの、交換は最大でもn回で済みます。</p>
+
+    <h3>挿入法</h3>
+    <p>トランプを手札に並べるときの動きに似ています。左から順に、すでに並んでいる部分の適切な位置へ差し込んでいきます。</p>
+    <p>すでにある程度並んでいるデータに対しては、非常に速く動きます。</p>
+
+    <h3>もっと速い方法</h3>
+    <p>実用的なプログラムでは、クイックソートやマージソートといった方法が使われます。データを分割して個別に処理する考え方（分割統治法）を使い、n log n に比例する回数で並べられます。</p>
+    <p>データが100万個のとき、n² なら1兆回ですが、n log n なら約2000万回です。5万倍の差になります。</p>
+
+    <h2>計算量という考え方</h2>
+    <p>アルゴリズムの効率を表すのに、計算量という概念を使います。データの個数 n が増えたとき、必要な処理回数がどう増えるかを見ます。</p>
+    <table>
+      <tr><th>記法</th><th>増え方</th><th>例</th></tr>
+      <tr><td class="mono">O(1)</td><td>データが増えても変わらない</td><td>配列の何番目かを取り出す</td></tr>
+      <tr><td class="mono">O(log n)</td><td>とてもゆっくり増える</td><td>二分探索</td></tr>
+      <tr><td class="mono">O(n)</td><td>比例して増える</td><td>線形探索</td></tr>
+      <tr><td class="mono">O(n log n)</td><td>やや速く増える</td><td>クイックソート</td></tr>
+      <tr><td class="mono">O(n²)</td><td>急激に増える</td><td>バブルソート</td></tr>
+    </table>
+    <p>大切なのは、<strong>データが少ないうちは差が出ない</strong>という点です。10個程度なら、どのアルゴリズムでも一瞬で終わります。違いが表れるのは、データが大きくなったときです。</p>
+    <p>現代では、扱うデータが膨大になっています。検索エンジンは数百億のページを、SNSは数十億の利用者を扱います。この規模になると、アルゴリズムの選択が実現できるかどうかを決めてしまいます。</p>
+
+    <h2>身近なアルゴリズム</h2>
+    <p>アルゴリズムは、日常のあちこちで動いています。</p>
+    <ul>
+      <li><strong>地図アプリの経路探索</strong>：ダイクストラ法などで最短経路を求めます</li>
+      <li><strong>検索エンジン</strong>：膨大なページから関連するものを高速に見つけます</li>
+      <li><strong>おすすめ表示</strong>：似た好みの人を探し、その人が好きなものを提示します</li>
+      <li><strong>画像の圧縮</strong>：人が気づきにくい情報を選んで削ります</li>
+    </ul>
+    <p>どれも、単に計算が速いコンピュータがあれば済む話ではありません。賢い手順があってこそ、現実的な時間で答えが出せるのです。</p>
+
+    <h2>アルゴリズムの表し方</h2>
+    <p>手順を人に伝えるには、書き表す方法が必要です。いくつかの方法があります。</p>
+    <table>
+      <tr><th>方法</th><th>特徴</th></tr>
+      <tr><td>流れ図（フローチャート）</td><td>記号と矢印で処理の流れを図にする。全体像がつかみやすい</td></tr>
+      <tr><td>擬似言語</td><td>プログラムに近い書き方だが、特定の言語には縛られない</td></tr>
+      <tr><td>アクティビティ図</td><td>並行する処理も表現できる</td></tr>
+    </table>
+    <p>流れ図では、記号の意味が決まっています。長方形は処理、ひし形は条件による分岐、平行四辺形はデータの入出力です。共通テストでも、擬似言語を使った問題が出題されています。</p>
+
+    <h3>3つの基本構造</h3>
+    <p>どんなに複雑なプログラムも、3つの構造の組み合わせで書けることが知られています。</p>
+    <ul>
+      <li><strong>順次</strong>：上から順に実行する</li>
+      <li><strong>選択（分岐）</strong>：条件によって処理を分ける</li>
+      <li><strong>反復（繰り返し）</strong>：条件が成り立つ間、同じ処理を繰り返す</li>
+    </ul>
+    <p>この3つだけで足りるという事実は、構造化定理として証明されています。だから、まずこの3つを確実に理解することが、プログラミングの土台になります。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>探す</strong>：線形探索と二分探索を切り替えて、調べる回数を比べられます。「1回ずつ進める」で手順を追えます。</li>
+      <li><strong>並べる</strong>：3つの整列方法を動かして、比較回数と交換回数を比べられます。</li>
+      <li><strong>計算量を比べる</strong>：データの個数を変えると、処理回数がどう増えるかが分かります。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabSearch','toolSearch'],['tabSort','toolSort'],['tabCost','toolCost']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabSort') drawBars();
+      if(tid==='tabCost') drawCost();
+    });
+  });
+})();
+
+/* ===== 探索 ===== */
+const SE_N=20;
+let seData=[], seMode='linear', seTarget=0, seCount=0,
+    seLo=0, seHi=SE_N-1, seCur=-1, seFound=-1, seDone=false, seRunning=false;
+
+function seInit(){
+  seData=Array.from({length:SE_N},()=>Math.floor(Math.random()*90)+10);
+  if(seMode==='binary') seData.sort((a,b)=>a-b);
+  seReset();
+}
+function seReset(){
+  seCount=0; seLo=0; seHi=SE_N-1; seCur=-1; seFound=-1; seDone=false;
+  const t=+document.getElementById('seTarget').value;
+  seTarget=seData[t];
+  document.getElementById('seTargetV').textContent=seTarget;
+  document.getElementById('seWorst').textContent =
+    seMode==='linear' ? SE_N+' 回' : Math.ceil(Math.log2(SE_N))+' 回';
+  document.getElementById('seHint').textContent =
+    seMode==='linear'
+      ? '先頭から順に、1つずつ調べていきます。データは並んでいなくても構いません。'
+      : 'データは小さい順に並んでいます。まん中を調べて、半分ずつ範囲を狭めます。';
+  drawSe();
+  document.getElementById('seMsg').className='msg';
+  document.getElementById('seMsg').innerHTML=
+    `<div class="t">${seTarget} を探します</div>`+
+    (seMode==='linear'
+      ? '線形探索は、先頭から順に調べる方法です。'
+      : '二分探索は、範囲を半分ずつ狭めていく方法です。あらかじめ並んでいる必要があります。');
+}
+function drawSe(){
+  const box=document.getElementById('seBoxes');
+  box.innerHTML='';
+  seData.forEach((v,i)=>{
+    const d=document.createElement('div');
+    let cls='bx';
+    if(seFound===i) cls+=' found';
+    else if(seCur===i) cls+=' check';
+    if(seMode==='binary' && !seDone && (i<seLo||i>seHi)) cls+=' out';
+    if(seMode==='binary' && seCur===i && seFound<0) cls='bx mid';
+    d.className=cls;
+    d.innerHTML=`<div class="v">${v}</div><div class="i">${i}</div>`;
+    box.appendChild(d);
+  });
+  document.getElementById('seCount').textContent=seCount;
+  document.getElementById('seN').textContent=SE_N;
+}
+function seStepOnce(){
+  if(seDone) return true;
+  if(seMode==='linear'){
+    seCur = seCur+1;
+    seCount++;
+    if(seCur>=SE_N){ seDone=true; }
+    else if(seData[seCur]===seTarget){ seFound=seCur; seDone=true; }
+  }else{
+    if(seLo>seHi){ seDone=true; }
+    else{
+      const mid=Math.floor((seLo+seHi)/2);
+      seCur=mid; seCount++;
+      if(seData[mid]===seTarget){ seFound=mid; seDone=true; }
+      else if(seData[mid]<seTarget) seLo=mid+1;
+      else seHi=mid-1;
+    }
+  }
+  drawSe();
+  if(seDone){
+    const m=document.getElementById('seMsg');
+    if(seFound>=0){
+      m.className='msg ok';
+      m.innerHTML=`<div class="t">見つけました。${seCount}回で発見です</div>`+
+        `${seFound}番目にありました。`+
+        (seMode==='linear'
+          ? `線形探索では、平均すると ${Math.round(SE_N/2)}回、最悪 ${SE_N}回かかります。`
+          : `二分探索では、最悪でも <b>${Math.ceil(Math.log2(SE_N))}回</b>で終わります。`+
+            `1回調べるごとに、範囲が<b>半分</b>になるからです。`);
+    }else{
+      m.className='msg';
+      m.innerHTML=`<div class="t">見つかりませんでした（${seCount}回）</div>この数はデータの中にありません。`;
+    }
+  }
+  return seDone;
+}
+async function seRun(){
+  if(seRunning) return;
+  seRunning=true;
+  document.getElementById('seRun').disabled=true;
+  seCount=0; seLo=0; seHi=SE_N-1; seCur=-1; seFound=-1; seDone=false;
+  while(!seStepOnce()){ await new Promise(r=>setTimeout(r,320)); }
+  seRunning=false;
+  document.getElementById('seRun').disabled=false;
+}
+document.getElementById('seRun').addEventListener('click',seRun);
+document.getElementById('seStep').addEventListener('click',()=>{ if(!seRunning) seStepOnce(); });
+document.getElementById('seNew').addEventListener('click',seInit);
+document.getElementById('seTarget').addEventListener('input',seReset);
+document.getElementById('seLinear').addEventListener('click',()=>{
+  seMode='linear';
+  document.getElementById('seLinear').setAttribute('aria-pressed','true');
+  document.getElementById('seBinary').setAttribute('aria-pressed','false');
+  seInit();
+});
+document.getElementById('seBinary').addEventListener('click',()=>{
+  seMode='binary';
+  document.getElementById('seLinear').setAttribute('aria-pressed','false');
+  document.getElementById('seBinary').setAttribute('aria-pressed','true');
+  seInit();
+});
+
+/* ===== 整列 ===== */
+const SO_N=20;
+let soData=[], soKind='bubble', soCmp=0, soSwap=0, soRunning=false,
+    soMark={cmp:[],swap:[],done:[]};
+const SORT_DESC={
+  bubble:'となり合う2つを比べ、逆なら入れかえます。大きい数が泡のように後ろへ移動していきます。',
+  select:'まだ並んでいない範囲から最小の数を探し、先頭と交換します。交換の回数が少ないのが特徴です。',
+  insert:'左から順に、すでに並んでいる部分の正しい位置へ差し込みます。トランプを手札に並べる動きに似ています。'
+};
+function soInit(){
+  soData=Array.from({length:SO_N},(_,i)=>i+1);
+  for(let i=soData.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [soData[i],soData[j]]=[soData[j],soData[i]];
+  }
+  soCmp=0; soSwap=0; soMark={cmp:[],swap:[],done:[]};
+  drawBars();
+  document.getElementById('soDesc').textContent=SORT_DESC[soKind];
+  document.getElementById('soMsg').className='msg';
+  document.getElementById('soMsg').innerHTML=
+    '<div class="t">バラバラの状態です</div>「並べかえる」を押すと、選んだ方法で小さい順に並びます。';
+}
+function drawBars(){
+  const box=document.getElementById('soBars');
+  box.innerHTML='';
+  const max=Math.max(...soData);
+  soData.forEach((v,i)=>{
+    const b=document.createElement('div');
+    let cls='bar';
+    if(soMark.swap.includes(i)) cls+=' swap';
+    else if(soMark.cmp.includes(i)) cls+=' cmp';
+    else if(soMark.done.includes(i)) cls+=' done';
+    b.className=cls;
+    b.style.height=(v/max*100)+'%';
+    box.appendChild(b);
+  });
+  document.getElementById('soCmp').textContent=soCmp;
+  document.getElementById('soSwap').textContent=soSwap;
+  document.getElementById('soN').textContent=SO_N;
+}
+function soDelay(){
+  const s=+document.getElementById('soSpeed').value;
+  return new Promise(r=>setTimeout(r, 120 - s*11));
+}
+async function soRun(){
+  if(soRunning) return;
+  soRunning=true;
+  document.getElementById('soRun').disabled=true;
+  soCmp=0; soSwap=0; soMark={cmp:[],swap:[],done:[]};
+  const a=soData;
+  if(soKind==='bubble'){
+    for(let i=0;i<a.length-1;i++){
+      for(let j=0;j<a.length-1-i;j++){
+        soCmp++; soMark.cmp=[j,j+1]; soMark.swap=[]; drawBars(); await soDelay();
+        if(a[j]>a[j+1]){
+          [a[j],a[j+1]]=[a[j+1],a[j]]; soSwap++;
+          soMark.swap=[j,j+1]; drawBars(); await soDelay();
+        }
+      }
+      soMark.done.push(a.length-1-i);
+    }
+    soMark.done=a.map((_,i)=>i);
+  }else if(soKind==='select'){
+    for(let i=0;i<a.length-1;i++){
+      let min=i;
+      for(let j=i+1;j<a.length;j++){
+        soCmp++; soMark.cmp=[min,j]; soMark.swap=[]; drawBars(); await soDelay();
+        if(a[j]<a[min]) min=j;
+      }
+      if(min!==i){
+        [a[i],a[min]]=[a[min],a[i]]; soSwap++;
+        soMark.swap=[i,min]; drawBars(); await soDelay();
+      }
+      soMark.done.push(i);
+    }
+    soMark.done=a.map((_,i)=>i);
+  }else{
+    soMark.done=[0];
+    for(let i=1;i<a.length;i++){
+      const key=a[i];
+      let j=i-1;
+      while(j>=0){
+        soCmp++; soMark.cmp=[j,i]; soMark.swap=[]; drawBars(); await soDelay();
+        if(a[j]>key){ a[j+1]=a[j]; soSwap++; j--; }
+        else break;
+      }
+      a[j+1]=key;
+      soMark.done.push(i);
+      soMark.swap=[j+1]; drawBars(); await soDelay();
+    }
+    soMark.done=a.map((_,i)=>i);
+  }
+  soMark.cmp=[]; soMark.swap=[];
+  drawBars();
+  soRunning=false;
+  document.getElementById('soRun').disabled=false;
+
+  const names={bubble:'交換法（バブルソート）',select:'選択法',insert:'挿入法'};
+  const m=document.getElementById('soMsg');
+  m.className='msg ok';
+  m.innerHTML=`<div class="t">並べかえ完了　—　${names[soKind]}</div>`+
+    `比べた回数 <b>${soCmp}回</b>、入れかえた回数 <b>${soSwap}回</b>。`+
+    `　データが${SO_N}個なので、比較はおよそ ${SO_N}×${SO_N}÷2 ＝ ${SO_N*SO_N/2}回が目安です。`+
+    `他の方法にも切り替えて、回数を比べてみてください。`;
+}
+document.getElementById('soRun').addEventListener('click',soRun);
+document.getElementById('soNew').addEventListener('click',()=>{ if(!soRunning) soInit(); });
+document.querySelectorAll('[data-sort]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    if(soRunning) return;
+    document.querySelectorAll('[data-sort]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    soKind=b.dataset.sort; soInit();
+  });
+});
+
+/* ===== 計算量 ===== */
+const CO_N=[10,100,1000,10000,100000,1000000,10000000];
+function fmtNum(n){
+  if(n<1e4) return Math.round(n).toLocaleString();
+  if(n<1e8) return Math.round(n).toLocaleString();
+  if(n<1e12) return (n/1e8).toFixed(1)+'億';
+  if(n<1e16) return (n/1e12).toFixed(1)+'兆';
+  return n.toExponential(1);
+}
+function fmtSec(ops){
+  const s=ops/1e9; // 10億回/秒と仮定
+  if(s<0.001) return '一瞬';
+  if(s<1) return (s*1000).toFixed(0)+' ミリ秒';
+  if(s<60) return s.toFixed(1)+' 秒';
+  if(s<3600) return (s/60).toFixed(1)+' 分';
+  if(s<86400) return (s/3600).toFixed(1)+' 時間';
+  if(s<86400*365) return (s/86400).toFixed(1)+' 日';
+  return (s/86400/365).toFixed(1)+' 年';
+}
+function drawCost(){
+  const n=CO_N[+document.getElementById('coN').value];
+  document.getElementById('coNv').textContent=n.toLocaleString();
+  const rows=[
+    ['O(1)','配列の取り出し',1],
+    ['O(log n)','二分探索',Math.ceil(Math.log2(n))],
+    ['O(n)','線形探索',n],
+    ['O(n log n)','クイックソート',n*Math.log2(n)],
+    ['O(n²)','バブルソート',n*n]
+  ];
+  let h='<thead><tr><th>計算量</th><th>例</th><th>必要な回数</th><th>かかる時間の目安</th></tr></thead><tbody>';
+  rows.forEach(([o,ex,v],i)=>{
+    const cls = i<=1 ? 'good' : (i>=4 ? 'bad' : '');
+    h+=`<tr><th>${o}</th><td style="font-family:inherit;">${ex}</td>`+
+       `<td class="${cls}">${fmtNum(v)}</td><td class="${cls}">${fmtSec(v)}</td></tr>`;
+  });
+  h+='</tbody>';
+  document.getElementById('coTable').innerHTML=h;
+
+  const lin=n, bin=Math.ceil(Math.log2(n));
+  const m=document.getElementById('coMsg');
+  m.className='msg';
+  m.innerHTML=`<div class="t">データが ${n.toLocaleString()}個 のとき</div>`+
+    `線形探索は最悪 <b>${lin.toLocaleString()}回</b>、二分探索は <b>${bin}回</b>。`+
+    `その差は約 <b>${Math.round(lin/bin).toLocaleString()}倍</b>です。`+
+    `　バブルソート（${fmtNum(n*n)}回）と クイックソート（${fmtNum(n*Math.log2(n))}回）の差も、`+
+    `データが増えるほど広がります。`;
+}
+document.getElementById('coN').addEventListener('input',drawCost);
+
+/* ===== 初期化 ===== */
+seInit(); soInit(); drawCost();
+</script>
+</body>
+</html>

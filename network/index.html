@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ネットワークのしくみを体験しよう（IPアドレス・パケット・プロトコル）｜情報ラボ</title>
+<meta name="description" content="IPアドレスの構造、パケット通信のようす、データが届くまでの流れを動かして確かめられる無料ツール。サブネットやプロトコルの役割も学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/network/">
+<meta property="og:title" content="ネットワークのしくみを体験しよう｜情報ラボ">
+<meta property="og:description" content="IPアドレス、パケット、プロトコル。データが届くしくみを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/network/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  /* IPアドレス */
+  .ipbox{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:flex-end;}
+  .oct{text-align:center;}
+  .oct .num{font-size:30px; font-weight:700; font-family:ui-monospace,Consolas,monospace;
+    color:var(--ink); background:#fff; border:2px solid var(--line); border-radius:9px;
+    padding:6px 12px; min-width:82px;}
+  .oct .bin{font-size:11px; font-family:ui-monospace,Consolas,monospace; margin-top:5px;
+    letter-spacing:1px;}
+  .oct .bin .net{background:#D9E4F5; color:var(--navy); font-weight:700; padding:1px 0;}
+  .oct .bin .host{background:#FBEEDF; color:#8a5b00; font-weight:700; padding:1px 0;}
+  .dot{font-size:26px; color:var(--muted); align-self:center; padding-bottom:22px;}
+
+  .legend{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; font-size:12.5px;
+    color:var(--muted); margin-top:12px;}
+  .legend i{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:5px;
+    vertical-align:-2px;}
+
+  /* ネットワーク図 */
+  .netfig{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px;
+    overflow-x:auto;}
+  .netfig svg{display:block; margin:0 auto; min-width:520px;}
+
+  /* パケット */
+  .pkroute{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px;
+    overflow-x:auto;}
+  .pkroute svg{display:block; margin:0 auto; min-width:560px;}
+  .pklist{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:14px;}
+  .pk{background:#fff; border:2px solid var(--line); border-radius:8px; padding:7px 11px;
+    font-family:ui-monospace,Consolas,monospace; font-size:12px; text-align:center; min-width:64px;}
+  .pk .no{font-size:10px; color:var(--muted);}
+  .pk .dt{font-weight:700; color:var(--ink); font-size:15px;}
+  .pk.sent{border-color:var(--navy); background:#EEF3FB;}
+  .pk.arrived{border-color:var(--ok); background:#F1F8F3;}
+  .pk.lost{border-color:var(--ng); background:#FBEEEE; opacity:.7;}
+
+  .layers{display:flex; flex-direction:column; gap:8px;}
+  .ly{display:flex; gap:12px; align-items:center; background:#fff; border:1px solid var(--line);
+    border-radius:10px; padding:12px 16px;}
+  .ly .n{flex:0 0 34px; height:34px; border-radius:8px; background:var(--navy); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;}
+  .ly .b{flex:1;}
+  .ly .b h3{margin:0 0 3px; font-size:15px; color:var(--ink);}
+  .ly .b p{margin:0; font-size:13.5px; color:var(--muted);}
+  .ly .b .ex{font-size:12px; color:var(--navy); font-family:ui-monospace,Consolas,monospace;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .info{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .ib{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .ib .k{font-size:11px; color:var(--muted);}
+  .ib .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ ネットワークのしくみ</p>
+    <h1>ネットワークのしくみを体験しよう</h1>
+    <p class="lead">送ったデータは、どうやって相手に届くのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabIp" aria-selected="true" aria-controls="toolIp">IPアドレス</button>
+    <button class="tab" role="tab" id="tabPk" aria-selected="false" aria-controls="toolPk">パケット通信</button>
+    <button class="tab" role="tab" id="tabPr" aria-selected="false" aria-controls="toolPr">プロトコル</button>
+  </div>
+
+  <!-- ===== IPアドレス ===== -->
+  <section class="tool show" id="toolIp" role="tabpanel" aria-labelledby="tabIp">
+    <div class="panel">
+      <h2>IPアドレスは、住所のようなものです</h2>
+      <div class="row">
+        <button class="chip" data-ip="192.168.1.10/24" aria-pressed="true">家庭のパソコン</button>
+        <button class="chip" data-ip="10.0.5.42/16">学校のパソコン</button>
+        <button class="chip" data-ip="172.16.3.7/12">会社のサーバー</button>
+        <button class="chip" data-ip="203.0.113.5/24">インターネット上</button>
+      </div>
+      <div class="sl" style="margin-top:16px;">
+        <div class="top"><label for="ipMask">ネットワーク部の長さ（サブネットマスク）</label>
+          <span class="val" id="ipMaskV">/24</span></div>
+        <input type="range" id="ipMask" min="8" max="30" step="1" value="24">
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ipbox" id="ipBox"></div>
+      <div class="legend">
+        <span><i style="background:#D9E4F5"></i>ネットワーク部（どのネットワークか）</span>
+        <span><i style="background:#FBEEDF"></i>ホスト部（その中の何番目か）</span>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="ib"><div class="k">サブネットマスク</div><div class="v" id="ipMaskStr">–</div></div>
+      <div class="ib"><div class="k">ネットワークアドレス</div><div class="v" id="ipNet">–</div></div>
+      <div class="ib"><div class="k">ブロードキャスト</div><div class="v" id="ipBc">–</div></div>
+      <div class="ib"><div class="k">つなげる機器の数</div><div class="v" id="ipHosts">–</div></div>
+    </div>
+
+    <div class="msg" id="ipMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>同じネットワークかどうか、判定してみましょう</h2>
+      <div class="row">
+        <span style="font-size:14px;color:var(--ink);">相手のアドレス</span>
+        <button class="chip" data-peer="192.168.1.55">192.168.1.55</button>
+        <button class="chip" data-peer="192.168.2.55">192.168.2.55</button>
+        <button class="chip" data-peer="10.0.5.99">10.0.5.99</button>
+        <button class="chip" data-peer="8.8.8.8">8.8.8.8</button>
+      </div>
+      <div class="msg" id="ipPeer" style="margin-top:14px;">相手のアドレスを選んでください。</div>
+    </div>
+  </section>
+
+  <!-- ===== パケット ===== -->
+  <section class="tool" id="toolPk" role="tabpanel" aria-labelledby="tabPk">
+    <div class="panel">
+      <h2>データは小さく分けて送られます</h2>
+      <div class="row">
+        <button class="primary" id="pkSend">データを送る</button>
+        <button class="chip" id="pkReset">やり直す</button>
+        <span style="flex:1"></span>
+        <label style="font-size:13.5px;color:var(--ink);cursor:pointer;">
+          <input type="checkbox" id="pkLoss"> 途中で失われることがある</label>
+      </div>
+      <p class="hint">「こんにちは」という文を、いくつかのパケットに分けて送ります。</p>
+    </div>
+
+    <div class="pkroute"><svg id="pkSvg" viewBox="0 0 600 210" width="100%" height="210"></svg></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>送り出したパケット</h2>
+      <div class="pklist" id="pkList"></div>
+      <p class="hint">それぞれのパケットには、順番の番号と宛先が書かれています。</p>
+    </div>
+
+    <div class="panel">
+      <h2>受け取った側</h2>
+      <div class="pklist" id="pkRecv"></div>
+      <div style="text-align:center;margin-top:14px;font-size:28px;font-weight:700;
+        color:var(--ink);" id="pkResult">　</div>
+    </div>
+
+    <div class="msg" id="pkMsg"></div>
+  </section>
+
+  <!-- ===== プロトコル ===== -->
+  <section class="tool" id="toolPr" role="tabpanel" aria-labelledby="tabPr">
+    <div class="panel">
+      <h2>役割ごとに分かれた4つの層</h2>
+      <p class="hint" style="margin-top:0;">
+        通信は、役割ごとに層に分けて設計されています。上から下へ、順に処理されていきます。
+      </p>
+    </div>
+
+    <div class="layers" id="prLayers"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>データが包まれていくようす</h2>
+      <div class="row">
+        <button class="primary" id="prStep">次の層へ進む</button>
+        <button class="chip" id="prReset">最初から</button>
+      </div>
+      <div style="margin-top:16px;text-align:center;" id="prBox"></div>
+      <div class="msg" id="prMsg" style="margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>インターネットは「網の目」</h2>
+    <p>インターネットとは、世界中のネットワークどうしをつないだ、巨大なネットワークの集合です。中心となる管理者はいません。それぞれのネットワークが互いに接続し合うことで、全体が成り立っています。</p>
+    <p>この仕組みで大切なのは、どの機器も対等だという点です。中心が壊れたら全体が止まるのではなく、経路を迂回して届けられるように設計されています。</p>
+
+    <h2>IPアドレス ― ネットワーク上の住所</h2>
+    <p>データを届けるには、宛先が必要です。それがIPアドレスです。ネットワークにつながるすべての機器に割り当てられます。</p>
+    <p>いま広く使われているIPv4では、32ビットの数値を8ビットずつ4つに区切り、それぞれを10進数で表します。</p>
+    <div class="formula">192.168.1.10　←　8ビット × 4 ＝ 32ビット</div>
+    <p>1つの区切りは8ビットなので、0から255までの値をとります。256を超える数字は出てきません。</p>
+
+    <h3>ネットワーク部とホスト部</h3>
+    <p>IPアドレスは、2つの部分に分かれています。</p>
+    <ul>
+      <li><strong>ネットワーク部</strong>：どのネットワークに属しているか（住所でいう市区町村）</li>
+      <li><strong>ホスト部</strong>：そのネットワークの中で何番目の機器か（番地）</li>
+    </ul>
+    <p>どこまでがネットワーク部かを示すのが、サブネットマスクです。「/24」という書き方は、先頭から24ビットがネットワーク部という意味です。</p>
+    <p>この区切りが重要なのは、<strong>同じネットワークかどうかで通信の方法が変わる</strong>からです。同じなら直接届けられますが、違うならルーターに渡して外へ送ってもらう必要があります。上のツールで、相手のアドレスを変えて確かめられます。</p>
+
+    <h3>アドレスが足りない</h3>
+    <p>IPv4で表せるのは、2の32乗、約43億通りです。膨大に思えますが、世界の人口とスマートフォンやパソコンの数を考えると、まったく足りません。実際、新規の割り当ては2011年に枯渇しています。</p>
+    <p>そこで登場したのがIPv6です。128ビットを使うため、表せる数は2の128乗、約340澗（かん）通りになります。地球上の砂粒すべてに割り当ててもなお余る規模です。</p>
+    <table>
+      <tr><th></th><th>IPv4</th><th>IPv6</th></tr>
+      <tr><td>ビット数</td><td class="mono">32</td><td class="mono">128</td></tr>
+      <tr><td>表せる数</td><td>約43億</td><td>約340澗</td></tr>
+      <tr><td>表記</td><td class="mono">192.168.1.1</td><td class="mono">2001:db8::1</td></tr>
+      <tr><td>区切り</td><td>10進数・ピリオド</td><td>16進数・コロン</td></tr>
+    </table>
+    <p>IPv6は16進数で表記します。桁が長いため、連続する0は「::」で省略できる決まりになっています。</p>
+
+    <h2>パケット通信</h2>
+    <p>データを送るとき、一度にまとめて送るわけではありません。小さな塊に分割して送ります。この塊をパケットといいます。</p>
+    <p>なぜわざわざ分けるのでしょうか。理由は3つあります。</p>
+    <ol>
+      <li><strong>回線を共有できる</strong>：大きなデータが回線を占領せず、複数の通信が交互に流れられます</li>
+      <li><strong>失敗しても軽い</strong>：途中で失われても、そのパケットだけ送り直せば済みます</li>
+      <li><strong>迂回できる</strong>：混雑した経路を避け、別の道を通れます</li>
+    </ol>
+    <p>それぞれのパケットには、宛先のアドレスと順番の番号が付けられます。バラバラの経路を通って届いても、番号を見て元の順序に組み立て直せるのです。</p>
+
+    <h3>届かなかったら</h3>
+    <p>パケットが途中で失われることは、実際に起こります。そのとき、受け取った側は「○番が来ていない」と気づき、送り直しを要求します。この確認と再送を担当しているのがTCPというプロトコルです。</p>
+    <p>一方、動画配信や通話では、少しくらい欠けても再送を待つより流し続けたほうがよい場合があります。そうした用途にはUDPという、確認を省いた方式が使われます。</p>
+
+    <h2>プロトコル ― 通信の約束ごと</h2>
+    <p>異なるメーカーの機器どうしが通信できるのは、共通の手順が決められているからです。この手順をプロトコルといいます。</p>
+    <p>インターネットのプロトコルは、役割ごとに階層に分けて設計されています。</p>
+    <table>
+      <tr><th>層</th><th>役割</th><th>代表的なプロトコル</th></tr>
+      <tr><td>アプリケーション層</td><td>アプリどうしのやり取り</td><td class="mono">HTTP、HTTPS、SMTP</td></tr>
+      <tr><td>トランスポート層</td><td>確実に届ける、順序を守る</td><td class="mono">TCP、UDP</td></tr>
+      <tr><td>インターネット層</td><td>宛先まで経路を選んで運ぶ</td><td class="mono">IP</td></tr>
+      <tr><td>ネットワーク<wbr>インタフェース層</td><td>実際の線や電波で送る</td><td class="mono">イーサネット、Wi-Fi</td></tr>
+    </table>
+    <p>階層に分ける利点は、それぞれを独立して交換できることです。有線から無線に変えても、上の層は何も変えなくてすみます。IPv4からIPv6に移行しても、アプリはそのまま動きます。</p>
+
+    <h3>カプセル化</h3>
+    <p>データは上の層から下へ渡されるとき、各層で必要な情報が付け加えられていきます。手紙を封筒に入れ、それをさらに箱に入れて送るようなものです。これをカプセル化といいます。</p>
+    <p>受け取った側は、逆に外側から順に開けていき、最終的に元のデータを取り出します。上のツールで、この様子を段階的に確認できます。</p>
+
+    <h2>ドメイン名とDNS</h2>
+    <p>私たちがブラウザに入力するのは、IPアドレスではなく「joholab.net」のようなドメイン名です。数字の羅列より覚えやすいからです。</p>
+    <p>しかし、実際の通信にはIPアドレスが必要です。そこで、ドメイン名からIPアドレスを調べる仕組みが用意されています。それがDNS（Domain Name System）です。電話帳のような役割を果たしています。</p>
+    <p>ウェブページを見るとき、裏側では必ずこの変換が行われています。DNSが止まると、サーバー自体は動いていてもアクセスできなくなります。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>IPアドレス</strong>：サブネットマスクを動かすと、ネットワーク部とホスト部の区切りが変わります。相手のアドレスを選んで、同じネットワークかどうかも判定できます。</li>
+      <li><strong>パケット通信</strong>：データが分割されて送られ、順番を並べ直して復元される様子を確認できます。パケットが失われる場合も試せます。</li>
+      <li><strong>プロトコル</strong>：4つの層と、データが包まれていくカプセル化の流れを段階的に見られます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabIp','toolIp'],['tabPk','toolPk'],['tabPr','toolPr']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabPk') drawRoute();
+      if(tid==='tabPr') { buildLayers(); drawEncap(); }
+    });
+  });
+})();
+
+/* ===== IPアドレス ===== */
+let ipAddr=[192,168,1,10], ipMask=24, ipPeerSel=null;
+const b8=v=>v.toString(2).padStart(8,'0');
+function maskToStr(m){
+  const bits='1'.repeat(m)+'0'.repeat(32-m);
+  return [0,1,2,3].map(i=>parseInt(bits.slice(i*8,i*8+8),2)).join('.');
+}
+function netAddr(a,m){
+  const bits=a.map(b8).join('');
+  const n=bits.slice(0,m)+'0'.repeat(32-m);
+  return [0,1,2,3].map(i=>parseInt(n.slice(i*8,i*8+8),2));
+}
+function bcAddr(a,m){
+  const bits=a.map(b8).join('');
+  const n=bits.slice(0,m)+'1'.repeat(32-m);
+  return [0,1,2,3].map(i=>parseInt(n.slice(i*8,i*8+8),2));
+}
+function drawIp(){
+  document.getElementById('ipMaskV').textContent='/'+ipMask;
+  const box=document.getElementById('ipBox');
+  box.innerHTML='';
+  ipAddr.forEach((v,i)=>{
+    if(i>0){ const d=document.createElement('div'); d.className='dot'; d.textContent='.'; box.appendChild(d); }
+    const o=document.createElement('div'); o.className='oct';
+    const bits=b8(v);
+    let bh='';
+    for(let k=0;k<8;k++){
+      const pos=i*8+k;
+      bh+=`<span class="${pos<ipMask?'net':'host'}">${bits[k]}</span>`;
+    }
+    o.innerHTML=`<div class="num">${v}</div><div class="bin">${bh}</div>`;
+    box.appendChild(o);
+  });
+
+  const na=netAddr(ipAddr,ipMask), bc=bcAddr(ipAddr,ipMask);
+  const hostBits=32-ipMask;
+  const usable = hostBits<=1 ? 0 : Math.pow(2,hostBits)-2;
+  document.getElementById('ipMaskStr').textContent=maskToStr(ipMask);
+  document.getElementById('ipNet').textContent=na.join('.');
+  document.getElementById('ipBc').textContent=bc.join('.');
+  document.getElementById('ipHosts').textContent=usable.toLocaleString()+' 台';
+
+  document.getElementById('ipMsg').innerHTML=
+    `<div class="t">${ipAddr.join('.')} / ${ipMask}</div>`+
+    `先頭 <b>${ipMask}ビット</b>がネットワーク部、残り <b>${hostBits}ビット</b>がホスト部です。`+
+    `　ホスト部で表せるのは 2<sup>${hostBits}</sup> ＝ ${Math.pow(2,hostBits).toLocaleString()}通りですが、`+
+    `先頭（ネットワークアドレス）と末尾（ブロードキャスト）は特別な用途に予約されているので、`+
+    `実際に機器へ割り当てられるのは <b>${usable.toLocaleString()}台</b>です。`;
+
+  if(ipPeerSel) judgePeer(ipPeerSel);
+}
+function judgePeer(peer){
+  ipPeerSel=peer;
+  const p=peer.split('.').map(Number);
+  const a=netAddr(ipAddr,ipMask).join('.');
+  const b=netAddr(p,ipMask).join('.');
+  const same = a===b;
+  const el=document.getElementById('ipPeer');
+  el.className='msg '+(same?'ok':'ng');
+  el.innerHTML=`<div class="t">${same?'同じネットワークです':'別のネットワークです'}</div>`+
+    `自分：${ipAddr.join('.')} → ネットワーク部 <b>${a}</b><br>`+
+    `相手：${peer} → ネットワーク部 <b>${b}</b><br>`+
+    (same
+      ? '2つが一致しました。<b>直接データを送れます</b>。'
+      : '2つが違います。<b>ルーターに渡して</b>、外のネットワークへ送ってもらう必要があります。');
+}
+document.getElementById('ipMask').addEventListener('input',e=>{ ipMask=+e.target.value; drawIp(); });
+document.querySelectorAll('[data-ip]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-ip]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    const [ip,m]=b.dataset.ip.split('/');
+    ipAddr=ip.split('.').map(Number); ipMask=+m;
+    document.getElementById('ipMask').value=ipMask;
+    drawIp();
+  });
+});
+document.querySelectorAll('[data-peer]').forEach(b=>{
+  b.addEventListener('click',()=>judgePeer(b.dataset.peer));
+});
+
+/* ===== パケット ===== */
+const MSG='こんにちは';
+let packets=[], recvd=[], sending=false;
+function drawRoute(active){
+  const svg=document.getElementById('pkSvg');
+  const nodes=[[70,105,'送信者','🧑'],[210,58,'ルーターA','📡'],[210,152,'ルーターB','📡'],
+               [380,58,'ルーターC','📡'],[380,152,'ルーターD','📡'],[520,105,'受信者','🧑']];
+  const edges=[[0,1],[0,2],[1,3],[2,4],[1,4],[2,3],[3,5],[4,5]];
+  let h='';
+  edges.forEach(([a,b])=>{
+    const on = active && active.edge && active.edge[0]===a && active.edge[1]===b;
+    h+=`<line x1="${nodes[a][0]}" y1="${nodes[a][1]}" x2="${nodes[b][0]}" y2="${nodes[b][1]}"
+        stroke="${on?'#2F5496':'#D3DBEA'}" stroke-width="${on?4:2}"/>`;
+  });
+  nodes.forEach(([x,y,n,ic],i)=>{
+    const hi = active && active.node===i;
+    h+=`<circle cx="${x}" cy="${y}" r="26" fill="${hi?'#EEF3FB':'#fff'}"
+        stroke="${hi?'#2F5496':'#C9D2E0'}" stroke-width="${hi?3:2}"/>
+      <text x="${x}" y="${y+7}" text-anchor="middle" font-size="20">${ic}</text>
+      <text x="${x}" y="${y+44}" text-anchor="middle" font-size="11" fill="#5B6472">${n}</text>`;
+  });
+  if(active && active.pk!==undefined && active.pos){
+    h+=`<circle cx="${active.pos[0]}" cy="${active.pos[1]}" r="13" fill="#C49A2B"/>
+      <text x="${active.pos[0]}" y="${active.pos[1]+5}" text-anchor="middle" font-size="13"
+        font-weight="700" fill="#fff">${active.pk+1}</text>`;
+  }
+  svg.innerHTML=h;
+}
+function renderPk(){
+  document.getElementById('pkList').innerHTML=packets.map(p=>
+    `<div class="pk ${p.state}"><div class="no">No.${p.no}</div><div class="dt">${p.data}</div>
+      <div class="no">→受信者</div></div>`).join('');
+  const sorted=[...recvd].sort((a,b)=>a.no-b.no);
+  document.getElementById('pkRecv').innerHTML= sorted.length
+    ? sorted.map(p=>`<div class="pk arrived"><div class="no">No.${p.no}</div>
+        <div class="dt">${p.data}</div></div>`).join('')
+    : '<span style="color:var(--muted);font-size:13.5px;">まだ届いていません</span>';
+  const lost=packets.filter(p=>p.state==='lost');
+  if(sorted.length===packets.length && packets.length>0){
+    document.getElementById('pkResult').textContent=sorted.map(p=>p.data).join('');
+  }else if(packets.length>0 && !sending){
+    document.getElementById('pkResult').innerHTML=
+      sorted.map(p=>p.data).join('')+`<span style="color:var(--ng);">${'□'.repeat(lost.length)}</span>`;
+  }else{
+    document.getElementById('pkResult').textContent='　';
+  }
+}
+async function sendPackets(){
+  if(sending) return;
+  sending=true;
+  document.getElementById('pkSend').disabled=true;
+  const loss=document.getElementById('pkLoss').checked;
+  packets=[...MSG].map((ch,i)=>({no:i+1,data:ch,state:''}));
+  recvd=[]; renderPk();
+
+  const routes=[
+    [[70,105],[210,58],[380,58],[520,105]],
+    [[70,105],[210,152],[380,152],[520,105]],
+    [[70,105],[210,58],[380,152],[520,105]],
+    [[70,105],[210,152],[380,58],[520,105]]
+  ];
+  const msg=document.getElementById('pkMsg');
+  msg.className='msg';
+  msg.innerHTML='<div class="t">送信中…</div>パケットが別々の経路を通って進んでいます。';
+
+  for(let i=0;i<packets.length;i++){
+    packets[i].state='sent'; renderPk();
+    const r=routes[i%routes.length];
+    const willLose = loss && Math.random()<0.28;
+    const stopAt = willLose ? 2 : r.length;
+    for(let k=0;k<stopAt;k++){
+      drawRoute({pos:r[k], pk:i});
+      await new Promise(res=>setTimeout(res,180));
+    }
+    if(willLose){
+      packets[i].state='lost';
+    }else{
+      packets[i].state='arrived';
+      recvd.push(packets[i]);
+    }
+    renderPk();
+  }
+  drawRoute();
+  sending=false;
+  document.getElementById('pkSend').disabled=false;
+
+  const lost=packets.filter(p=>p.state==='lost');
+  if(lost.length===0){
+    msg.className='msg ok';
+    msg.innerHTML='<div class="t">すべて届きました</div>'+
+      `${packets.length}個のパケットは<b>バラバラの経路</b>を通りましたが、`+
+      '番号が付いているので、受け取った側で<b>正しい順序に並べ直せます</b>。';
+  }else{
+    msg.className='msg ng';
+    msg.innerHTML=`<div class="t">${lost.length}個のパケットが失われました</div>`+
+      `No.${lost.map(p=>p.no).join('、')} が届いていません。`+
+      '受け取った側は<b>番号の抜け</b>で気づき、送り直しを要求します。'+
+      'これを担当しているのが <b>TCP</b> です。';
+  }
+  renderPk();
+}
+document.getElementById('pkSend').addEventListener('click',sendPackets);
+document.getElementById('pkReset').addEventListener('click',()=>{
+  packets=[]; recvd=[]; renderPk(); drawRoute();
+  document.getElementById('pkMsg').className='msg';
+  document.getElementById('pkMsg').innerHTML=
+    '<div class="t">パケット通信とは</div>データを小さく分けて送る方式です。「データを送る」を押してください。';
+});
+
+/* ===== プロトコル ===== */
+const LAYERS=[
+  {n:'アプリケーション層', d:'アプリどうしのやり取りを決めます。ウェブなら HTTP、メールなら SMTP。',
+   ex:'HTTP / HTTPS / SMTP / DNS', add:'HTTPヘッダ'},
+  {n:'トランスポート層', d:'確実に届ける、順番を守る、といった役割です。',
+   ex:'TCP / UDP', add:'TCPヘッダ（ポート番号・順序番号）'},
+  {n:'インターネット層', d:'宛先まで、どの経路で運ぶかを決めます。',
+   ex:'IP', add:'IPヘッダ（送信元・宛先IPアドレス）'},
+  {n:'ネットワークインタフェース層', d:'実際の線や電波で信号を送ります。',
+   ex:'イーサネット / Wi-Fi', add:'イーサネットヘッダ（MACアドレス）'}
+];
+function buildLayers(){
+  const box=document.getElementById('prLayers');
+  if(box.dataset.done) return;
+  box.innerHTML=LAYERS.map((l,i)=>
+    `<div class="ly"><div class="n">${i+1}</div><div class="b">
+      <h3>${l.n}</h3><p>${l.d}</p><div class="ex">${l.ex}</div></div></div>`).join('');
+  box.dataset.done='1';
+}
+let prStep=0;
+function drawEncap(){
+  const box=document.getElementById('prBox');
+  const colors=['#2F5496','#3E7B5C','#B07A1E','#8E4B6B'];
+  let h=`<div style="display:inline-block;">`;
+  let inner=`<div style="background:#fff;border:2px solid #C9D2E0;border-radius:8px;
+    padding:12px 20px;font-size:16px;font-weight:700;color:#1F3864;">こんにちは</div>`;
+  for(let i=0;i<prStep;i++){
+    inner=`<div style="background:${colors[i]}18;border:2px solid ${colors[i]};border-radius:10px;
+      padding:10px;">
+      <div style="font-size:11.5px;color:${colors[i]};font-weight:700;margin-bottom:6px;
+        font-family:ui-monospace,monospace;">${LAYERS[i].add}</div>${inner}</div>`;
+  }
+  h+=inner+`</div>`;
+  box.innerHTML=h;
+
+  const m=document.getElementById('prMsg');
+  if(prStep===0){
+    m.className='msg';
+    m.innerHTML='<div class="t">送りたいデータ</div>これから、層を下りながら情報が付け加えられていきます。';
+  }else if(prStep<LAYERS.length){
+    m.className='msg';
+    m.innerHTML=`<div class="t">${LAYERS[prStep-1].n}を通りました</div>`+
+      `<b>${LAYERS[prStep-1].add}</b>が付け加えられました。`+
+      `${LAYERS[prStep-1].d}`;
+  }else{
+    m.className='msg ok';
+    m.innerHTML='<div class="t">送信の準備ができました</div>'+
+      'データは4つの層で順に包まれ、<b>いちばん外側から順に開ければ</b>元に戻せる形になりました。'+
+      'これを<b>カプセル化</b>といいます。受け取った側は、逆の順序で開いていきます。';
+  }
+  document.getElementById('prStep').disabled = prStep>=LAYERS.length;
+}
+document.getElementById('prStep').addEventListener('click',()=>{ prStep++; drawEncap(); });
+document.getElementById('prReset').addEventListener('click',()=>{ prStep=0; drawEncap(); });
+
+/* ===== 初期化 ===== */
+drawIp(); drawRoute();
+document.getElementById('pkReset').click();
+buildLayers(); drawEncap();
+</script>
+</body>
+</html>

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>データを分析しよう（散布図・相関・箱ひげ図）｜情報ラボ</title>
+<meta name="description" content="散布図と相関係数、代表値、箱ひげ図とヒストグラムを実際に動かして確かめられる無料ツール。相関と因果の違いも学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/dataviz/">
+<meta property="og:title" content="データを分析しよう｜情報ラボ">
+<meta property="og:description" content="散布図・相関・箱ひげ図を動かして確かめる無料教材。相関と因果の違いも。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/dataviz/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; width:100%; margin:0 auto;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+    margin-bottom:10px;}
+  .card h3{margin:0 0 5px; font-size:15.5px; color:var(--navy);}
+  .card p{margin:0; font-size:14px; color:var(--ink);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ データの分析</p>
+    <h1>データを分析しよう</h1>
+    <p class="lead">数字の並びを、意味のある情報に変えるための道具を学びます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabScat" aria-selected="true" aria-controls="toolScat">散布図と相関</button>
+    <button class="tab" role="tab" id="tabDist" aria-selected="false" aria-controls="toolDist">分布を見る</button>
+    <button class="tab" role="tab" id="tabTrap" aria-selected="false" aria-controls="toolTrap">グラフのわな</button>
+  </div>
+
+  <!-- ===== 散布図 ===== -->
+  <section class="tool show" id="toolScat" role="tabpanel" aria-labelledby="tabScat">
+    <div class="panel">
+      <h2>2つの数量の関係を調べます</h2>
+      <div class="sl">
+        <div class="top"><label for="scR">関係の強さ</label><span class="val" id="scRv">0.8</span></div>
+        <input type="range" id="scR" min="-100" max="100" step="5" value="80">
+      </div>
+      <div class="row">
+        <button class="chip" id="scNew">別のデータにする</button>
+        <span style="flex:1"></span>
+        <label style="font-size:13.5px;color:var(--ink);cursor:pointer;">
+          <input type="checkbox" id="scLine" checked> 傾向を示す直線</label>
+      </div>
+    </div>
+
+    <canvas id="scCv" width="700" height="400"></canvas>
+
+    <div class="stats">
+      <div class="stt"><div class="k">相関係数</div><div class="v gold" id="scCorr">–</div></div>
+      <div class="stt"><div class="k">関係の強さ</div><div class="v" id="scStrength" style="font-size:15px;">–</div></div>
+      <div class="stt"><div class="k">データの個数</div><div class="v" id="scN">40</div></div>
+    </div>
+
+    <div class="msg" id="scMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>相関係数の読み方</h2>
+      <div class="card"><h3>+1 に近い（正の相関）</h3>
+        <p>一方が増えると、もう一方も増える傾向。身長と体重など。</p></div>
+      <div class="card"><h3>0 に近い（相関なし）</h3>
+        <p>2つの間に、はっきりした関係が見られない状態です。</p></div>
+      <div class="card"><h3>−1 に近い（負の相関）</h3>
+        <p>一方が増えると、もう一方は減る傾向。標高と気温など。</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 分布 ===== -->
+  <section class="tool" id="toolDist" role="tabpanel" aria-labelledby="tabDist">
+    <div class="panel">
+      <h2>データのちらばり方を見ます</h2>
+      <div class="row">
+        <button class="chip" data-dist="normal" aria-pressed="true">よくある形（山型）</button>
+        <button class="chip" data-dist="skew">かたよった形</button>
+        <button class="chip" data-dist="two">2つの山</button>
+        <button class="chip" data-dist="outlier">外れ値あり</button>
+      </div>
+      <p class="hint" id="diHint"></p>
+    </div>
+
+    <canvas id="diCv" width="700" height="300"></canvas>
+    <p style="text-align:center;font-size:12.5px;color:var(--muted);margin:8px 0 14px;">ヒストグラム</p>
+    <canvas id="diBox" width="700" height="130"></canvas>
+    <p style="text-align:center;font-size:12.5px;color:var(--muted);margin:8px 0 0;">箱ひげ図</p>
+
+    <div class="stats">
+      <div class="stt"><div class="k">平均値</div><div class="v" id="diMean">–</div></div>
+      <div class="stt"><div class="k">中央値</div><div class="v gold" id="diMed">–</div></div>
+      <div class="stt"><div class="k">最小 / 最大</div><div class="v" id="diMinMax" style="font-size:15px;">–</div></div>
+      <div class="stt"><div class="k">四分位範囲</div><div class="v" id="diIqr">–</div></div>
+      <div class="stt"><div class="k">標準偏差</div><div class="v" id="diSd">–</div></div>
+    </div>
+
+    <div class="msg" id="diMsg"></div>
+  </section>
+
+  <!-- ===== グラフのわな ===== -->
+  <section class="tool" id="toolTrap" role="tabpanel" aria-labelledby="tabTrap">
+    <div class="panel">
+      <h2>同じデータでも、見せ方で印象が変わります</h2>
+      <div class="row">
+        <button class="chip" id="tpFull" aria-pressed="true">0から始める</button>
+        <button class="chip" id="tpCut">途中から始める</button>
+      </div>
+      <p class="hint">同じ売上データを、縦軸の取り方だけ変えて表示しています。</p>
+    </div>
+
+    <canvas id="tpCv" width="700" height="340"></canvas>
+
+    <div class="msg" id="tpMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>気をつけたい見せ方</h2>
+      <div class="card"><h3>縦軸が0から始まっていない</h3>
+        <p>わずかな差が、大きな変化に見えます。棒グラフでは特に誤解を招きます。</p></div>
+      <div class="card"><h3>都合のよい期間だけを切り取る</h3>
+        <p>長期では下がっていても、上がった部分だけ見せれば増加に見えます。</p></div>
+      <div class="card"><h3>3Dや絵グラフで面積をごまかす</h3>
+        <p>高さが2倍の絵は、面積では4倍に見えてしまいます。</p></div>
+      <div class="card"><h3>相関を因果のように語る</h3>
+        <p>2つが同時に動いていても、片方がもう片方の原因とは限りません。</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>データを見る目を持つ</h2>
+    <p>いま、あらゆる場面でデータが集められています。買い物の履歴、通学の経路、気温や降水量。これらをただ眺めても、意味は見えてきません。整理し、図にし、数値で特徴をつかむ。この作業がデータの分析です。</p>
+    <p>大切なのは、分析する力と同じくらい、<strong>示されたデータを読み解く力</strong>です。都合のよい見せ方をされたとき、それに気づけるかどうか。これは情報社会を生きるうえで欠かせない力になります。</p>
+
+    <h2>データの種類</h2>
+    <table>
+      <tr><th>種類</th><th>説明</th><th>例</th></tr>
+      <tr><td>量的データ</td><td>数値として意味があり、計算できる</td><td>身長、気温、点数</td></tr>
+      <tr><td>質的データ</td><td>分類のためのもので、計算に意味がない</td><td>血液型、都道府県、性別</td></tr>
+    </table>
+    <p>質的データに数字を割り当てることはありますが（1＝男性、2＝女性など）、その平均を計算しても意味はありません。データの性質を見誤らないことが第一歩です。</p>
+
+    <h2>代表値 ― 全体を1つの数で表す</h2>
+
+    <h3>平均値</h3>
+    <p>すべての値を足して、個数で割ったものです。最もよく使われますが、弱点があります。<strong>極端な値に引っ張られる</strong>のです。</p>
+    <p>たとえば5人の所持金が 500円、600円、700円、800円、10万円だとします。平均は約20,520円ですが、5人中4人は1000円も持っていません。この「平均」は誰の実感とも合いません。</p>
+
+    <h3>中央値</h3>
+    <p>小さい順に並べたとき、ちょうど真ん中にくる値です。上の例では700円。こちらのほうが実感に近いことが分かります。</p>
+    <p>所得や地価のように、一部に極端に大きな値があるデータでは、中央値のほうが実態をよく表します。ニュースで「世帯所得の中央値」が使われるのは、このためです。</p>
+
+    <h3>最頻値</h3>
+    <p>最も多く現れる値です。靴のサイズや服のサイズなど、どれを多く用意すべきかを考えるときに役立ちます。</p>
+
+    <h2>ちらばりを見る</h2>
+    <p>代表値だけでは足りません。同じ平均60点でも、全員が60点前後のクラスと、0点と100点が半々のクラスでは、まったく状況が違います。</p>
+
+    <h3>標準偏差</h3>
+    <p>データが平均からどれだけ離れているかを表す数値です。値が小さければ平均の近くに集まっており、大きければ広くちらばっています。</p>
+
+    <h3>四分位数と箱ひげ図</h3>
+    <p>データを小さい順に並べ、4等分する位置の値を四分位数といいます。第1四分位数（下から25%）、第2四分位数（中央値）、第3四分位数（下から75%）です。</p>
+    <p>これを図にしたものが箱ひげ図です。箱の部分に真ん中の50%が入り、ひげが最小値と最大値まで伸びます。複数のデータを並べて比べるときに便利で、上のツールで形の違いを確かめられます。</p>
+    <div class="formula">四分位範囲 ＝ 第3四分位数 − 第1四分位数</div>
+    <p>四分位範囲は、極端な値の影響を受けにくいちらばりの指標です。</p>
+
+    <h2>2つの数量の関係</h2>
+
+    <h3>散布図</h3>
+    <p>2つの数量を、横軸と縦軸にとって点を打った図です。点の散らばり方から、関係の有無が視覚的に分かります。</p>
+
+    <h3>相関係数</h3>
+    <p>関係の強さを −1 から +1 の数値で表したものです。</p>
+    <table>
+      <tr><th>値</th><th>意味</th></tr>
+      <tr><td class="mono">+0.7 〜 +1.0</td><td>強い正の相関</td></tr>
+      <tr><td class="mono">+0.4 〜 +0.7</td><td>正の相関</td></tr>
+      <tr><td class="mono">−0.4 〜 +0.4</td><td>ほとんど相関なし</td></tr>
+      <tr><td class="mono">−0.7 〜 −0.4</td><td>負の相関</td></tr>
+      <tr><td class="mono">−1.0 〜 −0.7</td><td>強い負の相関</td></tr>
+    </table>
+    <p>注意すべきは、相関係数が表すのは<strong>直線的な関係の強さ</strong>だという点です。きれいな曲線の関係があっても、相関係数は0に近くなることがあります。散布図を見ずに数値だけで判断してはいけません。</p>
+
+    <h2>相関と因果は違う</h2>
+    <p>データ分析で最も重要な注意点です。<strong>2つに相関があっても、片方がもう片方の原因とは限りません。</strong></p>
+    <p>有名な例に、アイスクリームの売上と水難事故の件数があります。この2つには強い正の相関があります。しかし、アイスを食べると溺れるわけではありません。どちらも「気温が高い」という共通の原因によって増えているだけです。</p>
+    <p>このような、背後にある第三の要因を交絡因子といいます。相関を見つけたら、まず「共通の原因はないか」を疑う必要があります。</p>
+    <p>また、原因と結果が逆のこともあります。「本をよく読む子は成績がよい」というデータがあったとき、読書が成績を上げたのか、成績のよい子がもともと読書好きなのか、これだけでは分かりません。</p>
+
+    <h2>グラフのわな</h2>
+    <p>グラフは分かりやすい反面、印象を操作しやすい道具でもあります。</p>
+
+    <h3>縦軸の起点</h3>
+    <p>棒グラフの縦軸を0から始めないと、わずかな差が劇的な差に見えます。上のツールで、同じデータの見え方がどれだけ変わるか確かめられます。</p>
+    <p>折れ線グラフでは、変化を見やすくするため途中から始めることもありますが、その場合は軸の値をよく確認する必要があります。</p>
+
+    <h3>期間の切り取り</h3>
+    <p>10年間で下がり続けていても、上がった半年だけを切り取れば「増加している」と示せます。示された期間が適切かを考えることが大切です。</p>
+
+    <h3>グラフの種類の誤用</h3>
+    <p>割合を示すべきところに実数を使う、比較すべきでないものを並べる、3Dにして奥行きで面積をごまかす。こうした手法は珍しくありません。</p>
+
+    <h2>データを見るときの問い</h2>
+    <p>データやグラフを示されたとき、次のことを確かめる習慣が役立ちます。</p>
+    <ul>
+      <li>誰が、何のために集めたデータか</li>
+      <li>いつ、どこで、どれだけの数を調べたか</li>
+      <li>軸の目盛りは適切か。0から始まっているか</li>
+      <li>示されていない期間や項目はないか</li>
+      <li>相関を因果のように説明していないか</li>
+    </ul>
+    <p>データは嘘をつきませんが、見せ方は嘘をつけます。だからこそ、読み解く力が必要なのです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>散布図と相関</strong>：スライダーで関係の強さを変えると、点の散らばり方と相関係数が変わります。</li>
+      <li><strong>分布を見る</strong>：4種類の分布を切り替えて、ヒストグラムと箱ひげ図、代表値の違いを比べられます。外れ値があると平均値と中央値がずれる様子も分かります。</li>
+      <li><strong>グラフのわな</strong>：同じデータを、縦軸の取り方だけ変えて表示します。印象がどれだけ変わるか確かめてください。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabScat','toolScat'],['tabDist','toolDist'],['tabTrap','toolTrap']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabDist') drawDist();
+      if(tid==='tabTrap') drawTrap();
+    });
+  });
+})();
+
+function gauss(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function corr(xs,ys){
+  const n=xs.length;
+  const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  let sxy=0,sxx=0,syy=0;
+  for(let i=0;i<n;i++){
+    const dx=xs[i]-mx, dy=ys[i]-my;
+    sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy;
+  }
+  return sxy/Math.sqrt(sxx*syy);
+}
+
+/* ===== 散布図 ===== */
+let scSeed=[];
+function scNew(){
+  scSeed=Array.from({length:40},()=>({a:gauss(), b:gauss()}));
+  drawScat();
+}
+function drawScat(){
+  const r=+document.getElementById('scR').value/100;
+  document.getElementById('scRv').textContent=r.toFixed(2);
+  const xs=[], ys=[];
+  scSeed.forEach(({a,b})=>{
+    xs.push(a);
+    ys.push(r*a + Math.sqrt(Math.max(0,1-r*r))*b);
+  });
+  const cv=document.getElementById('scCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=44;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  // 軸
+  c.strokeStyle='#D3DBEA'; c.lineWidth=1;
+  for(let k=0;k<=4;k++){
+    const y=PAD+(H-PAD*2)*k/4, x=PAD+(W-PAD*2)*k/4;
+    c.beginPath(); c.moveTo(PAD,y); c.lineTo(W-PAD,y); c.stroke();
+    c.beginPath(); c.moveTo(x,PAD); c.lineTo(x,H-PAD); c.stroke();
+  }
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD); c.lineTo(PAD,H-PAD); c.stroke();
+  c.fillStyle='#5B6472'; c.font='12px sans-serif'; c.textAlign='center';
+  c.fillText('勉強した時間', W/2, H-14);
+  c.save(); c.translate(15,H/2); c.rotate(-Math.PI/2);
+  c.fillText('テストの点数',0,0); c.restore();
+
+  const X=v=>PAD+(v+3)/6*(W-PAD*2);
+  const Y=v=>H-PAD-(v+3)/6*(H-PAD*2);
+  // 回帰直線
+  if(document.getElementById('scLine').checked){
+    const n=xs.length;
+    const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+    let sxy=0,sxx=0;
+    for(let i=0;i<n;i++){ sxy+=(xs[i]-mx)*(ys[i]-my); sxx+=(xs[i]-mx)**2; }
+    const slope=sxy/sxx, inter=my-slope*mx;
+    c.strokeStyle='#C49A2B'; c.lineWidth=2.5;
+    c.beginPath();
+    c.moveTo(X(-3), Y(slope*-3+inter));
+    c.lineTo(X(3), Y(slope*3+inter));
+    c.stroke();
+  }
+  // 点
+  c.fillStyle='rgba(47,84,150,.7)';
+  xs.forEach((x,i)=>{
+    c.beginPath(); c.arc(X(x),Y(ys[i]),5,0,Math.PI*2); c.fill();
+  });
+
+  const cc=corr(xs,ys);
+  document.getElementById('scCorr').textContent=cc.toFixed(3);
+  const ab=Math.abs(cc);
+  let s;
+  if(ab>=0.7) s=(cc>0?'強い正の相関':'強い負の相関');
+  else if(ab>=0.4) s=(cc>0?'正の相関':'負の相関');
+  else s='ほとんど相関なし';
+  document.getElementById('scStrength').textContent=s;
+  document.getElementById('scN').textContent=xs.length;
+
+  const m=document.getElementById('scMsg');
+  m.className='msg'+(ab>=0.7?' ok':'');
+  m.innerHTML=`<div class="t">相関係数 ${cc.toFixed(3)}　—　${s}</div>`+
+    (ab>=0.7
+      ? '点が直線に近く並んでいます。一方が分かれば、もう一方をある程度予測できます。'
+      : ab>=0.4
+        ? '傾向は見えますが、ばらつきもあります。予測の精度は限られます。'
+        : '点が散らばっていて、はっきりした関係は見られません。')+
+    '　<b>ただし相関は因果ではありません。</b>関係があるからといって、一方が原因とは限りません。';
+}
+document.getElementById('scR').addEventListener('input',drawScat);
+document.getElementById('scLine').addEventListener('change',drawScat);
+document.getElementById('scNew').addEventListener('click',scNew);
+
+/* ===== 分布 ===== */
+let diKind='normal', diData=[];
+const DI_DESC={
+  normal:'多くの自然現象やテストの点数は、この山型（正規分布に近い形）になります。',
+  skew:'所得や地価のように、一部に大きな値があるデータは右にすそが伸びます。',
+  two:'2つの集団が混ざっていると、山が2つ現れます。平均値は谷の部分を指してしまいます。',
+  outlier:'極端に大きな値が1つあるだけで、平均値は大きくずれます。中央値は影響を受けません。'
+};
+function makeDist(){
+  const n=200;
+  if(diKind==='normal'){
+    diData=Array.from({length:n},()=>Math.max(0,Math.min(100, 55+gauss()*13)));
+  }else if(diKind==='skew'){
+    diData=Array.from({length:n},()=>Math.max(0,Math.min(100, 20+Math.abs(gauss())*22)));
+  }else if(diKind==='two'){
+    diData=Array.from({length:n},(_,i)=> i<n/2
+      ? Math.max(0,Math.min(100, 35+gauss()*8))
+      : Math.max(0,Math.min(100, 75+gauss()*8)));
+  }else{
+    diData=Array.from({length:n-4},()=>Math.max(0,Math.min(100, 45+gauss()*9)));
+    diData.push(97,98,99,100);
+  }
+  drawDist();
+}
+function quantile(sorted,q){
+  const pos=(sorted.length-1)*q;
+  const b=Math.floor(pos), r=pos-b;
+  return sorted[b+1]!==undefined ? sorted[b]+r*(sorted[b+1]-sorted[b]) : sorted[b];
+}
+function drawDist(){
+  if(!diData.length) return;
+  document.getElementById('diHint').textContent=DI_DESC[diKind];
+  const cv=document.getElementById('diCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=40;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  // ヒストグラム
+  const BINS=20;
+  const cnt=new Array(BINS).fill(0);
+  diData.forEach(v=>{ cnt[Math.min(BINS-1,Math.floor(v/100*BINS))]++; });
+  const mx=Math.max(...cnt);
+  const bw=(W-PAD*2)/BINS;
+  cnt.forEach((v,i)=>{
+    const h=(v/mx)*(H-PAD*1.6);
+    c.fillStyle='#2F5496';
+    c.fillRect(PAD+i*bw+1, H-PAD-h, bw-2, h);
+  });
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.fillStyle='#5B6472'; c.font='11px sans-serif'; c.textAlign='center';
+  for(let k=0;k<=5;k++){
+    const x=PAD+(W-PAD*2)*k/5;
+    c.fillText(k*20, x, H-PAD+16);
+  }
+
+  const sorted=[...diData].sort((a,b)=>a-b);
+  const n=sorted.length;
+  const mean=diData.reduce((a,b)=>a+b,0)/n;
+  const med=quantile(sorted,0.5);
+  const q1=quantile(sorted,0.25), q3=quantile(sorted,0.75);
+  const sd=Math.sqrt(diData.reduce((a,v)=>a+(v-mean)**2,0)/n);
+
+  // 平均・中央値の線
+  const X=v=>PAD+v/100*(W-PAD*2);
+  c.strokeStyle='#C0392B'; c.lineWidth=2; c.setLineDash([5,4]);
+  c.beginPath(); c.moveTo(X(mean),PAD*0.5); c.lineTo(X(mean),H-PAD); c.stroke();
+  c.strokeStyle='#C49A2B';
+  c.beginPath(); c.moveTo(X(med),PAD*0.5); c.lineTo(X(med),H-PAD); c.stroke();
+  c.setLineDash([]);
+  c.font='bold 11px sans-serif';
+  c.fillStyle='#C0392B'; c.fillText('平均', X(mean), PAD*0.5-4);
+  c.fillStyle='#C49A2B'; c.fillText('中央値', X(med), PAD*0.5-18);
+
+  // 箱ひげ図
+  const bx=document.getElementById('diBox'), b=bx.getContext('2d');
+  const BW=bx.width, BH=bx.height;
+  b.fillStyle='#fff'; b.fillRect(0,0,BW,BH);
+  const BX=v=>PAD+v/100*(BW-PAD*2);
+  const cy=BH/2-8;
+  b.strokeStyle='#5B6472'; b.lineWidth=2;
+  b.beginPath(); b.moveTo(BX(sorted[0]),cy); b.lineTo(BX(q1),cy); b.stroke();
+  b.beginPath(); b.moveTo(BX(q3),cy); b.lineTo(BX(sorted[n-1]),cy); b.stroke();
+  [sorted[0],sorted[n-1]].forEach(v=>{
+    b.beginPath(); b.moveTo(BX(v),cy-14); b.lineTo(BX(v),cy+14); b.stroke();
+  });
+  b.fillStyle='#EEF3FB'; b.strokeStyle='#2F5496'; b.lineWidth=2.5;
+  b.fillRect(BX(q1),cy-20,BX(q3)-BX(q1),40);
+  b.strokeRect(BX(q1),cy-20,BX(q3)-BX(q1),40);
+  b.strokeStyle='#C49A2B'; b.lineWidth=3;
+  b.beginPath(); b.moveTo(BX(med),cy-20); b.lineTo(BX(med),cy+20); b.stroke();
+  b.fillStyle='#5B6472'; b.font='11px sans-serif'; b.textAlign='center';
+  for(let k=0;k<=5;k++){ b.fillText(k*20, BX(k*20), BH-6); }
+
+  document.getElementById('diMean').textContent=mean.toFixed(1);
+  document.getElementById('diMed').textContent=med.toFixed(1);
+  document.getElementById('diMinMax').textContent=sorted[0].toFixed(0)+' / '+sorted[n-1].toFixed(0);
+  document.getElementById('diIqr').textContent=(q3-q1).toFixed(1);
+  document.getElementById('diSd').textContent=sd.toFixed(1);
+
+  const diff=Math.abs(mean-med);
+  const m=document.getElementById('diMsg');
+  m.className='msg'+(diff>4?' ng':'');
+  m.innerHTML=`<div class="t">平均値 ${mean.toFixed(1)}　中央値 ${med.toFixed(1)}</div>`+
+    (diff>4
+      ? `2つの差が <b>${diff.toFixed(1)}</b> あります。データがかたよっているため、`+
+        `<b>平均値だけでは実態をつかめません</b>。こうした場合は中央値のほうが実感に近くなります。`
+      : `2つがほぼ一致しています。左右対称に近い分布なので、平均値で全体を代表できます。`)+
+    (diKind==='two' ? '　<b>2つの山がある場合</b>、平均値は谷の部分を指してしまい、どちらの集団も表していません。' : '');
+}
+document.querySelectorAll('[data-dist]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-dist]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    diKind=b.dataset.dist; makeDist();
+  });
+});
+
+/* ===== グラフのわな ===== */
+let tpFull=true;
+const TP_DATA=[102,104,103,106,105,108,107];
+const TP_LB=['4月','5月','6月','7月','8月','9月','10月'];
+function drawTrap(){
+  const cv=document.getElementById('tpCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=52;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const lo = tpFull ? 0 : 100;
+  const hi = tpFull ? 120 : 110;
+  const Y=v=>H-PAD-((v-lo)/(hi-lo))*(H-PAD*1.5);
+  // 目盛り
+  c.strokeStyle='#D3DBEA'; c.lineWidth=1;
+  c.fillStyle='#5B6472'; c.font='11px sans-serif'; c.textAlign='right';
+  const steps=tpFull?6:5;
+  for(let k=0;k<=steps;k++){
+    const v=lo+(hi-lo)*k/steps;
+    const y=Y(v);
+    c.beginPath(); c.moveTo(PAD,y); c.lineTo(W-20,y); c.stroke();
+    c.fillText(Math.round(v), PAD-8, y+4);
+  }
+  // 棒
+  const bw=(W-PAD-30)/TP_DATA.length;
+  TP_DATA.forEach((v,i)=>{
+    const x=PAD+i*bw+bw*0.18;
+    const y=Y(v);
+    c.fillStyle='#2F5496';
+    c.fillRect(x, y, bw*0.64, H-PAD-y);
+    c.fillStyle='#5B6472'; c.textAlign='center'; c.font='11px sans-serif';
+    c.fillText(TP_LB[i], x+bw*0.32, H-PAD+16);
+    c.fillStyle='#1F3864'; c.font='bold 11px ui-monospace,monospace';
+    c.fillText(v, x+bw*0.32, y-6);
+  });
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-20,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD*0.4); c.lineTo(PAD,H-PAD); c.stroke();
+
+  const m=document.getElementById('tpMsg');
+  if(tpFull){
+    m.className='msg';
+    m.innerHTML='<div class="t">縦軸を0から始めた場合</div>'+
+      '売上は 102 から 107 へ、<b>約5%の増加</b>です。棒の高さの差はごくわずかで、'+
+      'ほぼ横ばいに見えます。これが実態です。';
+  }else{
+    m.className='msg ng';
+    m.innerHTML='<div class="t">縦軸を100から始めた場合</div>'+
+      '<b>同じデータ</b>なのに、急成長しているように見えます。'+
+      '棒の高さは3倍以上の差に見えますが、実際の増加は5%にすぎません。'+
+      '　グラフを見るときは、<b>まず縦軸の目盛りを確認</b>してください。';
+  }
+}
+document.getElementById('tpFull').addEventListener('click',()=>{
+  tpFull=true;
+  document.getElementById('tpFull').setAttribute('aria-pressed','true');
+  document.getElementById('tpCut').setAttribute('aria-pressed','false');
+  drawTrap();
+});
+document.getElementById('tpCut').addEventListener('click',()=>{
+  tpFull=false;
+  document.getElementById('tpFull').setAttribute('aria-pressed','false');
+  document.getElementById('tpCut').setAttribute('aria-pressed','true');
+  drawTrap();
+});
+
+/* ===== 初期化 ===== */
+scNew(); makeDist(); drawTrap();
+</script>
+</body>
+</html>

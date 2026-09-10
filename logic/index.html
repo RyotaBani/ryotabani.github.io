@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>論理回路を体験しよう（AND・OR・NOT・真理値表・加算器）｜情報ラボ</title>
+<meta name="description" content="AND・OR・NOTのスイッチを実際に動かして、論理回路のしくみと真理値表を体験できる無料ツール。半加算器で2進数の足し算まで確かめられます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/logic/">
+<meta property="og:title" content="論理回路を体験しよう｜情報ラボ">
+<meta property="og:description" content="スイッチを動かして、論理回路と真理値表のしくみを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/logic/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --on:#E8342A; --off:#8892A4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  /* 回路図 */
+  .circuit{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px;
+    overflow-x:auto;}
+  .circuit svg{display:block; margin:0 auto; min-width:420px;}
+  .sw{cursor:pointer;}
+  .sw:hover circle{stroke-width:4;}
+
+  /* 真理値表 */
+  .tt{border-collapse:collapse; margin:0 auto; font-family:ui-monospace,Consolas,monospace;}
+  .tt th{background:var(--navy); color:#fff; padding:8px 20px; font-size:14px; border:1px solid var(--line);}
+  .tt td{padding:8px 20px; text-align:center; font-size:16px; border:1px solid var(--line);
+    background:#fff; font-weight:700;}
+  .tt tr.now td{background:#FFF6DC; box-shadow:inset 0 0 0 2px var(--gold);}
+  .tt td.o1{color:var(--on);} .tt td.o0{color:var(--muted);}
+
+  /* ランプ・スイッチ表示 */
+  .io{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+  .iobox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 18px;
+    text-align:center; min-width:92px;}
+  .iobox .k{font-size:11.5px; color:var(--muted);}
+  .iobox .v{font-size:26px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .iobox .v.on{color:var(--on);} .iobox .v.off{color:var(--muted);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+
+  .gates{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .gate{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px; text-align:center;}
+  .gate h3{margin:0 0 6px; font-size:16px; color:var(--navy);}
+  .gate .sym{font-size:13px; color:var(--muted); font-family:ui-monospace,Consolas,monospace;}
+  .gate p{margin:8px 0 0; font-size:13.5px; color:var(--ink); text-align:left;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 論理回路</p>
+    <h1>論理回路を体験しよう</h1>
+    <p class="lead">コンピュータの中では、スイッチの組み合わせだけで計算が行われています。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabGate" aria-selected="true" aria-controls="toolGate">基本の回路</button>
+    <button class="tab" role="tab" id="tabAdd" aria-selected="false" aria-controls="toolAdd">足し算する回路</button>
+    <button class="tab" role="tab" id="tabQuiz" aria-selected="false" aria-controls="toolQuiz">真理値表クイズ</button>
+  </div>
+
+  <!-- ===== 基本の回路 ===== -->
+  <section class="tool show" id="toolGate" role="tabpanel" aria-labelledby="tabGate">
+    <div class="panel">
+      <h2>回路を選んで、スイッチを押してみてください</h2>
+      <div class="row" id="gBtns"></div>
+      <p class="hint" id="gDesc"></p>
+    </div>
+
+    <div class="circuit"><svg id="gSvg" viewBox="0 0 520 220" width="100%" height="220"></svg></div>
+
+    <div class="io">
+      <div class="iobox"><div class="k">入力 A</div><div class="v" id="gA">0</div></div>
+      <div class="iobox" id="gBbox"><div class="k">入力 B</div><div class="v" id="gB">0</div></div>
+      <div class="iobox"><div class="k">出力 Y</div><div class="v" id="gY">0</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>真理値表（すべての組み合わせ）</h2>
+      <table class="tt" id="gTT"></table>
+      <p class="hint">いま選んでいる状態の行が、黄色く光っています。</p>
+    </div>
+
+    <div class="msg" id="gMsg"></div>
+  </section>
+
+  <!-- ===== 足し算する回路 ===== -->
+  <section class="tool" id="toolAdd" role="tabpanel" aria-labelledby="tabAdd">
+    <div class="panel">
+      <h2>1桁の2進数を足す回路（半加算器）</h2>
+      <p class="hint" style="margin-top:0;">
+        XOR と AND を1つずつ組み合わせるだけで、足し算ができます。スイッチを押してみてください。
+      </p>
+    </div>
+
+    <div class="circuit"><svg id="aSvg" viewBox="0 0 560 240" width="100%" height="240"></svg></div>
+
+    <div class="io">
+      <div class="iobox"><div class="k">入力 A</div><div class="v" id="aA">0</div></div>
+      <div class="iobox"><div class="k">入力 B</div><div class="v" id="aB">0</div></div>
+      <div class="iobox"><div class="k">S（和）</div><div class="v" id="aS">0</div></div>
+      <div class="iobox"><div class="k">C（くり上がり）</div><div class="v" id="aC">0</div></div>
+    </div>
+
+    <div class="msg" id="aMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>真理値表</h2>
+      <table class="tt" id="aTT"></table>
+      <p class="hint">
+        2進数では 1 + 1 = 10 です。下の桁が S、上の桁（くり上がり）が C にあたります。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== クイズ ===== -->
+  <section class="tool" id="toolQuiz" role="tabpanel" aria-labelledby="tabQuiz">
+    <div class="panel">
+      <h2>真理値表から、回路を当ててください</h2>
+      <div class="row">
+        <span style="font-size:14px;color:var(--muted);">正解 <b id="qOk" style="color:var(--ink);font-size:17px;">0</b> / <b id="qAll" style="color:var(--ink);font-size:17px;">0</b></span>
+        <span style="flex:1"></span>
+        <button class="chip" id="qNext">次の問題</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <table class="tt" id="qTT"></table>
+    </div>
+
+    <div class="row" style="justify-content:center;" id="qChoices"></div>
+    <div class="msg" id="qMsg" style="display:none;"></div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>コンピュータは「スイッチの集まり」</h2>
+    <p>コンピュータの中で計算をしているのは、無数の小さなスイッチです。電気が流れているか、いないか。この2つの状態を1と0に対応させ、その組み合わせであらゆる処理を行っています。</p>
+    <p>このスイッチの働きを整理したものが論理回路です。入力の組み合わせに対して、出力がどうなるかというルールを持っています。</p>
+
+    <h2>基本の3つ</h2>
+    <p>論理回路の基本は、AND・OR・NOT の3種類です。この3つを組み合わせれば、どんな複雑な処理も作れることが知られています。</p>
+
+    <h3>AND（論理積）</h3>
+    <p>入力が<strong>両方とも1のときだけ</strong>、出力が1になります。「AもBも」という条件です。</p>
+    <p>身近な例では、電子レンジがあります。「スタートボタンが押されている」かつ「扉が閉まっている」の両方が満たされたときだけ動きます。</p>
+
+    <h3>OR（論理和）</h3>
+    <p>入力の<strong>どちらか一方でも1なら</strong>、出力が1になります。「AまたはB」という条件です。</p>
+    <p>非常ベルが分かりやすい例です。1階のボタンか2階のボタンか、どれか1つでも押されれば鳴ります。</p>
+
+    <h3>NOT（否定）</h3>
+    <p>入力を<strong>逆にします</strong>。1が入れば0を、0が入れば1を出します。入力は1つだけです。</p>
+
+    <h3>組み合わせた回路</h3>
+    <table>
+      <tr><th>名前</th><th>意味</th><th>出力が1になるとき</th></tr>
+      <tr><td>NAND</td><td>ANDの否定</td><td>両方が1のとき<strong>以外</strong></td></tr>
+      <tr><td>NOR</td><td>ORの否定</td><td>両方が0のときだけ</td></tr>
+      <tr><td>XOR（排他的論理和）</td><td>どちらか一方だけ</td><td>2つが<strong>異なる</strong>とき</td></tr>
+    </table>
+    <p>XORは「違っていれば1」という回路で、誤り検出や暗号でよく使われます。2つの値が同じかどうかを調べるのに便利だからです。</p>
+
+    <h2>真理値表</h2>
+    <p>入力のすべての組み合わせに対して、出力がどうなるかを一覧にした表を真理値表といいます。</p>
+    <p>入力が2つなら、組み合わせは 00・01・10・11 の4通りです。入力が3つなら8通り、n個なら2のn乗通りになります。真理値表を作れば、その回路の動きを完全に説明できます。</p>
+    <div class="formula">入力が n 個 → 組み合わせは 2<sup>n</sup> 通り</div>
+
+    <h2>足し算をする回路</h2>
+    <p>論理回路で本当に計算ができるのか。実際に確かめてみましょう。1桁の2進数の足し算を考えます。</p>
+    <table>
+      <tr><th>計算</th><th>結果</th><th>和（S）</th><th>くり上がり（C）</th></tr>
+      <tr><td class="mono">0 + 0</td><td class="mono">0</td><td class="mono">0</td><td class="mono">0</td></tr>
+      <tr><td class="mono">0 + 1</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td></tr>
+      <tr><td class="mono">1 + 0</td><td class="mono">1</td><td class="mono">1</td><td class="mono">0</td></tr>
+      <tr><td class="mono">1 + 1</td><td class="mono">10</td><td class="mono">0</td><td class="mono">1</td></tr>
+    </table>
+    <p>ここで、和（S）の列をよく見てください。<strong>2つが異なるときだけ1</strong>になっています。これはXORとまったく同じです。</p>
+    <p>次に、くり上がり（C）の列を見ます。<strong>両方が1のときだけ1</strong>です。これはANDそのものです。</p>
+    <p>つまり、XORとANDを1つずつ並べるだけで、1桁の足し算ができる回路になります。これを半加算器といいます。上のツールで実際に動かせます。</p>
+
+    <h3>桁を増やすには</h3>
+    <p>半加算器には弱点があります。下の桁からのくり上がりを受け取れないのです。そこで入力を3つ（A、B、下からのくり上がり）にした全加算器を作り、それを桁数だけ並べます。</p>
+    <p>8桁の足し算なら全加算器を8個、64桁なら64個。実際のCPUの中では、この構造がびっしりと並んでいます。あらゆる計算の土台が、AND・OR・NOTの組み合わせでできているのです。</p>
+
+    <h2>電子部品としての論理回路</h2>
+    <p>これらの回路は、トランジスタという小さな部品を組み合わせて作られています。トランジスタは電気の流れを制御するスイッチで、現代のCPUには数百億個が詰め込まれています。</p>
+    <p>興味深いことに、NANDだけですべての論理回路を作れることが知られています。ANDもORもNOTも、NANDの組み合わせで表現できるのです。この性質を完全性といい、実際の製造でも、同じ部品を並べればよいという利点があります。</p>
+
+    <h2>プログラムの中の論理</h2>
+    <p>論理回路の考え方は、ハードウェアだけの話ではありません。プログラムの条件分岐でも同じ論理が使われます。</p>
+    <div class="formula">もし（気温が30度以上）かつ（湿度が70%以上）ならば、警報を出す</div>
+    <p>これはANDです。多くのプログラミング言語では、ANDを「and」や「&&」、ORを「or」や「||」、NOTを「not」や「!」と書きます。表現は違っても、考え方は論理回路と同じです。</p>
+
+    <h2>ド・モルガンの法則</h2>
+    <p>論理には、便利な変換の決まりがあります。代表的なのがド・モルガンの法則です。</p>
+    <div class="formula">「AかつB」でない　＝　「Aでない」または「Bでない」<br>
+    「AまたはB」でない　＝　「Aでない」かつ「Bでない」</div>
+    <p>言葉で確かめてみましょう。「雨でも雪でもない」は「雨でない、かつ、雪でない」と同じです。逆に「雨と雪が両方ではない」は「雨でない、または、雪でない」になります。</p>
+    <p>この法則は、条件式を書きかえるときに役立ちます。プログラムの条件が複雑になったとき、より読みやすい形に整理できるのです。回路の設計でも、使う部品の種類を減らすために使われます。</p>
+
+    <h2>記憶する回路</h2>
+    <p>ここまでの回路には、共通する性質があります。入力が決まれば出力が決まり、それ以前の状態は関係ありません。こうした回路を組み合わせ回路といいます。</p>
+    <p>しかしコンピュータには、値を覚えておく仕組みも必要です。そこで、出力を入力に戻す構造を作ります。すると回路が状態を保持できるようになり、1ビットの記憶装置になります。これをフリップフロップといい、順序回路と呼ばれます。</p>
+    <p>メモリやレジスタは、この記憶回路を大量に並べたものです。計算する回路と記憶する回路。この2つが揃って、コンピュータが成り立っています。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>基本の回路</strong>：回路を選び、スイッチを押すと出力が変わります。真理値表の該当する行が光ります。</li>
+      <li><strong>足し算する回路</strong>：半加算器を動かせます。1+1のときにくり上がりが出る様子を確認してください。</li>
+      <li><strong>真理値表クイズ</strong>：表を見て、どの回路かを当てる練習ができます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabGate','toolGate'],['tabAdd','toolAdd'],['tabQuiz','toolQuiz']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabAdd') drawAdd();
+      if(tid==='tabQuiz' && !qCur) newQuiz();
+    });
+  });
+})();
+
+const ON='#E8342A', OFF='#8892A4', WIRE='#5B6472';
+
+/* ===== 基本ゲート ===== */
+const GATES={
+  AND:{n:'AND', jp:'論理積', two:true, f:(a,b)=>a&&b?1:0,
+    d:'入力が両方とも1のときだけ、出力が1になります。「AもBも」という条件です。'},
+  OR:{n:'OR', jp:'論理和', two:true, f:(a,b)=>a||b?1:0,
+    d:'入力のどちらか一方でも1なら、出力が1になります。「AまたはB」という条件です。'},
+  NOT:{n:'NOT', jp:'否定', two:false, f:(a)=>a?0:1,
+    d:'入力を逆にします。1なら0、0なら1。入力は1つだけです。'},
+  NAND:{n:'NAND', jp:'ANDの否定', two:true, f:(a,b)=>a&&b?0:1,
+    d:'ANDの結果を逆にします。両方が1のとき以外、出力は1です。'},
+  NOR:{n:'NOR', jp:'ORの否定', two:true, f:(a,b)=>a||b?0:1,
+    d:'ORの結果を逆にします。両方が0のときだけ、出力は1です。'},
+  XOR:{n:'XOR', jp:'排他的論理和', two:true, f:(a,b)=>a!==b?1:0,
+    d:'2つの入力が異なるときだけ、出力が1になります。同じなら0です。'}
+};
+let gKind='AND', gA=0, gB=0;
+
+function gateShape(kind,x,y,s){
+  // 各ゲートの記号（MIL記号を簡略化した形）
+  const W=70*s, H=52*s;
+  let path='', bubble='';
+  if(kind==='AND'||kind==='NAND'){
+    path=`M${x} ${y} L${x} ${y+H} L${x+W*0.5} ${y+H} A${H/2} ${H/2} 0 0 0 ${x+W*0.5} ${y} Z`;
+  }else if(kind==='OR'||kind==='NOR'||kind==='XOR'){
+    path=`M${x} ${y} Q${x+W*0.35} ${y+H/2} ${x} ${y+H} Q${x+W*0.7} ${y+H} ${x+W} ${y+H/2} Q${x+W*0.7} ${y} ${x} ${y} Z`;
+  }else{ // NOT
+    path=`M${x} ${y} L${x} ${y+H} L${x+W*0.8} ${y+H/2} Z`;
+  }
+  if(kind==='NAND'||kind==='NOR'||kind==='NOT'){
+    const bx = kind==='NOT' ? x+W*0.8+6*s : (kind==='NAND'? x+W*0.5+H/2+6*s : x+W+6*s);
+    bubble=`<circle cx="${bx}" cy="${y+H/2}" r="${6*s}" fill="#fff" stroke="${WIRE}" stroke-width="2"/>`;
+  }
+  let extra='';
+  if(kind==='XOR'){
+    extra=`<path d="M${x-9*s} ${y} Q${x+W*0.26} ${y+H/2} ${x-9*s} ${y+H}"
+      fill="none" stroke="${WIRE}" stroke-width="2.5"/>`;
+  }
+  return `${extra}<path d="${path}" fill="#EEF2F8" stroke="${WIRE}" stroke-width="2.5"/>${bubble}`;
+}
+
+function drawGate(){
+  const g=GATES[gKind];
+  const y = g.f(gA, g.two?gB:undefined);
+  const svg=document.getElementById('gSvg');
+  const sw=(x,y,v,id)=>`
+    <g class="sw" data-sw="${id}">
+      <circle cx="${x}" cy="${y}" r="19" fill="${v?ON:'#fff'}" stroke="${v?ON:OFF}" stroke-width="3"/>
+      <text x="${x}" y="${y+6}" text-anchor="middle" font-size="17" font-weight="700"
+        fill="${v?'#fff':OFF}" font-family="ui-monospace,monospace">${v}</text>
+    </g>`;
+  const wire=(x1,y1,x2,y2,v)=>`
+    <path d="M${x1} ${y1} L${x2} ${y1} L${x2} ${y2}" fill="none"
+      stroke="${v?ON:OFF}" stroke-width="${v?4:3}"/>`;
+
+  const GX=250, GY=g.two?84:84;
+  let h='';
+  if(g.two){
+    h+=`<text x="70" y="66" font-size="13" fill="${WIRE}">A</text>`;
+    h+=sw(70,84,gA,'A');
+    h+=`<text x="70" y="188" font-size="13" fill="${WIRE}">B</text>`;
+    h+=sw(70,160,gB,'B');
+    h+=`<path d="M89 84 L${GX-14} 84 L${GX-14} 98" fill="none" stroke="${gA?ON:OFF}" stroke-width="${gA?4:3}"/>`;
+    h+=`<path d="M89 160 L${GX-14} 160 L${GX-14} 146" fill="none" stroke="${gB?ON:OFF}" stroke-width="${gB?4:3}"/>`;
+    h+=`<path d="M${GX-14} 98 L${GX} 98 M${GX-14} 146 L${GX} 146" fill="none"
+        stroke="${WIRE}" stroke-width="2.5"/>`;
+    h+=gateShape(gKind,GX,96,1.0);
+  }else{
+    h+=`<text x="70" y="100" font-size="13" fill="${WIRE}">A</text>`;
+    h+=sw(70,122,gA,'A');
+    h+=`<path d="M89 122 L${GX} 122" fill="none" stroke="${gA?ON:OFF}" stroke-width="${gA?4:3}"/>`;
+    h+=gateShape(gKind,GX,96,1.0);
+  }
+  const outX = gKind==='NOT' ? GX+70*0.8+18 : (gKind==='NAND'? GX+35+26+12 : (gKind==='AND'? GX+35+26 : GX+70+ (gKind==='NOR'?12:0)));
+  const cy = gKind==='NOT' ? 122 : 122;
+  h+=`<path d="M${outX} ${cy} L430 ${cy}" fill="none" stroke="${y?ON:OFF}" stroke-width="${y?4:3}"/>`;
+  // ランプ
+  h+=`<circle cx="455" cy="${cy}" r="22" fill="${y?ON:'#E7ECF5'}" stroke="${y?ON:OFF}" stroke-width="3"/>
+      <text x="455" y="${cy+7}" text-anchor="middle" font-size="19" font-weight="700"
+        fill="${y?'#fff':OFF}" font-family="ui-monospace,monospace">${y}</text>
+      <text x="455" y="${cy+46}" text-anchor="middle" font-size="12" fill="${WIRE}">Y</text>`;
+  h+=`<text x="${GX+34}" y="${cy+52}" text-anchor="middle" font-size="13"
+        font-weight="700" fill="${WIRE}">${g.n}</text>`;
+  svg.innerHTML=h;
+
+  svg.querySelectorAll('[data-sw]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(el.dataset.sw==='A') gA^=1; else gB^=1;
+      drawGate();
+    });
+  });
+
+  document.getElementById('gA').textContent=gA;
+  document.getElementById('gA').className='v '+(gA?'on':'off');
+  document.getElementById('gB').textContent=gB;
+  document.getElementById('gB').className='v '+(gB?'on':'off');
+  document.getElementById('gBbox').style.display = g.two?'':'none';
+  document.getElementById('gY').textContent=y;
+  document.getElementById('gY').className='v '+(y?'on':'off');
+  document.getElementById('gDesc').textContent=g.d;
+
+  // 真理値表
+  const t=document.getElementById('gTT');
+  if(g.two){
+    let h2='<tr><th>A</th><th>B</th><th>Y</th></tr>';
+    [[0,0],[0,1],[1,0],[1,1]].forEach(([a,b])=>{
+      const o=g.f(a,b);
+      const now=(a===gA&&b===gB)?' class="now"':'';
+      h2+=`<tr${now}><td>${a}</td><td>${b}</td><td class="o${o}">${o}</td></tr>`;
+    });
+    t.innerHTML=h2;
+  }else{
+    let h2='<tr><th>A</th><th>Y</th></tr>';
+    [0,1].forEach(a=>{
+      const o=g.f(a);
+      const now=(a===gA)?' class="now"':'';
+      h2+=`<tr${now}><td>${a}</td><td class="o${o}">${o}</td></tr>`;
+    });
+    t.innerHTML=h2;
+  }
+
+  const m=document.getElementById('gMsg');
+  const inTxt = g.two ? `A=${gA}、B=${gB}` : `A=${gA}`;
+  m.innerHTML=`<div class="t">${g.n}（${g.jp}）：${inTxt} → 出力 ${y}</div>`+
+    (y? `条件を<b>満たしている</b>ので、ランプが点きました。` : `条件を<b>満たしていない</b>ので、ランプは消えています。`)+
+    `　スイッチを押して、4通りすべてを試してみてください。`;
+}
+(() => {
+  const box=document.getElementById('gBtns');
+  Object.keys(GATES).forEach(k=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=GATES[k].n;
+    b.setAttribute('aria-pressed',String(k===gKind));
+    b.addEventListener('click',()=>{
+      gKind=k;
+      box.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      drawGate();
+    });
+    box.appendChild(b);
+  });
+})();
+
+/* ===== 半加算器 ===== */
+let aA=0, aB=0;
+function drawAdd(){
+  const S = aA!==aB ? 1:0;      // XOR
+  const C = (aA&&aB) ? 1:0;     // AND
+  const svg=document.getElementById('aSvg');
+  const sw=(x,y,v,id)=>`
+    <g class="sw" data-sw="${id}">
+      <circle cx="${x}" cy="${y}" r="19" fill="${v?ON:'#fff'}" stroke="${v?ON:OFF}" stroke-width="3"/>
+      <text x="${x}" y="${y+6}" text-anchor="middle" font-size="17" font-weight="700"
+        fill="${v?'#fff':OFF}" font-family="ui-monospace,monospace">${v}</text>
+    </g>`;
+  const lamp=(x,y,v,lb)=>`
+    <circle cx="${x}" cy="${y}" r="22" fill="${v?ON:'#E7ECF5'}" stroke="${v?ON:OFF}" stroke-width="3"/>
+    <text x="${x}" y="${y+7}" text-anchor="middle" font-size="19" font-weight="700"
+      fill="${v?'#fff':OFF}" font-family="ui-monospace,monospace">${v}</text>
+    <text x="${x}" y="${y+46}" text-anchor="middle" font-size="12" fill="${WIRE}">${lb}</text>`;
+  const w=(d,v)=>`<path d="${d}" fill="none" stroke="${v?ON:OFF}" stroke-width="${v?4:3}"/>`;
+
+  let h='';
+  h+=`<text x="52" y="46" font-size="13" fill="${WIRE}">A</text>`+sw(52,64,aA,'A');
+  h+=`<text x="52" y="208" font-size="13" fill="${WIRE}">B</text>`+sw(52,186,aB,'B');
+  // 分岐して2つのゲートへ
+  h+=w('M71 64 L120 64',aA)+w('M71 186 L120 186',aB);
+  h+=w('M120 64 L120 176',aA)+w('M120 186 L120 74',aB);
+  // XOR（上）
+  h+=w('M120 64 L250 64',aA)+w('M120 96 L250 96',aB);
+  h+=gateShape('XOR',250,50,0.85);
+  // AND（下）
+  h+=w('M120 154 L250 154',aA)+w('M120 186 L250 186',aB);
+  h+=gateShape('AND',250,140,0.85);
+  // 出力
+  h+=w('M312 76 L400 76',S);
+  h+=w('M315 166 L400 166',C);
+  h+=lamp(424,76,S,'S（和）');
+  h+=lamp(424,166,C,'C（くり上がり）');
+  h+=`<text x="283" y="126" text-anchor="middle" font-size="12" font-weight="700" fill="${WIRE}">XOR</text>`;
+  h+=`<text x="283" y="216" text-anchor="middle" font-size="12" font-weight="700" fill="${WIRE}">AND</text>`;
+  svg.innerHTML=h;
+
+  svg.querySelectorAll('[data-sw]').forEach(el=>{
+    el.addEventListener('click',()=>{ if(el.dataset.sw==='A') aA^=1; else aB^=1; drawAdd(); });
+  });
+
+  document.getElementById('aA').textContent=aA;
+  document.getElementById('aA').className='v '+(aA?'on':'off');
+  document.getElementById('aB').textContent=aB;
+  document.getElementById('aB').className='v '+(aB?'on':'off');
+  document.getElementById('aS').textContent=S;
+  document.getElementById('aS').className='v '+(S?'on':'off');
+  document.getElementById('aC').textContent=C;
+  document.getElementById('aC').className='v '+(C?'on':'off');
+
+  const m=document.getElementById('aMsg');
+  const ans=(C?'1':'')+S;
+  m.innerHTML=`<div class="t">${aA} + ${aB} = ${ans}（2進数）</div>`+
+    (aA&&aB
+      ? '1 + 1 は2進数で <b>10</b> です。1桁では表せないので、<b>くり上がり（C）が1</b>になりました。'
+      : `和は ${S}、くり上がりはありません。`)+
+    '　XORが和を、ANDがくり上がりを担当しています。';
+
+  let t2='<tr><th>A</th><th>B</th><th>S</th><th>C</th></tr>';
+  [[0,0],[0,1],[1,0],[1,1]].forEach(([a,b])=>{
+    const s=a!==b?1:0, c=(a&&b)?1:0;
+    const now=(a===aA&&b===aB)?' class="now"':'';
+    t2+=`<tr${now}><td>${a}</td><td>${b}</td><td class="o${s}">${s}</td><td class="o${c}">${c}</td></tr>`;
+  });
+  document.getElementById('aTT').innerHTML=t2;
+}
+
+/* ===== クイズ ===== */
+let qCur=null, qOk=0, qAll=0;
+function newQuiz(){
+  const keys=Object.keys(GATES).filter(k=>GATES[k].two);
+  const ans=keys[Math.floor(Math.random()*keys.length)];
+  qCur=ans;
+  const g=GATES[ans];
+  let h='<tr><th>A</th><th>B</th><th>Y</th></tr>';
+  [[0,0],[0,1],[1,0],[1,1]].forEach(([a,b])=>{
+    const o=g.f(a,b);
+    h+=`<tr><td>${a}</td><td>${b}</td><td class="o${o}">${o}</td></tr>`;
+  });
+  document.getElementById('qTT').innerHTML=h;
+  const box=document.getElementById('qChoices');
+  box.innerHTML='';
+  keys.forEach(k=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=GATES[k].n;
+    b.style.cssText='padding:12px 24px;font-size:15px;font-weight:700;';
+    b.addEventListener('click',()=>answer(k,b));
+    box.appendChild(b);
+  });
+  document.getElementById('qMsg').style.display='none';
+}
+function answer(k,btn){
+  if(!qCur) return;
+  qAll++;
+  const correct = k===qCur;
+  if(correct) qOk++;
+  document.getElementById('qOk').textContent=qOk;
+  document.getElementById('qAll').textContent=qAll;
+  const m=document.getElementById('qMsg');
+  m.style.display='';
+  m.style.background = correct
+    ? 'linear-gradient(180deg,#2E6B4A,#22513a)'
+    : 'linear-gradient(180deg,#8E2B22,#6d1f18)';
+  m.innerHTML=`<div class="t">${correct?'正解':'不正解'}　—　答えは ${GATES[qCur].n}（${GATES[qCur].jp}）</div>`+
+    GATES[qCur].d;
+  document.getElementById('qChoices').querySelectorAll('.chip').forEach(b=>b.disabled=true);
+  qCur=null;
+}
+document.getElementById('qNext').addEventListener('click',newQuiz);
+
+/* ===== 初期化 ===== */
+drawGate(); drawAdd(); newQuiz();
+</script>
+</body>
+</html>

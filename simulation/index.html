@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シミュレーションを体験しよう（乱数・モンテカルロ法・待ち行列）｜情報ラボ</title>
+<meta name="description" content="サイコロやコインの試行、モンテカルロ法による円周率の推定、レジの待ち行列を実際に動かして確かめられる無料ツール。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/simulation/">
+<meta property="og:title" content="シミュレーションを体験しよう｜情報ラボ">
+<meta property="og:description" content="乱数・モンテカルロ法・待ち行列を動かして確かめる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/simulation/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; margin:0 auto;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:20px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+
+  /* ヒストグラム */
+  .hist{display:flex; gap:6px; align-items:flex-end; height:180px; background:#fff;
+    border:1px solid var(--line); border-radius:10px; padding:12px; justify-content:center;}
+  .hb{flex:1; max-width:64px; display:flex; flex-direction:column; justify-content:flex-end; height:100%;}
+  .hb .bar{background:var(--navy); border-radius:3px 3px 0 0; transition:height .2s;}
+  .hb .lb{text-align:center; font-size:12px; color:var(--muted); margin-top:5px;}
+  .hb .ct{text-align:center; font-size:11px; color:var(--ink); font-weight:700;
+    font-family:ui-monospace,Consolas,monospace;}
+
+  /* 待ち行列 */
+  .queue{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px;}
+  .qline{display:flex; gap:5px; align-items:center; min-height:52px; flex-wrap:wrap;}
+  .qp{width:34px; height:40px; border-radius:7px; background:var(--panel2);
+    border:2px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-size:17px;}
+  .qp.serving{background:#FFF6DC; border-color:var(--gold);}
+  .qreg{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .qr{flex:1 1 130px; background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:10px; text-align:center;}
+  .qr .t{font-size:12px; color:var(--muted);}
+  .qr .p{font-size:24px; min-height:32px;}
+  .qr.busy{background:#FFF6DC; border-color:var(--gold);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ シミュレーション</p>
+    <h1>シミュレーションを体験しよう</h1>
+    <p class="lead">実際に試すのが難しいことを、コンピュータの中で再現して調べます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabDice" aria-selected="true" aria-controls="toolDice">乱数とサイコロ</button>
+    <button class="tab" role="tab" id="tabPi" aria-selected="false" aria-controls="toolPi">円周率を求める</button>
+    <button class="tab" role="tab" id="tabQ" aria-selected="false" aria-controls="toolQ">レジの待ち行列</button>
+  </div>
+
+  <!-- ===== サイコロ ===== -->
+  <section class="tool show" id="toolDice" role="tabpanel" aria-labelledby="tabDice">
+    <div class="panel">
+      <h2>サイコロを何回も振ると、どうなるでしょうか</h2>
+      <div class="row">
+        <button class="primary" id="dRoll1">1回振る</button>
+        <button class="primary" id="dRoll100">100回振る</button>
+        <button class="primary" id="dRoll1000">1000回振る</button>
+        <button class="chip" id="dReset">やり直す</button>
+      </div>
+      <p class="hint">回数を増やすと、それぞれの目が出る割合はどうなるでしょうか。</p>
+    </div>
+
+    <div class="hist" id="dHist"></div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">振った回数</div><div class="v" id="dTotal">0</div></div>
+      <div class="stt"><div class="k">理論上の割合</div><div class="v">16.67%</div></div>
+      <div class="stt"><div class="k">実際の割合の幅</div><div class="v gold" id="dRange">–</div></div>
+      <div class="stt"><div class="k">理論からのずれ</div><div class="v" id="dDiff">–</div></div>
+    </div>
+
+    <div class="msg" id="dMsg"></div>
+  </section>
+
+  <!-- ===== 円周率 ===== -->
+  <section class="tool" id="toolPi" role="tabpanel" aria-labelledby="tabPi">
+    <div class="panel">
+      <h2>でたらめに点を打って、円周率を求めます</h2>
+      <div class="row">
+        <button class="primary" id="pAdd100">100点 打つ</button>
+        <button class="primary" id="pAdd1000">1000点 打つ</button>
+        <button class="primary" id="pAuto">連続で打つ</button>
+        <button class="chip" id="pReset">やり直す</button>
+      </div>
+      <p class="hint">正方形の中にでたらめに点を打ち、円の中に入った割合から円周率を推定します。</p>
+    </div>
+
+    <canvas id="pCv" width="380" height="380"></canvas>
+
+    <div class="stats">
+      <div class="stt"><div class="k">打った点</div><div class="v" id="pAll">0</div></div>
+      <div class="stt"><div class="k">円の中</div><div class="v" id="pIn">0</div></div>
+      <div class="stt"><div class="k">推定した円周率</div><div class="v gold" id="pPi">–</div></div>
+      <div class="stt"><div class="k">本当の値との差</div><div class="v" id="pErr">–</div></div>
+    </div>
+
+    <div class="msg" id="pMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>なぜ円周率が求まるのか</h2>
+      <p style="margin:0;font-size:15px;">
+        一辺が1の正方形の面積は 1、半径1の四分円の面積は π/4 です。
+        でたらめに点を打てば、円の中に入る割合は面積の比、つまり <b>π/4</b> に近づきます。
+        したがって、<b>割合を4倍すれば円周率</b>が求められます。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 待ち行列 ===== -->
+  <section class="tool" id="toolQ" role="tabpanel" aria-labelledby="tabQ">
+    <div class="panel">
+      <h2>レジを何台にすれば、行列ができないでしょうか</h2>
+      <div class="row">
+        <div class="sl" style="flex:1 1 260px;">
+          <div class="top"><label for="qReg">レジの台数</label><span class="val" id="qRegV">2 台</span></div>
+          <input type="range" id="qReg" min="1" max="5" step="1" value="2">
+        </div>
+        <div class="sl" style="flex:1 1 260px;">
+          <div class="top"><label for="qRate">お客さんの来る割合</label><span class="val" id="qRateV">ふつう</span></div>
+          <input type="range" id="qRate" min="1" max="5" step="1" value="3">
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="qRun">1日ぶんを試す</button>
+        <button class="chip" id="qReset">リセット</button>
+      </div>
+    </div>
+
+    <div class="queue">
+      <div class="qreg" id="qRegs"></div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:6px;">待っている人</div>
+      <div class="qline" id="qLine"><span style="color:var(--muted);font-size:13px;">誰も並んでいません</span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">来たお客さん</div><div class="v" id="qCame">0</div></div>
+      <div class="stt"><div class="k">平均の待ち時間</div><div class="v gold" id="qWait">–</div></div>
+      <div class="stt"><div class="k">最大の行列</div><div class="v" id="qMax">0</div></div>
+      <div class="stt"><div class="k">レジが空いていた割合</div><div class="v" id="qIdle">–</div></div>
+    </div>
+
+    <div class="msg" id="qMsg"></div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>シミュレーションとは</h2>
+    <p>実際に試すのが難しいことを、模型やコンピュータの中で再現して調べることをシミュレーションといいます。</p>
+    <p>なぜ必要なのでしょうか。理由はいくつかあります。実際に試すと危険なもの（自動車の衝突試験）、費用がかかりすぎるもの（新しい橋の設計）、時間がかかりすぎるもの（100年後の気候）、そもそも試せないもの（地震や津波の被害予測）。こうした場面で、シミュレーションが力を発揮します。</p>
+    <p>また、条件を変えて何度でも繰り返せるという利点もあります。「レジを1台増やしたらどうなるか」を、実際の店で試すことはできませんが、計算の中でなら何度でも試せます。</p>
+
+    <h2>確定的モデルと確率的モデル</h2>
+    <p>シミュレーションのモデルは、大きく2つに分かれます。</p>
+    <table>
+      <tr><th>種類</th><th>特徴</th><th>例</th></tr>
+      <tr><td>確定的モデル</td><td>同じ条件なら必ず同じ結果</td><td>物体の落下、電気回路</td></tr>
+      <tr><td>確率的モデル</td><td>偶然の要素を含み、毎回結果が変わる</td><td>レジの行列、感染症の広がり</td></tr>
+    </table>
+    <p>確率的モデルでは、乱数を使って偶然を再現します。何度も繰り返して平均をとることで、傾向をつかみます。</p>
+
+    <h2>乱数</h2>
+    <p>でたらめな数を乱数といいます。サイコロの目やコインの裏表は、身近な乱数です。</p>
+    <p>コンピュータで乱数を作るには、計算式を使います。ある数から次の数を計算し、それがでたらめに見えるようにするのです。しかし計算で作る以上、本当にでたらめではありません。そのため擬似乱数と呼ばれます。</p>
+    <p>擬似乱数には、同じ出発点（シード）から始めれば同じ列が得られるという性質があります。一見欠点のようですが、実験を再現できるという点では利点にもなります。</p>
+
+    <h3>大数の法則</h3>
+    <p>サイコロを6回振っても、各目が1回ずつ出るとは限りません。しかし6000回振れば、それぞれおよそ1000回ずつに近づきます。</p>
+    <p>試行回数を増やすほど、実際の割合が理論上の確率に近づく。これを大数の法則といいます。シミュレーションで何度も繰り返すのは、この性質を利用するためです。</p>
+    <div class="formula">試行回数を増やす → 結果のばらつきが小さくなる → 真の値に近づく</div>
+
+    <h2>モンテカルロ法</h2>
+    <p>乱数を使って答えを求める方法を、モンテカルロ法といいます。カジノで有名な地名にちなんだ名前です。</p>
+    <p>代表的な例が、円周率の推定です。手順は驚くほど単純です。</p>
+    <ol>
+      <li>正方形の中に、でたらめに点を打つ</li>
+      <li>円の中に入った点の数を数える</li>
+      <li>全体に対する割合を求める</li>
+      <li>その割合を4倍する</li>
+    </ol>
+    <p>なぜこれで円周率が出るのでしょうか。一辺1の正方形の面積は1、その中に入る半径1の四分円の面積は π/4 です。点をでたらめに打てば、円の中に入る割合はこの面積比に近づきます。</p>
+    <div class="formula">円の中の割合 ≒ π/4　→　π ≒ 割合 × 4</div>
+    <p>上のツールで実際に試せます。点が少ないうちは値がふらつきますが、増やすと3.14に近づいていきます。</p>
+
+    <h3>精度の上がり方</h3>
+    <p>ここで注意すべき点があります。モンテカルロ法の精度は、試行回数の平方根に比例してしか上がりません。</p>
+    <p>つまり、精度を10倍にするには試行回数を100倍にする必要があります。1桁精度を上げるだけで、計算量が100倍になるのです。効率がよい方法とはいえません。</p>
+    <p>それでもモンテカルロ法が使われるのは、<strong>複雑な問題でも手順が単純なまま</strong>だからです。次元が増えても、点を打って数えるという手順は変わりません。金融商品の価格計算や、粒子の動きの解析など、他の方法では手に負えない問題で活躍しています。</p>
+
+    <h2>待ち行列</h2>
+    <p>レジやATM、電話の受付。人が並んで待つ場面は、シミュレーションのよい題材です。</p>
+    <p>ここには、直感に反する性質があります。<strong>サービスの能力が足りているのに、行列ができる</strong>のです。</p>
+    <p>たとえば、1時間に50人来る店で、1台のレジが1時間に60人さばけるとします。計算上は余裕があります。しかし実際には行列ができます。お客さんが均等に来るわけではなく、たまたま集中する時間があるからです。</p>
+    <p>混雑の度合いは、利用率（来る割合 ÷ さばける割合）で決まります。利用率が1に近づくと、待ち時間は急激に長くなります。0.5から0.6への変化より、0.9から0.95への変化のほうが、体感の悪化は大きいのです。</p>
+    <p>だから店側は、余裕を持ってレジを配置します。上のツールで、レジの台数と混み具合を変えて確かめられます。</p>
+
+    <h2>シミュレーションの限界</h2>
+    <p>便利な道具ですが、注意点もあります。</p>
+    <p>第一に、<strong>モデルは現実そのものではない</strong>ということです。何を考慮し、何を無視するかは人が決めます。重要な要素を落としていれば、結果は現実と食い違います。</p>
+    <p>第二に、<strong>入力が正しくなければ出力も正しくない</strong>という点です。もっともらしい数字が出てきても、前提となるデータが不正確なら意味がありません。</p>
+    <p>第三に、確率的モデルでは<strong>1回の結果だけを見てはいけない</strong>ことです。偶然に左右されるので、何度も繰り返して傾向を見る必要があります。</p>
+    <p>シミュレーションの結果は、判断の材料であって答えそのものではありません。結果をどう解釈するかは、使う人の責任です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>乱数とサイコロ</strong>：回数を増やすと、割合が理論値に近づく様子を確認できます。</li>
+      <li><strong>円周率を求める</strong>：点を打つほど、推定値が3.14に近づきます。</li>
+      <li><strong>レジの待ち行列</strong>：台数と混み具合を変えて、待ち時間がどう変わるか試せます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabDice','toolDice'],['tabPi','toolPi'],['tabQ','toolQ']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabPi') drawPi();
+      if(tid==='tabQ') drawQ();
+    });
+  });
+})();
+
+/* ===== サイコロ ===== */
+let dCount=[0,0,0,0,0,0];
+function drawDice(){
+  const total=dCount.reduce((a,b)=>a+b,0);
+  const max=Math.max(...dCount,1);
+  const box=document.getElementById('dHist');
+  box.innerHTML=dCount.map((c,i)=>{
+    const pct = total? (c/total*100) : 0;
+    return `<div class="hb">
+      <div class="ct">${total?pct.toFixed(1)+'%':''}</div>
+      <div class="bar" style="height:${c/max*100}%"></div>
+      <div class="lb">${'⚀⚁⚂⚃⚄⚅'[i]} ${c}</div></div>`;
+  }).join('');
+  document.getElementById('dTotal').textContent=total.toLocaleString();
+  if(total>0){
+    const pcts=dCount.map(c=>c/total*100);
+    const lo=Math.min(...pcts), hi=Math.max(...pcts);
+    document.getElementById('dRange').textContent=lo.toFixed(1)+'〜'+hi.toFixed(1)+'%';
+    const maxDiff=Math.max(...pcts.map(p=>Math.abs(p-100/6)));
+    document.getElementById('dDiff').textContent='±'+maxDiff.toFixed(2)+'%';
+    const m=document.getElementById('dMsg');
+    if(total<50){
+      m.className='msg';
+      m.innerHTML='<div class="t">まだ回数が少ないです</div>'+
+        `いまは ${lo.toFixed(1)}%〜${hi.toFixed(1)}% とばらついています。`+
+        'もっと振ると、どうなるでしょうか。';
+    }else if(maxDiff>3){
+      m.className='msg';
+      m.innerHTML=`<div class="t">${total.toLocaleString()}回 振りました</div>`+
+        `理論値 16.67% からのずれは最大 <b>±${maxDiff.toFixed(2)}%</b>。`+
+        'まだ差がありますが、回数を増やすと縮まっていきます。';
+    }else{
+      m.className='msg ok';
+      m.innerHTML=`<div class="t">理論値に近づきました</div>`+
+        `${total.toLocaleString()}回振ると、ずれは <b>±${maxDiff.toFixed(2)}%</b> まで縮まりました。`+
+        'これが<b>大数の法則</b>です。試行を重ねるほど、結果は理論上の確率に近づきます。';
+    }
+  }else{
+    document.getElementById('dRange').textContent='–';
+    document.getElementById('dDiff').textContent='–';
+    document.getElementById('dMsg').className='msg';
+    document.getElementById('dMsg').innerHTML=
+      '<div class="t">サイコロの目は、それぞれ 1/6 の確率</div>'+
+      '理論上は 16.67% ずつのはずです。実際に振って確かめてみましょう。';
+  }
+}
+function roll(n){
+  for(let i=0;i<n;i++) dCount[Math.floor(Math.random()*6)]++;
+  drawDice();
+}
+document.getElementById('dRoll1').addEventListener('click',()=>roll(1));
+document.getElementById('dRoll100').addEventListener('click',()=>roll(100));
+document.getElementById('dRoll1000').addEventListener('click',()=>roll(1000));
+document.getElementById('dReset').addEventListener('click',()=>{ dCount=[0,0,0,0,0,0]; drawDice(); });
+
+/* ===== 円周率 ===== */
+let pAll=0, pIn=0, pAuto=null;
+function drawPi(){
+  const cv=document.getElementById('pCv'), c=cv.getContext('2d');
+  const S=cv.width;
+  if(pAll===0){
+    c.fillStyle='#fff'; c.fillRect(0,0,S,S);
+    // 四分円の枠
+    c.strokeStyle='#C9D2E0'; c.lineWidth=2;
+    c.strokeRect(1,1,S-2,S-2);
+    c.beginPath(); c.arc(0,S,S,-Math.PI/2,0); c.strokeStyle='#2F5496'; c.lineWidth=2.5; c.stroke();
+  }
+  document.getElementById('pAll').textContent=pAll.toLocaleString();
+  document.getElementById('pIn').textContent=pIn.toLocaleString();
+  const pi = pAll? (pIn/pAll*4) : 0;
+  document.getElementById('pPi').textContent = pAll? pi.toFixed(4) : '–';
+  document.getElementById('pErr').textContent = pAll? (Math.abs(pi-Math.PI)).toFixed(4) : '–';
+
+  const m=document.getElementById('pMsg');
+  if(pAll===0){
+    m.className='msg';
+    m.innerHTML='<div class="t">モンテカルロ法</div>'+
+      'でたらめに点を打ち、円の中に入った割合から円周率を求めます。ボタンを押してみてください。';
+  }else{
+    const err=Math.abs(pi-Math.PI);
+    m.className='msg'+(err<0.01?' ok':'');
+    m.innerHTML=`<div class="t">推定値 ${pi.toFixed(4)}　（本当の値 3.1416）</div>`+
+      `${pAll.toLocaleString()}点のうち ${pIn.toLocaleString()}点が円の中。`+
+      `割合 ${(pIn/pAll).toFixed(4)} を4倍して <b>${pi.toFixed(4)}</b> です。`+
+      (err<0.01
+        ? '　かなり近づきました。'
+        : `　誤差 ${err.toFixed(4)}。点を増やすと精度が上がりますが、`+
+          '<b>10倍精度を上げるには100倍の点</b>が必要です。');
+  }
+}
+function addPoints(n){
+  const cv=document.getElementById('pCv'), c=cv.getContext('2d');
+  const S=cv.width;
+  if(pAll===0){
+    c.fillStyle='#fff'; c.fillRect(0,0,S,S);
+    c.strokeStyle='#C9D2E0'; c.lineWidth=2; c.strokeRect(1,1,S-2,S-2);
+    c.beginPath(); c.arc(0,S,S,-Math.PI/2,0); c.strokeStyle='#2F5496'; c.lineWidth=2.5; c.stroke();
+  }
+  for(let i=0;i<n;i++){
+    const x=Math.random(), y=Math.random();
+    const inside = (x*x+y*y)<=1;
+    pAll++; if(inside) pIn++;
+    c.fillStyle = inside ? 'rgba(47,84,150,.55)' : 'rgba(192,57,43,.5)';
+    c.beginPath(); c.arc(x*S, S-y*S, 1.6, 0, Math.PI*2); c.fill();
+  }
+  drawPi();
+}
+document.getElementById('pAdd100').addEventListener('click',()=>addPoints(100));
+document.getElementById('pAdd1000').addEventListener('click',()=>addPoints(1000));
+document.getElementById('pAuto').addEventListener('click',e=>{
+  if(pAuto){ clearInterval(pAuto); pAuto=null; e.target.textContent='連続で打つ'; }
+  else{ pAuto=setInterval(()=>addPoints(200),80); e.target.textContent='とめる'; }
+});
+document.getElementById('pReset').addEventListener('click',()=>{
+  if(pAuto){ clearInterval(pAuto); pAuto=null; document.getElementById('pAuto').textContent='連続で打つ'; }
+  pAll=0; pIn=0;
+  const cv=document.getElementById('pCv'), c=cv.getContext('2d');
+  c.clearRect(0,0,cv.width,cv.height);
+  drawPi();
+});
+
+/* ===== 待ち行列 ===== */
+const RATE_LABEL=['とても少ない','少ない','ふつう','多い','とても多い'];
+const RATE_P=[0.15,0.3,0.45,0.62,0.8];
+let qRegs=2, qRateIdx=3, qState=null;
+function drawQ(){
+  document.getElementById('qRegV').textContent=qRegs+' 台';
+  document.getElementById('qRateV').textContent=RATE_LABEL[qRateIdx-1];
+  const rb=document.getElementById('qRegs');
+  rb.innerHTML='';
+  for(let i=0;i<qRegs;i++){
+    const busy = qState && qState.regs[i]>0;
+    const d=document.createElement('div');
+    d.className='qr'+(busy?' busy':'');
+    d.innerHTML=`<div class="t">レジ ${i+1}</div><div class="p">${busy?'🧑':'　'}</div>`;
+    rb.appendChild(d);
+  }
+  const line=document.getElementById('qLine');
+  const q = qState? qState.queue : 0;
+  line.innerHTML = q>0
+    ? Array.from({length:Math.min(q,24)},()=>'<div class="qp">🧑</div>').join('')+
+      (q>24?`<span style="font-size:13px;color:var(--muted);margin-left:6px;">他 ${q-24}人</span>`:'')
+    : '<span style="color:var(--muted);font-size:13px;">誰も並んでいません</span>';
+}
+function runQueue(){
+  const STEPS=480; // 8時間ぶん（1分きざみ）
+  const p=RATE_P[qRateIdx-1];
+  const SERVICE=3; // 1人3分
+  let queue=0, regs=Array(qRegs).fill(0);
+  let came=0, totalWait=0, served=0, maxQ=0, idleSlots=0;
+  const waitStart=[];
+  for(let t=0;t<STEPS;t++){
+    // 到着
+    if(Math.random()<p){ came++; queue++; waitStart.push(t); }
+    // サービス
+    for(let i=0;i<qRegs;i++){
+      if(regs[i]>0){ regs[i]--; if(regs[i]===0) served++; }
+      if(regs[i]===0){
+        if(queue>0){ queue--; regs[i]=SERVICE; totalWait += t - waitStart.shift(); }
+        else idleSlots++;
+      }
+    }
+    if(queue>maxQ) maxQ=queue;
+  }
+  qState={queue, regs};
+  drawQ();
+  const avgWait = came? (totalWait/Math.max(1,came)) : 0;
+  const idle = idleSlots/(STEPS*qRegs)*100;
+  document.getElementById('qCame').textContent=came+' 人';
+  document.getElementById('qWait').textContent=avgWait.toFixed(1)+' 分';
+  document.getElementById('qMax').textContent=maxQ+' 人';
+  document.getElementById('qIdle').textContent=idle.toFixed(0)+'%';
+
+  // 利用率
+  const arrivalPerMin=p, capacityPerMin=qRegs/SERVICE;
+  const rho=arrivalPerMin/capacityPerMin;
+  const m=document.getElementById('qMsg');
+  if(rho>=1){
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">レジが足りません（利用率 ${(rho*100).toFixed(0)}%）</div>`+
+      `1分あたり ${arrivalPerMin.toFixed(2)}人 来るのに、さばけるのは ${capacityPerMin.toFixed(2)}人。`+
+      `行列は<b>増え続けます</b>。最大 ${maxQ}人 まで伸びました。レジを増やしてみてください。`;
+  }else if(rho>0.8){
+    m.className='msg';
+    m.innerHTML=`<div class="t">かなり混雑しています（利用率 ${(rho*100).toFixed(0)}%）</div>`+
+      `平均 <b>${avgWait.toFixed(1)}分</b> 待ちました。計算上はさばけていますが、`+
+      `お客さんが集中する時間があるため行列ができます。`+
+      `<b>利用率が1に近づくほど、待ち時間は急激に伸びます。</b>`;
+  }else{
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">スムーズです（利用率 ${(rho*100).toFixed(0)}%）</div>`+
+      `平均待ち時間 <b>${avgWait.toFixed(1)}分</b>、最大の行列は ${maxQ}人。`+
+      `ただしレジが空いていた割合は ${idle.toFixed(0)}%。`+
+      `待ち時間を短くするほど、レジは遊んでしまいます。この<b>兼ね合い</b>が難しいところです。`;
+  }
+}
+document.getElementById('qReg').addEventListener('input',e=>{ qRegs=+e.target.value; qState=null; drawQ(); });
+document.getElementById('qRate').addEventListener('input',e=>{ qRateIdx=+e.target.value; qState=null; drawQ(); });
+document.getElementById('qRun').addEventListener('click',runQueue);
+document.getElementById('qReset').addEventListener('click',()=>{
+  qState=null; drawQ();
+  document.getElementById('qCame').textContent='0';
+  document.getElementById('qWait').textContent='–';
+  document.getElementById('qMax').textContent='0';
+  document.getElementById('qIdle').textContent='–';
+  document.getElementById('qMsg').className='msg';
+  document.getElementById('qMsg').innerHTML=
+    '<div class="t">待ち行列のシミュレーション</div>'+
+    'レジの台数と混み具合を決めて、「1日ぶんを試す」を押してください。8時間ぶんを計算します。';
+});
+
+/* ===== 初期化 ===== */
+drawDice(); drawPi();
+document.getElementById('qReset').click();
+</script>
+</body>
+</html>
