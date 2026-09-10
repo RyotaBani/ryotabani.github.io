@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>電子メールのしくみを体験しよう（SMTP・POP・IMAP）｜情報ラボ</title>
+<meta name="description" content="メールが送信者から受信者に届くまでの流れを、サーバーの役割ごとに追える無料ツール。SMTP・POP・IMAPの違いや、なりすまし対策も学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/mail/">
+<meta property="og:title" content="電子メールのしくみを体験しよう｜情報ラボ">
+<meta property="og:description" content="メールが届くまでの流れとサーバーの役割を体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/mail/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  /* 流れ図 */
+  .flowfig{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px;
+    overflow-x:auto;}
+  .flowfig svg{display:block; margin:0 auto; min-width:620px;}
+
+  /* 宛先の説明 */
+  .addr{display:flex; gap:4px; justify-content:center; flex-wrap:wrap; align-items:flex-end;
+    margin:10px 0;}
+  .ap{text-align:center;}
+  .ap .v{font-family:ui-monospace,Consolas,monospace; font-size:26px; font-weight:700;
+    padding:8px 12px; border-radius:9px; border:2px solid var(--line); background:#fff;}
+  .ap.local .v{border-color:var(--navy); background:#EEF3FB; color:var(--navy);}
+  .ap.dom .v{border-color:var(--gold); background:#FFF9E8; color:#8a5b00;}
+  .ap .k{font-size:11.5px; color:var(--muted); margin-top:5px;}
+
+  /* 比較 */
+  table.t{border-collapse:collapse; width:100%; font-size:14.5px;}
+  table.t th, table.t td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  table.t thead th{background:var(--navy); color:#fff; text-align:center;}
+  table.t tbody th{background:var(--panel); color:var(--ink); width:8em;}
+  td.good{background:#EAF3EE;} td.bad{background:#FBEEEE;}
+
+  /* ヘッダ表示 */
+  .hdr{background:#141c2e; color:#dbe4f5; border-radius:10px; padding:14px 16px;
+    font-family:ui-monospace,Consolas,monospace; font-size:13px; line-height:1.9;
+    overflow-x:auto; white-space:pre-wrap;}
+  .hdr .k{color:#8fd6a8;}
+  .hdr .w{color:#ffd97a;}
+  .hdr .d{color:#ff8a80;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 電子メールのしくみ</p>
+    <h1>電子メールのしくみを体験しよう</h1>
+    <p class="lead">送信ボタンを押してから相手に届くまで、メールはどこを通っているのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabFlow" aria-selected="true" aria-controls="toolFlow">届くまでの流れ</button>
+    <button class="tab" role="tab" id="tabProt" aria-selected="false" aria-controls="toolProt">POPとIMAP</button>
+    <button class="tab" role="tab" id="tabHdr" aria-selected="false" aria-controls="toolHdr">なりすましと対策</button>
+  </div>
+
+  <!-- ===== 流れ ===== -->
+  <section class="tool show" id="toolFlow" role="tabpanel" aria-labelledby="tabFlow">
+    <div class="panel">
+      <h2>メールアドレスの読み方</h2>
+      <div class="addr">
+        <div class="ap local"><div class="v">tanaka</div><div class="k">ユーザー名（誰か）</div></div>
+        <div class="ap"><div class="v" style="border:none;background:none;">@</div><div class="k">　</div></div>
+        <div class="ap dom"><div class="v">example.ne.jp</div><div class="k">ドメイン名（どこか）</div></div>
+      </div>
+      <p class="hint">
+        @の後ろが、どのメールサーバーに届けるかを示しています。郵便でいえば住所、@の前が宛名にあたります。
+      </p>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <button class="primary" id="flStep">次へ進む</button>
+        <button class="chip" id="flReset">最初から</button>
+        <button class="chip" id="flAuto">通しで見る</button>
+      </div>
+      <p class="hint" id="flHint"></p>
+    </div>
+
+    <div class="flowfig"><svg id="flSvg" viewBox="0 0 660 250" width="100%" height="250"></svg></div>
+
+    <div class="msg" id="flMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>登場するもの</h2>
+      <table class="t">
+        <tr><th>メールソフト</th><td>メールを書いたり読んだりするアプリ。スマホのメールアプリやWebメールもこれにあたります</td></tr>
+        <tr><th>送信サーバー</th><td>受け取ったメールを、相手のサーバーへ転送します（SMTPサーバー）</td></tr>
+        <tr><th>受信サーバー</th><td>届いたメールを保管しておきます。受信者が取りに来るまで預かります</td></tr>
+        <tr><th>DNS</th><td>ドメイン名から、どのサーバーに送ればよいかを調べます</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== POP / IMAP ===== -->
+  <section class="tool" id="toolProt" role="tabpanel" aria-labelledby="tabProt">
+    <div class="panel">
+      <h2>受信の方式には2種類あります</h2>
+      <div class="row">
+        <button class="chip" id="ppPop" aria-pressed="true">POP（取ってくる）</button>
+        <button class="chip" id="ppImap" aria-pressed="false">IMAP（サーバーで見る）</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="ppRead">1通読む</button>
+        <button class="chip" id="ppReset">リセット</button>
+      </div>
+      <p class="hint" id="ppHint"></p>
+    </div>
+
+    <div class="flowfig"><svg id="ppSvg" viewBox="0 0 660 230" width="100%" height="230"></svg></div>
+
+    <div class="msg" id="ppMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>比べてみましょう</h2>
+      <table class="t">
+        <thead><tr><th style="background:var(--panel);"></th><th>POP</th><th>IMAP</th></tr></thead>
+        <tbody>
+          <tr><th>メールの置き場所</th>
+            <td>自分の機器にダウンロード</td>
+            <td class="good">サーバーに置いたまま</td></tr>
+          <tr><th>複数の機器で見る</th>
+            <td class="bad">同じメールを見られないことがある</td>
+            <td class="good">どの機器でも同じ状態</td></tr>
+          <tr><th>既読や振り分けの同期</th>
+            <td class="bad">同期されない</td>
+            <td class="good">すべての機器で同期</td></tr>
+          <tr><th>サーバーの容量</th>
+            <td class="good">あまり使わない</td>
+            <td>たくさん使う</td></tr>
+          <tr><th>ネットがないとき</th>
+            <td class="good">ダウンロード済みなら読める</td>
+            <td>基本は接続が必要</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">スマホとパソコンの両方でメールを見るのが当たり前になったため、いまはIMAPが主流です。</p>
+    </div>
+  </section>
+
+  <!-- ===== なりすまし ===== -->
+  <section class="tool" id="toolHdr" role="tabpanel" aria-labelledby="tabHdr">
+    <div class="panel">
+      <h2>差出人は、書きかえられます</h2>
+      <div class="row">
+        <button class="chip" id="hdNormal" aria-pressed="true">正しいメール</button>
+        <button class="chip" id="hdFake" aria-pressed="false">なりすましメール</button>
+      </div>
+      <p class="hint">メールのヘッダには、届くまでの経路が記録されています。見比べてみましょう。</p>
+    </div>
+
+    <div class="panel">
+      <h2>メールヘッダ（ふだんは隠れている部分）</h2>
+      <div class="hdr" id="hdBox"></div>
+    </div>
+
+    <div class="msg" id="hdMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>なりすましを防ぐしくみ</h2>
+      <table class="t">
+        <tr><th>SPF</th><td>そのドメインのメールを送ってよいサーバーの一覧を、DNSに登録しておく方式です。一覧にないサーバーから来たら怪しいと判断できます</td></tr>
+        <tr><th>DKIM</th><td>送信側が電子署名を付け、受信側が正しさを確かめる方式です。途中で書きかえられていないことも確認できます</td></tr>
+        <tr><th>DMARC</th><td>SPFとDKIMの結果をもとに、不正なメールをどう扱うか（拒否する、隔離するなど）を決める方式です</td></tr>
+      </table>
+      <p class="hint">
+        これらは受信側で自動的に判定されます。迷惑メールフォルダに振り分けられるのは、こうした検査の結果です。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>メールアドレスの構造</h2>
+    <p>メールアドレスは、@（アットマーク）で2つに分かれています。</p>
+    <div class="formula">tanaka ＠ example.ne.jp<br>
+    　↑ユーザー名　　　↑ドメイン名</div>
+    <p>後ろのドメイン名が、どの組織のメールサーバーに届けるかを示します。前のユーザー名は、そのサーバーの中で誰宛かを示します。郵便でいえば、ドメイン名が住所、ユーザー名が宛名にあたります。</p>
+
+    <h2>メールが届くまで</h2>
+    <p>送信ボタンを押してから相手に届くまで、メールはいくつかの場所を経由します。</p>
+    <ol>
+      <li><strong>メールソフトから送信サーバーへ</strong>：書いたメールを、自分が契約しているサーバーに預けます</li>
+      <li><strong>DNSで宛先を調べる</strong>：@の後ろのドメイン名から、相手のサーバーの場所を問い合わせます</li>
+      <li><strong>サーバーからサーバーへ転送</strong>：相手のメールサーバーへ送り届けます</li>
+      <li><strong>受信サーバーで保管</strong>：相手が取りに来るまで、サーバーが預かります</li>
+      <li><strong>受信者が取り出す</strong>：メールソフトを開いたとき、サーバーから受け取ります</li>
+    </ol>
+    <p>ここで重要なのは、<strong>相手のパソコンに直接届くわけではない</strong>という点です。いったんサーバーに預けられ、相手が受け取りに来るのを待ちます。相手の電源が入っていなくても送れるのは、このためです。</p>
+
+    <h2>プロトコル ― 役割ごとの決まりごと</h2>
+    <p>それぞれの場面で、異なるプロトコルが使われます。</p>
+    <table>
+      <tr><th>プロトコル</th><th>読み方</th><th>役割</th></tr>
+      <tr><td class="mono">SMTP</td><td>エスエムティーピー</td><td>メールを<strong>送る</strong>（メールソフト→サーバー、サーバー→サーバー）</td></tr>
+      <tr><td class="mono">POP</td><td>ポップ</td><td>メールを<strong>受け取る</strong>（ダウンロードする方式）</td></tr>
+      <tr><td class="mono">IMAP</td><td>アイマップ</td><td>メールを<strong>受け取る</strong>（サーバーに置いたまま見る方式）</td></tr>
+    </table>
+    <p>整理すると、送るときはSMTP、受け取るときはPOPかIMAPです。送信と受信で別のプロトコルを使うのが、メールの特徴です。</p>
+
+    <h3>POPとIMAPの違い</h3>
+    <p>どちらもメールを受け取るための方式ですが、考え方が違います。</p>
+    <p><strong>POP</strong>は、サーバーからメールを<strong>自分の機器にダウンロード</strong>します。郵便受けから手紙を持ち帰るイメージです。持ち帰った後は自分の手元にあるので、ネットがなくても読めます。ただし、別の機器からは見られません。</p>
+    <p><strong>IMAP</strong>は、メールを<strong>サーバーに置いたまま</strong>見ます。既読にしたり、フォルダに振り分けたりした結果も、サーバー側に記録されます。そのため、スマホで読んだメールはパソコンでも既読になっています。</p>
+    <p>スマホとパソコンを両方使うのが当たり前になった現在、IMAPが主流です。ただしサーバーの容量を使うため、古いメールの整理は必要になります。</p>
+
+    <h2>差出人は信用できない</h2>
+    <p>メールの仕組みには、設計上の弱点があります。<strong>差出人（From）は自由に書ける</strong>のです。</p>
+    <p>これは、封筒に自分で好きな差出人を書けるのと同じです。郵便局は差出人が本物かを確認しません。メールも同様に、もともと本人確認をする仕組みがありませんでした。</p>
+    <p>この弱点を突いたのが、フィッシングメールやなりすましメールです。銀行や大手企業の名前で送られてきても、それだけでは本物と判断できません。</p>
+
+    <h3>手がかりはヘッダにある</h3>
+    <p>メールには、ふだん見えていない情報が付いています。これをヘッダといい、届くまでに経由したサーバーの記録が残っています。</p>
+    <p>Received という行に、経由したサーバーが順に記録されます。差出人が銀行を名乗っているのに、まったく無関係なサーバーを経由していれば、なりすましの可能性が高いと判断できます。上のツールで、正しいメールとなりすましメールのヘッダを見比べられます。</p>
+
+    <h3>技術的な対策</h3>
+    <p>なりすましを防ぐため、3つの仕組みが使われています。</p>
+    <ul>
+      <li><strong>SPF</strong>：そのドメインのメールを送ってよいサーバーの一覧をDNSに登録し、受信側が照合します</li>
+      <li><strong>DKIM</strong>：送信側が電子署名を付け、受信側が公開鍵で確かめます。改ざんの検出もできます</li>
+      <li><strong>DMARC</strong>：SPFとDKIMの結果をもとに、不正なメールの扱い方を送信側が指定します</li>
+    </ul>
+    <p>これらは受信側で自動的に判定され、結果に応じて迷惑メールフォルダに振り分けられます。ただし完璧ではないため、利用者側の注意も必要です。</p>
+
+    <h2>宛先の3つの欄</h2>
+    <table>
+      <tr><th>欄</th><th>意味</th><th>他の受信者から見えるか</th></tr>
+      <tr><td class="mono">To</td><td>主な宛先。返信を期待する相手</td><td>見える</td></tr>
+      <tr><td class="mono">Cc</td><td>参考として共有したい相手</td><td>見える</td></tr>
+      <tr><td class="mono">Bcc</td><td>他の人に知られずに送りたい相手</td><td><strong>見えない</strong></td></tr>
+    </table>
+    <p>Bccは Blind Carbon Copy の略で、他の受信者にはアドレスが表示されません。多数の人に一斉送信するとき、Toに全員を入れると<strong>全員のアドレスが互いに見えてしまいます</strong>。これは個人情報の漏えいにあたり、実際に事故として報道されることが繰り返し起きています。</p>
+    <p>一斉送信のときはBccを使う。この習慣を身につけておくことが大切です。</p>
+
+    <h2>添付ファイルのしくみ</h2>
+    <p>メールはもともと、英数字の文字だけを送る仕組みとして作られました。画像や日本語をそのまま送ることはできません。</p>
+    <p>そこで使われるのがMIMEという規格です。画像などのデータを、いったん英数字の並びに変換して送り、受信側で元に戻します。この変換をBase64といいます。</p>
+    <p>ただし、この変換でデータ量は<strong>約1.33倍</strong>に増えます。3バイトのデータが4文字になるためです。「3MBの画像を添付したのに、送信サイズが4MBになる」のはこのためです。</p>
+    <p>多くのメールサーバーには、25MB程度の送信上限があります。大きなファイルを送りたいときは、クラウドストレージに置いてリンクを共有するほうが確実です。</p>
+
+    <h2>メールの暗号化</h2>
+    <p>メールの内容は、そのままでは経路上で読まれる可能性があります。そこで通信を暗号化します。</p>
+    <p>メールソフトとサーバーの間では、SMTPS・POP3S・IMAPSといった暗号化された通信が使われます。サーバーどうしの転送でも、STARTTLSという仕組みで暗号化されるのが一般的になりました。</p>
+    <p>ただし、これは<strong>経路の暗号化</strong>にすぎません。サーバー上ではメールは平文で保管されています。内容そのものを守りたい場合は、S/MIMEやPGPといった、送信者と受信者の間だけで暗号化する方法が必要です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>届くまでの流れ</strong>：「次へ進む」で、メールが経由する場所を1段階ずつ追えます。</li>
+      <li><strong>POPとIMAP</strong>：方式を切り替えて、メールを読んだときにサーバー側がどうなるかを比べられます。</li>
+      <li><strong>なりすましと対策</strong>：正しいメールとなりすましメールのヘッダを見比べられます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabFlow','toolFlow'],['tabProt','toolProt'],['tabHdr','toolHdr']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabProt') drawPp();
+      if(tid==='tabHdr') drawHdr();
+    });
+  });
+})();
+
+const WIRE='#C9D2E0', ON='#2F5496', GOLD='#C49A2B';
+
+/* ===== 流れ ===== */
+const FL=[
+  {t:'メールを書く', d:'田中さんが、鈴木さん（suzuki@school.ed.jp）宛にメールを書きました。'},
+  {t:'送信サーバーへ預ける（SMTP）',
+   d:'メールソフトが、自分の契約している<b>送信サーバー</b>にメールを渡します。この手順が <b>SMTP</b> です。'},
+  {t:'DNSで宛先を調べる',
+   d:'送信サーバーが「school.ed.jp のメールはどこへ送ればいい？」と <b>DNS</b> に問い合わせます。'},
+  {t:'相手のサーバーへ転送（SMTP）',
+   d:'調べた宛先へ、メールを転送します。サーバーからサーバーへの転送も <b>SMTP</b> です。'},
+  {t:'受信サーバーが預かる',
+   d:'鈴木さんが取りに来るまで、<b>受信サーバー</b>がメールを保管します。相手の電源が入っていなくても大丈夫です。'},
+  {t:'受信者が取り出す（POP / IMAP）',
+   d:'鈴木さんがメールソフトを開くと、サーバーからメールを受け取ります。この手順が <b>POP</b> または <b>IMAP</b> です。'}
+];
+let flStep=0, flTimer=null;
+function drawFl(){
+  const svg=document.getElementById('flSvg');
+  const nodes=[
+    {x:60,y:150,ic:'🧑',n:'田中さん',s:'メールソフト'},
+    {x:210,y:150,ic:'📤',n:'送信サーバー',s:'SMTP'},
+    {x:335,y:52,ic:'📖',n:'DNS',s:'宛先を調べる'},
+    {x:460,y:150,ic:'📥',n:'受信サーバー',s:'保管'},
+    {x:600,y:150,ic:'🧑',n:'鈴木さん',s:'メールソフト'}
+  ];
+  // どの矢印が光るか
+  const arrows=[
+    {a:0,b:1,lb:'SMTP',step:1},
+    {a:1,b:2,lb:'問い合わせ',step:2,curve:true},
+    {a:1,b:3,lb:'SMTP',step:3},
+    {a:3,b:3,lb:'保管',step:4},
+    {a:3,b:4,lb:'POP / IMAP',step:5}
+  ];
+  let h='';
+  arrows.forEach(ar=>{
+    if(ar.a===ar.b) return;
+    const A=nodes[ar.a], B=nodes[ar.b];
+    const active = flStep===ar.step;
+    const col = active?ON:WIRE;
+    const w = active?4:2.5;
+    if(ar.curve){
+      h+=`<path d="M${A.x+30} ${A.y-24} Q${(A.x+B.x)/2} ${A.y-90} ${B.x-32} ${B.y+18}"
+          fill="none" stroke="${col}" stroke-width="${w}" stroke-dasharray="${active?'':'5,4'}"/>`;
+      if(active) h+=`<text x="${(A.x+B.x)/2}" y="${A.y-72}" text-anchor="middle"
+          font-size="11" font-weight="700" fill="${ON}">${ar.lb}</text>`;
+    }else{
+      h+=`<line x1="${A.x+32}" y1="${A.y}" x2="${B.x-32}" y2="${B.y}"
+          stroke="${col}" stroke-width="${w}"/>`;
+      h+=`<polygon points="${B.x-32},${B.y} ${B.x-42},${B.y-6} ${B.x-42},${B.y+6}" fill="${col}"/>`;
+      if(active) h+=`<text x="${(A.x+B.x)/2}" y="${A.y-14}" text-anchor="middle"
+          font-size="11" font-weight="700" fill="${ON}">${ar.lb}</text>`;
+    }
+  });
+  nodes.forEach((n,i)=>{
+    const hot = (flStep===1&&i<=1)||(flStep===2&&(i===1||i===2))||
+                (flStep===3&&(i===1||i===3))||(flStep===4&&i===3)||
+                (flStep===5&&(i===3||i===4))||(flStep===0&&i===0);
+    h+=`<circle cx="${n.x}" cy="${n.y}" r="30" fill="${hot?'#EEF3FB':'#fff'}"
+        stroke="${hot?ON:WIRE}" stroke-width="${hot?3:2}"/>
+      <text x="${n.x}" y="${n.y+9}" text-anchor="middle" font-size="24">${n.ic}</text>
+      <text x="${n.x}" y="${n.y+48}" text-anchor="middle" font-size="11.5"
+        font-weight="700" fill="#1F3864">${n.n}</text>
+      <text x="${n.x}" y="${n.y+63}" text-anchor="middle" font-size="10" fill="#5B6472">${n.s}</text>`;
+  });
+  // メールの封筒
+  if(flStep>0){
+    const pos=[null,[135,150],[135,150],[398,150],[460,120],[530,150]][flStep];
+    if(pos) h+=`<text x="${pos[0]}" y="${pos[1]+6}" text-anchor="middle" font-size="20">✉️</text>`;
+  }
+  svg.innerHTML=h;
+
+  const s=FL[flStep];
+  document.getElementById('flHint').textContent=`手順 ${flStep+1} / ${FL.length}`;
+  const m=document.getElementById('flMsg');
+  m.className='msg'+(flStep===FL.length-1?' ok':'');
+  m.innerHTML=`<div class="t">${flStep+1}. ${s.t}</div>${s.d}`;
+  document.getElementById('flStep').disabled = flStep>=FL.length-1;
+}
+document.getElementById('flStep').addEventListener('click',()=>{ flStep++; drawFl(); });
+document.getElementById('flReset').addEventListener('click',()=>{
+  if(flTimer){clearInterval(flTimer);flTimer=null;}
+  flStep=0; drawFl();
+});
+document.getElementById('flAuto').addEventListener('click',()=>{
+  if(flTimer){ clearInterval(flTimer); flTimer=null; return; }
+  flStep=0; drawFl();
+  flTimer=setInterval(()=>{
+    if(flStep>=FL.length-1){ clearInterval(flTimer); flTimer=null; return; }
+    flStep++; drawFl();
+  },1600);
+});
+
+/* ===== POP / IMAP ===== */
+let ppMode='pop', ppServer=3, ppLocal=0, ppRead=0;
+function drawPp(){
+  const svg=document.getElementById('ppSvg');
+  const boxes=(x,y,n,cnt,lb,sub)=>{
+    let h=`<rect x="${x}" y="${y}" width="150" height="110" rx="12" fill="#fff"
+      stroke="${WIRE}" stroke-width="2"/>
+      <text x="${x+75}" y="${y+22}" text-anchor="middle" font-size="12.5"
+        font-weight="700" fill="#1F3864">${lb}</text>
+      <text x="${x+75}" y="${y+38}" text-anchor="middle" font-size="10" fill="#5B6472">${sub}</text>`;
+    for(let i=0;i<cnt;i++){
+      const cx=x+30+(i%3)*40, cy=y+62+Math.floor(i/3)*30;
+      const isRead = i<ppRead && lb.includes('サーバー') && ppMode==='imap';
+      h+=`<text x="${cx}" y="${cy}" text-anchor="middle" font-size="19"
+          opacity="${isRead?0.45:1}">✉️</text>`;
+      if(isRead) h+=`<text x="${cx+13}" y="${cy-9}" font-size="9" fill="${GOLD}">既読</text>`;
+    }
+    if(cnt===0) h+=`<text x="${x+75}" y="${y+72}" text-anchor="middle" font-size="11"
+      fill="#9AA3B0">（なし）</text>`;
+    return h;
+  };
+  let h='';
+  h+=boxes(60,60,'server',ppServer,'📥 受信サーバー', ppMode==='pop'?'ダウンロード後は消える':'ここに置いたまま');
+  h+=boxes(430,60,'local',ppLocal,'💻 自分の機器', ppMode==='pop'?'ここに保存される':'表示するだけ');
+  const col = ppRead>0?ON:WIRE;
+  h+=`<line x1="215" y1="115" x2="425" y2="115" stroke="${col}" stroke-width="3"/>
+      <polygon points="425,115 413,109 413,121" fill="${col}"/>
+      <text x="320" y="104" text-anchor="middle" font-size="12" font-weight="700"
+        fill="${ppRead>0?ON:'#5B6472'}">${ppMode==='pop'?'POP（持ち帰る）':'IMAP（見に行く）'}</text>`;
+  svg.innerHTML=h;
+
+  document.getElementById('ppHint').textContent = ppMode==='pop'
+    ? 'POPでは、メールを自分の機器にダウンロードします。サーバーからは削除されるのが基本です。'
+    : 'IMAPでは、メールはサーバーに置いたままです。既読の状態もサーバーに記録されます。';
+
+  const m=document.getElementById('ppMsg');
+  m.className='msg';
+  if(ppRead===0){
+    m.innerHTML='<div class="t">サーバーに3通のメールが届いています</div>'+
+      '「1通読む」を押すと、何が起きるか分かります。';
+  }else if(ppMode==='pop'){
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">${ppRead}通をダウンロードしました</div>`+
+      `メールは自分の機器に移り、<b>サーバーからは消えました</b>。`+
+      `　このあと<b>別のスマホやパソコンから見ても、このメールは残っていません</b>。`+
+      `ネットがなくても読める利点はありますが、複数の機器で使うには不便です。`;
+  }else{
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">${ppRead}通を読みました</div>`+
+      `メールは<b>サーバーに残ったまま</b>で、既読の印がつきました。`+
+      `　<b>他の機器から見ても、同じように既読になっています</b>。`+
+      `スマホで読んだメールがパソコンでも既読なのは、この仕組みのおかげです。`;
+  }
+}
+document.getElementById('ppPop').addEventListener('click',()=>{
+  ppMode='pop'; ppServer=3; ppLocal=0; ppRead=0;
+  document.getElementById('ppPop').setAttribute('aria-pressed','true');
+  document.getElementById('ppImap').setAttribute('aria-pressed','false');
+  drawPp();
+});
+document.getElementById('ppImap').addEventListener('click',()=>{
+  ppMode='imap'; ppServer=3; ppLocal=0; ppRead=0;
+  document.getElementById('ppPop').setAttribute('aria-pressed','false');
+  document.getElementById('ppImap').setAttribute('aria-pressed','true');
+  drawPp();
+});
+document.getElementById('ppRead').addEventListener('click',()=>{
+  if(ppMode==='pop'){
+    if(ppServer>0){ ppServer--; ppLocal++; ppRead++; }
+  }else{
+    if(ppRead<3){ ppRead++; ppLocal=ppRead; }
+  }
+  drawPp();
+});
+document.getElementById('ppReset').addEventListener('click',()=>{
+  ppServer=3; ppLocal=0; ppRead=0; drawPp();
+});
+
+/* ===== ヘッダ ===== */
+let hdFake=false;
+function drawHdr(){
+  const box=document.getElementById('hdBox');
+  if(!hdFake){
+    box.innerHTML=
+`<span class="k">From:</span> 情報ラボ &lt;info@joholab.net&gt;
+<span class="k">To:</span> 田中 &lt;tanaka@example.ne.jp&gt;
+<span class="k">Subject:</span> 教材ページ更新のお知らせ
+<span class="k">Date:</span> Sat, 10 Jan 2026 10:24:11 +0900
+
+<span class="k">Received:</span> from mail.joholab.net (mail.joholab.net)
+        by mx.example.ne.jp; Sat, 10 Jan 2026 10:24:15 +0900
+<span class="k">Received:</span> from webmail.joholab.net
+        by mail.joholab.net; Sat, 10 Jan 2026 10:24:11 +0900
+
+<span class="k">Authentication-Results:</span> mx.example.ne.jp;
+        <span class="w">spf=pass</span> (sender is authorized)
+        <span class="w">dkim=pass</span> (signature verified)
+        <span class="w">dmarc=pass</span>`;
+  }else{
+    box.innerHTML=
+`<span class="k">From:</span> 銀行サポート &lt;support@bank-example.co.jp&gt;
+<span class="k">To:</span> 田中 &lt;tanaka@example.ne.jp&gt;
+<span class="k">Subject:</span> 【重要】口座の確認が必要です
+<span class="k">Date:</span> Sat, 10 Jan 2026 03:12:44 +0900
+
+<span class="k">Received:</span> from <span class="d">unknown-host-47.example-vps.net</span> (203.0.113.88)
+        by mx.example.ne.jp; Sat, 10 Jan 2026 03:12:50 +0900
+        <span class="d">← 銀行とは無関係のサーバーを経由している</span>
+
+<span class="k">Authentication-Results:</span> mx.example.ne.jp;
+        <span class="d">spf=fail</span> (sender is not authorized)
+        <span class="d">dkim=none</span> (no signature)
+        <span class="d">dmarc=fail</span>`;
+  }
+  const m=document.getElementById('hdMsg');
+  if(!hdFake){
+    m.className='msg ok';
+    m.innerHTML='<div class="t">正しいメールです</div>'+
+      '差出人のドメイン（joholab.net）と、経由したサーバー（mail.joholab.net）が一致しています。'+
+      '　<b>spf=pass、dkim=pass、dmarc=pass</b> と、3つの検査すべてを通過しています。';
+  }else{
+    m.className='msg ng';
+    m.innerHTML='<div class="t">なりすましメールです</div>'+
+      '差出人は銀行を名乗っていますが、経由したのは<b>まったく無関係なサーバー</b>です。'+
+      '　検査結果も <b>spf=fail、dkim=none、dmarc=fail</b> とすべて失敗しています。'+
+      '　差出人の欄は自由に書けるので、<b>そこだけを見て信じてはいけません</b>。';
+  }
+}
+document.getElementById('hdNormal').addEventListener('click',()=>{
+  hdFake=false;
+  document.getElementById('hdNormal').setAttribute('aria-pressed','true');
+  document.getElementById('hdFake').setAttribute('aria-pressed','false');
+  drawHdr();
+});
+document.getElementById('hdFake').addEventListener('click',()=>{
+  hdFake=true;
+  document.getElementById('hdNormal').setAttribute('aria-pressed','false');
+  document.getElementById('hdFake').setAttribute('aria-pressed','true');
+  drawHdr();
+});
+
+/* ===== 初期化 ===== */
+drawFl(); drawPp(); drawHdr();
+</script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像をビット演算で合成しよう（AND・OR・二値化・ヒストグラム）｜情報ラボ</title>
+<meta name="description" content="AND演算とOR演算で背景とキャラクターの画像を合成する流れを実際に動かせる無料ツール。二値化としきい値、ヒストグラムの読み方も学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/bitop/">
+<meta property="og:title" content="画像をビット演算で合成しよう｜情報ラボ">
+<meta property="og:description" content="AND・ORで画像を合成する流れを体験する無料教材。二値化とヒストグラムも。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/bitop/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:9px;
+    max-width:100%; margin:0 auto; image-rendering:pixelated;}
+
+  .imgrow{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:flex-start;}
+  .ic{text-align:center;}
+  .ic .cap{font-size:12.5px; color:var(--muted); margin-top:7px; max-width:170px;}
+  .ic .cap b{color:var(--ink); display:block; font-size:13.5px; margin-bottom:2px;}
+  .op{align-self:center; font-size:26px; color:var(--navy); font-weight:700; padding:0 2px;
+    margin-top:-24px;}
+
+  /* 画素の拡大表示 */
+  .pxgrid{display:grid; gap:2px; justify-content:center; margin-top:12px;}
+  .px{width:26px; height:26px; border-radius:3px; font-size:9px; display:flex;
+    align-items:center; justify-content:center; font-family:ui-monospace,Consolas,monospace;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 画像のビット演算</p>
+    <h1>画像をビット演算で合成しよう</h1>
+    <p class="lead">背景の上にキャラクターを重ねる。あの処理は、ANDとORで作られています。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabBin" aria-selected="true" aria-controls="toolBin">二値化とマスク</button>
+    <button class="tab" role="tab" id="tabComp" aria-selected="false" aria-controls="toolComp">合成する</button>
+    <button class="tab" role="tab" id="tabPx" aria-selected="false" aria-controls="toolPx">画素で確かめる</button>
+  </div>
+
+  <!-- ===== 二値化 ===== -->
+  <section class="tool show" id="toolBin" role="tabpanel" aria-labelledby="tabBin">
+    <div class="panel">
+      <h2>まず、キャラクターの形だけを取り出します</h2>
+      <div class="sl">
+        <div class="top"><label for="bnTh">しきい値（この明るさより暗い部分をキャラとする）</label>
+          <span class="val" id="bnThV">128</span></div>
+        <input type="range" id="bnTh" min="10" max="245" step="5" value="128">
+      </div>
+      <p class="hint">白い背景に描かれたキャラクターを、白黒2色に分けます。この作業を二値化といいます。</p>
+    </div>
+
+    <div class="imgrow">
+      <div class="ic">
+        <canvas id="bnSrc" width="170" height="170"></canvas>
+        <p class="cap"><b>元の画像</b>いろいろな明るさの画素が混ざっています</p>
+      </div>
+      <div class="op">→</div>
+      <div class="ic">
+        <canvas id="bnOut" width="170" height="170"></canvas>
+        <p class="cap"><b>二値化したもの</b>黒（1）と白（0）だけになりました</p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>ヒストグラム（どの明るさの画素が何個あるか）</h2>
+      <canvas id="bnHist" width="700" height="180" style="image-rendering:auto;"></canvas>
+      <p class="hint">縦の赤い線がしきい値です。左側（暗い）がキャラ、右側（明るい）が背景になります。</p>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">キャラの画素</div><div class="v" id="bnFg">–</div></div>
+      <div class="stt"><div class="k">背景の画素</div><div class="v" id="bnBg">–</div></div>
+      <div class="stt"><div class="k">全体に占める割合</div><div class="v gold" id="bnPct">–</div></div>
+    </div>
+
+    <div class="msg" id="bnMsg"></div>
+  </section>
+
+  <!-- ===== 合成 ===== -->
+  <section class="tool" id="toolComp" role="tabpanel" aria-labelledby="tabComp">
+    <div class="panel">
+      <h2>AND と OR で、背景の上にキャラクターを重ねます</h2>
+      <div class="row">
+        <button class="primary" id="cpStep">次の手順へ</button>
+        <button class="chip" id="cpReset">最初から</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="cpBg1" aria-pressed="true">背景：空</button>
+        <button class="chip" id="cpBg2" aria-pressed="false">背景：市松模様</button>
+      </div>
+      <p class="hint" id="cpHint"></p>
+    </div>
+
+    <div class="imgrow" id="cpRow"></div>
+
+    <div class="msg" id="cpMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>手順のまとめ</h2>
+      <ol style="margin:0;padding-left:1.3em;font-size:15px;line-height:1.95;" id="cpSteps"></ol>
+    </div>
+  </section>
+
+  <!-- ===== 画素で確かめる ===== -->
+  <section class="tool" id="toolPx" role="tabpanel" aria-labelledby="tabPx">
+    <div class="panel">
+      <h2>1画素ずつ、計算のようすを見ます</h2>
+      <p class="hint" style="margin-top:0;">
+        4×4の小さな画像で確かめます。マスをクリックすると、値を変えられます。
+      </p>
+      <div class="row">
+        <button class="chip" id="pxAnd" aria-pressed="true">AND（両方1なら1）</button>
+        <button class="chip" id="pxOr" aria-pressed="false">OR（どちらか1なら1）</button>
+        <button class="chip" id="pxXor" aria-pressed="false">XOR（違えば1）</button>
+      </div>
+    </div>
+
+    <div class="imgrow">
+      <div class="ic">
+        <div class="pxgrid" id="pxA"></div>
+        <p class="cap"><b>画像A</b>クリックで切替</p>
+      </div>
+      <div class="op" id="pxOp">AND</div>
+      <div class="ic">
+        <div class="pxgrid" id="pxB"></div>
+        <p class="cap"><b>画像B</b>クリックで切替</p>
+      </div>
+      <div class="op">=</div>
+      <div class="ic">
+        <div class="pxgrid" id="pxR"></div>
+        <p class="cap"><b>結果</b>計算した値</p>
+      </div>
+    </div>
+
+    <div class="msg" id="pxMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>演算ごとの働き</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14.5px;">
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">演算</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">画像処理での使い道</th></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;font-weight:700;">AND</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">必要な部分だけを<strong>切り抜く</strong>（マスク処理）</td></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;font-weight:700;">OR</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">2つの画像を<strong>重ね合わせる</strong></td></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;font-weight:700;">XOR</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;"><strong>違いを見つける</strong>（差分の検出）</td></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;font-weight:700;">NOT</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">白黒を<strong>反転させる</strong></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>画像処理は、数値の計算</h2>
+    <p>画像編集ソフトで「背景を透明にする」「切り抜く」「重ねる」といった操作をすると、一瞬で結果が出ます。しかし内部では、すべての画素について地道な計算が行われています。</p>
+    <p>その計算の中心にあるのが、ビット演算です。論理回路で学んだAND・OR・NOT・XORが、そのまま画像処理に使われています。</p>
+
+    <h2>二値化 ― まず形を取り出す</h2>
+    <p>画像を合成するには、どこがキャラクターでどこが背景かを、はっきり区別する必要があります。そこで最初に行うのが二値化です。</p>
+    <p>やり方は単純です。ある明るさを基準に決め、それより暗ければ1（キャラ）、明るければ0（背景）とします。この基準をしきい値（threshold）といいます。</p>
+    <div class="formula">明るさ ＜ しきい値 → 1（キャラ）<br>
+    明るさ ≧ しきい値 → 0（背景）</div>
+    <p>しきい値の選び方が結果を左右します。低すぎるとキャラの一部が消え、高すぎると背景まで拾ってしまいます。上のツールで動かすと、その様子が確かめられます。</p>
+
+    <h3>ヒストグラムで判断する</h3>
+    <p>適切なしきい値を選ぶ手がかりになるのが、ヒストグラムです。横軸に明るさ、縦軸にその明るさを持つ画素の個数をとったグラフです。</p>
+    <p>キャラクターと背景がはっきり分かれている画像では、ヒストグラムに<strong>2つの山</strong>ができます。暗い側の山がキャラ、明るい側の山が背景です。この2つの山の<strong>谷の部分</strong>をしきい値に選ぶと、うまく分離できます。</p>
+    <p>この考え方を自動化した手法もあり、判別分析法（大津の二値化）などが知られています。</p>
+
+    <h2>マスクを使った合成</h2>
+    <p>二値化でできた白黒の画像を、マスクといいます。型紙のようなものです。これを使って合成します。</p>
+
+    <h3>手順</h3>
+    <ol>
+      <li><strong>マスクを作る</strong>：キャラの部分が1、背景が0の画像</li>
+      <li><strong>マスクを反転させる</strong>：NOTで、キャラが0、背景が1にする</li>
+      <li><strong>背景を切り抜く</strong>：背景画像と反転マスクの<strong>AND</strong>。キャラが入る場所が黒く抜ける</li>
+      <li><strong>キャラを切り抜く</strong>：キャラ画像とマスクの<strong>AND</strong>。キャラだけが残り、周りは黒になる</li>
+      <li><strong>重ねる</strong>：3と4の結果の<strong>OR</strong>。黒い部分（0）は相手の値がそのまま出るので、きれいに合わさる</li>
+    </ol>
+    <p>ここでANDとORの性質が効いてきます。ANDは「0との計算は必ず0」なので、不要な部分を消せます。ORは「0との計算は相手の値がそのまま」なので、空いた場所に別の画像をはめ込めます。</p>
+    <p>単純に2枚をORで重ねるだけでは、明るい部分どうしが混ざって白飛びしてしまいます。先にANDで場所を空けておくのが、この手順の要点です。</p>
+
+    <h2>それぞれの演算の使い道</h2>
+    <table>
+      <tr><th>演算</th><th>性質</th><th>画像処理での役割</th></tr>
+      <tr><td class="mono">AND</td><td>0との計算は0になる</td><td>いらない部分を消す（マスク）</td></tr>
+      <tr><td class="mono">OR</td><td>0との計算は相手のまま</td><td>空いた場所に重ねる</td></tr>
+      <tr><td class="mono">XOR</td><td>同じなら0、違えば1</td><td>2枚の違いを見つける</td></tr>
+      <tr><td class="mono">NOT</td><td>0と1を入れかえる</td><td>白黒の反転、マスクの反転</td></tr>
+    </table>
+    <p>XORには面白い性質があります。同じ値で2回XORすると、元に戻るのです。この性質は、暗号や、画面上でカーソルを重ねて描く処理に使われてきました。</p>
+
+    <h2>カラー画像の場合</h2>
+    <p>ここまでは白黒で説明しましたが、カラー画像でも考え方は同じです。赤・緑・青それぞれの数値に対して、同じ演算を行います。</p>
+    <p>たとえば255（すべて1）とのANDは値をそのまま残し、0とのANDはその色を消します。特定の色成分だけを取り出す処理も、この応用です。</p>
+    <p>実際の画像編集ソフトでは、透明度（アルファ値）を使ったより滑らかな合成が行われますが、その土台にあるのは同じ考え方です。</p>
+
+    <h2>身近な応用</h2>
+    <ul>
+      <li><strong>ビデオ会議の背景合成</strong>：人物の輪郭を検出してマスクを作り、背景画像と合成しています</li>
+      <li><strong>クロマキー（グリーンバック）</strong>：特定の色を基準に二値化してマスクを作る手法です</li>
+      <li><strong>写真の切り抜き</strong>：明るさや色の違いから、自動でマスクを生成しています</li>
+      <li><strong>動きの検出</strong>：連続する2枚の画像をXORして、変化した部分を見つけます</li>
+    </ul>
+    <p>身近な機能の多くが、論理演算という単純な計算の組み合わせでできています。</p>
+
+    <h2>アルファチャンネルによる合成</h2>
+    <p>実際の画像編集ソフトでは、ANDとORより滑らかな方法が使われます。透明度を表すアルファチャンネルです。</p>
+    <p>各画素に、色の情報（RGB）に加えて透明度の値を持たせます。0なら完全に透明、255なら完全に不透明。その間の値なら半透明です。</p>
+    <div class="formula">結果 ＝ 前景 × α ＋ 背景 × (1 − α)</div>
+    <p>この計算により、輪郭がなめらかに溶け込みます。ANDとORによる方法では、境界がギザギザになりがちでした。0か1かの二択しかないためです。</p>
+    <p>とはいえ、考え方の土台は同じです。「どこを残し、どこを消すか」を画素ごとに決める。その判断を、白黒の2択にするか、256段階にするかという違いにすぎません。</p>
+
+    <h2>しきい値を自動で決める</h2>
+    <p>二値化のしきい値を人が決めるのは手間ですし、画像ごとに適切な値は変わります。そこで、自動で求める方法が考えられてきました。</p>
+    <p>代表的なのが判別分析法（大津の二値化）です。しきい値で分けた2つのグループについて、グループ内のばらつきが小さく、グループ間の差が大きくなる値を探します。ヒストグラムの谷を数学的に見つける方法だといえます。</p>
+    <p>照明のムラがある画像では、画像全体で1つのしきい値を使うとうまくいきません。その場合は、場所ごとに異なるしきい値を使う適応的二値化が有効です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>二値化とマスク</strong>：しきい値を動かすと、白黒への分かれ方が変わります。ヒストグラムの2つの山と、その谷の位置に注目してください。</li>
+      <li><strong>合成する</strong>：「次の手順へ」を押すと、AND・NOT・ORを使った合成が1段階ずつ進みます。</li>
+      <li><strong>画素で確かめる</strong>：4×4の小さな画像で、1つ1つの計算を確認できます。マスをクリックして値を変えられます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabBin','toolBin'],['tabComp','toolComp'],['tabPx','toolPx']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabComp') drawComp();
+      if(tid==='tabPx') drawPx();
+    });
+  });
+})();
+
+const N=170;
+
+/* ===== 素材を作る ===== */
+function makeChar(S){
+  // 白背景にキャラクター（丸い顔）
+  const c=document.createElement('canvas'); c.width=S; c.height=S;
+  const x=c.getContext('2d');
+  x.fillStyle='#fff'; x.fillRect(0,0,S,S);
+  // 顔
+  x.fillStyle='#4A4A4A';
+  x.beginPath(); x.arc(S*.5,S*.52,S*.30,0,Math.PI*2); x.fill();
+  // 耳
+  x.beginPath(); x.arc(S*.28,S*.26,S*.11,0,Math.PI*2); x.fill();
+  x.beginPath(); x.arc(S*.72,S*.26,S*.11,0,Math.PI*2); x.fill();
+  // 目（白抜き）
+  x.fillStyle='#fff';
+  x.beginPath(); x.arc(S*.40,S*.47,S*.065,0,Math.PI*2); x.fill();
+  x.beginPath(); x.arc(S*.60,S*.47,S*.065,0,Math.PI*2); x.fill();
+  // 口
+  x.strokeStyle='#fff'; x.lineWidth=S*.03; x.lineCap='round';
+  x.beginPath(); x.arc(S*.5,S*.60,S*.10,0.25*Math.PI,0.75*Math.PI); x.stroke();
+  // 少しグラデーション（中間の明るさを作る）
+  const g=x.createLinearGradient(0,0,S,S);
+  g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(1,'rgba(140,140,140,.28)');
+  x.fillStyle=g; x.fillRect(0,0,S,S);
+  return c;
+}
+function makeBg(kind,S){
+  const c=document.createElement('canvas'); c.width=S; c.height=S;
+  const x=c.getContext('2d');
+  if(kind==='sky'){
+    const g=x.createLinearGradient(0,0,0,S);
+    g.addColorStop(0,'#7FB5E8'); g.addColorStop(1,'#DCEBFA');
+    x.fillStyle=g; x.fillRect(0,0,S,S);
+    x.fillStyle='#FFF3B0';
+    x.beginPath(); x.arc(S*.78,S*.20,S*.10,0,Math.PI*2); x.fill();
+    x.fillStyle='rgba(255,255,255,.85)';
+    x.beginPath(); x.ellipse(S*.28,S*.30,S*.15,S*.06,0,0,Math.PI*2); x.fill();
+    x.fillStyle='#8FCB8F';
+    x.fillRect(0,S*.78,S,S*.22);
+  }else{
+    const n=8, w=S/n;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+      x.fillStyle=((i+j)%2)?'#C9D6EA':'#8FA6C4';
+      x.fillRect(i*w,j*w,w,w);
+    }
+  }
+  return c;
+}
+function grayData(cv){
+  const c=cv.getContext('2d',{willReadFrequently:true});
+  return c.getImageData(0,0,cv.width,cv.height);
+}
+function lum(r,g,b){ return 0.299*r+0.587*g+0.114*b; }
+
+const charCv=makeChar(N);
+const charImg=grayData(charCv);
+
+/* ===== 二値化 ===== */
+function drawBin(){
+  const th=+document.getElementById('bnTh').value;
+  document.getElementById('bnThV').textContent=th;
+
+  // 元画像
+  const s=document.getElementById('bnSrc').getContext('2d');
+  s.drawImage(charCv,0,0);
+
+  // 二値化
+  const out=document.getElementById('bnOut');
+  const o=out.getContext('2d');
+  const img=o.createImageData(N,N);
+  let fg=0;
+  const hist=new Array(256).fill(0);
+  for(let i=0;i<N*N;i++){
+    const p=i*4;
+    const v=lum(charImg.data[p],charImg.data[p+1],charImg.data[p+2]);
+    hist[Math.min(255,Math.round(v))]++;
+    const isFg = v<th;
+    if(isFg) fg++;
+    const c = isFg?0:255;
+    img.data[p]=img.data[p+1]=img.data[p+2]=c; img.data[p+3]=255;
+  }
+  o.putImageData(img,0,0);
+
+  // ヒストグラム
+  const hc=document.getElementById('bnHist'), h=hc.getContext('2d');
+  const W=hc.width, H=hc.height, PAD=28;
+  h.fillStyle='#fff'; h.fillRect(0,0,W,H);
+  const mx=Math.max(...hist);
+  h.fillStyle='#2F5496';
+  for(let i=0;i<256;i++){
+    const x=PAD+(i/255)*(W-PAD*2);
+    const bh=(hist[i]/mx)*(H-PAD*1.6);
+    h.fillRect(x, H-PAD-bh, Math.max(1,(W-PAD*2)/256), bh);
+  }
+  // しきい値線
+  const tx=PAD+(th/255)*(W-PAD*2);
+  h.strokeStyle='#C0392B'; h.lineWidth=2.5;
+  h.beginPath(); h.moveTo(tx,8); h.lineTo(tx,H-PAD); h.stroke();
+  h.fillStyle='#C0392B'; h.font='bold 11px sans-serif'; h.textAlign='center';
+  h.fillText('しきい値 '+th, tx, 6+12);
+  h.strokeStyle='#5B6472'; h.lineWidth=1.5;
+  h.beginPath(); h.moveTo(PAD,H-PAD); h.lineTo(W-PAD,H-PAD); h.stroke();
+  h.fillStyle='#5B6472'; h.font='11px sans-serif';
+  for(let k=0;k<=4;k++){
+    const v=k*64>255?255:k*64;
+    h.fillText(v, PAD+(v/255)*(W-PAD*2), H-PAD+16);
+  }
+  h.fillText('暗い　←　明るさ　→　明るい', W/2, H-6);
+
+  const total=N*N;
+  document.getElementById('bnFg').textContent=fg.toLocaleString();
+  document.getElementById('bnBg').textContent=(total-fg).toLocaleString();
+  document.getElementById('bnPct').textContent=(fg/total*100).toFixed(1)+'%';
+
+  const m=document.getElementById('bnMsg');
+  const pct=fg/total*100;
+  if(pct<8){
+    m.className='msg';
+    m.innerHTML='<div class="t">しきい値が低すぎます</div>'+
+      'キャラクターの一部しか拾えていません。もっと明るい側に動かしてみてください。';
+  }else if(pct>55){
+    m.className='msg';
+    m.innerHTML='<div class="t">しきい値が高すぎます</div>'+
+      '背景まで「キャラ」と判定されています。暗い側に戻してみてください。';
+  }else{
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">うまく分かれました（キャラ ${pct.toFixed(1)}%）</div>`+
+      'ヒストグラムを見ると、暗い側と明るい側に<b>2つの山</b>があります。'+
+      'その<b>谷の部分</b>にしきい値を置くと、きれいに分離できます。';
+  }
+}
+document.getElementById('bnTh').addEventListener('input',drawBin);
+
+/* ===== 合成 ===== */
+let cpStep=0, cpBg='sky';
+const CP_STEPS=[
+  {t:'素材を用意する', d:'背景の画像と、キャラクターの画像です。このままでは重ねられません。'},
+  {t:'マスクを作る（二値化）', d:'キャラクターの形だけを白黒で取り出します。白い部分（1）がキャラです。'},
+  {t:'マスクを反転する（NOT）', d:'キャラの部分を0、背景を1にします。次のANDで使います。'},
+  {t:'背景を切り抜く（AND）', d:'背景 AND 反転マスク。キャラが入る場所が<b>黒く抜けます</b>。ANDは0との計算が0になるからです。'},
+  {t:'キャラを切り抜く（AND）', d:'キャラ AND マスク。キャラだけが残り、周りは<b>黒</b>になります。'},
+  {t:'重ね合わせる（OR）', d:'2つをOR。<b>黒（0）の部分には相手の値がそのまま出る</b>ので、きれいに合成されます。'}
+];
+function drawComp(){
+  const S=150;
+  const bg=makeBg(cpBg,S);
+  const ch=makeChar(S);
+  const th=128;
+
+  // マスク（キャラ=白1、背景=黒0）
+  const mask=document.createElement('canvas'); mask.width=S; mask.height=S;
+  {
+    const c=mask.getContext('2d');
+    const src=ch.getContext('2d',{willReadFrequently:true}).getImageData(0,0,S,S);
+    const img=c.createImageData(S,S);
+    for(let i=0;i<S*S;i++){
+      const p=i*4;
+      const v=lum(src.data[p],src.data[p+1],src.data[p+2]);
+      const on = v<th ? 255 : 0;
+      img.data[p]=img.data[p+1]=img.data[p+2]=on; img.data[p+3]=255;
+    }
+    c.putImageData(img,0,0);
+  }
+  // 反転マスク
+  const inv=document.createElement('canvas'); inv.width=S; inv.height=S;
+  {
+    const c=inv.getContext('2d');
+    const src=mask.getContext('2d',{willReadFrequently:true}).getImageData(0,0,S,S);
+    const img=c.createImageData(S,S);
+    for(let i=0;i<S*S;i++){
+      const p=i*4;
+      const v=255-src.data[p];
+      img.data[p]=img.data[p+1]=img.data[p+2]=v; img.data[p+3]=255;
+    }
+    c.putImageData(img,0,0);
+  }
+  function bitop(a,b,op){
+    const r=document.createElement('canvas'); r.width=S; r.height=S;
+    const c=r.getContext('2d');
+    const A=a.getContext('2d',{willReadFrequently:true}).getImageData(0,0,S,S);
+    const B=b.getContext('2d',{willReadFrequently:true}).getImageData(0,0,S,S);
+    const img=c.createImageData(S,S);
+    for(let i=0;i<S*S*4;i+=4){
+      for(let k=0;k<3;k++){
+        img.data[i+k] = op==='and' ? (A.data[i+k] & B.data[i+k])
+                      : op==='or'  ? (A.data[i+k] | B.data[i+k])
+                                   : (A.data[i+k] ^ B.data[i+k]);
+      }
+      img.data[i+3]=255;
+    }
+    c.putImageData(img,0,0);
+    return r;
+  }
+  const bgCut = bitop(bg, inv, 'and');
+  const chCut = bitop(ch, mask, 'and');
+  const final = bitop(bgCut, chCut, 'or');
+
+  const row=document.getElementById('cpRow');
+  const items=[];
+  const push=(cv,lb,sub)=>items.push({cv,lb,sub});
+  if(cpStep===0){ push(bg,'背景',''); push(ch,'キャラクター',''); }
+  else if(cpStep===1){ push(ch,'キャラクター',''); push(mask,'マスク','二値化した結果'); }
+  else if(cpStep===2){ push(mask,'マスク',''); push(inv,'反転マスク','NOTで白黒を逆に'); }
+  else if(cpStep===3){ push(bg,'背景',''); push(inv,'反転マスク',''); push(bgCut,'AND の結果','キャラの場所が黒く抜けた'); }
+  else if(cpStep===4){ push(ch,'キャラクター',''); push(mask,'マスク',''); push(chCut,'AND の結果','キャラだけが残った'); }
+  else { push(bgCut,'背景（抜き）',''); push(chCut,'キャラ（抜き）',''); push(final,'OR の結果','合成できました'); }
+
+  row.innerHTML='';
+  items.forEach((it,i)=>{
+    if(i>0){
+      const o=document.createElement('div'); o.className='op';
+      o.textContent = (cpStep>=3 && i===2) ? '=' : (cpStep===3||cpStep===4 ? 'AND' : (cpStep===5?'OR':'＋'));
+      if(cpStep<3) o.textContent = cpStep===0 ? '＋' : '→';
+      o.style.fontSize = o.textContent.length>1 ? '15px' : '26px';
+      row.appendChild(o);
+    }
+    const d=document.createElement('div'); d.className='ic';
+    const cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+    cv.getContext('2d').drawImage(it.cv,0,0);
+    const cap=document.createElement('p'); cap.className='cap';
+    cap.innerHTML=`<b>${it.lb}</b>${it.sub}`;
+    d.append(cv,cap); row.appendChild(d);
+  });
+
+  const st=CP_STEPS[cpStep];
+  document.getElementById('cpHint').textContent=`手順 ${cpStep+1} / ${CP_STEPS.length}`;
+  const m=document.getElementById('cpMsg');
+  m.className='msg'+(cpStep===CP_STEPS.length-1?' ok':'');
+  m.innerHTML=`<div class="t">${cpStep+1}. ${st.t}</div>${st.d}`;
+  document.getElementById('cpStep').disabled = cpStep>=CP_STEPS.length-1;
+
+  document.getElementById('cpSteps').innerHTML=CP_STEPS.map((s,i)=>
+    `<li style="${i===cpStep?'font-weight:700;color:var(--navy);':''}">${s.t}</li>`).join('');
+}
+document.getElementById('cpStep').addEventListener('click',()=>{ cpStep++; drawComp(); });
+document.getElementById('cpReset').addEventListener('click',()=>{ cpStep=0; drawComp(); });
+document.getElementById('cpBg1').addEventListener('click',()=>{
+  cpBg='sky';
+  document.getElementById('cpBg1').setAttribute('aria-pressed','true');
+  document.getElementById('cpBg2').setAttribute('aria-pressed','false');
+  drawComp();
+});
+document.getElementById('cpBg2').addEventListener('click',()=>{
+  cpBg='check';
+  document.getElementById('cpBg1').setAttribute('aria-pressed','false');
+  document.getElementById('cpBg2').setAttribute('aria-pressed','true');
+  drawComp();
+});
+
+/* ===== 画素で確かめる ===== */
+let pxOpKind='and';
+let pxAv=[1,1,0,0, 1,1,0,0, 0,0,1,1, 0,0,1,1];
+let pxBv=[1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0];
+function pxCalc(a,b){
+  return pxOpKind==='and' ? (a&b) : pxOpKind==='or' ? (a|b) : (a^b);
+}
+function drawPx(){
+  const mk=(el,arr,editable)=>{
+    el.style.gridTemplateColumns='repeat(4,26px)';
+    el.innerHTML='';
+    arr.forEach((v,i)=>{
+      const d=document.createElement('div');
+      d.className='px';
+      d.style.background = v?'#1F3864':'#E7ECF5';
+      d.style.color = v?'#fff':'#8892A4';
+      d.textContent=v;
+      if(editable){ d.style.cursor='pointer';
+        d.addEventListener('click',()=>{ arr[i]^=1; drawPx(); }); }
+      el.appendChild(d);
+    });
+  };
+  mk(document.getElementById('pxA'),pxAv,true);
+  mk(document.getElementById('pxB'),pxBv,true);
+  const res=pxAv.map((v,i)=>pxCalc(v,pxBv[i]));
+  mk(document.getElementById('pxR'),res,false);
+  document.getElementById('pxOp').textContent=pxOpKind.toUpperCase();
+  document.getElementById('pxOp').style.fontSize='15px';
+
+  const ones=res.reduce((a,b)=>a+b,0);
+  const m=document.getElementById('pxMsg');
+  m.className='msg';
+  const desc={
+    and:'両方が1のときだけ1。<b>片方が0なら必ず0</b>になるので、いらない部分を消せます。',
+    or :'どちらかが1なら1。<b>0との計算は相手の値がそのまま</b>出るので、重ね合わせに使えます。',
+    xor:'2つが違うときだけ1。<b>同じ部分は0</b>になるので、変化した箇所を見つけられます。'
+  };
+  m.innerHTML=`<div class="t">${pxOpKind.toUpperCase()} の結果（1の画素：${ones}個 / 16個）</div>`+
+    desc[pxOpKind];
+}
+[['pxAnd','and'],['pxOr','or'],['pxXor','xor']].forEach(([id,k])=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    pxOpKind=k;
+    ['pxAnd','pxOr','pxXor'].forEach(x=>document.getElementById(x).setAttribute('aria-pressed','false'));
+    document.getElementById(id).setAttribute('aria-pressed','true');
+    drawPx();
+  });
+});
+
+/* ===== 初期化 ===== */
+drawBin(); drawComp(); drawPx();
+</script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コンピュータのしくみを知ろう（5大装置・記憶装置・CPU）｜情報ラボ</title>
+<meta name="description" content="コンピュータの5大装置、主記憶と補助記憶の違い、キャッシュの階層を動かして確かめられる無料ツール。速さと容量の関係が体感できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/computer/">
+<meta property="og:title" content="コンピュータのしくみを知ろう｜情報ラボ">
+<meta property="og:description" content="5大装置、記憶の階層、CPUの動きを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/computer/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .fig{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; overflow-x:auto;}
+  .fig svg{display:block; margin:0 auto; min-width:540px;}
+
+  /* 記憶の階層 */
+  .pyramid{display:flex; flex-direction:column; gap:7px; align-items:center;}
+  .lvl{border-radius:9px; padding:12px 16px; color:#fff; text-align:center; cursor:pointer;
+    transition:transform .15s, box-shadow .15s; position:relative;}
+  .lvl:hover{transform:scale(1.02);}
+  .lvl.sel{box-shadow:0 0 0 3px var(--gold);}
+  .lvl .n{font-size:15px; font-weight:700;}
+  .lvl .s{font-size:11.5px; opacity:.85; font-family:ui-monospace,Consolas,monospace;}
+
+  .memstats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .ms{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .ms .k{font-size:11px; color:var(--muted);}
+  .ms .v{font-size:18px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .ms .v.gold{color:var(--gold);}
+
+  /* 装置カード */
+  .devs{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px;}
+  .dev{background:#fff; border:2px solid var(--line); border-radius:11px; padding:14px;
+    cursor:pointer; transition:all .15s;}
+  .dev:hover{border-color:var(--navy);}
+  .dev.sel{border-color:var(--navy); background:#EEF3FB;}
+  .dev .ic{font-size:26px;}
+  .dev h3{margin:4px 0 3px; font-size:15.5px; color:var(--ink);}
+  .dev p{margin:0; font-size:13px; color:var(--muted);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ コンピュータのしくみ</p>
+    <h1>コンピュータのしくみを知ろう</h1>
+    <p class="lead">箱の中では、5つの役割が分担して働いています。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab5" aria-selected="true" aria-controls="tool5">5つの装置</button>
+    <button class="tab" role="tab" id="tabMem" aria-selected="false" aria-controls="toolMem">記憶の階層</button>
+    <button class="tab" role="tab" id="tabCpu" aria-selected="false" aria-controls="toolCpu">CPUの動き</button>
+  </div>
+
+  <!-- ===== 5大装置 ===== -->
+  <section class="tool show" id="tool5" role="tabpanel" aria-labelledby="tab5">
+    <div class="panel">
+      <h2>装置をクリックすると、役割が表示されます</h2>
+      <p class="hint" style="margin-top:0;">
+        赤い矢印がデータの流れ、青い矢印が命令（指示）の流れです。
+      </p>
+    </div>
+
+    <div class="fig"><svg id="dvSvg" viewBox="0 0 600 300" width="100%" height="300"></svg></div>
+
+    <div class="devs" id="dvCards" style="margin-top:16px;"></div>
+
+    <div class="msg" id="dvMsg"></div>
+  </section>
+
+  <!-- ===== 記憶の階層 ===== -->
+  <section class="tool" id="toolMem" role="tabpanel" aria-labelledby="tabMem">
+    <div class="panel">
+      <h2>速いものは小さく、大きいものは遅い</h2>
+      <p class="hint" style="margin-top:0;">
+        クリックすると、それぞれの特徴が表示されます。上にいくほど速く、下にいくほど大容量です。
+      </p>
+    </div>
+
+    <div class="pyramid" id="mmPyr"></div>
+
+    <div class="memstats">
+      <div class="ms"><div class="k">おおよその容量</div><div class="v" id="mmCap">–</div></div>
+      <div class="ms"><div class="k">読み書きの速さ</div><div class="v gold" id="mmSpd">–</div></div>
+      <div class="ms"><div class="k">電源を切ると</div><div class="v" id="mmVol" style="font-size:15px;">–</div></div>
+      <div class="ms"><div class="k">1GBあたりの値段</div><div class="v" id="mmCost">–</div></div>
+    </div>
+
+    <div class="msg" id="mmMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>体感してみましょう</h2>
+      <p class="hint" style="margin-top:0;">
+        CPUから見た「待ち時間」を、人の感覚に置きかえるとこうなります。
+      </p>
+      <div id="mmScale"></div>
+    </div>
+  </section>
+
+  <!-- ===== CPU ===== -->
+  <section class="tool" id="toolCpu" role="tabpanel" aria-labelledby="tabCpu">
+    <div class="panel">
+      <h2>CPUは、この4段階をひたすら繰り返しています</h2>
+      <div class="row">
+        <button class="primary" id="cpNext">次の段階へ</button>
+        <button class="chip" id="cpAuto">連続で動かす</button>
+        <button class="chip" id="cpRst">最初から</button>
+      </div>
+      <p class="hint" id="cpHint"></p>
+    </div>
+
+    <div class="fig"><svg id="cpSvg" viewBox="0 0 600 260" width="100%" height="260"></svg></div>
+
+    <div class="msg" id="cpMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>性能を決めるもの</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14.5px;">
+        <tr><th style="border:1px solid var(--line);padding:9px 12px;background:var(--panel);width:9em;text-align:left;">クロック周波数</th>
+            <td style="border:1px solid var(--line);padding:9px 12px;">1秒間に何回の周期で動くか。3GHzなら1秒に30億回。同じ設計なら高いほうが速い</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:9px 12px;background:var(--panel);text-align:left;">コア数</th>
+            <td style="border:1px solid var(--line);padding:9px 12px;">計算する部分がいくつあるか。8コアなら8つの処理を同時に進められる</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:9px 12px;background:var(--panel);text-align:left;">キャッシュ容量</th>
+            <td style="border:1px solid var(--line);padding:9px 12px;">CPU内部の高速な記憶。大きいほど主記憶を待つ回数が減る</td></tr>
+      </table>
+      <p class="hint">
+        クロック周波数だけでは性能は決まりません。設計世代が違えば、同じ周波数でも処理能力は大きく変わります。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>コンピュータの5大装置</h2>
+    <p>形は違っても、コンピュータの基本構造は共通しています。5つの装置が役割を分担しています。</p>
+    <table>
+      <tr><th>装置</th><th>役割</th><th>具体例</th></tr>
+      <tr><td>入力装置</td><td>外から情報を取り込む</td><td>キーボード、マウス、カメラ、センサー</td></tr>
+      <tr><td>出力装置</td><td>結果を外に出す</td><td>ディスプレイ、スピーカー、プリンタ</td></tr>
+      <tr><td>記憶装置</td><td>データや命令を覚えておく</td><td>メモリ、SSD、ハードディスク</td></tr>
+      <tr><td>演算装置</td><td>計算や判断を行う</td><td>CPU の一部</td></tr>
+      <tr><td>制御装置</td><td>他の装置に指示を出す</td><td>CPU の一部</td></tr>
+    </table>
+    <p>演算装置と制御装置をまとめて、中央処理装置（CPU）と呼びます。人間でいえば頭脳にあたる部分です。</p>
+    <p>スマートフォンも、洗濯機の制御基板も、この構造を持っています。センサーが入力、モーターが出力、というだけの違いです。</p>
+
+    <h3>プログラム内蔵方式</h3>
+    <p>現在のコンピュータには、重要な特徴があります。<strong>プログラムもデータと同じように記憶装置に置かれる</strong>という点です。これをプログラム内蔵方式（ノイマン型）といいます。</p>
+    <p>この方式のおかげで、同じ機械で別のプログラムを動かせます。ソフトを入れかえるだけで、文書作成にも、動画編集にも、ゲームにもなる。当たり前に思えますが、これは大きな発明でした。初期のコンピュータは、配線を組みかえないと別の計算ができなかったのです。</p>
+
+    <h2>記憶装置の階層</h2>
+    <p>記憶装置には、いくつもの種類があります。なぜ1種類で済ませないのでしょうか。</p>
+    <p>理由は単純です。<strong>速い記憶は高価で小さく、安い記憶は遅い</strong>からです。すべてを最速の記憶にすると値段が非現実的になり、すべてを安い記憶にすると動作が遅くなりすぎます。</p>
+    <p>そこで、速さと容量の異なる記憶を階層的に組み合わせます。</p>
+    <table>
+      <tr><th>種類</th><th>容量の目安</th><th>速さの目安</th><th>電源を切ると</th></tr>
+      <tr><td>レジスタ</td><td class="mono">数百バイト</td><td>最速</td><td>消える</td></tr>
+      <tr><td>キャッシュ</td><td class="mono">数MB〜数十MB</td><td>非常に速い</td><td>消える</td></tr>
+      <tr><td>主記憶（メモリ）</td><td class="mono">8〜32GB</td><td>速い</td><td>消える</td></tr>
+      <tr><td>SSD</td><td class="mono">256GB〜2TB</td><td>やや遅い</td><td>残る</td></tr>
+      <tr><td>ハードディスク</td><td class="mono">1〜20TB</td><td>遅い</td><td>残る</td></tr>
+    </table>
+
+    <h3>主記憶と補助記憶</h3>
+    <p>大きく2つに分けると、主記憶と補助記憶になります。</p>
+    <p><strong>主記憶（メインメモリ、RAM）</strong>は、いま使っているデータやプログラムを置く場所です。速い代わりに、<strong>電源を切ると内容が消えます</strong>。これを揮発性といいます。作業机の上にたとえられます。</p>
+    <p><strong>補助記憶（ストレージ）</strong>は、SSDやハードディスクのことです。遅い代わりに大容量で、<strong>電源を切っても内容が残ります</strong>。本棚にあたります。</p>
+    <p>パソコンが固まったときに再起動すると作業中のデータが消えるのは、主記憶が揮発性だからです。「こまめに保存」とは、主記憶の内容を補助記憶に書き出すことを指しています。</p>
+
+    <h3>キャッシュ ― 速さの差を埋める工夫</h3>
+    <p>CPUの計算速度に対して、主記憶の読み書きは遅すぎます。CPUがデータを待つ間、何もできない時間が生まれてしまいます。</p>
+    <p>そこで、CPUの近くに小さくて高速な記憶を置きます。これがキャッシュメモリです。よく使うデータをここに置いておけば、主記憶まで取りに行く回数が減ります。</p>
+    <p>キャッシュにデータがあることをヒット、なければミスといいます。ヒット率が高いほど、全体の処理が速くなります。</p>
+
+    <h3>速さの差を実感する</h3>
+    <p>CPUから見た待ち時間を、人の感覚に置きかえてみます。CPUが1回計算する時間を1秒とすると、こうなります。</p>
+    <div class="formula">キャッシュ：数秒　／　主記憶：約2分　／　SSD：数日　／　ハードディスク：数か月</div>
+    <p>この差があるため、階層構造とキャッシュの工夫が欠かせません。プログラムを速くする技術の多くが、この待ち時間をいかに減らすかという話でもあります。</p>
+
+    <h2>CPUの動き</h2>
+    <p>CPUは、次の4段階を延々と繰り返しています。</p>
+    <ol>
+      <li><strong>命令を読み出す（フェッチ）</strong>：主記憶から次の命令を取ってくる</li>
+      <li><strong>命令を解読する（デコード）</strong>：何をすべき命令かを判断する</li>
+      <li><strong>実行する</strong>：計算や、データの移動を行う</li>
+      <li><strong>結果を書き込む</strong>：結果を記憶装置に戻す</li>
+    </ol>
+    <p>この繰り返しを、1秒間に何十億回という速さで行っています。どんなに複雑なソフトも、この単純な繰り返しの積み重ねで動いています。</p>
+
+    <h3>性能を表す数値</h3>
+    <p><strong>クロック周波数</strong>は、1秒間に何回の周期で動作するかを表します。3GHzなら1秒間に30億回です。ただし、周波数だけで性能は決まりません。1回の周期でどれだけの処理ができるかは、設計によって違うからです。</p>
+    <p><strong>コア数</strong>は、計算する部分がいくつあるかを示します。8コアなら、8つの処理を同時に進められます。ただし、プログラムが並行処理に対応していなければ、コアが増えても速くなりません。</p>
+
+    <h2>入出力と周辺機器</h2>
+    <p>入力装置と出力装置は、コンピュータと外の世界をつなぐ窓口です。近年、その種類が急速に増えました。</p>
+    <p>スマートフォンには、タッチパネル、カメラ、マイクに加えて、加速度センサー、ジャイロセンサー、GPS、明るさセンサーなど、多数の入力装置が入っています。画面の向きが自動で変わるのも、暗い場所で画面が暗くなるのも、こうしたセンサーの働きです。</p>
+    <p>出力も画面や音だけではありません。振動、モーターの回転、LEDの点灯。IoT機器では、センサーで測ってモーターを動かすという流れが基本になります。エアコンや自動ドアも、この構造を持った小さなコンピュータです。</p>
+
+    <h2>ソフトウェアとの関係</h2>
+    <p>ハードウェアだけでは、コンピュータは何もできません。動かすためのソフトウェアが必要です。</p>
+    <table>
+      <tr><th>種類</th><th>役割</th><th>例</th></tr>
+      <tr><td>基本ソフトウェア（OS）</td><td>ハードウェアを管理し、アプリに使わせる</td><td>Windows、macOS、Android、iOS</td></tr>
+      <tr><td>応用ソフトウェア</td><td>目的の作業を行う</td><td>ブラウザ、表計算、ゲーム</td></tr>
+    </table>
+    <p>OSがあるおかげで、アプリを作る人は装置の細かい違いを気にせずに済みます。メモリの割り当て、ファイルの管理、複数のアプリの切り替え。こうした面倒な仕事をOSが引き受けているのです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>5つの装置</strong>：図の装置をクリックすると、役割と具体例が表示されます。データと命令の流れも色分けしています。</li>
+      <li><strong>記憶の階層</strong>：ピラミッドの各段をクリックすると、容量・速さ・値段を比べられます。人の感覚に置きかえた表示もあります。</li>
+      <li><strong>CPUの動き</strong>：命令の読み出しから実行までを、1段階ずつ追えます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tab5','tool5'],['tabMem','toolMem'],['tabCpu','toolCpu']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabMem') drawMem();
+      if(tid==='tabCpu') drawCpu();
+    });
+  });
+})();
+
+const WIRE='#C9D2E0', NAVY='#2F5496', RED='#C0392B';
+
+/* ===== 5大装置 ===== */
+const DEVS=[
+  {id:'in', ic:'⌨️', n:'入力装置', s:'外から情報を取り込む',
+   d:'人や環境からの情報を、コンピュータが扱える形にして取り込みます。',
+   ex:'キーボード、マウス、タッチパネル、カメラ、マイク、各種センサー'},
+  {id:'ctl', ic:'🎛️', n:'制御装置', s:'他の装置に指示を出す',
+   d:'記憶装置から命令を読み出し、解読して、他の装置に指示を出します。CPUの一部です。',
+   ex:'CPU内部の制御ユニット'},
+  {id:'alu', ic:'🧮', n:'演算装置', s:'計算や判断を行う',
+   d:'足し算などの計算や、大小の比較といった判断を行います。CPUの一部です。',
+   ex:'CPU内部の演算ユニット（ALU）'},
+  {id:'mem', ic:'💾', n:'記憶装置', s:'データと命令を覚えておく',
+   d:'プログラムもデータも、ここに置かれます。主記憶と補助記憶に分かれます。',
+   ex:'メモリ（RAM）、SSD、ハードディスク、USBメモリ'},
+  {id:'out', ic:'🖥️', n:'出力装置', s:'結果を外に出す',
+   d:'処理した結果を、人が分かる形や他の機器が使える形にして出します。',
+   ex:'ディスプレイ、スピーカー、プリンタ、モーター'}
+];
+let dvSel='ctl';
+function drawDv(){
+  const svg=document.getElementById('dvSvg');
+  const pos={in:[70,150], mem:[300,58], ctl:[300,150], alu:[300,242], out:[530,150]};
+  // データの流れ（赤）／命令の流れ（青）
+  const flows=[
+    {a:'in', b:'mem', c:RED},
+    {a:'mem', b:'out', c:RED},
+    {a:'mem', b:'alu', c:RED},
+    {a:'alu', b:'mem', c:RED},
+    {a:'ctl', b:'in', c:NAVY},
+    {a:'ctl', b:'mem', c:NAVY},
+    {a:'ctl', b:'alu', c:NAVY},
+    {a:'ctl', b:'out', c:NAVY}
+  ];
+  let h='';
+  flows.forEach(f=>{
+    const A=pos[f.a], B=pos[f.b];
+    const hot = dvSel===f.a || dvSel===f.b;
+    const col = hot? f.c : WIRE;
+    const w = hot?3:2;
+    const dash = f.c===NAVY ? '6,4' : '';
+    // 少しずらして重ならないように
+    const dx=(B[0]-A[0]), dy=(B[1]-A[1]);
+    const len=Math.hypot(dx,dy);
+    const ux=dx/len, uy=dy/len;
+    const x1=A[0]+ux*40, y1=A[1]+uy*32;
+    const x2=B[0]-ux*44, y2=B[1]-uy*36;
+    h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}"
+        stroke-width="${w}" stroke-dasharray="${dash}"/>`;
+    h+=`<polygon points="${x2},${y2} ${x2-ux*9-uy*5},${y2-uy*9+ux*5} ${x2-ux*9+uy*5},${y2-uy*9-ux*5}"
+        fill="${col}"/>`;
+  });
+  DEVS.forEach(d=>{
+    const [x,y]=pos[d.id];
+    const sel=dvSel===d.id;
+    h+=`<g style="cursor:pointer" data-dev="${d.id}">
+      <rect x="${x-46}" y="${y-30}" width="92" height="60" rx="11"
+        fill="${sel?'#EEF3FB':'#fff'}" stroke="${sel?NAVY:WIRE}" stroke-width="${sel?3:2}"/>
+      <text x="${x}" y="${y-4}" text-anchor="middle" font-size="20">${d.ic}</text>
+      <text x="${x}" y="${y+18}" text-anchor="middle" font-size="11.5" font-weight="700"
+        fill="#1F3864">${d.n}</text></g>`;
+  });
+  // 凡例
+  h+=`<line x1="20" y1="284" x2="52" y2="284" stroke="${RED}" stroke-width="3"/>
+    <text x="58" y="288" font-size="11" fill="#5B6472">データの流れ</text>
+    <line x1="150" y1="284" x2="182" y2="284" stroke="${NAVY}" stroke-width="3" stroke-dasharray="6,4"/>
+    <text x="188" y="288" font-size="11" fill="#5B6472">命令（指示）の流れ</text>
+    <text x="300" y="14" text-anchor="middle" font-size="11" fill="#9AA3B0">
+      制御装置＋演算装置 ＝ CPU</text>`;
+  svg.innerHTML=h;
+  svg.querySelectorAll('[data-dev]').forEach(el=>{
+    el.addEventListener('click',()=>{ dvSel=el.dataset.dev; drawDv(); });
+  });
+
+  const box=document.getElementById('dvCards');
+  box.innerHTML=DEVS.map(d=>
+    `<div class="dev${dvSel===d.id?' sel':''}" data-card="${d.id}">
+      <div class="ic">${d.ic}</div><h3>${d.n}</h3><p>${d.s}</p></div>`).join('');
+  box.querySelectorAll('[data-card]').forEach(el=>{
+    el.addEventListener('click',()=>{ dvSel=el.dataset.card; drawDv(); });
+  });
+
+  const d=DEVS.find(x=>x.id===dvSel);
+  const m=document.getElementById('dvMsg');
+  m.className='msg';
+  m.innerHTML=`<div class="t">${d.ic} ${d.n}</div>${d.d}<br>`+
+    `<span style="font-size:13.5px;opacity:.85;">例：${d.ex}</span>`+
+    (d.id==='ctl'||d.id==='alu'
+      ? '<br><b>制御装置と演算装置を合わせて、CPU（中央処理装置）と呼びます。</b>' : '');
+}
+
+/* ===== 記憶の階層 ===== */
+const MEM=[
+  {n:'レジスタ', s:'CPUの中', w:150, c:'#1F3864',
+   cap:'数百バイト', spd:'1 ナノ秒未満', vol:'消える', cost:'—',
+   d:'CPUが計算に使う、いちばん近い記憶です。極めて小さく、極めて速い。',
+   human:'1秒'},
+  {n:'キャッシュ', s:'CPUの中', w:220, c:'#2F5496',
+   cap:'数MB〜数十MB', spd:'数ナノ秒', vol:'消える', cost:'非常に高い',
+   d:'よく使うデータを置いておく場所です。ここにあれば、主記憶まで取りに行かずに済みます。',
+   human:'数秒'},
+  {n:'主記憶（メモリ）', s:'RAM', w:300, c:'#3E7B5C',
+   cap:'8〜32GB', spd:'約100ナノ秒', vol:'消える', cost:'約400円',
+   d:'いま使っているプログラムやデータを置く場所です。作業机にあたります。電源を切ると消えます。',
+   human:'約2分'},
+  {n:'SSD', s:'補助記憶', w:390, c:'#B07A1E',
+   cap:'256GB〜2TB', spd:'約0.1ミリ秒', vol:'残る', cost:'約10円',
+   d:'電源を切っても消えない記憶です。ハードディスクより速く、いまの主流です。',
+   human:'約1日'},
+  {n:'ハードディスク', s:'補助記憶', w:470, c:'#8E4B6B',
+   cap:'1〜20TB', spd:'約10ミリ秒', vol:'残る', cost:'約3円',
+   d:'円盤を回して読み書きします。遅い代わりに、大容量が安く手に入ります。',
+   human:'約4か月'}
+];
+let mmSel=2;
+function drawMem(){
+  const box=document.getElementById('mmPyr');
+  box.innerHTML=MEM.map((m,i)=>
+    `<div class="lvl${mmSel===i?' sel':''}" data-mm="${i}"
+      style="width:${m.w}px;background:${m.c};">
+      <div class="n">${m.n}</div><div class="s">${m.s}</div></div>`).join('');
+  box.querySelectorAll('[data-mm]').forEach(el=>{
+    el.addEventListener('click',()=>{ mmSel=+el.dataset.mm; drawMem(); });
+  });
+
+  const m=MEM[mmSel];
+  document.getElementById('mmCap').textContent=m.cap;
+  document.getElementById('mmSpd').textContent=m.spd;
+  document.getElementById('mmVol').textContent=m.vol;
+  document.getElementById('mmCost').textContent=m.cost;
+
+  const msg=document.getElementById('mmMsg');
+  msg.className='msg';
+  msg.innerHTML=`<div class="t">${m.n}</div>${m.d}`+
+    (m.vol==='消える'
+      ? '　<b>揮発性</b>のため、電源を切ると内容が失われます。'
+      : '　<b>不揮発性</b>のため、電源を切っても内容が残ります。');
+
+  document.getElementById('mmScale').innerHTML=
+    '<div style="display:flex;flex-direction:column;gap:7px;">'+
+    MEM.map((x,i)=>
+      `<div style="display:flex;align-items:center;gap:12px;
+        ${i===mmSel?'font-weight:700;':''}">
+        <span style="flex:0 0 8.5em;font-size:13.5px;color:${i===mmSel?'var(--navy)':'var(--ink)'};">${x.n}</span>
+        <span style="flex:0 0 5em;font-family:ui-monospace,monospace;font-size:14px;
+          color:${i===mmSel?'var(--gold)':'var(--muted)'};">${x.human}</span>
+        <span style="font-size:12.5px;color:var(--muted);">${x.spd}</span>
+      </div>`).join('')+'</div>'+
+    '<p class="hint" style="margin-top:10px;">'+
+    'CPUが1回計算する時間を「1秒」としたときの、待ち時間の目安です。'+
+    'ハードディスクの読み書きが、CPUにとってどれほど長い待ち時間かが分かります。</p>';
+}
+
+/* ===== CPU ===== */
+const CPU=[
+  {t:'命令を読み出す（フェッチ）', d:'主記憶から、次に実行する命令を取ってきます。どこから取るかは、プログラムカウンタが覚えています。'},
+  {t:'命令を解読する（デコード）', d:'取ってきた命令が何を指示しているのかを、制御装置が解読します。'},
+  {t:'実行する', d:'解読した内容にしたがって、演算装置が計算を行います。'},
+  {t:'結果を書き込む', d:'計算の結果を、記憶装置に書き戻します。そして次の命令へ。この繰り返しです。'}
+];
+let cpStep=0, cpTimer=null;
+function drawCpu(){
+  const svg=document.getElementById('cpSvg');
+  const stages=[[95,80],[235,80],[375,80],[515,80]];
+  let h='';
+  // 主記憶
+  const memHot = cpStep===0 || cpStep===3;
+  h+=`<rect x="180" y="185" width="240" height="52" rx="10"
+    fill="${memHot?'#EEF3FB':'#fff'}" stroke="${memHot?NAVY:WIRE}" stroke-width="${memHot?3:2}"/>
+    <text x="300" y="217" text-anchor="middle" font-size="13.5" font-weight="700"
+      fill="#1F3864">💾 主記憶（メモリ）</text>`;
+  // 矢印（CPU⇔主記憶）
+  if(cpStep===0){
+    h+=`<path d="M240 185 L120 106" stroke="${NAVY}" stroke-width="3" fill="none"/>
+      <polygon points="120,106 132,110 128,120" fill="${NAVY}"/>
+      <text x="150" y="160" font-size="11" font-weight="700" fill="${NAVY}">命令を取得</text>`;
+  }
+  if(cpStep===3){
+    h+=`<path d="M515 106 L360 185" stroke="${NAVY}" stroke-width="3" fill="none"/>
+      <polygon points="360,185 372,175 376,187" fill="${NAVY}"/>
+      <text x="430" y="152" font-size="11" font-weight="700" fill="${NAVY}">結果を書込</text>`;
+  }
+  // 4段階
+  stages.forEach((p,i)=>{
+    const on=cpStep===i;
+    h+=`<circle cx="${p[0]}" cy="${p[1]}" r="34"
+      fill="${on?NAVY:'#fff'}" stroke="${on?NAVY:WIRE}" stroke-width="${on?3:2}"/>
+      <text x="${p[0]}" y="${p[1]+7}" text-anchor="middle" font-size="19" font-weight="700"
+        fill="${on?'#fff':'#9AA3B0'}" font-family="ui-monospace,monospace">${i+1}</text>
+      <text x="${p[0]}" y="${p[1]+56}" text-anchor="middle" font-size="11"
+        font-weight="${on?'700':'400'}" fill="${on?'#1F3864':'#5B6472'}">
+        ${['読み出し','解読','実行','書き込み'][i]}</text>`;
+    if(i<3){
+      h+=`<line x1="${p[0]+36}" y1="${p[1]}" x2="${stages[i+1][0]-38}" y2="${p[1]}"
+        stroke="${WIRE}" stroke-width="2"/>
+        <polygon points="${stages[i+1][0]-38},${p[1]} ${stages[i+1][0]-48},${p[1]-5} ${stages[i+1][0]-48},${p[1]+5}"
+        fill="${WIRE}"/>`;
+    }
+  });
+  // ループ矢印
+  h+=`<path d="M515 46 Q300 -8 95 46" fill="none" stroke="${WIRE}" stroke-width="2" stroke-dasharray="5,4"/>
+    <polygon points="95,46 106,40 106,52" fill="${WIRE}"/>
+    <text x="300" y="18" text-anchor="middle" font-size="11" fill="#9AA3B0">繰り返し</text>`;
+  h+=`<text x="300" y="252" text-anchor="middle" font-size="10.5" fill="#9AA3B0">
+    CPUはこの4段階を、1秒間に何十億回も繰り返しています</text>`;
+  svg.innerHTML=h;
+
+  const s=CPU[cpStep];
+  document.getElementById('cpHint').textContent=`段階 ${cpStep+1} / 4`;
+  const m=document.getElementById('cpMsg');
+  m.className='msg';
+  m.innerHTML=`<div class="t">${cpStep+1}. ${s.t}</div>${s.d}`;
+}
+document.getElementById('cpNext').addEventListener('click',()=>{
+  cpStep=(cpStep+1)%4; drawCpu();
+});
+document.getElementById('cpRst').addEventListener('click',()=>{
+  if(cpTimer){clearInterval(cpTimer);cpTimer=null;
+    document.getElementById('cpAuto').textContent='連続で動かす';}
+  cpStep=0; drawCpu();
+});
+document.getElementById('cpAuto').addEventListener('click',e=>{
+  if(cpTimer){ clearInterval(cpTimer); cpTimer=null; e.target.textContent='連続で動かす'; }
+  else{ e.target.textContent='とめる';
+    cpTimer=setInterval(()=>{ cpStep=(cpStep+1)%4; drawCpu(); },1100); }
+});
+
+/* ===== 初期化 ===== */
+drawDv(); drawMem(); drawCpu();
+</script>
+</body>
+</html>

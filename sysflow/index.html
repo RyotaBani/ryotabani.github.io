@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情報システムとデータの流れ（証明書・認証・データベース）｜情報ラボ</title>
+<meta name="description" content="役所・請求者・提出先の三者間で情報を安全にやり取りするしくみを、手順を追って確かめられる無料ツール。紙の証明書と電子的な確認の違いが分かります。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/sysflow/">
+<meta property="og:title" content="情報システムとデータの流れ｜情報ラボ">
+<meta property="og:description" content="三者間で情報を安全にやり取りするしくみを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/sysflow/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .fig{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; overflow-x:auto;}
+  .fig svg{display:block; margin:0 auto; min-width:560px;}
+
+  .steps{display:flex; flex-direction:column; gap:7px; margin-top:14px;}
+  .stp{display:flex; gap:11px; align-items:flex-start; background:#fff; border:1px solid var(--line);
+    border-radius:9px; padding:10px 14px; font-size:13.5px; color:var(--muted);}
+  .stp .n{flex:0 0 24px; height:24px; border-radius:6px; background:var(--panel2);
+    color:var(--muted); display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700;}
+  .stp.now{border-color:var(--navy); background:#EEF3FB; color:var(--ink);}
+  .stp.now .n{background:var(--navy); color:#fff;}
+  .stp.done{border-color:var(--ok); background:#F1F8F3;}
+  .stp.done .n{background:var(--ok); color:#fff;}
+
+  /* データベース表 */
+  table.db{border-collapse:collapse; width:100%; font-size:13.5px;
+    font-family:ui-monospace,Consolas,monospace;}
+  table.db th{background:var(--navy); color:#fff; padding:8px 10px; border:1px solid var(--line);
+    font-family:inherit; font-size:12.5px;}
+  table.db td{padding:7px 10px; border:1px solid var(--line); background:#fff; text-align:center;}
+  table.db tr.hit td{background:#FFF6DC;}
+  table.db td.key{color:var(--navy); font-weight:700;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .cmp2{display:flex; gap:14px; flex-wrap:wrap;}
+  .cmp2 .c{flex:1 1 300px; background:#fff; border:1px solid var(--line);
+    border-radius:11px; padding:16px;}
+  .cmp2 .c h3{margin:0 0 8px; font-size:16px;}
+  .cmp2 .c.old h3{color:var(--muted);}
+  .cmp2 .c.new h3{color:var(--ok);}
+  .cmp2 .c ul{margin:0; padding-left:1.25em; font-size:14px; line-height:1.85;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 情報システムとデータの流れ</p>
+    <h1>情報システムとデータの流れ</h1>
+    <p class="lead">「この住所で間違いありません」を、どうやって証明するのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabPaper" aria-selected="true" aria-controls="toolPaper">紙でのやり取り</button>
+    <button class="tab" role="tab" id="tabDigi" aria-selected="false" aria-controls="toolDigi">電子的なやり取り</button>
+    <button class="tab" role="tab" id="tabDb" aria-selected="false" aria-controls="toolDb">データベース</button>
+  </div>
+
+  <!-- ===== 紙 ===== -->
+  <section class="tool show" id="toolPaper" role="tabpanel" aria-labelledby="tabPaper">
+    <div class="panel">
+      <h2>住民票を取って、提出する場合</h2>
+      <div class="row">
+        <button class="primary" id="paNext">次へ進む</button>
+        <button class="chip" id="paReset">最初から</button>
+      </div>
+      <p class="hint">田中さんが、勤め先に住所の証明を出す場面を考えます。</p>
+    </div>
+
+    <div class="fig"><svg id="paSvg" viewBox="0 0 620 230" width="100%" height="230"></svg></div>
+
+    <div class="steps" id="paSteps"></div>
+    <div class="msg" id="paMsg"></div>
+  </section>
+
+  <!-- ===== 電子 ===== -->
+  <section class="tool" id="toolDigi" role="tabpanel" aria-labelledby="tabDigi">
+    <div class="panel">
+      <h2>システムで直接やり取りする場合</h2>
+      <div class="row">
+        <button class="primary" id="diNext">次へ進む</button>
+        <button class="chip" id="diReset">最初から</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="diTamper">途中で書きかえてみる</button>
+      </div>
+      <p class="hint">紙を介さずに、必要な情報だけを確認する方法です。</p>
+    </div>
+
+    <div class="fig"><svg id="diSvg" viewBox="0 0 620 230" width="100%" height="230"></svg></div>
+
+    <div class="steps" id="diSteps"></div>
+    <div class="msg" id="diMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>2つの方法を比べる</h2>
+      <div class="cmp2">
+        <div class="c old">
+          <h3>紙でのやり取り</h3>
+          <ul>
+            <li>本人が役所へ行く必要がある</li>
+            <li>手数料と時間がかかる</li>
+            <li>紙は<strong>偽造されうる</strong></li>
+            <li>住所以外の情報も相手に見える</li>
+            <li>発行した時点の情報で固定される</li>
+          </ul>
+        </div>
+        <div class="c new">
+          <h3>電子的なやり取り</h3>
+          <ul>
+            <li>その場で手続きが完了する</li>
+            <li>役所の窓口業務が減る</li>
+            <li>電子署名で<strong>改ざんを検出できる</strong></li>
+            <li><strong>必要な情報だけ</strong>を渡せる</li>
+            <li>つねに最新の情報を確認できる</li>
+          </ul>
+        </div>
+      </div>
+      <p class="hint">
+        ただし電子化には、システム障害への備え、なりすまし対策、機器を使えない人への配慮といった課題もあります。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== データベース ===== -->
+  <section class="tool" id="toolDb" role="tabpanel" aria-labelledby="tabDb">
+    <div class="panel">
+      <h2>情報は表として管理されています</h2>
+      <div class="row">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">検索する</span>
+        <button class="chip" data-q="all" aria-pressed="true">全部見る</button>
+        <button class="chip" data-q="city">中央区の人だけ</button>
+        <button class="chip" data-q="age">20歳以上の人だけ</button>
+        <button class="chip" data-q="one">住民番号 1003 の人</button>
+      </div>
+      <p class="hint" id="dbHint"></p>
+    </div>
+
+    <div class="panel">
+      <div style="overflow-x:auto;"><table class="db" id="dbTable"></table></div>
+    </div>
+
+    <div class="msg" id="dbMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>必要な情報だけを渡す</h2>
+      <div class="row">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">提出先に見せる項目</span>
+        <label class="chip" style="cursor:pointer;"><input type="checkbox" class="dbc" value="name" checked> 氏名</label>
+        <label class="chip" style="cursor:pointer;"><input type="checkbox" class="dbc" value="addr" checked> 住所</label>
+        <label class="chip" style="cursor:pointer;"><input type="checkbox" class="dbc" value="birth"> 生年月日</label>
+        <label class="chip" style="cursor:pointer;"><input type="checkbox" class="dbc" value="family"> 家族構成</label>
+      </div>
+      <div style="overflow-x:auto;margin-top:14px;">
+        <table class="db" id="dbShare"></table>
+      </div>
+      <p class="hint" id="dbShareMsg"></p>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>情報システムとは</h2>
+    <p>情報を集め、保存し、処理し、必要なときに取り出す。この一連の働きを担う仕組みを情報システムといいます。</p>
+    <p>身近な例なら、コンビニのレジ（POSシステム）、電車の改札、銀行のATM、学校の成績処理。どれも、データベースとネットワークとプログラムの組み合わせでできています。</p>
+
+    <h2>証明という問題</h2>
+    <p>ここで考えたいのは、「自分の情報が正しいことを、どうやって相手に示すか」という問題です。</p>
+    <p>自分で「私の住所はここです」と言うだけでは、相手は信用できません。誰でも好きなことを書けるからです。そこで、<strong>第三者に証明してもらう</strong>という方法がとられてきました。</p>
+
+    <h3>紙による証明</h3>
+    <p>住民票がその代表です。役所が「この人の住所はここで間違いない」と証明した紙を発行し、それを提出先に渡します。</p>
+    <p>この方法には、いくつもの手間があります。本人が役所へ行き、手数料を払い、紙を受け取り、提出先へ持っていく。役所側も、窓口で対応する人手が必要です。</p>
+    <p>さらに問題もあります。紙は偽造されうること。住所を証明したいだけなのに、<strong>本籍や家族構成など余計な情報まで相手に見えてしまう</strong>こと。そして、発行した時点の情報で固定されるため、その後に引っ越しても紙は古いままだということです。</p>
+
+    <h3>電子的な確認</h3>
+    <p>システムどうしを直接つなげば、こうした手間の多くがなくなります。</p>
+    <p>提出先が「この人の住所を確認したい」と要求し、本人が同意し、役所のシステムが答える。紙は介在しません。役所は窓口対応をせず、本人も出向く必要がありません。</p>
+    <p>そして重要なのは、<strong>必要な項目だけを渡せる</strong>という点です。住所の確認なら住所だけ。家族構成は渡しません。これはプライバシーの保護として大きな意味があります。</p>
+
+    <h2>改ざんをどう防ぐか</h2>
+    <p>電子的なやり取りには、別の心配があります。データは簡単に書きかえられるという点です。</p>
+    <p>そこで使われるのが電子署名です。役所が回答に署名を付け、提出先がその署名を確かめます。途中で1文字でも書きかえられていれば、署名の検証に失敗します。</p>
+    <p>電子署名が保証するのは2つです。<strong>本当に役所が発行したものか（本人性）</strong>と、<strong>途中で書きかえられていないか（完全性）</strong>です。紙のハンコより、むしろ強い証明になります。</p>
+    <p>上のツールで「途中で書きかえてみる」を試すと、検出される様子が確かめられます。</p>
+
+    <h2>データベース</h2>
+    <p>情報システムの中心にあるのがデータベースです。大量のデータを、決まった形で整理して保存する仕組みです。</p>
+    <p>最も広く使われているのが、表の形でデータを持つ関係データベースです。行が1件のデータ、列が項目にあたります。</p>
+    <table>
+      <tr><th>用語</th><th>意味</th></tr>
+      <tr><td>テーブル（表）</td><td>データのまとまり</td></tr>
+      <tr><td>レコード（行）</td><td>1件分のデータ</td></tr>
+      <tr><td>フィールド（列）</td><td>項目。氏名、住所など</td></tr>
+      <tr><td>主キー</td><td>各行を一意に識別する項目。重複しない</td></tr>
+    </table>
+
+    <h3>主キーの役割</h3>
+    <p>同姓同名の人がいても区別できるよう、重複しない番号を割り当てます。これが主キーです。住民番号、学籍番号、社員番号などがこれにあたります。</p>
+    <p>氏名を主キーにできないのは、同じ名前の人がいるからです。氏名と生年月日を組み合わせても、完全とはいえません。だから専用の番号を用意します。</p>
+
+    <h3>データベースが持つべき性質</h3>
+    <ul>
+      <li><strong>一貫性</strong>：矛盾したデータが入らないこと</li>
+      <li><strong>同時実行制御</strong>：複数の人が同時に操作しても、おかしくならないこと</li>
+      <li><strong>障害からの回復</strong>：途中で止まっても、中途半端な状態を残さないこと</li>
+    </ul>
+    <p>銀行の振込を考えると分かりやすいでしょう。「Aから引く」と「Bに足す」の途中で障害が起きたら、お金が消えてしまいます。両方が成功するか、両方とも取り消されるか。この単位をトランザクションといいます。</p>
+
+    <h2>個人情報を扱う責任</h2>
+    <p>便利さの一方で、個人情報を扱うシステムには重い責任が伴います。</p>
+    <p><strong>目的外に使わない</strong>こと。集めたときに示した目的以外に使うのは、法律で制限されています。</p>
+    <p><strong>必要最小限にとどめる</strong>こと。住所の確認に家族構成は要りません。渡す情報を絞ることが、そのまま安全につながります。</p>
+    <p><strong>集約のリスクを理解する</strong>こと。散らばっていれば問題にならない情報も、1か所に集まると個人が特定されやすくなります。だから、複数のシステムを安易につなぐことには慎重さが求められます。</p>
+    <p><strong>本人が確認・訂正できる</strong>こと。自分の情報がどう扱われているかを知り、誤りがあれば直せる。これは本人の権利として保障されています。</p>
+
+    <h2>マイナンバーカードのしくみ</h2>
+    <p>電子的な本人確認の具体例が、マイナンバーカードです。カードのICチップには電子証明書が入っており、これを使って「本人であること」を証明します。</p>
+    <p>重要なのは、<strong>チップの中にマイナンバー以外の個人情報は入っていない</strong>という点です。氏名や住所を証明する必要があるとき、カードは「本人である」ことだけを示し、実際の情報は必要に応じて役所のシステムから取得されます。</p>
+    <p>また、各機関は同じマイナンバーを共有しているわけではありません。機関ごとに異なる符号を使い、必要なときだけ照会する仕組みになっています。1か所が破られてもすべてが漏れないようにするための設計です。</p>
+
+    <h2>システムを止めないための備え</h2>
+    <p>電子化には利点が多い一方、システムが止まると業務全体が止まるという弱点があります。紙なら手作業で続けられたことが、できなくなります。</p>
+    <p>そこで、いくつもの備えが用意されます。同じ機器を二重に用意しておく冗長化、離れた場所にデータの複製を置くバックアップ、障害時に切り替える予備システムの準備。金融や行政のシステムでは、こうした対策が欠かせません。</p>
+    <p>2023年前後には、行政システムの障害や、公金受取口座の誤登録といった問題も報じられました。便利さと確実さをどう両立させるかは、いまも取り組みが続いている課題です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>紙でのやり取り</strong>：住民票を取って提出するまでの流れを、1段階ずつ追えます。</li>
+      <li><strong>電子的なやり取り</strong>：システムで直接確認する流れを追えます。「途中で書きかえてみる」で、改ざんが検出される様子も確かめられます。</li>
+      <li><strong>データベース</strong>：表からの検索と、必要な項目だけを渡す考え方を体験できます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabPaper','toolPaper'],['tabDigi','toolDigi'],['tabDb','toolDb']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabDigi') drawDi();
+      if(tid==='tabDb') drawDb();
+    });
+  });
+})();
+
+const WIRE='#C9D2E0', NAVY='#2F5496', OKC='#2E7D4F', NGC='#C0392B', GOLD='#C49A2B';
+
+function actors(hot, extra){
+  const P=[[95,110,'🏛️','役所'],[310,110,'🧑','田中さん'],[525,110,'🏢','勤め先']];
+  let h='';
+  P.forEach((p,i)=>{
+    const on=hot.includes(i);
+    h+=`<circle cx="${p[0]}" cy="${p[1]}" r="36" fill="${on?'#EEF3FB':'#fff'}"
+      stroke="${on?NAVY:WIRE}" stroke-width="${on?3:2}"/>
+      <text x="${p[0]}" y="${p[1]+10}" text-anchor="middle" font-size="27">${p[2]}</text>
+      <text x="${p[0]}" y="${p[1]+58}" text-anchor="middle" font-size="12.5"
+        font-weight="700" fill="#1F3864">${p[3]}</text>`;
+  });
+  return h+(extra||'');
+}
+function arrow(x1,x2,y,lb,col,dash){
+  const dir = x2>x1 ? 1 : -1;
+  const a=x1+dir*40, b=x2-dir*44;
+  return `<line x1="${a}" y1="${y}" x2="${b}" y2="${y}" stroke="${col}" stroke-width="3"
+    stroke-dasharray="${dash||''}"/>
+    <polygon points="${b},${y} ${b-dir*11},${y-6} ${b-dir*11},${y+6}" fill="${col}"/>
+    <text x="${(a+b)/2}" y="${y-11}" text-anchor="middle" font-size="11.5"
+      font-weight="700" fill="${col}">${lb}</text>`;
+}
+
+/* ===== 紙 ===== */
+const PA=[
+  {t:'勤め先から求められる', d:'「住所を証明する書類を出してください」と言われました。',
+   f:()=>actors([1,2])+arrow(525,310,110,'書類を出して',WIRE,'6,4')},
+  {t:'役所へ行く', d:'田中さんが役所の窓口へ出向きます。<b>時間と交通費がかかります。</b>',
+   f:()=>actors([0,1])+arrow(310,95,110,'発行してほしい',NAVY)},
+  {t:'住民票を発行してもらう', d:'手数料を払い、住民票を受け取ります。<b>役所の窓口業務が発生します。</b>',
+   f:()=>actors([0,1])+arrow(95,310,110,'📄 住民票',NAVY)},
+  {t:'勤め先へ提出する', d:'受け取った紙を、勤め先に提出します。',
+   f:()=>actors([1,2])+arrow(310,525,110,'📄 住民票',NAVY)},
+  {t:'確認して完了', d:'勤め先が内容を確認します。ただし<b>住所以外の情報も見えてしまいます</b>。'+
+     'また、この紙は<b>発行した時点</b>の情報です。',
+   f:()=>actors([2])+`<text x="525" y="60" text-anchor="middle" font-size="20">✅</text>`}
+];
+let paStep=0;
+function drawPa(){
+  document.getElementById('paSvg').innerHTML=PA[paStep].f();
+  document.getElementById('paSteps').innerHTML=PA.map((s,i)=>
+    `<div class="stp${i===paStep?' now':(i<paStep?' done':'')}">
+      <div class="n">${i+1}</div><div>${s.t}</div></div>`).join('');
+  const m=document.getElementById('paMsg');
+  m.className='msg'+(paStep===PA.length-1?' ok':'');
+  m.innerHTML=`<div class="t">${paStep+1}. ${PA[paStep].t}</div>${PA[paStep].d}`;
+  document.getElementById('paNext').disabled = paStep>=PA.length-1;
+}
+document.getElementById('paNext').addEventListener('click',()=>{ paStep++; drawPa(); });
+document.getElementById('paReset').addEventListener('click',()=>{ paStep=0; drawPa(); });
+
+/* ===== 電子 ===== */
+let diStep=0, diTampered=false;
+function diFrames(){
+  return [
+    {t:'勤め先が確認を要求', d:'「住所を確認したい」という要求が、システムを通じて送られます。',
+     f:()=>actors([1,2])+arrow(525,310,110,'住所を確認したい',WIRE,'6,4')},
+    {t:'本人が同意する', d:'田中さんが「住所の項目だけ」の提供に同意します。<b>本人の同意が起点</b>です。',
+     f:()=>actors([1])+`<text x="310" y="52" text-anchor="middle" font-size="19">👌 同意</text>`},
+    {t:'役所のシステムに問い合わせ', d:'同意にもとづき、役所のシステムへ照会が送られます。',
+     f:()=>actors([0,1])+arrow(310,95,110,'照会',NAVY)},
+    {t:'署名つきで回答', d:'役所が住所を回答し、<b>電子署名</b>を付けます。誰が発行したかと、'+
+       '書きかえられていないことを示すためです。',
+     f:()=>actors([0,2])+arrow(95,525,168,'住所 ＋ 🔏電子署名',NAVY)},
+    {t: diTampered?'署名の検証に失敗':'署名を検証して完了',
+     d: diTampered
+       ? '<b>途中でデータが書きかえられました。</b>署名の検証に失敗したので、'+
+         '勤め先は<b>この回答を受け付けません</b>。改ざんは必ず検出されます。'
+       : '署名が正しいことを確認できました。<b>住所だけ</b>が渡り、'+
+         '家族構成などは伝わっていません。紙も窓口も不要でした。',
+     f:()=> diTampered
+       ? actors([2])+`<text x="525" y="58" text-anchor="middle" font-size="20">⚠️</text>`+
+         `<text x="310" y="168" text-anchor="middle" font-size="13" font-weight="700"
+          fill="${NGC}">✗ 検証エラー</text>`
+       : actors([2])+`<text x="525" y="58" text-anchor="middle" font-size="20">✅</text>`+
+         `<text x="310" y="168" text-anchor="middle" font-size="13" font-weight="700"
+          fill="${OKC}">✓ 署名 OK</text>`}
+  ];
+}
+function drawDi(){
+  const F=diFrames();
+  document.getElementById('diSvg').innerHTML=F[diStep].f();
+  document.getElementById('diSteps').innerHTML=F.map((s,i)=>
+    `<div class="stp${i===diStep?' now':(i<diStep?' done':'')}">
+      <div class="n">${i+1}</div><div>${s.t}</div></div>`).join('');
+  const m=document.getElementById('diMsg');
+  const last = diStep===F.length-1;
+  m.className='msg'+(last ? (diTampered?' ng':' ok') : '');
+  m.innerHTML=`<div class="t">${diStep+1}. ${F[diStep].t}</div>${F[diStep].d}`;
+  document.getElementById('diNext').disabled = diStep>=F.length-1;
+}
+document.getElementById('diNext').addEventListener('click',()=>{ diStep++; drawDi(); });
+document.getElementById('diReset').addEventListener('click',()=>{
+  diStep=0; diTampered=false; drawDi();
+});
+document.getElementById('diTamper').addEventListener('click',()=>{
+  diTampered=true; diStep=4; drawDi();
+});
+
+/* ===== データベース ===== */
+const DB=[
+  {no:'1001', name:'田中 一郎', addr:'中央区 1-2-3', birth:'2008-04-12', family:'3人'},
+  {no:'1002', name:'鈴木 花子', addr:'北区 5-6-7',   birth:'2007-11-30', family:'4人'},
+  {no:'1003', name:'佐藤 次郎', addr:'中央区 8-9-1', birth:'2005-02-08', family:'2人'},
+  {no:'1004', name:'高橋 三郎', addr:'南区 2-4-6',   birth:'2009-07-21', family:'5人'},
+  {no:'1005', name:'伊藤 桜',   addr:'中央区 3-3-3', birth:'2004-09-15', family:'1人'}
+];
+const COL={no:'住民番号',name:'氏名',addr:'住所',birth:'生年月日',family:'家族構成'};
+let dbQ='all';
+function age(b){
+  const d=new Date(b), n=new Date('2026-01-01');
+  let a=n.getFullYear()-d.getFullYear();
+  const md=(n.getMonth()-d.getMonth())||(n.getDate()-d.getDate());
+  if(md<0) a--;
+  return a;
+}
+function drawDb(){
+  const hit=DB.map(r=>{
+    if(dbQ==='all') return true;
+    if(dbQ==='city') return r.addr.startsWith('中央区');
+    if(dbQ==='age') return age(r.birth)>=20;
+    return r.no==='1003';
+  });
+  const keys=['no','name','addr','birth','family'];
+  let h='<tr>'+keys.map(k=>`<th>${COL[k]}${k==='no'?'<br><span style="font-size:10px;opacity:.8;">（主キー）</span>':''}</th>`).join('')+'</tr>';
+  DB.forEach((r,i)=>{
+    h+=`<tr class="${hit[i]?'hit':''}" style="${hit[i]?'':'opacity:.3;'}">`+
+      keys.map(k=>`<td class="${k==='no'?'key':''}">${r[k]}</td>`).join('')+'</tr>';
+  });
+  document.getElementById('dbTable').innerHTML=h;
+
+  const n=hit.filter(Boolean).length;
+  const q={all:'条件なし（すべての行）',city:'住所が「中央区」で始まる行',
+    age:'2026年1月時点で20歳以上の行',one:'住民番号が 1003 の行'}[dbQ];
+  document.getElementById('dbHint').textContent=
+    '主キー（住民番号）は、行を1つに特定するための項目です。重複しません。';
+  const m=document.getElementById('dbMsg');
+  m.className='msg';
+  m.innerHTML=`<div class="t">${n}件 が見つかりました</div>`+
+    `条件：${q}　`+
+    (dbQ==='one'
+      ? '　主キーで検索すると、<b>必ず1件だけ</b>が特定されます。同姓同名がいても区別できるのは、このためです。'
+      : '　このように、条件に合う行だけを取り出す操作を<b>選択</b>といいます。');
+  drawShare();
+}
+function drawShare(){
+  const checked=[...document.querySelectorAll('.dbc')].filter(c=>c.checked).map(c=>c.value);
+  const r=DB[0];
+  let h='<tr>'+checked.map(k=>`<th>${COL[k]}</th>`).join('')+'</tr>';
+  h+='<tr>'+checked.map(k=>`<td>${r[k]}</td>`).join('')+'</tr>';
+  if(checked.length===0) h='<tr><th>（項目が選ばれていません）</th></tr>';
+  document.getElementById('dbShare').innerHTML=h;
+  const hidden=['name','addr','birth','family'].filter(k=>!checked.includes(k));
+  document.getElementById('dbShareMsg').innerHTML=
+    checked.length===0 ? '1つ以上の項目を選んでください。'
+    : `提出先に見えるのは、上の <b>${checked.length}項目</b>だけです。`+
+      (hidden.length
+        ? `　${hidden.map(k=>COL[k]).join('・')} は伝わりません。`+
+          `<b>必要な情報だけを渡す</b>ことが、プライバシーの保護につながります。`
+        : '　すべての項目を渡しています。本当に必要か、考えてみてください。');
+}
+document.querySelectorAll('[data-q]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-q]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    dbQ=b.dataset.q; drawDb();
+  });
+});
+document.querySelectorAll('.dbc').forEach(c=>c.addEventListener('change',drawShare));
+
+/* ===== 初期化 ===== */
+drawPa(); drawDi(); drawDb();
+</script>
+</body>
+</html>
