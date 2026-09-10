@@ -87,6 +87,25 @@
   .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
   .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
 
+  /* チェックディジット */
+  .cdcode{display:flex; gap:5px; justify-content:center; flex-wrap:wrap; align-items:flex-end;}
+  .cdd{text-align:center;}
+  .cdd .box{width:44px; height:52px; border-radius:8px; border:2px solid var(--line);
+    background:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:ui-monospace,Consolas,monospace; font-size:21px; font-weight:700; color:var(--ink);
+    cursor:pointer; transition:all .15s;}
+  .cdd .box:hover{border-color:var(--navy);}
+  .cdd .box.chk{border-color:var(--gold); border-style:dashed; background:#FFF9E8; color:#8a5b00;}
+  .cdd .box.err{border-color:var(--ng); background:#FBEEEE; color:var(--ng);}
+  .cdd .w{font-size:11px; color:var(--muted); margin-top:4px;
+    font-family:ui-monospace,Consolas,monospace;}
+  .cdd .w.x3{color:var(--navy); font-weight:700;}
+
+  .cdcalc{background:#141c2e; color:#dbe4f5; border-radius:10px; padding:14px 16px;
+    font-family:ui-monospace,Consolas,monospace; font-size:13.5px; line-height:1.95;
+    overflow-x:auto; white-space:pre-wrap;}
+  .cdcalc b{color:#ffd97a;}
+
   /* 1次元パリティ */
   .bits{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; align-items:flex-end;}
   .bit{text-align:center;}
@@ -137,6 +156,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tabMagic" aria-selected="true" aria-controls="toolMagic">マジックをやってみる</button>
     <button class="tab" role="tab" id="tabBit" aria-selected="false" aria-controls="toolBit">パリティビットの基本</button>
+    <button class="tab" role="tab" id="tabCd" aria-selected="false" aria-controls="toolCd">チェックディジット</button>
     <button class="tab" role="tab" id="tabLimit" aria-selected="false" aria-controls="toolLimit">できないこと</button>
   </div>
 
@@ -194,6 +214,45 @@
     <div class="panel">
       <h2>受け取った側は、こう確かめます</h2>
       <p style="margin:0;font-size:15px;" id="bExplain"></p>
+    </div>
+  </section>
+
+  <!-- ===== チェックディジット ===== -->
+  <section class="tool" id="toolCd" role="tabpanel" aria-labelledby="tabCd">
+    <div class="panel">
+      <h2>本や商品の番号にも、検査用の数字が入っています</h2>
+      <div class="row">
+        <button class="chip" id="cdJan" aria-pressed="true">商品バーコード（JAN・13桁）</button>
+        <button class="chip" id="cdIsbn" aria-pressed="false">本のISBN（13桁）</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="cdNew">別の番号にする</button>
+      </div>
+      <p class="hint" id="cdHint"></p>
+    </div>
+
+    <div class="panel">
+      <h2>番号（数字をクリックすると変えられます）</h2>
+      <div class="cdcode" id="cdCode"></div>
+      <p class="hint" style="text-align:center;">
+        いちばん右の点線の枠が<strong>チェックディジット</strong>です。他の12桁から計算で求まります。
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>計算のようす</h2>
+      <div class="cdcalc" id="cdCalc"></div>
+    </div>
+
+    <div class="msg" id="cdMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>打ち間違いを起こしてみましょう</h2>
+      <div class="row">
+        <button class="chip" id="cdErr1">1桁だけ間違える</button>
+        <button class="chip" id="cdErrSwap">となりの2桁を入れかえる</button>
+        <button class="chip" id="cdFix">正しい番号に戻す</button>
+      </div>
+      <p class="hint">よくある入力ミスを再現します。検査で見つかるでしょうか。</p>
     </div>
   </section>
 
@@ -302,10 +361,25 @@
     </table>
     <p>これらは、番号を手で入力したときの打ち間違いを見つけるための仕組みです。1桁打ち間違えたり、隣どうしの数字を入れ替えたりすると、計算が合わなくなります。パリティビットと同じく、<strong>少しの情報を足しておくことで、間違いに気づけるようにする</strong>という発想です。</p>
 
+    <h2>チェックディジット</h2>
+    <p>パリティと同じ考え方は、身近な番号にも使われています。本や商品の番号の最後についている1桁が、それです。チェックディジットといいます。</p>
+    <p>商品バーコード（JANコード）と本のISBNは、どちらも13桁で、同じ計算方法を使っています。</p>
+    <ol>
+      <li>左から数えて奇数番目の数字を、そのまま合計する</li>
+      <li>偶数番目の数字を合計して、3倍する</li>
+      <li>1と2を足す</li>
+      <li>合計を10で割った余りを求める</li>
+      <li>10からその余りを引いた値が、チェックディジット（余りが0なら0）</li>
+    </ol>
+    <p>なぜ位置によって1倍と3倍を使い分けるのでしょうか。すべて1倍で足すだけだと、<strong>隣り合った数字を入れかえても合計が変わりません</strong>。「12」を「21」と打ち間違えても気づけないのです。重みを変えることで、こうした入れかえミスも検出できるようになります。</p>
+    <p>この方式で見つけられるのは、1桁の打ち間違いのすべてと、隣り合う2桁の入れかえのほとんどです。ただし完全ではなく、差が5になる組み合わせの入れかえだけは見逃します。上のツールで実際に試せます。</p>
+    <p>レジで商品をスキャンしたとき、読み取りに失敗すると「ピッ」と鳴らずにやり直しになります。あれは、この計算が合わなかったということです。</p>
+
     <h2>使い方</h2>
     <ul>
       <li><strong>マジックをやってみる</strong>：4つのステップで進みます。パリティビットを追加したあと、好きなカードを1枚クリックして裏返し、「当てる」を押してください。</li>
       <li><strong>パリティビットの基本</strong>：7ビットのデータに1ビット足す様子を確認できます。1ビット壊してみると、検査で見つかります。</li>
+      <li><strong>チェックディジット</strong>：バーコードやISBNの検査用の数字を、計算過程とともに確認できます。打ち間違いを起こして、検出されるか試せます。</li>
       <li><strong>できないこと</strong>：2枚や4枚裏返したときに何が起きるかを試せます。この仕組みの限界が分かります。</li>
     </ul>
     <p>授業では、実際にカードや磁石を並べて演示してから、このツールで種明かしをすると効果的です。</p>
@@ -334,14 +408,14 @@
     <a href="/charcode/">文字コード</a>
     <a href="/bits/">データはすべて0と1</a>
     <a href="/parity/">パリティマジック</a>
-    <a href="/password/">パスワードの強さ</a>
-    <a href="/crypto/">暗号のしくみ</a>
-    <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/logic/">論理回路</a>
     <a href="/algorithm/">アルゴリズム</a>
     <a href="/network/">ネットワークのしくみ</a>
     <a href="/simulation/">シミュレーション</a>
     <a href="/dataviz/">データの分析</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
   </div>
 </div>
@@ -349,7 +423,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabMagic','toolMagic'],['tabBit','toolBit'],['tabLimit','toolLimit']];
+  const tabs=[['tabMagic','toolMagic'],['tabBit','toolBit'],['tabCd','toolCd'],['tabLimit','toolLimit']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -357,6 +431,7 @@
         document.getElementById(t).setAttribute('aria-selected',String(on));
         document.getElementById(p).classList.toggle('show',on);
       });
+      if(tid==='tabCd') drawCd();
     });
   });
 })();
@@ -643,7 +718,138 @@ document.getElementById('lCheck').addEventListener('click',()=>{
   }
 });
 
+/* ===== チェックディジット ===== */
+let cdKind='jan', cdBase=[], cdOrig=[], cdErrIdx=-1;
+
+function cdRandom(){
+  if(cdKind==='jan'){
+    // 日本の事業者は 45 または 49 で始まる
+    cdBase=[4,9].concat(Array.from({length:10},()=>Math.floor(Math.random()*10)));
+  }else{
+    // ISBN-13 は 978 または 979 で始まる
+    cdBase=[9,7,8,4].concat(Array.from({length:8},()=>Math.floor(Math.random()*10)));
+  }
+  cdOrig=[...cdBase]; cdErrIdx=-1;
+  drawCd();
+}
+function cdCheckDigit(d12){
+  // JAN/EAN-13・ISBN-13 共通：奇数位×1＋偶数位×3 の合計から求める
+  let sum=0;
+  d12.forEach((v,i)=>{ sum += (i%2===0) ? v : v*3; });
+  return (10 - sum%10) % 10;
+}
+function drawCd(){
+  const box=document.getElementById('cdCode');
+  const cd=cdCheckDigit(cdBase);
+  const shown = cdOrig.length ? cdCheckDigit(cdOrig) : cd;
+  box.innerHTML='';
+  cdBase.forEach((v,i)=>{
+    const d=document.createElement('div'); d.className='cdd';
+    const b=document.createElement('div');
+    b.className='box'+(cdErrIdx===i?' err':'');
+    b.textContent=v;
+    b.addEventListener('click',()=>{
+      cdBase[i]=(cdBase[i]+1)%10;
+      cdErrIdx=-1;
+      drawCd();
+    });
+    const w=document.createElement('div');
+    w.className='w'+(i%2===1?' x3':'');
+    w.textContent = i%2===1 ? '×3' : '×1';
+    d.append(b,w); box.appendChild(d);
+  });
+  // チェックディジット欄（記録されている値を表示）
+  const d=document.createElement('div'); d.className='cdd';
+  const b=document.createElement('div');
+  b.className='box chk'; b.textContent=shown; b.style.cursor='default';
+  const w=document.createElement('div'); w.className='w'; w.textContent='検査';
+  d.append(b,w); box.appendChild(d);
+
+  // 計算過程
+  let odd=0, even=0, lines='';
+  const oddNums=[], evenNums=[];
+  cdBase.forEach((v,i)=>{
+    if(i%2===0){ odd+=v; oddNums.push(v); }
+    else { even+=v; evenNums.push(v); }
+  });
+  const sum=odd+even*3;
+  const calc=document.getElementById('cdCalc');
+  calc.innerHTML=
+    `奇数番目（×1）： ${oddNums.join(' + ')} = ${odd}\n`+
+    `偶数番目（×3）：(${evenNums.join(' + ')}) × 3 = ${even} × 3 = ${even*3}\n`+
+    `合計：${odd} + ${even*3} = <b>${sum}</b>\n`+
+    `10で割った余り：${sum} ÷ 10 の余りは <b>${sum%10}</b>\n`+
+    `検査用の数字：10 − ${sum%10} = <b>${cd}</b>${sum%10===0?'（余りが0のときは0）':''}`;
+
+  const m=document.getElementById('cdMsg');
+  const ok = cd===shown;
+  m.className='msg '+(ok?'ok':'ng');
+  if(ok){
+    m.innerHTML='<div class="t">正しい番号です</div>'+
+      `12桁から計算した検査用の数字 <b>${cd}</b> と、記録されている数字 <b>${shown}</b> が一致しました。`+
+      '入力ミスは見つかりませんでした。';
+  }else{
+    m.innerHTML='<div class="t">誤りが見つかりました</div>'+
+      `12桁から計算すると <b>${cd}</b> になるはずですが、記録されている数字は <b>${shown}</b> です。`+
+      'どこかを打ち間違えています。<b>レジやシステムは、この不一致で即座に気づきます。</b>';
+  }
+
+  document.getElementById('cdHint').textContent = cdKind==='jan'
+    ? '商品のバーコードは13桁。日本の事業者は 45 または 49 で始まります。最後の1桁が検査用です。'
+    : '本のISBNは13桁。978 または 979 で始まり、日本の書籍は続けて 4 が入ります。最後の1桁が検査用です。';
+}
+document.getElementById('cdJan').addEventListener('click',()=>{
+  cdKind='jan';
+  document.getElementById('cdJan').setAttribute('aria-pressed','true');
+  document.getElementById('cdIsbn').setAttribute('aria-pressed','false');
+  cdRandom();
+});
+document.getElementById('cdIsbn').addEventListener('click',()=>{
+  cdKind='isbn';
+  document.getElementById('cdJan').setAttribute('aria-pressed','false');
+  document.getElementById('cdIsbn').setAttribute('aria-pressed','true');
+  cdRandom();
+});
+document.getElementById('cdNew').addEventListener('click',cdRandom);
+document.getElementById('cdErr1').addEventListener('click',()=>{
+  cdBase=[...cdOrig];
+  const i=Math.floor(Math.random()*cdBase.length);
+  cdBase[i]=(cdBase[i]+1+Math.floor(Math.random()*8))%10;
+  cdErrIdx=i;
+  drawCd();
+  const m=document.getElementById('cdMsg');
+  m.innerHTML=`<div class="t">${i+1}桁目を打ち間違えました</div>`+m.innerHTML.split('</div>')[1];
+});
+document.getElementById('cdErrSwap').addEventListener('click',()=>{
+  cdBase=[...cdOrig];
+  let i;
+  let tries=0;
+  do{ i=Math.floor(Math.random()*(cdBase.length-1)); tries++; }
+  while(cdBase[i]===cdBase[i+1] && tries<30);
+  [cdBase[i],cdBase[i+1]]=[cdBase[i+1],cdBase[i]];
+  cdErrIdx=i;
+  drawCd();
+  const cd=cdCheckDigit(cdBase), shown=cdCheckDigit(cdOrig);
+  const m=document.getElementById('cdMsg');
+  if(cd===shown){
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">見つけられませんでした</div>`+
+      `${i+1}桁目と${i+2}桁目を入れかえましたが、検査用の数字は <b>${cd}</b> のまま変わりません。`+
+      'この方式では、<b>差が5になる隣り合った2桁の入れかえ</b>を見逃すことがあります。'+
+      '完全ではないものの、ほとんどの打ち間違いは見つけられます。';
+  }else{
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">入れかえを検出しました</div>`+
+      `${i+1}桁目と${i+2}桁目を入れかえた結果、検査用の数字が <b>${shown}</b> から <b>${cd}</b> に変わりました。`+
+      '桁の位置によって×1と×3が入れかわるため、多くの場合こうしたミスも見つけられます。';
+  }
+});
+document.getElementById('cdFix').addEventListener('click',()=>{
+  cdBase=[...cdOrig]; cdErrIdx=-1; drawCd();
+});
+
 /* ===== 初期化 ===== */
+cdRandom();
 document.getElementById('mNew').click();
 drawBits();
 newLimit();
