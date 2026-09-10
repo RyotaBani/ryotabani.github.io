@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パリティマジック｜誤りを見つけるしくみを体験しよう｜情報ラボ</title>
+<meta name="description" content="カードを1枚裏返すだけで、どこが変わったかを言い当てる「パリティマジック」を体験できる無料ツール。誤り検出のしくみ、パリティビット、検出の限界まで学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/parity/">
+<meta property="og:title" content="パリティマジック｜情報ラボ">
+<meta property="og:description" content="1枚裏返すと必ず見つかる。誤り検出のしくみを手品で体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/parity/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --on:#E8342A; --off:#3A3A3A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  button.gold{background:var(--gold);} button.gold:hover{background:#dbae3c;}
+
+  /* ステップ表示 */
+  .steps{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .st{flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; font-size:13.5px; color:var(--muted); transition:all .2s;}
+  .st b{display:block; font-size:12px; color:var(--muted);}
+  .st.now{border-color:var(--navy); background:#EEF3FB; color:var(--ink); font-weight:700;}
+  .st.now b{color:var(--navy);}
+  .st.done{border-color:var(--ok); background:#F1F8F3; color:var(--ok);}
+  .st.done b{color:var(--ok);}
+
+  /* グリッド */
+  .gridwrap{display:flex; justify-content:center; overflow-x:auto; padding:4px;}
+  .grid{display:grid; gap:7px;}
+  .cell{width:56px; height:56px; border-radius:8px; cursor:pointer; border:3px solid transparent;
+    transition:transform .12s, border-color .12s; padding:0; position:relative;}
+  .cell.on{background:var(--on);}
+  .cell.off{background:var(--off);}
+  .cell.parity{opacity:.92; border-style:dashed; border-color:rgba(255,255,255,.45);}
+  .cell:hover{transform:scale(1.06);}
+  .cell.hit{border-color:var(--gold); box-shadow:0 0 0 4px rgba(232,178,31,.35);}
+  .cell.rowhit{border-color:rgba(232,178,31,.75);}
+  .cell.colhit{border-color:rgba(232,178,31,.75);}
+  .cell.locked{cursor:default;} .cell.locked:hover{transform:none;}
+  .cell .tag{position:absolute; right:3px; bottom:1px; font-size:9px; color:rgba(255,255,255,.75);}
+
+  .glabel{font-size:11.5px; color:var(--muted); text-align:center; line-height:56px;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+
+  /* 1次元パリティ */
+  .bits{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; align-items:flex-end;}
+  .bit{text-align:center;}
+  .bit button{width:48px; height:54px; border-radius:8px; border:2px solid var(--line);
+    background:#fff; font-family:ui-monospace,Consolas,monospace; font-size:22px; font-weight:700;
+    color:var(--ink); cursor:pointer;}
+  .bit button[aria-pressed=true]{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .bit .lb{font-size:10.5px; color:var(--muted); margin-top:4px;}
+  .bit.p button{border-color:var(--gold); border-style:dashed;}
+  .bit.p button[aria-pressed=true]{background:var(--gold); border-color:var(--gold);}
+  .bit.p .lb{color:var(--gold); font-weight:700;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (max-width:560px){
+    .cell{width:42px; height:42px;} .glabel{line-height:42px; font-size:10px;}
+    .bit button{width:38px; height:46px; font-size:18px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ パリティマジック</p>
+    <h1>パリティマジック</h1>
+    <p class="lead">カードを1枚だけ裏返してください。どこを裏返したか、必ず言い当てます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabMagic" aria-selected="true" aria-controls="toolMagic">マジックをやってみる</button>
+    <button class="tab" role="tab" id="tabBit" aria-selected="false" aria-controls="toolBit">パリティビットの基本</button>
+    <button class="tab" role="tab" id="tabLimit" aria-selected="false" aria-controls="toolLimit">できないこと</button>
+  </div>
+
+  <!-- ===== マジック ===== -->
+  <section class="tool show" id="toolMagic" role="tabpanel" aria-labelledby="tabMagic">
+    <div class="steps">
+      <div class="st" id="s1"><b>ステップ 1</b>カードを並べる</div>
+      <div class="st" id="s2"><b>ステップ 2</b>パリティビットを追加</div>
+      <div class="st" id="s3"><b>ステップ 3</b>1枚裏返す</div>
+      <div class="st" id="s4"><b>ステップ 4</b>言い当てる</div>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <button class="primary" id="mNew">① カードを並べる</button>
+        <button class="primary gold" id="mParity" disabled>② パリティビットを追加</button>
+        <button class="primary" id="mDetect" disabled>④ どこが裏返ったか当てる</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="mSize5" aria-pressed="true">5×5</button>
+        <button class="chip" id="mSize7" aria-pressed="false">7×7</button>
+      </div>
+      <p class="hint" id="mHint">まず「カードを並べる」を押してください。赤と黒がでたらめに並びます。</p>
+    </div>
+
+    <div class="gridwrap"><div class="grid" id="mGrid"></div></div>
+
+    <div class="msg" id="mMsg">
+      <div class="t">パリティマジックとは</div>
+      カードを並べ、まわりに1列ずつ足しておきます。そのあとで誰かが1枚だけ裏返しても、
+      <b>どこを裏返したかが必ず分かります</b>。手品のようですが、種は計算です。
+    </div>
+  </section>
+
+  <!-- ===== パリティビットの基本 ===== -->
+  <section class="tool" id="toolBit" role="tabpanel" aria-labelledby="tabBit">
+    <div class="panel">
+      <h2>7ビットのデータに、1ビットを足して守る</h2>
+      <div class="row">
+        <button class="chip" id="bRand">別のデータにする</button>
+        <button class="chip" id="bFlip">1ビットだけ壊す（通信の誤り）</button>
+        <button class="chip" id="bFix">直す</button>
+        <span style="flex:1"></span>
+        <button class="chip" id="bEven" aria-pressed="true">偶数パリティ</button>
+        <button class="chip" id="bOdd" aria-pressed="false">奇数パリティ</button>
+      </div>
+      <p class="hint">ビットをクリックしても切り替えられます。金色の枠がパリティビットです。</p>
+    </div>
+
+    <div class="panel">
+      <div class="bits" id="bBits"></div>
+    </div>
+
+    <div class="msg" id="bMsg"></div>
+
+    <div class="panel">
+      <h2>受け取った側は、こう確かめます</h2>
+      <p style="margin:0;font-size:15px;" id="bExplain"></p>
+    </div>
+  </section>
+
+  <!-- ===== できないこと ===== -->
+  <section class="tool" id="toolLimit" role="tabpanel" aria-labelledby="tabLimit">
+    <div class="panel">
+      <h2>2枚裏返すと、どうなるでしょうか</h2>
+      <div class="row">
+        <button class="primary" id="lNew">カードを準備する</button>
+        <button class="chip" id="lFlip1">1枚だけ裏返す</button>
+        <button class="chip" id="lFlip2">同じ行で2枚裏返す</button>
+        <button class="chip" id="lFlip4">四角の形に4枚裏返す</button>
+        <span style="flex:1"></span>
+        <button class="primary" id="lCheck">検査する</button>
+      </div>
+      <p class="hint">パリティ検査で「誤りあり」と分かるかどうかを試してみてください。</p>
+    </div>
+
+    <div class="gridwrap"><div class="grid" id="lGrid"></div></div>
+    <div class="msg" id="lMsg">ボタンを押して、カードを裏返してみてください。</div>
+
+    <div class="panel">
+      <h2>まとめ</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14.5px;">
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">誤りの数</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">検出</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">位置の特定</th></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;">1か所</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;color:var(--ok);">できる</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;color:var(--ok);">できる（訂正も可能）</td></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;">2か所</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBF8E8;color:#6d6112;">できる</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;color:var(--ng);">できない</td></tr>
+        <tr><td style="border:1px solid var(--line);padding:8px 12px;">4か所（長方形の角）</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;color:var(--ng);">できない</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;color:var(--ng);">できない</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>なぜ言い当てられるのか</h2>
+    <p>手品の種は、事前に足しておいた1列にあります。</p>
+    <p>カードを並べたあと、それぞれの行と列について「赤いカードの数が偶数になるように」1枚ずつ追加します。これで、盤面のすべての行とすべての列で、赤の数が偶数に揃います。</p>
+    <p>この状態で誰かが1枚裏返すと、そのカードがある行と列だけ、赤の数が奇数に変わります。他の行や列は影響を受けません。ですから、<strong>奇数になっている行と列を探し、その交わったところ</strong>が答えになります。</p>
+    <div class="formula">奇数になった行 × 奇数になった列 ＝ 裏返されたカード</div>
+    <p>種を知ってしまえば単純ですが、これはコンピュータが実際に使っている誤り検出の考え方そのものです。</p>
+
+    <h2>パリティとは</h2>
+    <p>パリティ（parity）とは、日本語で「偶奇性」のことです。ある数が偶数か奇数かという性質を指します。</p>
+    <p>データ通信では、送るデータの中に含まれる「1」の個数が偶数か奇数かを調べ、その情報を1ビット付け加えて送ります。この付け加えるビットをパリティビットといいます。</p>
+
+    <h3>偶数パリティと奇数パリティ</h3>
+    <p>2つのやり方があります。</p>
+    <table>
+      <tr><th>方式</th><th>ルール</th><th>例：1011010（1が4個）</th></tr>
+      <tr><td>偶数パリティ</td><td>全体の1の個数が偶数になるようにする</td><td class="mono">1011010 + 0</td></tr>
+      <tr><td>奇数パリティ</td><td>全体の1の個数が奇数になるようにする</td><td class="mono">1011010 + 1</td></tr>
+    </table>
+    <p>どちらを使うかは、送る側と受け取る側であらかじめ決めておきます。仕組みとしては同じで、どちらが優れているということはありません。</p>
+
+    <h3>受け取った側の確認</h3>
+    <p>受信側は、届いたデータの1の個数を数えるだけです。偶数パリティなのに1の個数が奇数だったら、途中で何かが変わったと分かります。</p>
+    <p>この仕組みの良いところは、追加するのが<strong>たった1ビット</strong>で済むことです。7ビットのデータを守るのに1ビット、つまり約14%の増加だけで誤りに気づけます。回路も単純で、排他的論理和（XOR）を並べるだけで作れます。</p>
+
+    <h2>この方法の限界</h2>
+    <p>便利な仕組みですが、万能ではありません。</p>
+
+    <h3>2ビット変わると気づけない</h3>
+    <p>1の個数が2つ変わると、偶奇は元に戻ってしまいます。たとえば1が2個増えれば、偶数のままです。パリティ検査は「正常」と判断してしまいます。</p>
+    <p>一般に、パリティビットで検出できるのは<strong>奇数個の誤り</strong>だけです。偶数個の誤りは見逃します。</p>
+
+    <h3>どこが間違ったかは分からない</h3>
+    <p>1次元のパリティでは、「どこかが違う」ことは分かっても、「どこが違うか」は特定できません。そのため、誤りを見つけたらデータを捨てて送り直してもらうことになります。これを検出はできるが訂正はできない、といいます。</p>
+    <p>ただし、パリティマジックのように<strong>縦横の両方向にパリティを付ける</strong>と、話が変わります。行と列の交点から位置を特定できるので、1か所の誤りなら訂正までできるのです。これを水平垂直パリティといいます。</p>
+
+    <h2>実際に使われている場所</h2>
+    <p>パリティチェックは、いまも幅広く使われています。</p>
+    <ul>
+      <li><strong>シリアル通信</strong>：機器どうしの単純なデータのやり取り</li>
+      <li><strong>メモリ</strong>：サーバー用のメモリでは、誤りを訂正できるECCという仕組みが使われます</li>
+      <li><strong>RAID</strong>：複数のハードディスクにデータを分散する際、パリティを別のディスクに保存しておくと、1台が壊れても内容を復元できます</li>
+    </ul>
+    <p>より強力な方式としては、CRC（巡回冗長検査）やハミング符号があります。QRコードが多少汚れても読み取れるのも、リード・ソロモン符号という誤り訂正の仕組みが入っているからです。考え方の出発点は、どれもこのパリティと同じです。</p>
+
+    <h2>なぜ誤りが起きるのか</h2>
+    <p>そもそも、データはなぜ壊れるのでしょうか。</p>
+    <p>通信では、電波や電気信号にノイズが混じります。近くの機器から出る電磁波、雷、機器そのものの熱による揺らぎ。こうした影響で、0が1に、1が0に変わってしまうことがあります。記録媒体でも、経年変化や宇宙線の影響でビットが反転することが知られています。</p>
+    <p>1ビットの反転でも、影響は深刻になりえます。金額のデータなら桁が変わり、プログラムなら誤動作します。だから、データを扱うあらゆる場面で誤り検出の仕組みが組み込まれているのです。</p>
+
+    <h2>訂正まで行う仕組みへ</h2>
+    <p>誤りを見つけたら送り直してもらう、という方法には限界があります。宇宙探査機からのデータのように、送り直すのに何時間もかかる場合。あるいは、CDやQRコードのように、そもそも送り直せない場合です。</p>
+    <p>そこで、<strong>誤りを見つけるだけでなく、その場で直してしまう</strong>仕組みが考え出されました。誤り訂正符号といいます。</p>
+    <p>考え方の基本は、パリティマジックと同じです。複数のパリティを組み合わせ、その結果から誤りの位置を特定します。ハミング符号では、パリティビットの当たり方を工夫することで、どのビットが誤っているかを数値として直接求められるようにしています。</p>
+    <p>QRコードが多少汚れたり欠けたりしても読み取れるのは、リード・ソロモン符号という強力な誤り訂正が組み込まれているためです。最大で全体の30%が失われても復元できる設定もあります。QRコードの真ん中に会社のロゴを載せられるのは、この余力を利用しているのです。</p>
+
+    <h2>身近な確認用の数字</h2>
+    <p>同じ考え方は、日常のあちこちに埋め込まれています。</p>
+    <table>
+      <tr><th>対象</th><th>しくみ</th></tr>
+      <tr><td>本のISBN</td><td>最後の1桁が検査用の数字（チェックディジット）</td></tr>
+      <tr><td>商品のバーコード</td><td>最後の1桁が検査用の数字</td></tr>
+      <tr><td>クレジットカード番号</td><td>Luhnアルゴリズムという計算で確認</td></tr>
+      <tr><td>マイナンバー</td><td>最後の1桁が検査用の数字</td></tr>
+    </table>
+    <p>これらは、番号を手で入力したときの打ち間違いを見つけるための仕組みです。1桁打ち間違えたり、隣どうしの数字を入れ替えたりすると、計算が合わなくなります。パリティビットと同じく、<strong>少しの情報を足しておくことで、間違いに気づけるようにする</strong>という発想です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>マジックをやってみる</strong>：4つのステップで進みます。パリティビットを追加したあと、好きなカードを1枚クリックして裏返し、「当てる」を押してください。</li>
+      <li><strong>パリティビットの基本</strong>：7ビットのデータに1ビット足す様子を確認できます。1ビット壊してみると、検査で見つかります。</li>
+      <li><strong>できないこと</strong>：2枚や4枚裏返したときに何が起きるかを試せます。この仕組みの限界が分かります。</li>
+    </ul>
+    <p>授業では、実際にカードや磁石を並べて演示してから、このツールで種明かしをすると効果的です。</p>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabMagic','toolMagic'],['tabBit','toolBit'],['tabLimit','toolLimit']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+/* ===== 共通：グリッド描画 ===== */
+function renderGrid(el, g, n, opts){
+  const o=opts||{};
+  const size = o.withParity ? n+1 : n;
+  el.style.gridTemplateColumns=`repeat(${size},auto)`;
+  el.innerHTML='';
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const b=document.createElement('button');
+      const isP = o.withParity && (x===n||y===n);
+      b.className='cell '+(g[y][x]?'on':'off')+(isP?' parity':'')+(o.locked?' locked':'');
+      b.setAttribute('aria-label',`${y+1}行${x+1}列`);
+      if(isP){ const t=document.createElement('span'); t.className='tag'; t.textContent='P'; b.appendChild(t); }
+      if(o.hit && o.hit.y===y && o.hit.x===x) b.classList.add('hit');
+      if(o.rowHits && o.rowHits.includes(y)) b.classList.add('rowhit');
+      if(o.colHits && o.colHits.includes(x)) b.classList.add('colhit');
+      if(o.onClick) b.addEventListener('click',()=>o.onClick(x,y));
+      el.appendChild(b);
+    }
+  }
+}
+function makeGrid(n){
+  return Array.from({length:n+1},(_,y)=>
+    Array.from({length:n+1},(_,x)=> (x<n&&y<n) ? (Math.random()<0.5?1:0) : 0));
+}
+function addParity(g,n){
+  // 各行の右端、各列の下端、そして右下
+  for(let y=0;y<n;y++){
+    let s=0; for(let x=0;x<n;x++) s+=g[y][x];
+    g[y][n]= s%2;              // 偶数にするので、奇数なら1を足す
+  }
+  for(let x=0;x<n;x++){
+    let s=0; for(let y=0;y<n;y++) s+=g[y][x];
+    g[n][x]= s%2;
+  }
+  let s=0; for(let x=0;x<n;x++) s+=g[n][x];
+  g[n][n]= s%2;
+  return g;
+}
+function oddRows(g,n){
+  const r=[];
+  for(let y=0;y<=n;y++){
+    let s=0; for(let x=0;x<=n;x++) s+=g[y][x];
+    if(s%2) r.push(y);
+  }
+  return r;
+}
+function oddCols(g,n){
+  const r=[];
+  for(let x=0;x<=n;x++){
+    let s=0; for(let y=0;y<=n;y++) s+=g[y][x];
+    if(s%2) r.push(x);
+  }
+  return r;
+}
+
+/* ===== マジック ===== */
+let mN=5, mG=null, mStage=0, mFlipped=null;
+function setStage(k){
+  mStage=k;
+  ['s1','s2','s3','s4'].forEach((id,i)=>{
+    const e=document.getElementById(id);
+    e.className='st'+(i<k?' done':(i===k?' now':''));
+  });
+}
+function drawMagic(hit){
+  const opts={withParity: mStage>=1, locked: mStage>=3};
+  if(mStage===2) opts.onClick=(x,y)=>flipCard(x,y);
+  if(hit){ opts.hit=hit.cell; opts.rowHits=hit.rows; opts.colHits=hit.cols; }
+  renderGrid(document.getElementById('mGrid'), mG, mN, opts);
+}
+document.getElementById('mNew').addEventListener('click',()=>{
+  mG=makeGrid(mN); mFlipped=null;
+  setStage(1);
+  document.getElementById('mParity').disabled=false;
+  document.getElementById('mDetect').disabled=true;
+  document.getElementById('mHint').textContent='赤と黒がでたらめに並びました。次に、まわりに1列ずつ足します。';
+  document.getElementById('mMsg').className='msg';
+  document.getElementById('mMsg').innerHTML=
+    '<div class="t">カードが並びました</div>いまは '+mN+'×'+mN+' です。'+
+    'このあと右と下に1列ずつ足して、<b>すべての行と列で赤の数が偶数</b>になるようにします。';
+  // パリティ列はまだ表示しない
+  mStage=1; drawMagic(); setStage(1);
+});
+document.getElementById('mParity').addEventListener('click',()=>{
+  addParity(mG,mN);
+  setStage(2); mStage=2; drawMagic();
+  document.getElementById('mParity').disabled=true;
+  document.getElementById('mHint').textContent='好きなカードを1枚クリックして、裏返してください。';
+  document.getElementById('mMsg').className='msg';
+  document.getElementById('mMsg').innerHTML=
+    '<div class="t">パリティビットを追加しました</div>'+
+    '点線の枠（Pの印）が足したカードです。いま、<b>すべての行と列で赤の数が偶数</b>になっています。'+
+    '　では、好きなカードを1枚クリックして裏返してください。';
+});
+function flipCard(x,y){
+  if(mStage!==2) return;
+  mG[y][x]^=1; mFlipped={x,y};
+  setStage(3); mStage=3; drawMagic();
+  document.getElementById('mDetect').disabled=false;
+  document.getElementById('mHint').textContent='「当てる」を押してください。';
+  document.getElementById('mMsg').className='msg';
+  document.getElementById('mMsg').innerHTML=
+    '<div class="t">1枚裏返しました</div>'+
+    'どこを裏返したか、こちらからは見ていないことにします。それでも<b>必ず当てられます</b>。';
+}
+document.getElementById('mDetect').addEventListener('click',()=>{
+  const rows=oddRows(mG,mN), cols=oddCols(mG,mN);
+  setStage(4);
+  if(rows.length===1 && cols.length===1){
+    const y=rows[0], x=cols[0];
+    drawMagic({cell:{x,y},rows,cols});
+    const correct = mFlipped && mFlipped.x===x && mFlipped.y===y;
+    const m=document.getElementById('mMsg');
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">見つけました。${y+1}行目 ${x+1}列目 です。</div>`+
+      `赤の数が奇数になっている行（${y+1}行目）と列（${x+1}列目）は、それぞれ1つだけです。`+
+      `その<b>交わったところ</b>が、裏返されたカードです。`+
+      (correct?'':'　（表示中の盤面から計算した結果です）');
+  }else if(rows.length===0 && cols.length===0){
+    document.getElementById('mMsg').className='msg';
+    document.getElementById('mMsg').innerHTML=
+      '<div class="t">誤りは見つかりませんでした</div>すべての行と列で、赤の数が偶数のままです。まだ裏返していないようです。';
+  }else{
+    drawMagic({rows,cols});
+    document.getElementById('mMsg').className='msg ng';
+    document.getElementById('mMsg').innerHTML=
+      '<div class="t">1か所に特定できません</div>'+
+      `奇数になった行が${rows.length}つ、列が${cols.length}つあります。`+
+      '<b>2枚以上裏返した</b>ようです。この場合、位置までは特定できません。';
+  }
+  document.getElementById('mDetect').disabled=true;
+  document.getElementById('mHint').textContent='「カードを並べる」から、もう一度試せます。';
+});
+document.getElementById('mSize5').addEventListener('click',()=>{
+  mN=5; document.getElementById('mSize5').setAttribute('aria-pressed','true');
+  document.getElementById('mSize7').setAttribute('aria-pressed','false');
+  document.getElementById('mNew').click();
+});
+document.getElementById('mSize7').addEventListener('click',()=>{
+  mN=7; document.getElementById('mSize5').setAttribute('aria-pressed','false');
+  document.getElementById('mSize7').setAttribute('aria-pressed','true');
+  document.getElementById('mNew').click();
+});
+
+/* ===== パリティビットの基本 ===== */
+let bData=[1,0,1,1,0,1,0], bEven=true, bBroken=-1;
+function bParity(){
+  const s=bData.reduce((a,v)=>a+v,0);
+  return bEven ? (s%2) : (1-s%2);
+}
+function drawBits(){
+  const box=document.getElementById('bBits');
+  box.innerHTML='';
+  const p=bParity();
+  bData.forEach((v,i)=>{
+    const d=document.createElement('div'); d.className='bit';
+    const b=document.createElement('button');
+    b.textContent=v; b.setAttribute('aria-pressed',String(!!v));
+    b.addEventListener('click',()=>{ bData[i]^=1; bBroken=-1; drawBits(); });
+    const l=document.createElement('div'); l.className='lb'; l.textContent=(i+1)+'ビット目';
+    d.append(b,l); box.appendChild(d);
+  });
+  // パリティビット
+  const d=document.createElement('div'); d.className='bit p';
+  const b=document.createElement('button');
+  b.textContent=p; b.setAttribute('aria-pressed',String(!!p)); b.disabled=true;
+  b.style.cursor='default';
+  const l=document.createElement('div'); l.className='lb'; l.textContent='パリティ';
+  d.append(b,l); box.appendChild(d);
+
+  const ones=bData.reduce((a,v)=>a+v,0);
+  const total=ones+p;
+  const msg=document.getElementById('bMsg');
+  msg.className='msg';
+  msg.innerHTML=
+    `<div class="t">データの1の個数：${ones} 個　→　全体では ${total} 個</div>`+
+    (bEven
+      ? `偶数パリティなので、全体の1の個数が<b>偶数</b>になるようパリティビットを ${p} にします。`
+      : `奇数パリティなので、全体の1の個数が<b>奇数</b>になるようパリティビットを ${p} にします。`);
+
+  document.getElementById('bExplain').innerHTML=
+    `届いたデータの1の個数を数えて、${bEven?'偶数':'奇数'}になっているかを確かめます。`+
+    `そうでなければ、途中で誤りが起きたと判断できます。`+
+    `　この方法で増えるデータは<strong>わずか1ビット</strong>、7ビットに対して約14%だけです。`;
+}
+document.getElementById('bRand').addEventListener('click',()=>{
+  bData=Array.from({length:7},()=>Math.random()<0.5?1:0); bBroken=-1; drawBits();
+});
+document.getElementById('bFlip').addEventListener('click',()=>{
+  const i=Math.floor(Math.random()*7);
+  const p=bParity();
+  bData[i]^=1; bBroken=i;
+  // 壊れた状態を表示（パリティは古いまま）
+  const box=document.getElementById('bBits');
+  drawBits();
+  // パリティビットを「送信時の値」に戻して表示
+  const pbtn=box.querySelectorAll('.bit.p button')[0];
+  pbtn.textContent=p; pbtn.setAttribute('aria-pressed',String(!!p));
+  const ones=bData.reduce((a,v)=>a+v,0);
+  const total=ones+p;
+  const okParity = bEven ? total%2===0 : total%2===1;
+  const msg=document.getElementById('bMsg');
+  msg.className='msg '+(okParity?'ok':'ng');
+  msg.innerHTML=
+    `<div class="t">${okParity?'検査を通過してしまいました':'誤りを検出しました'}</div>`+
+    `${i+1}ビット目が途中で反転しました。全体の1の個数は <b>${total} 個</b>で、`+
+    `${bEven?'偶数':'奇数'}になるはずが${total%2===0?'偶数':'奇数'}です。`+
+    (okParity?'　（この場合は見逃してしまいます）':'　<b>途中で何かが変わった</b>と分かります。');
+});
+document.getElementById('bFix').addEventListener('click',()=>{ bBroken=-1; drawBits(); });
+document.getElementById('bEven').addEventListener('click',()=>{
+  bEven=true; document.getElementById('bEven').setAttribute('aria-pressed','true');
+  document.getElementById('bOdd').setAttribute('aria-pressed','false'); drawBits();
+});
+document.getElementById('bOdd').addEventListener('click',()=>{
+  bEven=false; document.getElementById('bEven').setAttribute('aria-pressed','false');
+  document.getElementById('bOdd').setAttribute('aria-pressed','true'); drawBits();
+});
+
+/* ===== できないこと ===== */
+let lN=5, lG=null, lFlips=[];
+function newLimit(){
+  lG=addParity(makeGrid(lN),lN); lFlips=[];
+  renderGrid(document.getElementById('lGrid'), lG, lN, {withParity:true, locked:true});
+  document.getElementById('lMsg').className='msg';
+  document.getElementById('lMsg').innerHTML=
+    '<div class="t">準備できました</div>すべての行と列で、赤の数が偶数になっています。ボタンで裏返してみてください。';
+}
+function doFlip(pattern){
+  if(!lG) newLimit();
+  newLimit(); // 毎回きれいな状態から
+  const n=lN;
+  if(pattern===1){
+    const y=Math.floor(Math.random()*n), x=Math.floor(Math.random()*n);
+    lG[y][x]^=1; lFlips=[[x,y]];
+  }else if(pattern===2){
+    const y=Math.floor(Math.random()*n);
+    let x1=Math.floor(Math.random()*n), x2=(x1+1+Math.floor(Math.random()*(n-1)))%n;
+    lG[y][x1]^=1; lG[y][x2]^=1; lFlips=[[x1,y],[x2,y]];
+  }else{
+    let y1=Math.floor(Math.random()*n), y2=(y1+1+Math.floor(Math.random()*(n-1)))%n;
+    let x1=Math.floor(Math.random()*n), x2=(x1+1+Math.floor(Math.random()*(n-1)))%n;
+    [[x1,y1],[x2,y1],[x1,y2],[x2,y2]].forEach(([x,y])=>lG[y][x]^=1);
+    lFlips=[[x1,y1],[x2,y1],[x1,y2],[x2,y2]];
+  }
+  renderGrid(document.getElementById('lGrid'), lG, lN, {withParity:true, locked:true});
+  document.getElementById('lMsg').className='msg';
+  document.getElementById('lMsg').innerHTML=
+    `<div class="t">${lFlips.length}枚 裏返しました</div>「検査する」を押して、誤りが見つかるか確かめてください。`;
+}
+document.getElementById('lNew').addEventListener('click',newLimit);
+document.getElementById('lFlip1').addEventListener('click',()=>doFlip(1));
+document.getElementById('lFlip2').addEventListener('click',()=>doFlip(2));
+document.getElementById('lFlip4').addEventListener('click',()=>doFlip(4));
+document.getElementById('lCheck').addEventListener('click',()=>{
+  if(!lG) return;
+  const rows=oddRows(lG,lN), cols=oddCols(lG,lN);
+  const opts={withParity:true, locked:true, rowHits:rows, colHits:cols};
+  if(rows.length===1&&cols.length===1) opts.hit={x:cols[0],y:rows[0]};
+  renderGrid(document.getElementById('lGrid'), lG, lN, opts);
+  const m=document.getElementById('lMsg');
+  const k=lFlips.length;
+  if(rows.length===0&&cols.length===0){
+    m.className='msg ng';
+    m.innerHTML='<div class="t">誤りを検出できませんでした</div>'+
+      `実際には <b>${k}枚</b> 裏返しているのに、すべての行と列で赤の数が偶数のままです。`+
+      '長方形の4つの角を裏返すと、行も列も2つずつ変わるため、<b>偶数のまま戻ってしまう</b>のです。'+
+      '　これがパリティ検査の限界です。';
+  }else if(rows.length===1&&cols.length===1){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">見つけました。${rows[0]+1}行目 ${cols[0]+1}列目 です</div>`+
+      '1か所だけの誤りなら、行と列の交点から<b>位置まで特定</b>できます。訂正も可能です。';
+  }else{
+    m.className='msg';
+    m.innerHTML='<div class="t">誤りは検出できましたが、場所は特定できません</div>'+
+      `奇数になった行が${rows.length}つ、列が${cols.length}つあります。`+
+      '<b>「どこかが違う」ことは分かる</b>ものの、どれが誤りかは絞り込めません。'+
+      'この場合は、データを送り直してもらうことになります。';
+  }
+});
+
+/* ===== 初期化 ===== */
+document.getElementById('mNew').click();
+drawBits();
+newLimit();
+</script>
+</body>
+</html>
