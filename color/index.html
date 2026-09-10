@@ -87,6 +87,29 @@
   .ps{width:36px; height:36px; border-radius:8px; border:2px solid var(--line); cursor:pointer; padding:0;}
   .ps:hover{border-color:var(--navy);}
 
+  /* 画面拡大 */
+  .zoomwrap{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; justify-content:center;}
+  .zoombox{flex:1 1 300px; min-width:280px; text-align:center;}
+  #zCanvas{width:100%; max-width:420px; aspect-ratio:1/1; image-rendering:pixelated; margin:0 auto;}
+  .swatchmini{width:100%; max-width:420px; aspect-ratio:1/1; border-radius:10px;
+    border:1px solid var(--line); margin:0 auto;}
+  .zbtns{display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-top:12px;}
+  .zb{width:46px; height:46px; border-radius:9px; border:2px solid var(--line); cursor:pointer; padding:0;}
+  .zb[aria-pressed=true]{border-color:var(--navy); box-shadow:0 0 0 2px rgba(47,84,150,.28);}
+  .zinfo{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .zi{flex:1 1 110px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:9px 12px; text-align:center;}
+  .zi .k{font-size:11px; color:var(--muted);}
+  .zi .v{font-size:16px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+
+  /* 分解 */
+  .splitgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;}
+  .sp{text-align:center;}
+  .sp canvas{width:100%; border-radius:10px; border:1px solid var(--line); background:#fff;}
+  .sp .lb{font-size:13.5px; font-weight:700; margin-top:7px;}
+  .sp.r .lb{color:#C0392B;} .sp.g .lb{color:#1E8449;} .sp.b .lb{color:#2F5496;}
+  .sp .sub{font-size:11.5px; color:var(--muted);}
+
   /* 記事 */
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
@@ -109,7 +132,7 @@
   .sitefoot a{color:var(--muted);}
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
-<!-- ▼ Google AdSense -->
+<!-- ▼ Google AdSense（ca-pub-7076767152814369 を自分のIDに置き換える） -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -136,6 +159,8 @@
     <button class="tab" role="tab" id="tabHsv" aria-selected="false" aria-controls="toolHsv">HSV（色相・彩度・明度）</button>
     <button class="tab" role="tab" id="tabCmyk" aria-selected="false" aria-controls="toolCmyk">CMYK（色の三原色）</button>
     <button class="tab" role="tab" id="tabMix" aria-selected="false" aria-controls="toolMix">混ぜ方のちがい</button>
+    <button class="tab" role="tab" id="tabZoom" aria-selected="false" aria-controls="toolZoom">画面を拡大する</button>
+    <button class="tab" role="tab" id="tabSplit" aria-selected="false" aria-controls="toolSplit">色に分解する</button>
   </div>
 
   <!-- ===== RGB ===== -->
@@ -247,6 +272,71 @@
     </div>
   </section>
 
+  <!-- ===== 画面を拡大する ===== -->
+  <section class="tool" id="toolZoom" role="tabpanel" aria-labelledby="tabZoom">
+    <div class="panel">
+      <h2>ディスプレイの1画素を、拡大してのぞいてみる</h2>
+      <div class="sl">
+        <div class="top"><label for="zLv">拡大率</label><span class="val" id="zLvV">1 倍</span></div>
+        <input type="range" id="zLv" min="1" max="60" step="1" value="1">
+      </div>
+      <p class="hint">スマートフォンの画面に虫めがねを当てたときに見えるものを、再現しています。</p>
+      <div class="zbtns" id="zBtns"></div>
+    </div>
+
+    <div class="zoomwrap">
+      <div class="zoombox">
+        <canvas id="zCanvas" width="480" height="480"></canvas>
+        <p class="cvcap" style="font-size:12.5px;color:var(--muted);margin-top:8px;" id="zCap">
+          拡大していくと、何が見えるでしょうか</p>
+      </div>
+    </div>
+
+    <div class="zinfo">
+      <div class="zi"><div class="k">いまの色</div><div class="v" id="zName">白</div></div>
+      <div class="zi"><div class="k">赤の光</div><div class="v" style="color:#C0392B" id="zR">255</div></div>
+      <div class="zi"><div class="k">緑の光</div><div class="v" style="color:#1E8449" id="zG">255</div></div>
+      <div class="zi"><div class="k">青の光</div><div class="v" style="color:#2F5496" id="zB">255</div></div>
+    </div>
+
+    <div class="verdict" id="zVerdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
+      color:#fff;border-radius:12px;padding:14px 18px;margin-top:14px;font-size:14.5px;"></div>
+  </section>
+
+  <!-- ===== 色に分解する ===== -->
+  <section class="tool" id="toolSplit" role="tabpanel" aria-labelledby="tabSplit">
+    <div class="panel">
+      <h2>画像は、赤・緑・青の3枚が重なってできています</h2>
+      <div class="row">
+        <button class="chip" data-fig="apple" aria-pressed="true">りんご</button>
+        <button class="chip" data-fig="flower" aria-pressed="false">花</button>
+        <button class="chip" data-fig="sky" aria-pressed="false">空と草原</button>
+        <label class="chip" style="cursor:pointer;">画像を選ぶ<input id="spPick" type="file" accept="image/*" hidden></label>
+        <span style="flex:1"></span>
+        <button class="chip" id="spColor" aria-pressed="true">色つきで見る</button>
+        <button class="chip" id="spGray" aria-pressed="false">明るさで見る</button>
+      </div>
+      <p class="hint">「明るさで見る」に切り替えると、その色の光がどれだけ強いかが白黒の濃さで分かります。</p>
+    </div>
+
+    <div class="splitgrid">
+      <div class="sp"><canvas id="spAll" width="220" height="220"></canvas>
+        <div class="lb">元の画像</div><div class="sub">3つが重なった状態</div></div>
+      <div class="sp r"><canvas id="spR" width="220" height="220"></canvas>
+        <div class="lb">赤（R）だけ</div><div class="sub" id="spRs">–</div></div>
+      <div class="sp g"><canvas id="spG" width="220" height="220"></canvas>
+        <div class="lb">緑（G）だけ</div><div class="sub" id="spGs">–</div></div>
+      <div class="sp b"><canvas id="spB" width="220" height="220"></canvas>
+        <div class="lb">青（B）だけ</div><div class="sub" id="spBs">–</div></div>
+    </div>
+
+    <div class="verdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
+      color:#fff;border-radius:12px;padding:14px 18px;margin-top:16px;font-size:14.5px;">
+      1つの画素には、<b style="color:#ffd97a;">赤・緑・青それぞれの強さ</b>が数値で記録されています。
+      3枚を重ねると、元の画像に戻ります。赤い部分は赤の板が明るく、青い部分は青の板が明るくなっています。
+    </div>
+  </section>
+
   <!-- ===== 解説 ===== -->
   <section class="article">
     <h2>コンピュータはどうやって色を表しているのか</h2>
@@ -299,6 +389,20 @@
     <p>かつてパソコンの性能が低かった頃は、同時に表示できる色が256色しかない環境が普通でした。そのため、どの環境でも同じように見える色として216色を選んだWebセーフカラーという取り決めがありました。</p>
     <p>現在ではほとんどの機器がフルカラーに対応しているため、この制約を意識する必要はほぼありません。ただし、機器によって色の見え方に差があること自体は今も変わりません。同じカラーコードを指定しても、ディスプレイの種類や設定によって微妙に違って見えます。正確な色が求められる仕事では、機器ごとに色を合わせるキャリブレーションという作業が行われます。</p>
 
+    <h2>ディスプレイの中身</h2>
+    <p>画面が白く光っているとき、白い光を出す部品があるわけではありません。<strong>赤・緑・青の3つの小さな光が、すべて最大の強さで光っている</strong>のです。</p>
+    <p>スマートフォンやテレビの画面を虫めがねで拡大すると、細い縦じまが並んでいるのが見えます。この3本ひと組が1画素です。人の目は、これほど細かいものを見分けられないため、混ざった1つの色として感じます。</p>
+    <p>黄色を表示しているときは、赤と緑だけが光り、青は完全に消えています。黄色い光を出す部品はどこにもありません。上のツールで拡大していくと、この様子が確かめられます。</p>
+
+    <h3>なぜ赤・緑・青なのか</h3>
+    <p>これは人間の目のつくりに由来します。網膜には錐体細胞という色を感じる細胞があり、3種類に分かれています。それぞれ赤・緑・青のあたりの光に強く反応します。</p>
+    <p>つまり、人の目はもともと光を3つの成分に分けて受け取っています。だから、その3つを再現できれば、あらゆる色を作り出せるのです。ディスプレイが3色なのは、技術的な都合ではなく、人の目に合わせた設計だといえます。</p>
+
+    <h2>画像は3枚の重ね合わせ</h2>
+    <p>1つの画素には、赤・緑・青それぞれの強さが数値で記録されています。ということは、画像は<strong>赤の情報だけの画像、緑だけの画像、青だけの画像</strong>という3枚に分解できます。</p>
+    <p>上のツールで実際に分解できます。りんごの画像なら、赤の板では実の部分が明るく、青の板では暗くなります。3枚を重ねると元の画像に戻ります。</p>
+    <p>この考え方は、画像処理の基本です。色の調整、特定の色だけを取り出す処理、写真の加工などは、この3枚それぞれに操作を加えることで実現されています。</p>
+
     <h2>使い方</h2>
     <ul>
       <li>どのタブで値を変えても、上の色見本と4つの表記がすべて連動して変わります。</li>
@@ -306,6 +410,8 @@
       <li><strong>HSV</strong>：色相環をクリックして色あいを選び、四角の中で鮮やかさと明るさを決められます。</li>
       <li><strong>CMYK</strong>：インクの割合で指定します。K を上げると全体が暗くなります。</li>
       <li><strong>混ぜ方のちがい</strong>：光とインクで、重なった部分の色がどう変わるかを比べられます。</li>
+      <li><strong>画面を拡大する</strong>：ディスプレイの1画素を拡大して、赤・緑・青の3本組が見える様子を確かめられます。</li>
+      <li><strong>色に分解する</strong>：画像を赤・緑・青の3枚に分けて表示します。自分の画像を読み込んで試すこともできます。</li>
     </ul>
   </section>
 
@@ -341,7 +447,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix']];
+  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix'],['tabZoom','toolZoom'],['tabSplit','toolSplit']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -351,6 +457,8 @@
       });
       if(tid==='tabHsv') drawSV();
       if(tid==='tabMix') drawMix();
+      if(tid==='tabZoom') drawZoom();
+      if(tid==='tabSplit') drawSplit();
     });
   });
 })();
@@ -622,9 +730,204 @@ function drawMix(){
   sc2.fillText('Y',pts[2][0]+r*0.55,pts[2][1]+r*0.6);
 }
 
+/* ===== 画面を拡大する（サブピクセル） ===== */
+const ZCOLORS=[
+  {n:'白',    r:255,g:255,b:255, note:'白は「色がない」のではなく、<b>赤・緑・青がすべて最大に光っている</b>状態です。'},
+  {n:'黄',    r:255,g:255,b:0,   note:'黄色の光を出す部品はありません。<b>赤と緑が光り、青が消えている</b>だけです。'},
+  {n:'シアン', r:0,  g:255,b:255, note:'<b>緑と青が光り、赤が消えている</b>状態です。'},
+  {n:'マゼンタ',r:255,g:0, b:255, note:'<b>赤と青が光り、緑が消えている</b>状態です。'},
+  {n:'オレンジ',r:255,g:140,b:0,  note:'赤が最大、緑が半分ほど、青は消えています。<b>強さの配分</b>で色が決まります。'},
+  {n:'黒',    r:0,  g:0,  b:0,   note:'すべての光が消えている状態です。画面は光っていません。'},
+  {n:'灰色',  r:128,g:128,b:128, note:'3つが<b>同じ強さ</b>で光ると、灰色になります。強さを揃えるのがポイントです。'}
+];
+let zIdx=0;
+function buildZBtns(){
+  const box=document.getElementById('zBtns');
+  box.innerHTML='';
+  ZCOLORS.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='zb';
+    b.style.background=`rgb(${c.r},${c.g},${c.b})`;
+    b.title=c.n; b.setAttribute('aria-label',c.n);
+    b.setAttribute('aria-pressed',String(i===zIdx));
+    b.addEventListener('click',()=>{ zIdx=i; buildZBtns(); drawZoom(); });
+    box.appendChild(b);
+  });
+}
+function drawZoom(){
+  const cv=document.getElementById('zCanvas'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const lv=+document.getElementById('zLv').value;
+  const col=ZCOLORS[zIdx];
+  document.getElementById('zLvV').textContent=lv+' 倍';
+  document.getElementById('zName').textContent=col.n;
+  document.getElementById('zR').textContent=col.r;
+  document.getElementById('zG').textContent=col.g;
+  document.getElementById('zB').textContent=col.b;
+
+  // 拡大率に応じて、1画素の表示サイズを決める
+  // lv=1 なら画素が細かすぎて見えない（＝均一な色）
+  const px = Math.max(2, lv*1.6);     // 1画素の一辺（画面上）
+  const n  = Math.ceil(W/px);          // 並ぶ画素数
+  const sub= px/3;                     // サブピクセル1本の幅
+
+  c.fillStyle='#000'; c.fillRect(0,0,W,H);
+
+  if(lv<4){
+    // ほぼ均一に見える段階（肉眼で見た状態）
+    c.fillStyle=`rgb(${col.r},${col.g},${col.b})`;
+    c.fillRect(0,0,W,H);
+  }else{
+    for(let y=0;y<n;y++){
+      for(let x=0;x<n;x++){
+        const ox=x*px, oy=y*px;
+        // R・G・Bの縦ストライプ
+        c.fillStyle=`rgb(${col.r},0,0)`;   c.fillRect(ox,          oy, sub, px*0.92);
+        c.fillStyle=`rgb(0,${col.g},0)`;   c.fillRect(ox+sub,      oy, sub, px*0.92);
+        c.fillStyle=`rgb(0,0,${col.b})`;   c.fillRect(ox+sub*2,    oy, sub, px*0.92);
+      }
+    }
+    // 拡大が大きいときは1画素の枠を薄く示す
+    if(lv>=30){
+      c.strokeStyle='rgba(255,255,255,.22)'; c.lineWidth=1;
+      for(let k=0;k<=n;k++){
+        const p=Math.floor(k*px)+.5;
+        c.beginPath(); c.moveTo(p,0); c.lineTo(p,H); c.stroke();
+        c.beginPath(); c.moveTo(0,p); c.lineTo(W,p); c.stroke();
+      }
+    }
+  }
+
+  const cap=document.getElementById('zCap');
+  const v=document.getElementById('zVerdict');
+  if(lv<4){
+    cap.textContent='ふつうに見た状態です。均一な1色に見えます。';
+    v.innerHTML='拡大率を上げてみてください。<b style="color:#ffd97a;">画面をどんどん近づけて見る</b>とどうなるでしょうか。';
+  }else if(lv<20){
+    cap.textContent='細かい縦じまが見えてきました。';
+    v.innerHTML='均一に見えていた色が、じつは<b style="color:#ffd97a;">3色の細い光の集まり</b>だったことが見えてきます。';
+  }else{
+    cap.textContent='1つ1つの画素が、赤・緑・青の3本組でできているのが分かります。';
+    v.innerHTML=col.note+'　人の目は細かい3色を見分けられず、<b style="color:#ffd97a;">混ざった1色として感じます</b>。';
+  }
+}
+document.getElementById('zLv').addEventListener('input',drawZoom);
+
+/* ===== 色に分解する ===== */
+let spFig='apple', spMode='color', spSrc=null;
+
+function makeFig(kind,S){
+  const c=document.createElement('canvas'); c.width=S; c.height=S;
+  const x=c.getContext('2d');
+  x.fillStyle='#fff'; x.fillRect(0,0,S,S);
+  if(kind==='apple'){
+    const g=x.createRadialGradient(S*.42,S*.40,S*.05,S*.5,S*.55,S*.5);
+    g.addColorStop(0,'#ff6b5a'); g.addColorStop(.45,'#e23b2e'); g.addColorStop(1,'#8f1810');
+    x.fillStyle=g; x.beginPath(); x.ellipse(S*.5,S*.57,S*.33,S*.32,0,0,Math.PI*2); x.fill();
+    x.strokeStyle='#5a3210'; x.lineWidth=S*.03; x.lineCap='round';
+    x.beginPath(); x.moveTo(S*.5,S*.28); x.lineTo(S*.53,S*.13); x.stroke();
+    x.fillStyle='#3f8b3f';
+    x.beginPath(); x.ellipse(S*.61,S*.18,S*.10,S*.05,-0.6,0,Math.PI*2); x.fill();
+  }else if(kind==='flower'){
+    x.fillStyle='#EAF3EE'; x.fillRect(0,0,S,S);
+    // 花びら
+    for(let i=0;i<6;i++){
+      const a=i/6*Math.PI*2;
+      x.fillStyle= i%2 ? '#E7469A' : '#F06AAE';
+      x.beginPath();
+      x.ellipse(S*.5+Math.cos(a)*S*.19, S*.5+Math.sin(a)*S*.19, S*.14, S*.10, a, 0, Math.PI*2);
+      x.fill();
+    }
+    x.fillStyle='#F6D55C';
+    x.beginPath(); x.arc(S*.5,S*.5,S*.12,0,Math.PI*2); x.fill();
+    // 葉
+    x.fillStyle='#2E7D4F';
+    x.beginPath(); x.ellipse(S*.30,S*.80,S*.13,S*.06,-0.5,0,Math.PI*2); x.fill();
+  }else{
+    // 空と草原
+    const sky=x.createLinearGradient(0,0,0,S*.55);
+    sky.addColorStop(0,'#2F6FD0'); sky.addColorStop(1,'#9CC9F0');
+    x.fillStyle=sky; x.fillRect(0,0,S,S*.55);
+    x.fillStyle='#F6D55C';
+    x.beginPath(); x.arc(S*.78,S*.18,S*.09,0,Math.PI*2); x.fill();
+    x.fillStyle='#ffffff';
+    x.beginPath(); x.ellipse(S*.30,S*.22,S*.12,S*.055,0,0,Math.PI*2); x.fill();
+    x.beginPath(); x.ellipse(S*.40,S*.20,S*.09,S*.045,0,0,Math.PI*2); x.fill();
+    const gr=x.createLinearGradient(0,S*.55,0,S);
+    gr.addColorStop(0,'#4FA361'); gr.addColorStop(1,'#2E6B3F');
+    x.fillStyle=gr; x.fillRect(0,S*.55,S,S*.45);
+  }
+  return c;
+}
+
+function drawSplit(){
+  const S=220;
+  const src = spSrc || makeFig(spFig,S);
+  const all=document.getElementById('spAll'), ac=all.getContext('2d');
+  ac.fillStyle='#fff'; ac.fillRect(0,0,S,S);
+  const r=Math.min(S/src.width,S/src.height);
+  const w=src.width*r, h=src.height*r;
+  ac.drawImage(src,(S-w)/2,(S-h)/2,w,h);
+
+  const data=ac.getImageData(0,0,S,S).data;
+  const chans=[['spR',0,'spRs'],['spG',1,'spGs'],['spB',2,'spBs']];
+  chans.forEach(([id,ch,statId])=>{
+    const cv=document.getElementById(id), c=cv.getContext('2d');
+    const img=c.createImageData(S,S);
+    let sum=0;
+    for(let i=0;i<S*S;i++){
+      const p=i*4, v=data[p+ch];
+      sum+=v;
+      if(spMode==='gray'){
+        img.data[p]=img.data[p+1]=img.data[p+2]=v;
+      }else{
+        img.data[p]  = ch===0?v:0;
+        img.data[p+1]= ch===1?v:0;
+        img.data[p+2]= ch===2?v:0;
+      }
+      img.data[p+3]=255;
+    }
+    c.putImageData(img,0,0);
+    document.getElementById(statId).textContent='平均の強さ '+Math.round(sum/(S*S));
+  });
+}
+document.querySelectorAll('[data-fig]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    spFig=b.dataset.fig; spSrc=null; drawSplit();
+  });
+});
+document.getElementById('spPick').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    spSrc=c;
+    document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    drawSplit();
+    URL.revokeObjectURL(img.src);
+  };
+  img.src=URL.createObjectURL(f);
+});
+document.getElementById('spColor').addEventListener('click',()=>{
+  spMode='color';
+  document.getElementById('spColor').setAttribute('aria-pressed','true');
+  document.getElementById('spGray').setAttribute('aria-pressed','false');
+  drawSplit();
+});
+document.getElementById('spGray').addEventListener('click',()=>{
+  spMode='gray';
+  document.getElementById('spColor').setAttribute('aria-pressed','false');
+  document.getElementById('spGray').setAttribute('aria-pressed','true');
+  drawSplit();
+});
+
 /* ===== 初期化 ===== */
 syncAll(null);
 drawMix();
+buildZBtns(); drawZoom(); drawSplit();
 </script>
 </body>
 </html>
