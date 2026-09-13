@@ -85,6 +85,37 @@
   .status{font-size:13.5px; color:var(--muted); margin-top:10px; min-height:1.5em;}
   .status.err{color:var(--ng);}
 
+  /* 自分の音 */
+  .drop{border:2px dashed var(--line); border-radius:12px; padding:26px 18px; text-align:center;
+    background:#fff; transition:all .15s;}
+  .drop.over{border-color:var(--navy); background:#EEF3FB;}
+  .drop .ic{font-size:34px;}
+  .drop .t{font-size:15px; font-weight:700; color:var(--ink); margin-top:8px;}
+  .drop .d{font-size:13px; color:var(--muted); margin-top:5px;}
+
+  .abtest{display:flex; gap:12px; flex-wrap:wrap;}
+  .ab{flex:1 1 240px; background:#fff; border:2px solid var(--line); border-radius:12px;
+    padding:16px; text-align:center;}
+  .ab.playing{border-color:var(--gold); background:#FFFCF3;}
+  .ab h3{margin:0 0 4px; font-size:16px; color:var(--ink);}
+  .ab .spec{font-size:12.5px; color:var(--muted); font-family:ui-monospace,Consolas,monospace;
+    min-height:2.6em;}
+  .ab .sz{font-size:20px; font-weight:700; font-family:ui-monospace,Consolas,monospace;
+    color:var(--navy); margin:8px 0;}
+  .ab .sz small{font-size:12px; color:var(--muted); font-weight:400;}
+  .ab button{width:100%; margin-top:6px;}
+
+  .bar2{height:10px; background:var(--panel2); border-radius:999px; overflow:hidden; margin-top:8px;}
+  .bar2 i{display:block; height:100%; background:var(--navy);}
+  .bar2 i.gold{background:var(--gold);}
+
+  .fileinfo2{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0;}
+  .fi2{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .fi2 .k{font-size:11px; color:var(--muted);}
+  .fi2 .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);
+    overflow-wrap:anywhere;}
+
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
   .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
@@ -119,6 +150,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tabWave" aria-selected="true" aria-controls="toolWave">波を数値にする</button>
     <button class="tab" role="tab" id="tabListen" aria-selected="false" aria-controls="toolListen">音質を聴き比べる</button>
+    <button class="tab" role="tab" id="tabMy" aria-selected="false" aria-controls="toolMy">自分の音で試す</button>
     <button class="tab" role="tab" id="tabData" aria-selected="false" aria-controls="toolData">データ量を計算する</button>
   </div>
 
@@ -204,6 +236,87 @@
     <canvas id="lCanvas" width="1000" height="240"></canvas>
     <p class="cap">いまの設定で作られる波形</p>
     <div class="status" id="lStatus"></div>
+  </section>
+
+  <!-- ===== 自分の音で試す ===== -->
+  <section class="tool" id="toolMy" role="tabpanel" aria-labelledby="tabMy">
+    <div class="warn">
+      <b>音量に注意。</b> 音が鳴ります。イヤホンを使うときは、先に音量を下げてください。
+    </div>
+
+    <div class="panel">
+      <h2>音楽ファイルや録音した音を読み込んで、音質を落として聴き比べます</h2>
+      <div class="drop" id="myDrop">
+        <div class="ic">🎵</div>
+        <div class="t">ここに音声ファイルをドラッグ、またはクリックして選択</div>
+        <div class="d">mp3 / wav / m4a / aac など。ファイルはこの画面の中だけで処理され、どこにも送られません。</div>
+        <input type="file" id="myPick" accept="audio/*" hidden>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="chip" id="myMic">マイクで録音する（5秒）</button>
+        <button class="chip" id="mySample">サンプルの音を使う</button>
+        <span style="flex:1"></span>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;">
+          音量 <input type="range" id="myVol" min="0" max="100" value="45"
+            style="width:110px;accent-color:var(--navy);"><span id="myVolV">45%</span>
+        </div>
+      </div>
+      <div class="status" id="myStatus"></div>
+    </div>
+
+    <div id="myLoaded" style="display:none;">
+      <div class="fileinfo2" id="myInfo"></div>
+
+      <div class="panel">
+        <h2>音質の設定を変えて聴く</h2>
+        <div class="sl">
+          <div class="top"><label for="myRate">標本化周波数</label>
+            <span class="val" id="myRateV">44,100 Hz</span></div>
+          <input type="range" id="myRate" min="0" max="5" step="1" value="5">
+          <div class="note" id="myRateN"></div>
+        </div>
+        <div class="sl">
+          <div class="top"><label for="myBits">量子化ビット数</label>
+            <span class="val" id="myBitsV">16 ビット</span></div>
+          <input type="range" id="myBits" min="1" max="16" step="1" value="16">
+          <div class="note" id="myBitsN"></div>
+        </div>
+        <div class="row">
+          <button class="chip" data-preset="44100,16">CD品質</button>
+          <button class="chip" data-preset="22050,16">FMラジオ程度</button>
+          <button class="chip" data-preset="11025,8">昔のゲーム機</button>
+          <button class="chip" data-preset="8000,8">電話</button>
+          <button class="chip" data-preset="4000,4">かなり粗い</button>
+        </div>
+      </div>
+
+      <div class="abtest">
+        <div class="ab" id="abOrig">
+          <h3>元の音質</h3>
+          <div class="spec" id="abOrigSpec">–</div>
+          <div class="sz" id="abOrigSize">–</div>
+          <div class="bar2"><i id="abOrigBar" style="width:100%"></i></div>
+          <button class="primary" id="playOrig">この音質で聴く</button>
+        </div>
+        <div class="ab" id="abLow">
+          <h3>落とした音質</h3>
+          <div class="spec" id="abLowSpec">–</div>
+          <div class="sz" id="abLowSize">–</div>
+          <div class="bar2"><i class="gold" id="abLowBar" style="width:100%"></i></div>
+          <button class="primary" id="playLow" style="background:var(--gold)">この音質で聴く</button>
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:center;margin-top:12px;">
+        <button class="chip" id="playAB">交互に聴き比べる</button>
+        <button class="primary danger" id="myStop" disabled>とめる</button>
+      </div>
+
+      <canvas id="myCv" width="1000" height="230" style="margin-top:16px;"></canvas>
+      <p class="cap">上：元の波形　下：音質を落とした波形（同じ部分を拡大）</p>
+
+      <div class="readout" id="myResult"></div>
+    </div>
   </section>
 
   <!-- ===== データ量 ===== -->
@@ -297,10 +410,23 @@
     <p>デジタル化には、はっきりした利点があります。何度コピーしても劣化しないこと、ノイズが混入しにくいこと、コンピュータで加工や検索ができることです。カセットテープは再生やダビングを重ねると音が悪くなりますが、デジタルデータは何度コピーしても同じです。</p>
     <p>一方で、デジタル化は必ず情報の一部を捨てます。標本化で時間の隙間の情報が失われ、量子化で細かな値の差が失われます。どこまで細かくするかは、必要な品質とデータ量のバランスで決めることになります。</p>
 
+    <h2>自分の耳で確かめる</h2>
+    <p>音質の違いは、説明を読むだけでは実感しにくいものです。実際に同じ音を違う設定で聴き比べると、はっきり分かります。</p>
+    <p>上のツールの「自分の音で試す」では、手持ちの音楽ファイルや自分の声を読み込んで、設定を落とした音と聴き比べられます。読み込んだファイルは端末の中だけで処理され、どこにも送信されません。</p>
+
+    <h3>何が聞こえなくなるのか</h3>
+    <p>標本化周波数を下げると、まず<strong>高い音</strong>から失われます。シンバルやハイハットのシャリシャリした音、歯擦音（サ行の子音）などが最初に消えます。全体がこもった印象になります。</p>
+    <p>量子化ビット数を下げると、<strong>小さい音</strong>の表現が粗くなります。静かな部分にザラザラした雑音が乗り、音の余韻が不自然に途切れます。</p>
+    <p>どちらも、大きな音が鳴っているときは気づきにくく、静かな部分や音が消えていく瞬間に差が表れます。聴き比べるときは、曲の静かな部分に注目してみてください。</p>
+
+    <h3>波形でも見える</h3>
+    <p>ツールでは、元の波形と設定を落とした波形を上下に並べて表示しています。標本化周波数を下げると波形が階段状に粗くなり、ビット数を下げると縦方向の段差が大きくなります。耳で感じる違いが、目でも確認できます。</p>
+
     <h2>使い方</h2>
     <ul>
       <li><strong>波を数値にする</strong>：スライダーを動かすと、標本化と量子化のようすが図で確かめられます。粗くすると、元の波から離れていくのが見えます。</li>
       <li><strong>音質を聴き比べる</strong>：実際に音を鳴らします。設定を変えて聴き、CD品質と比べてみてください。</li>
+      <li><strong>自分の音で試す</strong>：手持ちの音楽ファイルを読み込むか、マイクで録音して、音質を落とした音と聴き比べられます。「交互に聴き比べる」を使うと違いが分かりやすくなります。</li>
       <li><strong>データ量を計算する</strong>：条件を変えると、ファイルの大きさが自動で計算されます。身近なファイルとの比較も表示されます。</li>
     </ul>
   </section>
@@ -347,7 +473,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabWave','toolWave'],['tabListen','toolListen'],['tabData','toolData']];
+  const tabs=[['tabWave','toolWave'],['tabListen','toolListen'],['tabMy','toolMy'],['tabData','toolData']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -636,6 +762,325 @@ function updateData(){
     `</ul>`;
 }
 ['dRate','dBits','dCh','dSec'].forEach(id=>document.getElementById(id).addEventListener('input',updateData));
+
+/* ===== 自分の音で試す ===== */
+const MY_RATES=[4000,8000,11025,22050,32000,44100];
+let myBuf=null, myName='', myOrigSize=0, mySrc=null, myGain=null, myABTimer=null;
+
+function myFmtBytes(b){
+  if(b<1024) return Math.round(b)+' B';
+  if(b<1024**2) return (b/1024).toFixed(1)+' KB';
+  return (b/1024**2).toFixed(1)+' MB';
+}
+function myRateNote(r){
+  if(r>=44100) return 'CDと同じ品質です。';
+  if(r>=32000) return '高音がわずかに失われます。';
+  if(r>=22050) return 'FMラジオ程度。シャリシャリした高音が減ります。';
+  if(r>=11025) return '昔のパソコンの音声程度。こもって聞こえます。';
+  if(r>=8000) return '電話とほぼ同じ。話し声は分かりますが音楽は厳しいです。';
+  return 'かなり粗く、元の音が判別しづらくなります。';
+}
+function myBitsNote(b){
+  if(b>=16) return 'CDと同じ品質です。';
+  if(b>=12) return 'ほとんど違いは分かりません。';
+  if(b>=8) return '静かな部分にザラつきが出ます。';
+  if(b>=5) return 'はっきりと雑音が混じります。';
+  return '元の音が判別しづらいほど粗くなります。';
+}
+
+async function myLoadArrayBuffer(ab, name, fileSize){
+  const ctx=audioCtx();
+  try{
+    const decoded=await ctx.decodeAudioData(ab.slice(0));
+    myBuf=decoded; myName=name; myOrigSize=fileSize||0;
+    showMyLoaded();
+  }catch(err){
+    const st=document.getElementById('myStatus');
+    st.className='status err';
+    st.textContent='この音声ファイルは読み込めませんでした。別の形式（mp3, wav, m4a など）でお試しください。';
+  }
+}
+function showMyLoaded(){
+  document.getElementById('myLoaded').style.display='';
+  const st=document.getElementById('myStatus');
+  st.className='status';
+  st.textContent='読み込みました。設定を変えて聴き比べてみてください。';
+
+  const sec=myBuf.duration, sr=myBuf.sampleRate, ch=myBuf.numberOfChannels;
+  const rawBytes=Math.round(sr*16*ch*sec/8);
+  document.getElementById('myInfo').innerHTML=
+    `<div class="fi2"><div class="k">ファイル名</div><div class="v" style="font-size:13px;">${myName}</div></div>`+
+    `<div class="fi2"><div class="k">長さ</div><div class="v">${sec.toFixed(1)} 秒</div></div>`+
+    `<div class="fi2"><div class="k">標本化周波数</div><div class="v">${sr.toLocaleString()} Hz</div></div>`+
+    `<div class="fi2"><div class="k">チャンネル</div><div class="v">${ch===1?'モノラル':'ステレオ'}</div></div>`+
+    (myOrigSize?`<div class="fi2"><div class="k">ファイルの大きさ</div><div class="v">${myFmtBytes(myOrigSize)}</div></div>`:'')+
+    `<div class="fi2"><div class="k">圧縮なしなら</div><div class="v">${myFmtBytes(rawBytes)}</div></div>`;
+  updateMy();
+}
+
+function myMakeBuffer(rate,bits){
+  const ctx=audioCtx();
+  const OUT=myBuf.sampleRate;
+  const n=myBuf.length;
+  const ch=Math.min(2,myBuf.numberOfChannels);
+  const out=ctx.createBuffer(ch,n,OUT);
+  const steps=2**bits;
+  const hold=Math.max(1,Math.round(OUT/rate));
+  for(let c=0;c<ch;c++){
+    const src=myBuf.getChannelData(c);
+    const dst=out.getChannelData(c);
+    let last=0;
+    for(let i=0;i<n;i++){
+      if(i%hold===0){
+        let v=Math.max(-1,Math.min(1,src[i]));
+        const lv=Math.round((v+1)/2*(steps-1));
+        last=lv/(steps-1)*2-1;
+      }
+      dst[i]=last;
+    }
+  }
+  return out;
+}
+function myStop(){
+  if(myABTimer){ clearInterval(myABTimer); myABTimer=null;
+    document.getElementById('playAB').textContent='交互に聴き比べる'; }
+  if(mySrc){ try{mySrc.stop();}catch(e){} mySrc=null; }
+  document.getElementById('myStop').disabled=true;
+  document.getElementById('abOrig').classList.remove('playing');
+  document.getElementById('abLow').classList.remove('playing');
+}
+function myPlay(buf,label){
+  if(mySrc){ try{mySrc.stop();}catch(e){} mySrc=null; }
+  const ctx=audioCtx();
+  mySrc=ctx.createBufferSource(); mySrc.buffer=buf;
+  myGain=ctx.createGain();
+  myGain.gain.value=(+document.getElementById('myVol').value)/100*0.9;
+  mySrc.connect(myGain).connect(ctx.destination);
+  mySrc.onended=()=>{ if(!myABTimer){ document.getElementById('myStop').disabled=true;
+    document.getElementById('abOrig').classList.remove('playing');
+    document.getElementById('abLow').classList.remove('playing'); } };
+  mySrc.start();
+  document.getElementById('myStop').disabled=false;
+  document.getElementById('abOrig').classList.toggle('playing',label==='orig');
+  document.getElementById('abLow').classList.toggle('playing',label==='low');
+}
+function updateMy(){
+  if(!myBuf) return;
+  const rate=MY_RATES[+document.getElementById('myRate').value];
+  const bits=+document.getElementById('myBits').value;
+  document.getElementById('myRateV').textContent=rate.toLocaleString()+' Hz';
+  document.getElementById('myBitsV').textContent=bits+' ビット';
+  document.getElementById('myRateN').textContent=myRateNote(rate);
+  document.getElementById('myBitsN').textContent=myBitsNote(bits);
+
+  const sec=myBuf.duration, ch=Math.min(2,myBuf.numberOfChannels);
+  const origBytes=Math.round(myBuf.sampleRate*16*ch*sec/8);
+  const lowBytes=Math.round(rate*bits*ch*sec/8);
+  const ratio=lowBytes/origBytes;
+
+  document.getElementById('abOrigSpec').textContent=
+    `${myBuf.sampleRate.toLocaleString()} Hz ／ 16 bit ／ ${ch===1?'mono':'stereo'}`;
+  document.getElementById('abOrigSize').innerHTML=
+    myFmtBytes(origBytes)+' <small>（圧縮なし）</small>';
+  document.getElementById('abLowSpec').textContent=
+    `${rate.toLocaleString()} Hz ／ ${bits} bit ／ ${ch===1?'mono':'stereo'}`;
+  document.getElementById('abLowSize').innerHTML=
+    myFmtBytes(lowBytes)+' <small>（圧縮なし）</small>';
+  document.getElementById('abLowBar').style.width=Math.max(1,ratio*100)+'%';
+
+  drawMyWave(rate,bits);
+
+  const r=document.getElementById('myResult');
+  const pct=(ratio*100).toFixed(1);
+  let judge;
+  if(ratio>0.9) judge='ほとんど変わりません。違いを聞き分けるのは難しいでしょう。';
+  else if(ratio>0.5) judge='データ量は減りましたが、音質の差はまだ小さいかもしれません。';
+  else if(ratio>0.15) judge='はっきり違いが分かるはずです。高音が失われ、ザラつきも出ています。';
+  else judge='元の音とはかなり違って聞こえます。ここまで落とすと、音楽としては厳しくなります。';
+  r.innerHTML=
+    `<div class="ro"><div class="k">データ量の比</div><div class="v gold">${pct}%</div></div>`+
+    `<div class="ro"><div class="k">元の何分の1か</div><div class="v">1/${(1/ratio).toFixed(1)}</div></div>`+
+    `<div class="ro"><div class="k">減ったぶん</div><div class="v">${myFmtBytes(origBytes-lowBytes)}</div></div>`+
+    `<div class="calc">${rate.toLocaleString()} × ${bits} × ${ch} × ${sec.toFixed(1)}秒 ÷ 8 ＝ `+
+    `<b>${myFmtBytes(lowBytes)}</b>　　${judge}</div>`;
+}
+function drawMyWave(rate,bits){
+  const cv=document.getElementById('myCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const src=myBuf.getChannelData(0);
+  // 音が大きい部分を探して表示
+  let start=0, best=0;
+  const win=Math.floor(myBuf.sampleRate*0.02);
+  for(let i=0;i<src.length-win;i+=win){
+    let s=0;
+    for(let k=0;k<win;k+=8) s+=Math.abs(src[i+k]);
+    if(s>best){ best=s; start=i; }
+  }
+  const SHOW=Math.min(Math.floor(myBuf.sampleRate*0.012), src.length-start);
+  const steps=2**bits;
+  const hold=Math.max(1,Math.round(myBuf.sampleRate/rate));
+
+  [0,1].forEach(row=>{
+    const y0=row*H/2, hh=H/2;
+    c.strokeStyle='#D3DBEA'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(0,y0+hh/2); c.lineTo(W,y0+hh/2); c.stroke();
+    c.strokeStyle= row===0 ? '#2F5496' : '#C49A2B';
+    c.lineWidth=2; c.beginPath();
+    let last=0;
+    for(let px=0;px<W;px++){
+      const i=start+Math.floor(px/W*SHOW);
+      let v=Math.max(-1,Math.min(1,src[i]||0));
+      if(row===1){
+        if((i-start)%hold===0){
+          const lv=Math.round((v+1)/2*(steps-1));
+          last=lv/(steps-1)*2-1;
+        }
+        v=last;
+      }
+      const y=y0+hh/2-v*hh*0.42;
+      px?c.lineTo(px,y):c.moveTo(px,y);
+    }
+    c.stroke();
+    c.fillStyle= row===0 ? '#2F5496' : '#C49A2B';
+    c.font='bold 11px sans-serif'; c.textAlign='left';
+    c.fillText(row===0?'元の波形':`${rate.toLocaleString()}Hz / ${bits}bit`, 10, y0+16);
+  });
+  c.strokeStyle='#E7ECF5'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+}
+
+/* ファイル選択・ドラッグ */
+const myDrop=document.getElementById('myDrop');
+myDrop.addEventListener('click',()=>document.getElementById('myPick').click());
+myDrop.addEventListener('dragover',e=>{ e.preventDefault(); myDrop.classList.add('over'); });
+myDrop.addEventListener('dragleave',()=>myDrop.classList.remove('over'));
+myDrop.addEventListener('drop',async e=>{
+  e.preventDefault(); myDrop.classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(!f) return;
+  document.getElementById('myStatus').className='status';
+  document.getElementById('myStatus').textContent='読み込み中…';
+  await myLoadArrayBuffer(await f.arrayBuffer(), f.name, f.size);
+});
+document.getElementById('myPick').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  document.getElementById('myStatus').className='status';
+  document.getElementById('myStatus').textContent='読み込み中…';
+  await myLoadArrayBuffer(await f.arrayBuffer(), f.name, f.size);
+});
+
+/* サンプル音（和音＋メロディを合成して作る） */
+document.getElementById('mySample').addEventListener('click',()=>{
+  const ctx=audioCtx();
+  const SR=44100, sec=3.2;
+  const buf=ctx.createBuffer(1, Math.floor(SR*sec), SR);
+  const d=buf.getChannelData(0);
+  const notes=[261.63,329.63,392.00,523.25,392.00,329.63,261.63,329.63];
+  for(let i=0;i<d.length;i++){
+    const t=i/SR;
+    const idx=Math.min(notes.length-1,Math.floor(t/0.4));
+    const local=t-idx*0.4;
+    const env=Math.min(1,local*25)*Math.exp(-local*2.6);
+    // 倍音を含めて「楽器らしい」音に
+    let v=Math.sin(2*Math.PI*notes[idx]*t)*0.55
+        + Math.sin(2*Math.PI*notes[idx]*2*t)*0.22
+        + Math.sin(2*Math.PI*notes[idx]*3*t)*0.11
+        + Math.sin(2*Math.PI*notes[idx]*5*t)*0.06;
+    // シャリつく高音成分（標本化周波数の違いが分かるように）
+    v += Math.sin(2*Math.PI*8200*t)*0.05*env;
+    d[i]=v*env*0.75;
+  }
+  myBuf=buf; myName='サンプルの音（ドミソド）'; myOrigSize=0;
+  showMyLoaded();
+});
+
+/* マイク録音 */
+document.getElementById('myMic').addEventListener('click',async()=>{
+  const st=document.getElementById('myStatus');
+  st.className='status'; st.textContent='マイクの使用許可を待っています…';
+  let stream;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(err){
+    st.className='status err';
+    st.textContent = location.protocol==='file:'
+      ? 'マイクは https のページでのみ使えます。localhost か公開URLで開いてください。'
+      : 'マイクを使えませんでした。ブラウザのアドレスバー左のアイコンから許可を確認してください。（'+err.name+'）';
+    return;
+  }
+  const ctx=audioCtx();
+  const src=ctx.createMediaStreamSource(stream);
+  const proc=ctx.createScriptProcessor(4096,1,1);
+  const chunks=[]; let total=0;
+  const LIMIT=ctx.sampleRate*5;
+  proc.onaudioprocess=e=>{
+    const inp=e.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(inp));
+    total+=inp.length;
+    st.textContent='録音中… '+(total/ctx.sampleRate).toFixed(1)+'秒 / 5秒';
+    if(total>=LIMIT) finish();
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+  let finished=false;
+  function finish(){
+    if(finished) return; finished=true;
+    proc.disconnect(); src.disconnect();
+    stream.getTracks().forEach(t=>t.stop());
+    const buf=ctx.createBuffer(1,total,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    let off=0;
+    chunks.forEach(c=>{ d.set(c,off); off+=c.length; });
+    myBuf=buf; myName='録音した音（5秒）'; myOrigSize=0;
+    showMyLoaded();
+  }
+  setTimeout(finish,5400);
+});
+
+document.getElementById('myVol').addEventListener('input',e=>{
+  document.getElementById('myVolV').textContent=e.target.value+'%';
+  if(myGain) myGain.gain.value=+e.target.value/100*0.9;
+});
+['myRate','myBits'].forEach(id=>
+  document.getElementById(id).addEventListener('input',updateMy));
+document.querySelectorAll('[data-preset]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const [r,bits]=b.dataset.preset.split(',').map(Number);
+    document.getElementById('myRate').value=MY_RATES.indexOf(
+      MY_RATES.reduce((a,v)=>Math.abs(v-r)<Math.abs(a-r)?v:a));
+    document.getElementById('myBits').value=bits;
+    updateMy();
+  });
+});
+document.getElementById('playOrig').addEventListener('click',()=>{
+  if(!myBuf) return; myStop(); myPlay(myBuf,'orig');
+});
+document.getElementById('playLow').addEventListener('click',()=>{
+  if(!myBuf) return;
+  myStop();
+  const rate=MY_RATES[+document.getElementById('myRate').value];
+  const bits=+document.getElementById('myBits').value;
+  myPlay(myMakeBuffer(rate,bits),'low');
+});
+document.getElementById('playAB').addEventListener('click',()=>{
+  if(!myBuf) return;
+  if(myABTimer){ myStop(); return; }
+  const rate=MY_RATES[+document.getElementById('myRate').value];
+  const bits=+document.getElementById('myBits').value;
+  const low=myMakeBuffer(rate,bits);
+  const dur=Math.min(2.2, myBuf.duration);
+  let turn=0;
+  document.getElementById('playAB').textContent='とめる';
+  const go=()=>{
+    if(mySrc){ try{mySrc.stop();}catch(e){} }
+    myPlay(turn%2===0?myBuf:low, turn%2===0?'orig':'low');
+    turn++;
+  };
+  go();
+  myABTimer=setInterval(go, dur*1000+250);
+  document.getElementById('myStop').disabled=false;
+});
+document.getElementById('myStop').addEventListener('click',myStop);
 
 /* ===== 初期化 ===== */
 drawWave(); updateListenLabels(); updateData();
