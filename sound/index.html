@@ -488,6 +488,35 @@
 })();
 
 let ctxA=null;
+// マイクが使えないときの案内を、原因別に組み立てる
+function micErrorMessage(err){
+  const name=(err && err.name) ? err.name : '';
+  if(name==='NotAllowedError' || name==='SecurityError'){
+    // file:// で開くと安全なページとみなされず、許可を求める前に断られる
+    if(location.protocol==='file:'){
+      return 'マイクは https のページでのみ使えます。localhost か本番URLで開いてください。';
+    }
+    return 'ブラウザのアドレスバー左のアイコンからマイクを許可してください。';
+  }
+  if(name==='NotFoundError' || name==='DevicesNotFoundError'){
+    return 'マイクが見つかりません。マイクがつながっているか確認してください。';
+  }
+  if(name==='NotReadableError'){
+    return 'マイクを開けませんでした。ほかのアプリがマイクを使っていないか確認してください。';
+  }
+  return 'マイクを使えませんでした。（'+(name||'原因不明')+'）';
+}
+
+// マイクを取得する。file:// では navigator.mediaDevices 自体が無いことがあるので、
+// その場合も NotAllowedError として扱い、上の案内に合流させる
+function getMicStream(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    const e=new Error('mediaDevices unavailable'); e.name='NotAllowedError';
+    return Promise.reject(e);
+  }
+  return navigator.mediaDevices.getUserMedia({audio:true});
+}
+
 function audioCtx(){
   if(!ctxA) ctxA=new (window.AudioContext||window.webkitAudioContext)();
   if(ctxA.state==='suspended') ctxA.resume();
@@ -1001,12 +1030,10 @@ document.getElementById('myMic').addEventListener('click',async()=>{
   st.className='status'; st.textContent='マイクの使用許可を待っています…';
   let stream;
   try{
-    stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream=await getMicStream();
   }catch(err){
     st.className='status err';
-    st.textContent = location.protocol==='file:'
-      ? 'マイクは https のページでのみ使えます。localhost か公開URLで開いてください。'
-      : 'マイクを使えませんでした。ブラウザのアドレスバー左のアイコンから許可を確認してください。（'+err.name+'）';
+    st.textContent=micErrorMessage(err);
     return;
   }
   const ctx=audioCtx();
