@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>統計的推測を体験しよう（標本調査・信頼区間・標本の大きさ）｜情報ラボ</title>
+<meta name="description" content="一部を調べて全体を推測するしくみを、実際に標本をとりながら確かめられる無料ツール。信頼区間、標本の大きさの影響、かたよりの危険まで学べます。高校の情報IIに対応。">
+<link rel="canonical" href="https://joholab.net/stats/">
+<meta property="og:title" content="統計的推測を体験しよう｜情報ラボ">
+<meta property="og:description" content="一部から全体を推測する。信頼区間のしくみを体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/stats/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.gold{background:var(--gold);} button.gold:hover{background:#dbae3c;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; margin:0 auto;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+  .stt .v.ok{color:var(--ok);}
+  .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  /* 母集団の格子 */
+  .pop{display:grid; gap:2px; justify-content:center; margin:0 auto;}
+  .pp{width:9px; height:9px; border-radius:2px; background:#D8DEE8;}
+  .pp.yes{background:#2F5496;}
+  .pp.no{background:#C9D2E0;}
+  .pp.pick{outline:2px solid var(--gold); outline-offset:0;}
+
+  /* 信頼区間の一覧 */
+  .cilist{display:flex; flex-direction:column; gap:3px; max-height:260px; overflow-y:auto;
+    background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px;}
+  .ci{display:flex; align-items:center; gap:8px; font-size:11.5px;
+    font-family:ui-monospace,Consolas,monospace;}
+  .ci .bar{flex:1; height:14px; position:relative; background:#F2F5FA; border-radius:3px;}
+  .ci .seg{position:absolute; height:100%; background:rgba(47,84,150,.55); border-radius:3px;}
+  .ci .seg.miss{background:rgba(192,57,43,.6);}
+  .ci .dot{position:absolute; width:4px; height:14px; background:#1F3864;}
+  .ci .lb{flex:0 0 88px; color:var(--muted); text-align:right;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 統計的推測</p>
+    <h1>統計的推測を体験しよう</h1>
+    <p class="lead">全部を調べなくても、一部から全体が推測できます。どこまで信じてよいのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabSample" aria-selected="true" aria-controls="toolSample">一部から全体を知る</button>
+    <button class="tab" role="tab" id="tabCI" aria-selected="false" aria-controls="toolCI">信頼区間のしくみ</button>
+    <button class="tab" role="tab" id="tabBias" aria-selected="false" aria-controls="toolBias">かたよりの危険</button>
+  </div>
+
+  <!-- ===== 標本調査 ===== -->
+  <section class="tool show" id="toolSample" role="tabpanel" aria-labelledby="tabSample">
+    <div class="panel">
+      <h2>10,000人の中に、賛成の人が何％いるでしょうか</h2>
+      <p class="hint" style="margin-top:0;">
+        本当の割合は隠されています。何人かを選んで聞いてみて、全体を推測してください。
+      </p>
+      <div class="row">
+        <button class="primary" id="sPick10">10人に聞く</button>
+        <button class="primary" id="sPick100">100人に聞く</button>
+        <button class="primary" id="sPick1000">1000人に聞く</button>
+        <span style="flex:1"></span>
+        <button class="chip gold" id="sReveal">答えを見る</button>
+        <button class="chip" id="sNew">別の集団にする</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="pop" id="sPop"></div>
+      <p class="hint" style="text-align:center;">
+        10,000人の集団（1つの四角が1人）。選んだ人が金色の枠で示されます。
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">聞いた人数</div><div class="v" id="sN">0 人</div></div>
+      <div class="stt"><div class="k">標本での割合</div><div class="v gold" id="sRate">–</div></div>
+      <div class="stt"><div class="k">推測の幅（95%）</div><div class="v" id="sCI" style="font-size:15px;">–</div></div>
+      <div class="stt"><div class="k">本当の割合</div><div class="v" id="sTrue">？</div></div>
+    </div>
+
+    <div class="msg" id="sMsg"></div>
+  </section>
+
+  <!-- ===== 信頼区間 ===== -->
+  <section class="tool" id="toolCI" role="tabpanel" aria-labelledby="tabCI">
+    <div class="panel">
+      <h2>同じ調査を何度もくり返すと、どうなるでしょうか</h2>
+      <div class="sl">
+        <div class="top"><label for="ciN">1回の調査で聞く人数</label><span class="val" id="ciNv">100 人</span></div>
+        <input type="range" id="ciN" min="0" max="4" step="1" value="2">
+      </div>
+      <div class="row">
+        <button class="primary" id="ciRun">20回 調査する</button>
+        <button class="chip" id="ciClear">消す</button>
+        <span style="flex:1"></span>
+        <span style="font-size:13.5px;color:var(--ink);">本当の割合 <b id="ciTrue" style="font-family:ui-monospace,monospace;">40%</b></span>
+      </div>
+      <p class="hint">それぞれの調査で「この範囲に本当の値があるはず」という幅を計算します。</p>
+    </div>
+
+    <div class="cilist" id="ciList">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">
+        「20回 調査する」を押してください</div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">調査した回数</div><div class="v" id="ciCount">0</div></div>
+      <div class="stt"><div class="k">当たった回数</div><div class="v ok" id="ciHit">0</div></div>
+      <div class="stt"><div class="k">外れた回数</div><div class="v ng" id="ciMiss">0</div></div>
+      <div class="stt"><div class="k">的中率</div><div class="v gold" id="ciRate">–</div></div>
+    </div>
+
+    <div class="msg" id="ciMsg"></div>
+  </section>
+
+  <!-- ===== かたより ===== -->
+  <section class="tool" id="toolBias" role="tabpanel" aria-labelledby="tabBias">
+    <div class="panel">
+      <h2>どうやって選ぶかで、結果が変わります</h2>
+      <div class="row">
+        <button class="chip" data-bias="random" aria-pressed="true">くじ引きで選ぶ</button>
+        <button class="chip" data-bias="front">手前の人だけに聞く</button>
+        <button class="chip" data-bias="web">答えてくれた人だけ集計</button>
+      </div>
+      <p class="hint" id="bHint"></p>
+    </div>
+
+    <div class="panel">
+      <div class="pop" id="bPop"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">聞いた人数</div><div class="v" id="bN">–</div></div>
+      <div class="stt"><div class="k">標本での割合</div><div class="v gold" id="bRate">–</div></div>
+      <div class="stt"><div class="k">本当の割合</div><div class="v" id="bTrue">–</div></div>
+      <div class="stt"><div class="k">ずれ</div><div class="v" id="bGap">–</div></div>
+    </div>
+
+    <div class="msg" id="bMsg"></div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>全部を調べなくてもよい</h2>
+    <p>日本の有権者は約1億人います。内閣支持率を知りたいとき、1億人全員に聞くのは不可能です。しかし新聞社は、1000人程度に聞いただけで「支持率は何％」と発表します。</p>
+    <p>なぜそんなことができるのでしょうか。その根拠を与えるのが統計的推測です。</p>
+    <p>調べたい対象の全体を<strong>母集団</strong>、そこから選び出した一部を<strong>標本</strong>といいます。標本を調べて母集団の性質を推測する調査方法が、標本調査です。</p>
+    <table>
+      <tr><th>方法</th><th>特徴</th></tr>
+      <tr><td>全数調査</td><td>全部を調べる。正確だが、費用と時間がかかる</td></tr>
+      <tr><td>標本調査</td><td>一部を調べる。速くて安いが、誤差が生じる</td></tr>
+    </table>
+    <p>国勢調査は全数調査、視聴率や世論調査は標本調査です。製品の耐久試験のように、調べると壊れてしまうものは、そもそも全数調査ができません。</p>
+
+    <h2>標本には誤差がある</h2>
+    <p>標本から求めた割合は、母集団の本当の割合とぴったり同じにはなりません。たまたま賛成の人が多く選ばれることもあれば、少ないこともあります。この差を標本誤差といいます。</p>
+    <p>重要なのは、この誤差が<strong>どのくらいの大きさか計算できる</strong>ことです。誤差が避けられないなら、せめてその範囲を示そう、という発想です。</p>
+
+    <h2>信頼区間</h2>
+    <p>「支持率は42%」ではなく「42%±3%」のように幅で示すのが信頼区間です。よく使われる95%信頼区間は、次の式で求められます。</p>
+    <div class="formula">誤差の幅 ＝ 1.96 × √( p(1−p) ÷ n )</div>
+    <p>p は標本での割合、n は標本の大きさです。1.96 という数は、正規分布で真ん中95%にあたる範囲を表しています。</p>
+
+    <h3>95%とは何の意味か</h3>
+    <p>ここは誤解されやすいところです。「本当の値が95%の確率でこの範囲にある」という意味では、厳密にはありません。</p>
+    <p>正しくは、<strong>同じ調査を100回くり返せば、そのうち約95回は本当の値を含む</strong>という意味です。本当の値は動きません。動くのは、調査のたびに変わる区間のほうです。</p>
+    <p>上のツールの2つ目で、この様子が確かめられます。20回の調査それぞれに区間が引かれ、本当の値を含んだものと外したものが色分けされます。20回なら1回程度は外れるはずです。</p>
+
+    <h2>標本を増やすとどうなるか</h2>
+    <p>式を見ると、誤差の幅は n の平方根に反比例します。ここから重要な性質が導かれます。</p>
+    <div class="formula">誤差を半分にするには、標本を4倍にする必要がある</div>
+    <p>100人を400人に増やしても、誤差は半分になるだけです。1000人を10000人にしても、精度は3倍強しか上がりません。費用は10倍かかるのにです。</p>
+    <p>世論調査でよく1000人前後が使われるのは、この兼ね合いによります。1000人なら誤差はおよそ±3%。これ以上増やしても、費用に見合う精度の向上が得られません。</p>
+
+    <h3>母集団の大きさは関係ない</h3>
+    <p>意外に思えますが、母集団が1万人でも1億人でも、必要な標本の大きさはほとんど変わりません。式に母集団の大きさが出てこないことからも分かります。</p>
+    <p>鍋のスープの味見に似ています。大鍋でも小鍋でも、よくかき混ぜてあれば、味見に必要なのはスプーン1杯です。大事なのは量ではなく、<strong>よくかき混ぜること</strong>、つまり偏りなく選ぶことです。</p>
+
+    <h2>かたよりは誤差より怖い</h2>
+    <p>標本誤差は計算できますが、<strong>かたより（バイアス）は計算できません</strong>。そして、標本を増やしても解決しません。</p>
+    <p>有名な失敗例があります。1936年のアメリカ大統領選挙で、ある雑誌が200万人以上という巨大な調査を行い、結果を外しました。標本が電話帳と自動車登録名簿から集められたため、当時は裕福だった層にかたよっていたのです。同じ選挙で、わずか数千人の調査を行った別の調査機関が正しく予測しました。</p>
+    <p>この教訓は明確です。<strong>数が多くても、選び方が悪ければ当たらない</strong>。</p>
+
+    <h3>よくあるかたより</h3>
+    <ul>
+      <li><strong>選び方のかたより</strong>：特定の層だけが選ばれる。駅前で聞けば、その時間に駅にいる人にかたよります</li>
+      <li><strong>回答のかたより</strong>：答えてくれた人だけを集計する。関心の高い人ほど答えるので、意見が極端に出ます</li>
+      <li><strong>質問のかたより</strong>：聞き方で答えが変わる。「賛成しますか」と「反対しますか」では結果が違います</li>
+    </ul>
+    <p>上のツールの3つ目で、選び方を変えたときに結果がどうずれるか確かめられます。</p>
+
+    <h2>無作為抽出</h2>
+    <p>かたよりを防ぐ基本が、無作為抽出（ランダムサンプリング）です。母集団のすべての個体が、等しい確率で選ばれるようにします。</p>
+    <p>「適当に選ぶ」ことではありません。人間が適当に選ぶと、必ず何らかのかたよりが入ります。乱数表や乱数を発生させるプログラムを使い、意図が入らないようにします。</p>
+    <p>電話調査では、実在するかどうかに関わらず乱数で電話番号を作る方法が使われます。名簿に載っていない人も対象にできるためです。</p>
+
+    <h2>調査結果を見るときの問い</h2>
+    <p>ニュースで調査結果を見たとき、次の点を確認する習慣が役立ちます。</p>
+    <ul>
+      <li>何人に聞いたか（標本の大きさ）</li>
+      <li>どうやって選んだか（無作為か、偏っていないか）</li>
+      <li>誤差の幅が示されているか</li>
+      <li>どんな質問をしたか</li>
+      <li>回答率はどのくらいか</li>
+    </ul>
+    <p>「A党42%、B党39%」と報じられても、誤差が±3%なら、この差には意味がないかもしれません。数字の背後にある不確かさを読み取ることが大切です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>一部から全体を知る</strong>：10人・100人・1000人と聞く人数を変えて、推測の幅がどう変わるか確かめられます。最後に答え合わせができます。</li>
+      <li><strong>信頼区間のしくみ</strong>：同じ調査を20回くり返すと、いくつが本当の値を含むかを確認できます。</li>
+      <li><strong>かたよりの危険</strong>：選び方を変えると、結果がどうずれるかを試せます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabSample','toolSample'],['tabCI','toolCI'],['tabBias','toolBias']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabBias') drawBias();
+    });
+  });
+})();
+
+const POP_N=10000, COLS=125;
+function ciWidth(p,n){ return 1.96*Math.sqrt(Math.max(0,p*(1-p))/n); }
+
+/* ===== 標本調査 ===== */
+let sPop=[], sTrue=0, sPicked=[], sRevealed=false;
+function newSPop(){
+  sTrue=0.22+Math.random()*0.56;
+  sPop=Array.from({length:POP_N},()=>Math.random()<sTrue?1:0);
+  sTrue=sPop.reduce((a,b)=>a+b,0)/POP_N;   // 実際の割合
+  sPicked=[]; sRevealed=false;
+  drawSPop();
+  document.getElementById('sN').textContent='0 人';
+  document.getElementById('sRate').textContent='–';
+  document.getElementById('sCI').textContent='–';
+  document.getElementById('sTrue').textContent='？';
+  document.getElementById('sMsg').className='msg';
+  document.getElementById('sMsg').innerHTML=
+    '<div class="t">10,000人の集団があります</div>'+
+    'この中に賛成の人が何％いるかは、まだ分かりません。'+
+    '<b>何人かに聞いて、全体を推測してみましょう。</b>';
+}
+function drawSPop(){
+  const box=document.getElementById('sPop');
+  box.style.gridTemplateColumns=`repeat(${COLS},9px)`;
+  const picked=new Set(sPicked);
+  // 大きすぎるので間引いて表示（2000個）
+  const SHOW=2000, stepN=POP_N/SHOW;
+  let h='';
+  for(let i=0;i<SHOW;i++){
+    const idx=Math.floor(i*stepN);
+    let cls='pp';
+    if(sRevealed) cls+= sPop[idx]?' yes':' no';
+    if(picked.has(idx)) cls+=' pick';
+    h+=`<div class="${cls}"></div>`;
+  }
+  box.style.gridTemplateColumns=`repeat(50,9px)`;
+  box.innerHTML=h;
+}
+function doSample(n){
+  sPicked=[];
+  const used=new Set();
+  while(sPicked.length<n){
+    const i=Math.floor(Math.random()*POP_N);
+    if(!used.has(i)){ used.add(i); sPicked.push(i); }
+  }
+  const yes=sPicked.reduce((a,i)=>a+sPop[i],0);
+  const p=yes/n;
+  const w=ciWidth(p,n);
+  document.getElementById('sN').textContent=n.toLocaleString()+' 人';
+  document.getElementById('sRate').textContent=(p*100).toFixed(1)+'%';
+  document.getElementById('sCI').textContent=
+    ((p-w)*100).toFixed(1)+'〜'+((p+w)*100).toFixed(1)+'%';
+  drawSPop();
+  const m=document.getElementById('sMsg');
+  m.className='msg';
+  m.innerHTML=`<div class="t">${n.toLocaleString()}人に聞きました　→　${(p*100).toFixed(1)}%が賛成</div>`+
+    `誤差の幅は <b>±${(w*100).toFixed(1)}%</b>。`+
+    `つまり本当の割合は <b>${((p-w)*100).toFixed(1)}%〜${((p+w)*100).toFixed(1)}%</b> のあたりだと推測できます。`+
+    (n<=10 ? '　人数が少ないので、幅がとても広くなっています。' :
+     n>=1000 ? '　1000人も聞くと、幅は±3%程度まで狭まります。世論調査でこの人数が使われる理由です。' :
+     '　もっと人数を増やすと、幅はどうなるでしょうか。');
+}
+document.getElementById('sPick10').addEventListener('click',()=>doSample(10));
+document.getElementById('sPick100').addEventListener('click',()=>doSample(100));
+document.getElementById('sPick1000').addEventListener('click',()=>doSample(1000));
+document.getElementById('sNew').addEventListener('click',newSPop);
+document.getElementById('sReveal').addEventListener('click',()=>{
+  sRevealed=true; drawSPop();
+  document.getElementById('sTrue').textContent=(sTrue*100).toFixed(1)+'%';
+  const m=document.getElementById('sMsg');
+  if(!sPicked.length){
+    m.className='msg';
+    m.innerHTML=`<div class="t">本当の割合は ${(sTrue*100).toFixed(1)}% でした</div>`+
+      '青が賛成、灰色が反対の人です。';
+    return;
+  }
+  const n=sPicked.length;
+  const p=sPicked.reduce((a,i)=>a+sPop[i],0)/n;
+  const w=ciWidth(p,n);
+  const hit = sTrue>=p-w && sTrue<=p+w;
+  m.className='msg '+(hit?'ok':'ng');
+  m.innerHTML=`<div class="t">本当の割合は ${(sTrue*100).toFixed(1)}% でした</div>`+
+    `${n.toLocaleString()}人の調査では ${(p*100).toFixed(1)}%、`+
+    `推測した幅は ${((p-w)*100).toFixed(1)}〜${((p+w)*100).toFixed(1)}%。`+
+    (hit ? '　<b>本当の値は、この幅の中に入っていました。</b>'
+         : '　<b>今回は幅の外でした。</b>95%信頼区間なので、20回に1回程度はこうなります。')+
+    `　ずれは ${Math.abs(p-sTrue)*100 < 0.05 ? '0.0' : (Math.abs(p-sTrue)*100).toFixed(1)}% です。`;
+});
+
+/* ===== 信頼区間 ===== */
+const CI_NS=[20,50,100,400,1000];
+const CI_TRUE=0.40;
+let ciRuns=[];
+function runCI(){
+  const n=CI_NS[+document.getElementById('ciN').value];
+  for(let k=0;k<20;k++){
+    let yes=0;
+    for(let i=0;i<n;i++) if(Math.random()<CI_TRUE) yes++;
+    const p=yes/n, w=ciWidth(p,n);
+    ciRuns.push({p,w,n,hit: CI_TRUE>=p-w && CI_TRUE<=p+w});
+  }
+  drawCI();
+}
+function drawCI(){
+  const box=document.getElementById('ciList');
+  if(!ciRuns.length){
+    box.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">'+
+      '「20回 調査する」を押してください</div>';
+    return;
+  }
+  box.innerHTML=ciRuns.slice(-40).map((r,i)=>{
+    const lo=Math.max(0,r.p-r.w), hi=Math.min(1,r.p+r.w);
+    return `<div class="ci">
+      <div class="lb">${(r.p*100).toFixed(1)}% ±${(r.w*100).toFixed(1)}</div>
+      <div class="bar">
+        <div class="seg${r.hit?'':' miss'}" style="left:${lo*100}%;width:${(hi-lo)*100}%"></div>
+        <div class="dot" style="left:${CI_TRUE*100}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+  const hit=ciRuns.filter(r=>r.hit).length;
+  document.getElementById('ciCount').textContent=ciRuns.length;
+  document.getElementById('ciHit').textContent=hit;
+  document.getElementById('ciMiss').textContent=ciRuns.length-hit;
+  document.getElementById('ciRate').textContent=(hit/ciRuns.length*100).toFixed(1)+'%';
+
+  const m=document.getElementById('ciMsg');
+  const rate=hit/ciRuns.length*100;
+  m.className='msg'+(Math.abs(rate-95)<5 && ciRuns.length>=40 ? ' ok':'');
+  m.innerHTML=`<div class="t">${ciRuns.length}回のうち ${hit}回（${rate.toFixed(1)}%）が本当の値を含みました</div>`+
+    `縦の線が本当の割合 40%。青い帯が「本当の値を含んだ」区間、赤い帯が「外した」区間です。`+
+    `　95%信頼区間とは、<b>くり返せば約95%が本当の値を含む</b>という意味です。`+
+    (ciRuns.length<40 ? '　もっとくり返すと、95%に近づいていきます。' : '');
+}
+document.getElementById('ciN').addEventListener('input',e=>{
+  document.getElementById('ciNv').textContent=CI_NS[+e.target.value]+' 人';
+});
+document.getElementById('ciRun').addEventListener('click',runCI);
+document.getElementById('ciClear').addEventListener('click',()=>{ ciRuns=[]; drawCI(); });
+document.getElementById('ciTrue').textContent=(CI_TRUE*100)+'%';
+
+/* ===== かたより ===== */
+let bKind='random';
+const B_DESC={
+  random:'全員から等しい確率で選びます。これが正しいやり方です。',
+  front:'前のほうにいる人だけに聞きます。前に座る人の意見がかたよっていたら、どうなるでしょうか。',
+  web:'アンケートを配り、答えてくれた人だけ集計します。関心のある人ほど答える傾向があります。'
+};
+function drawBias(){
+  document.getElementById('bHint').textContent=B_DESC[bKind];
+  // 母集団：前半は賛成が多い（席順と意見に関係がある想定）
+  const N=4000;
+  const pop=[];
+  for(let i=0;i<N;i++){
+    const pos=i/N;                   // 0が前、1が後ろ
+    const pr=0.72-0.44*pos;          // 前ほど賛成が多い
+    pop.push({yes: Math.random()<pr?1:0, pos});
+  }
+  const trueRate=pop.reduce((a,p)=>a+p.yes,0)/N;
+
+  let picked=[];
+  if(bKind==='random'){
+    const used=new Set();
+    while(picked.length<400){
+      const i=Math.floor(Math.random()*N);
+      if(!used.has(i)){ used.add(i); picked.push(i); }
+    }
+  }else if(bKind==='front'){
+    for(let i=0;i<400;i++) picked.push(i);   // 前から400人
+  }else{
+    // 賛成の人ほど答える（関心が高い）
+    const used=new Set();
+    let guard=0;
+    while(picked.length<400 && guard<40000){
+      guard++;
+      const i=Math.floor(Math.random()*N);
+      if(used.has(i)) continue;
+      const willAnswer = pop[i].yes ? (Math.random()<0.75) : (Math.random()<0.25);
+      if(willAnswer){ used.add(i); picked.push(i); }
+    }
+  }
+  const p=picked.reduce((a,i)=>a+pop[i].yes,0)/picked.length;
+
+  // 表示
+  const box=document.getElementById('bPop');
+  box.style.gridTemplateColumns='repeat(50,9px)';
+  const ps=new Set(picked);
+  box.innerHTML=Array.from({length:N},(_,i)=>
+    `<div class="pp ${pop[i].yes?'yes':'no'}${ps.has(i)?' pick':''}"></div>`).join('');
+
+  document.getElementById('bN').textContent=picked.length+' 人';
+  document.getElementById('bRate').textContent=(p*100).toFixed(1)+'%';
+  document.getElementById('bTrue').textContent=(trueRate*100).toFixed(1)+'%';
+  const gap=(p-trueRate)*100;
+  document.getElementById('bGap').textContent=(gap>=0?'+':'')+gap.toFixed(1)+'%';
+  document.getElementById('bGap').className='v '+(Math.abs(gap)<3?'ok':'ng');
+
+  const m=document.getElementById('bMsg');
+  if(bKind==='random'){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">くじ引きで選んだ結果：${(p*100).toFixed(1)}%（本当は ${(trueRate*100).toFixed(1)}%）</div>`+
+      'ほぼ一致しました。無作為に選べば、標本は母集団を正しく映します。'+
+      '　残るずれは<b>標本誤差</b>で、人数を増やせば小さくなります。';
+  }else if(bKind==='front'){
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">前の人だけに聞いた結果：${(p*100).toFixed(1)}%（本当は ${(trueRate*100).toFixed(1)}%）</div>`+
+      `<b>${Math.abs(gap).toFixed(1)}%もずれました。</b>`+
+      'この集団では、前にいる人ほど賛成が多いという性質がありました。'+
+      'そこだけを選んだので、結果がかたよっています。'+
+      '　<b>人数を増やしても、このずれは直りません。</b>';
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">答えてくれた人だけ集計：${(p*100).toFixed(1)}%（本当は ${(trueRate*100).toFixed(1)}%）</div>`+
+      `<b>${Math.abs(gap).toFixed(1)}%ずれました。</b>`+
+      '賛成の人のほうが積極的に回答したためです。'+
+      'ネット上の任意参加アンケートで、よく起きる問題です。'+
+      '　<b>回答率が低い調査は、この危険があります。</b>';
+  }
+}
+document.querySelectorAll('[data-bias]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-bias]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    bKind=b.dataset.bias; drawBias();
+  });
+});
+
+/* ===== 初期化 ===== */
+newSPop(); drawCI(); drawBias();
+</script>
+</body>
+</html>

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>機械学習を体験しよう（学習と推論・教師あり学習・過学習）｜情報ラボ</title>
+<meta name="description" content="点を打って学習させ、予測させる。機械学習の流れ、教師あり学習と教師なし学習の違い、過学習のしくみを実際に動かして確かめられる無料ツール。高校の情報IIに対応。">
+<link rel="canonical" href="https://joholab.net/ml/">
+<meta property="og:title" content="機械学習を体験しよう｜情報ラボ">
+<meta property="og:description" content="学習と推論、過学習。機械学習のしくみを動かして確かめる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/ml/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --clsA:#C0392B; --clsB:#2F5496;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  button.clsA{background:var(--clsA);} button.clsA:hover{background:#d4503f;}
+  button.clsB{background:var(--clsB);} button.clsB:hover{background:#3a63ad;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; margin:0 auto; touch-action:none;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+  .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .steps{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .st{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; font-size:13.5px; color:var(--muted);}
+  .st b{display:block; font-size:11.5px;}
+  .st.now{border-color:var(--navy); background:#EEF3FB; color:var(--ink); font-weight:700;}
+  .st.done{border-color:var(--ok); background:#F1F8F3; color:var(--ok);}
+
+  .legend{display:flex; gap:16px; justify-content:center; flex-wrap:wrap; font-size:13px;
+    color:var(--muted); margin-top:10px;}
+  .legend i{display:inline-block; width:14px; height:14px; border-radius:50%; margin-right:5px;
+    vertical-align:-2px;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 機械学習</p>
+    <h1>機械学習を体験しよう</h1>
+    <p class="lead">コンピュータが「学ぶ」とは、どういうことなのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabTeach" aria-selected="true" aria-controls="toolTeach">教えて、当てさせる</button>
+    <button class="tab" role="tab" id="tabOver" aria-selected="false" aria-controls="toolOver">覚えすぎる問題</button>
+    <button class="tab" role="tab" id="tabKind" aria-selected="false" aria-controls="toolKind">学習の種類</button>
+  </div>
+
+  <!-- ===== 教師あり学習 ===== -->
+  <section class="tool show" id="toolTeach" role="tabpanel" aria-labelledby="tabTeach">
+    <div class="steps">
+      <div class="st" id="ts1"><b>ステップ 1</b>データに答えをつける</div>
+      <div class="st" id="ts2"><b>ステップ 2</b>学習させる</div>
+      <div class="st" id="ts3"><b>ステップ 3</b>新しいデータを予測</div>
+    </div>
+
+    <div class="panel">
+      <h2>グラフをクリックして、点を置いてください</h2>
+      <div class="row">
+        <button class="primary clsA" id="tA" aria-pressed="true">赤グループを置く</button>
+        <button class="primary clsB" id="tB">青グループを置く</button>
+        <span style="flex:1"></span>
+        <button class="primary" id="tLearn">学習させる</button>
+        <button class="chip" id="tSample">例を読み込む</button>
+        <button class="chip" id="tClear">消す</button>
+      </div>
+      <p class="hint" id="tHint">それぞれのグループの点を、いくつか置いてみてください（各3個以上）。</p>
+    </div>
+
+    <canvas id="tCv" width="700" height="440"></canvas>
+    <div class="legend">
+      <span><i style="background:#C0392B"></i>赤グループ</span>
+      <span><i style="background:#2F5496"></i>青グループ</span>
+      <span><i style="background:#C49A2B"></i>予測したい点</span>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">教えたデータ</div><div class="v" id="tN">0 個</div></div>
+      <div class="stt"><div class="k">学習の状態</div><div class="v" id="tState" style="font-size:15px;">まだ</div></div>
+      <div class="stt"><div class="k">正しく分けられた割合</div><div class="v gold" id="tAcc">–</div></div>
+    </div>
+
+    <div class="msg" id="tMsg"></div>
+  </section>
+
+  <!-- ===== 過学習 ===== -->
+  <section class="tool" id="toolOver" role="tabpanel" aria-labelledby="tabOver">
+    <div class="panel">
+      <h2>複雑にすればするほど、良くなるのでしょうか</h2>
+      <div class="sl">
+        <div class="top"><label for="oDeg">モデルの複雑さ</label><span class="val" id="oDegV">1次（直線）</span></div>
+        <input type="range" id="oDeg" min="1" max="12" step="1" value="1">
+      </div>
+      <div class="row">
+        <button class="chip" id="oNew">別のデータにする</button>
+        <span style="flex:1"></span>
+        <label style="font-size:13.5px;color:var(--ink);cursor:pointer;">
+          <input type="checkbox" id="oShowTest" checked> テスト用のデータも表示</label>
+      </div>
+      <p class="hint">青い点で学習し、オレンジの点（学習に使っていないデータ）で答え合わせをします。</p>
+    </div>
+
+    <canvas id="oCv" width="700" height="400"></canvas>
+    <div class="legend">
+      <span><i style="background:#2F5496"></i>学習用データ</span>
+      <span><i style="background:#E67E22"></i>テスト用データ（見せていない）</span>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">学習データの誤差</div><div class="v" id="oTrain">–</div></div>
+      <div class="stt"><div class="k">テストデータの誤差</div><div class="v ng" id="oTest">–</div></div>
+      <div class="stt"><div class="k">判定</div><div class="v" id="oJudge" style="font-size:15px;">–</div></div>
+    </div>
+
+    <div class="msg" id="oMsg"></div>
+  </section>
+
+  <!-- ===== 学習の種類 ===== -->
+  <section class="tool" id="toolKind" role="tabpanel" aria-labelledby="tabKind">
+    <div class="panel">
+      <h2>3つの学習のしかた</h2>
+      <div class="row" id="kBtns"></div>
+    </div>
+
+    <div class="panel" id="kDetail"></div>
+
+    <div class="panel">
+      <h2>身近な例で考える</h2>
+      <div id="kExamples"></div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>機械学習とは</h2>
+    <p>これまでのプログラムは、人が手順をすべて書いていました。「もし気温が30度以上なら」「その次にこれを計算して」というように、条件と処理を明示します。</p>
+    <p>しかし、うまく書けない問題があります。たとえば「写真に写っているのが猫かどうか」を判定するプログラム。猫の特徴を条件文で書き出そうとしても、耳の形も毛の色も姿勢も無数にあり、書き切れません。</p>
+    <p>そこで発想を変えます。<strong>手順を教えるかわりに、大量の例を見せる。</strong> コンピュータが例の中から規則性を見つけ出し、判断の基準を自分で作る。これが機械学習です。</p>
+
+    <h2>学習と推論</h2>
+    <p>機械学習は、大きく2つの段階に分かれます。</p>
+    <table>
+      <tr><th>段階</th><th>すること</th></tr>
+      <tr><td>学習（トレーニング）</td><td>大量のデータから規則性を見つけ、モデルを作る</td></tr>
+      <tr><td>推論（予測）</td><td>できたモデルを使って、新しいデータを判断する</td></tr>
+    </table>
+    <p>学習には時間と計算資源がかかりますが、一度モデルができれば、推論は高速に行えます。スマートフォンの顔認証が一瞬で終わるのは、学習済みのモデルを使って推論だけをしているからです。</p>
+
+    <h2>3つの学習のしかた</h2>
+
+    <h3>教師あり学習</h3>
+    <p>データに正解のラベルをつけて学習させる方法です。「この写真は猫」「これは犬」と教えていきます。</p>
+    <p>用途は2つに分かれます。<strong>分類</strong>は、猫か犬かのようにグループを当てるもの。<strong>回帰</strong>は、明日の気温のように数値を予測するものです。</p>
+    <p>上のツールの1つ目は、この教師あり学習の分類にあたります。2つのグループの点を教えると、境界線が引かれ、新しい点がどちらに属するかを予測できるようになります。</p>
+
+    <h3>教師なし学習</h3>
+    <p>正解を教えず、データの構造だけから規則性を見つけさせる方法です。「似たものどうしをまとめて」と指示すると、コンピュータが自分でグループを作ります。</p>
+    <p>何がどのグループかは、あらかじめ決まっていません。結果を見て人が意味づけをします。顧客をいくつかのタイプに分ける、といった用途で使われます。</p>
+
+    <h3>強化学習</h3>
+    <p>行動に対して報酬を与え、報酬が最大になる行動を試行錯誤の中から見つけさせる方法です。正解は教えず、良かったか悪かったかだけを伝えます。</p>
+    <p>ゲームで高得点を取る、ロボットが歩けるようになる、といった場面で使われます。囲碁で人間の名人に勝ったプログラムも、この方法を中心にしています。</p>
+
+    <h2>過学習という落とし穴</h2>
+    <p>機械学習で最も注意すべき問題が、過学習（オーバーフィッティング）です。</p>
+    <p>モデルを複雑にすればするほど、学習用のデータには合うようになります。極端に複雑にすれば、すべての点をぴったり通る線が引けます。一見、完璧に見えます。</p>
+    <p>しかし、それは<strong>データの偶然のばらつきまで覚えてしまった</strong>状態です。新しいデータを与えると、まったく外れた予測をします。</p>
+    <p>試験勉強に例えるなら、過去問の答えを丸暗記した状態です。同じ問題なら満点ですが、少し変えられると解けません。本質を理解していないからです。</p>
+    <p>上のツールの2つ目で、この現象を確かめられます。モデルを複雑にすると学習データの誤差はどんどん減りますが、見せていないテストデータの誤差は途中から増えていきます。</p>
+
+    <h3>どう防ぐか</h3>
+    <ul>
+      <li><strong>データを分ける</strong>：学習用とテスト用に分け、テスト用で性能を測る</li>
+      <li><strong>複雑さを抑える</strong>：必要以上に複雑なモデルを使わない</li>
+      <li><strong>データを増やす</strong>：データが多いほど、偶然のばらつきの影響が小さくなる</li>
+    </ul>
+    <p>逆に、モデルが単純すぎて規則性をとらえきれない状態は、未学習（アンダーフィッティング）といいます。ちょうどよい複雑さを見つけることが、機械学習の重要な作業です。</p>
+
+    <h2>データの質が結果を決める</h2>
+    <p>機械学習の性能は、アルゴリズムよりもデータで決まる面が大きくあります。</p>
+    <p>特に注意すべきが、データのかたよりです。学習に使ったデータがかたよっていれば、モデルもかたよります。特定の人種の顔写真が少ないデータで学習した顔認識は、その人種の認識精度が下がります。過去の採用データで学習した選考システムは、過去の差別をそのまま再現します。</p>
+    <p>これはアルゴリズムの誤りではありません。<strong>与えられたデータに忠実に学んだ結果</strong>です。だからこそ、どんなデータで学習させるかを慎重に考える必要があります。</p>
+
+    <h2>説明できないという問題</h2>
+    <p>もう一つの課題が、判断の理由が分からないことです。特に深層学習（ディープラーニング）では、モデルの内部が複雑すぎて、なぜその答えを出したのか人間には追えません。これをブラックボックス問題といいます。</p>
+    <p>「なんとなく正しそう」では困る場面があります。融資の審査で落とされた人に理由を説明できない、医療診断の根拠を示せない。こうした問題に対応するため、判断の理由を示せる技術の研究が進められています。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>教えて、当てさせる</strong>：2色の点を置いて学習させると、境界線が引かれます。新しい点を置くと、どちらに分類されるかが分かります。</li>
+      <li><strong>覚えすぎる問題</strong>：モデルの複雑さを変えると、学習データとテストデータの誤差がどう変わるかを比べられます。</li>
+      <li><strong>学習の種類</strong>：3つの学習方法の違いと、身近な使われ方を確認できます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabTeach','toolTeach'],['tabOver','toolOver'],['tabKind','toolKind']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabOver') drawOver();
+      if(tid==='tabKind') buildKind();
+    });
+  });
+})();
+
+function gauss(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+/* ===== 教師あり学習（分類） ===== */
+let tPts=[], tClass=0, tModel=null, tQuery=null, tStage=0;
+function setTStage(k){
+  tStage=k;
+  ['ts1','ts2','ts3'].forEach((id,i)=>{
+    document.getElementById(id).className='st'+(i<k?' done':(i===k?' now':''));
+  });
+}
+function drawT(){
+  const cv=document.getElementById('tCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+
+  // 境界（学習後）
+  if(tModel){
+    const {w1,w2,b}=tModel;
+    // 領域を薄く塗る
+    const step=6;
+    for(let x=0;x<W;x+=step){
+      for(let y=0;y<H;y+=step){
+        const v=w1*(x/W)+w2*(y/H)+b;
+        c.fillStyle = v>0 ? 'rgba(192,57,43,.07)' : 'rgba(47,84,150,.07)';
+        c.fillRect(x,y,step,step);
+      }
+    }
+    // 境界線
+    c.strokeStyle='#1F3864'; c.lineWidth=2.5; c.setLineDash([7,5]);
+    c.beginPath();
+    // w1*x/W + w2*y/H + b = 0  →  y = -(w1*x/W + b)*H/w2
+    let started=false;
+    for(let x=0;x<=W;x+=4){
+      if(Math.abs(w2)<1e-9) break;
+      const y=-(w1*(x/W)+b)*H/w2;
+      if(y>=-50 && y<=H+50){ started?c.lineTo(x,y):c.moveTo(x,y); started=true; }
+    }
+    c.stroke(); c.setLineDash([]);
+  }
+
+  // グリッド
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=1;k<6;k++){
+    c.beginPath(); c.moveTo(W*k/6,0); c.lineTo(W*k/6,H); c.stroke();
+    c.beginPath(); c.moveTo(0,H*k/6); c.lineTo(W,H*k/6); c.stroke();
+  }
+
+  // 点
+  tPts.forEach(p=>{
+    c.fillStyle = p.c ? '#2F5496' : '#C0392B';
+    c.beginPath(); c.arc(p.x,p.y,8,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2; c.stroke();
+  });
+  // 予測点
+  if(tQuery){
+    const pred = tModel ? predictT(tQuery) : null;
+    c.fillStyle='#C49A2B';
+    c.beginPath(); c.arc(tQuery.x,tQuery.y,11,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=3; c.stroke();
+    if(pred!==null){
+      c.fillStyle = pred ? '#2F5496' : '#C0392B';
+      c.beginPath(); c.arc(tQuery.x,tQuery.y,5,0,Math.PI*2); c.fill();
+    }
+  }
+  document.getElementById('tN').textContent=tPts.length+' 個';
+}
+function predictT(p){
+  const {w1,w2,b}=tModel;
+  return (w1*(p.x/700)+w2*(p.y/440)+b) > 0 ? 0 : 1;
+}
+function learnT(){
+  const a=tPts.filter(p=>p.c===0), b2=tPts.filter(p=>p.c===1);
+  if(a.length<2||b2.length<2){
+    document.getElementById('tHint').textContent='それぞれのグループに、2個以上の点が必要です。';
+    return;
+  }
+  // ロジスティック回帰（勾配降下法）
+  let w1=0,w2=0,b=0;
+  const lr=0.9;
+  for(let ep=0; ep<2500; ep++){
+    let g1=0,g2=0,gb=0;
+    tPts.forEach(p=>{
+      const x1=p.x/700, x2=p.y/440;
+      const z=w1*x1+w2*x2+b;
+      const s=1/(1+Math.exp(-z));
+      const t=(p.c===0)?1:0;   // 赤=1 とする
+      const e=s-t;
+      g1+=e*x1; g2+=e*x2; gb+=e;
+    });
+    const n=tPts.length;
+    w1-=lr*g1/n; w2-=lr*g2/n; b-=lr*gb/n;
+  }
+  tModel={w1,w2,b};
+  // 正解率
+  let ok=0;
+  tPts.forEach(p=>{ if(predictT(p)===p.c) ok++; });
+  const acc=ok/tPts.length*100;
+  document.getElementById('tAcc').textContent=acc.toFixed(0)+'%';
+  document.getElementById('tState').textContent='学習ずみ';
+  setTStage(2);
+  drawT();
+
+  const m=document.getElementById('tMsg');
+  m.className='msg '+(acc>=95?'ok':'');
+  m.innerHTML=`<div class="t">学習が終わりました（正解率 ${acc.toFixed(0)}%）</div>`+
+    `点線が、コンピュータが見つけた<b>境界線</b>です。`+
+    `どこに引くかは人が決めたのではなく、<b>教えたデータから自動で求まりました</b>。`+
+    (acc<95 ? '　一部の点は正しく分けられていません。まっすぐな線では分けきれない配置だと、こうなります。' : '')+
+    '　<b>グラフをクリック</b>すると、その点がどちらのグループか予測します。';
+  document.getElementById('tHint').textContent=
+    'グラフをクリックすると、新しい点を予測します（学習には追加されません）。';
+}
+document.getElementById('tCv').addEventListener('click',e=>{
+  const cv=document.getElementById('tCv');
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*cv.width;
+  const y=(e.clientY-r.top)/r.height*cv.height;
+  if(tModel){
+    tQuery={x,y};
+    setTStage(3);
+    const pred=predictT(tQuery);
+    const m=document.getElementById('tMsg');
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">この点は「${pred?'青':'赤'}グループ」と予測しました</div>`+
+      `境界線の${pred?'下':'上'}側にあるためです。`+
+      `コンピュータは<b>この点を一度も見たことがありません</b>が、`+
+      `学習した規則から判断できました。これが<b>推論</b>です。`;
+    drawT();
+  }else{
+    tPts.push({x,y,c:tClass});
+    setTStage(1);
+    drawT();
+    document.getElementById('tHint').textContent=
+      `${tPts.filter(p=>p.c===0).length}個 / ${tPts.filter(p=>p.c===1).length}個。`+
+      `それぞれ2個以上置いたら「学習させる」を押してください。`;
+  }
+});
+document.getElementById('tA').addEventListener('click',()=>{
+  tClass=0;
+  document.getElementById('tA').setAttribute('aria-pressed','true');
+  document.getElementById('tB').setAttribute('aria-pressed','false');
+});
+document.getElementById('tB').addEventListener('click',()=>{
+  tClass=1;
+  document.getElementById('tA').setAttribute('aria-pressed','false');
+  document.getElementById('tB').setAttribute('aria-pressed','true');
+});
+document.getElementById('tLearn').addEventListener('click',learnT);
+document.getElementById('tSample').addEventListener('click',()=>{
+  tPts=[]; tModel=null; tQuery=null;
+  for(let i=0;i<9;i++) tPts.push({x:150+gauss()*70, y:130+gauss()*55, c:0});
+  for(let i=0;i<9;i++) tPts.push({x:520+gauss()*70, y:310+gauss()*55, c:1});
+  tPts.forEach(p=>{ p.x=Math.max(20,Math.min(680,p.x)); p.y=Math.max(20,Math.min(420,p.y)); });
+  setTStage(1); drawT();
+  document.getElementById('tState').textContent='まだ';
+  document.getElementById('tAcc').textContent='–';
+  document.getElementById('tMsg').className='msg';
+  document.getElementById('tMsg').innerHTML=
+    '<div class="t">データを読み込みました</div>'+
+    '赤と青、それぞれ9個ずつです。「学習させる」を押してみてください。';
+  document.getElementById('tHint').textContent='「学習させる」を押してください。';
+});
+document.getElementById('tClear').addEventListener('click',()=>{
+  tPts=[]; tModel=null; tQuery=null; setTStage(0); drawT();
+  document.getElementById('tState').textContent='まだ';
+  document.getElementById('tAcc').textContent='–';
+  document.getElementById('tMsg').className='msg';
+  document.getElementById('tMsg').innerHTML=
+    '<div class="t">教師あり学習</div>'+
+    '正解つきのデータを見せて、規則性を学ばせます。'+
+    '2色の点を置いて「学習させる」を押してください。';
+  document.getElementById('tHint').textContent='それぞれのグループの点を、いくつか置いてみてください（各3個以上）。';
+});
+
+/* ===== 過学習 ===== */
+let oTrainD=[], oTestD=[];
+function trueFn(x){ return 0.5*Math.sin(x*2.4) + 0.25*x; }
+function newOver(){
+  oTrainD=[]; oTestD=[];
+  for(let i=0;i<11;i++){
+    const x=-1+2*i/10;
+    oTrainD.push({x, y:trueFn(x)+gauss()*0.11});
+  }
+  for(let i=0;i<40;i++){
+    const x=-1+2*Math.random();
+    oTestD.push({x, y:trueFn(x)+gauss()*0.11});
+  }
+  drawOver();
+}
+function fitPoly(data,deg){
+  // 正規方程式を解く（ガウスの消去法）
+  const n=deg+1;
+  const A=Array.from({length:n},()=>new Array(n+1).fill(0));
+  for(let i=0;i<n;i++){
+    for(let j=0;j<n;j++){
+      let s=0; data.forEach(p=>{ s+=Math.pow(p.x,i+j); });
+      A[i][j]=s;
+    }
+    let s=0; data.forEach(p=>{ s+=p.y*Math.pow(p.x,i); });
+    A[i][n]=s;
+  }
+  // ガウス消去（部分ピボット）
+  for(let i=0;i<n;i++){
+    let mx=i;
+    for(let k=i+1;k<n;k++) if(Math.abs(A[k][i])>Math.abs(A[mx][i])) mx=k;
+    [A[i],A[mx]]=[A[mx],A[i]];
+    if(Math.abs(A[i][i])<1e-12) continue;
+    for(let k=i+1;k<n;k++){
+      const f=A[k][i]/A[i][i];
+      for(let j=i;j<=n;j++) A[k][j]-=f*A[i][j];
+    }
+  }
+  const co=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){
+    let s=A[i][n];
+    for(let j=i+1;j<n;j++) s-=A[i][j]*co[j];
+    co[i] = Math.abs(A[i][i])<1e-12 ? 0 : s/A[i][i];
+  }
+  return co;
+}
+function polyVal(co,x){ return co.reduce((a,c,i)=>a+c*Math.pow(x,i),0); }
+function rmse(data,co){
+  let s=0; data.forEach(p=>{ const e=polyVal(co,p.x)-p.y; s+=e*e; });
+  return Math.sqrt(s/data.length);
+}
+function drawOver(){
+  if(!oTrainD.length) return;
+  const deg=+document.getElementById('oDeg').value;
+  const names=['','1次（直線）','2次','3次','4次','5次','6次','7次','8次','9次','10次','11次','12次'];
+  document.getElementById('oDegV').textContent=names[deg];
+
+  const co=fitPoly(oTrainD,deg);
+  const cv=document.getElementById('oCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=36;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const X=x=>PAD+(x+1.15)/2.3*(W-PAD*2);
+  const Y=y=>H-PAD-(y+1.1)/2.2*(H-PAD*2);
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=0;k<=4;k++){
+    c.beginPath(); c.moveTo(PAD,PAD+(H-PAD*2)*k/4); c.lineTo(W-PAD,PAD+(H-PAD*2)*k/4); c.stroke();
+  }
+  // 真の関数
+  c.strokeStyle='rgba(90,100,114,.35)'; c.lineWidth=2; c.setLineDash([4,4]);
+  c.beginPath();
+  for(let i=0;i<=200;i++){ const x=-1.1+2.2*i/200; const y=trueFn(x);
+    i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)); }
+  c.stroke(); c.setLineDash([]);
+  // 学習した曲線
+  c.strokeStyle='#2F5496'; c.lineWidth=3;
+  c.beginPath();
+  let first=true;
+  for(let i=0;i<=400;i++){
+    const x=-1.05+2.1*i/400;
+    const y=polyVal(co,x);
+    if(y<-1.6||y>1.6){ first=true; continue; }
+    first?c.moveTo(X(x),Y(y)):c.lineTo(X(x),Y(y)); first=false;
+  }
+  c.stroke();
+  // テスト点
+  if(document.getElementById('oShowTest').checked){
+    c.fillStyle='rgba(230,126,34,.75)';
+    oTestD.forEach(p=>{ c.beginPath(); c.arc(X(p.x),Y(p.y),4,0,Math.PI*2); c.fill(); });
+  }
+  // 学習点
+  c.fillStyle='#2F5496';
+  oTrainD.forEach(p=>{
+    c.beginPath(); c.arc(X(p.x),Y(p.y),7,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2; c.stroke();
+  });
+
+  const tr=rmse(oTrainD,co), te=rmse(oTestD,co);
+  document.getElementById('oTrain').textContent=tr.toFixed(3);
+  document.getElementById('oTest').textContent=te.toFixed(3);
+
+  const m=document.getElementById('oMsg');
+  let judge, cls, txt;
+  if(deg<=1){
+    judge='単純すぎ'; cls='';
+    txt='直線では、データの曲がりをとらえきれていません。学習データにもテストデータにも合っていない状態を'+
+        '<b>未学習</b>といいます。もう少し複雑にしてみてください。';
+  }else if(te<0.2 && deg<=5){
+    judge='ちょうどよい'; cls='ok';
+    txt='学習データにもテストデータにも、よく合っています。<b>この程度の複雑さが適切</b>です。'+
+        '灰色の点線（本当の関係）にも近い形になっています。';
+  }else if(te>tr*1.8 || te>0.3){
+    judge='覚えすぎ'; cls='ng';
+    txt=`学習データの誤差は <b>${tr.toFixed(3)}</b> と小さいのに、`+
+        `テストデータでは <b>${te.toFixed(3)}</b> と大きくなっています。`+
+        'これが<b>過学習</b>です。学習データの偶然のばらつきまで覚えてしまい、'+
+        '新しいデータに対応できなくなりました。';
+  }else{
+    judge='まずまず'; cls='';
+    txt='学習データにはよく合っています。テストデータの誤差にも注目してください。'+
+        'さらに複雑にすると、どうなるでしょうか。';
+  }
+  document.getElementById('oJudge').textContent=judge;
+  m.className='msg '+cls;
+  m.innerHTML=`<div class="t">${names[deg]}のモデル　—　${judge}</div>`+txt;
+}
+document.getElementById('oDeg').addEventListener('input',drawOver);
+document.getElementById('oShowTest').addEventListener('change',drawOver);
+document.getElementById('oNew').addEventListener('click',newOver);
+
+/* ===== 学習の種類 ===== */
+const KINDS=[
+  {n:'教師あり学習', ico:'🏷️',
+   d:'データに正解のラベルをつけて学習させます。「これは猫」「これは犬」と教えていくやり方です。',
+   detail:'正解が分かっているデータが必要です。ラベルをつける作業には人手がかかりますが、精度の高いモデルが作れます。用途は、グループを当てる<strong>分類</strong>と、数値を予測する<strong>回帰</strong>の2つに分かれます。',
+   ex:[['迷惑メールの判定','過去のメールに「迷惑」「通常」の印をつけて学習'],
+       ['手書き文字の認識','数字の画像と正解の数字の組で学習'],
+       ['家賃の予測','広さ・駅からの距離と実際の家賃で学習']]},
+  {n:'教師なし学習', ico:'🧩',
+   d:'正解を教えず、データの構造だけから規則性を見つけさせます。似たものどうしをまとめる、といった使い方です。',
+   detail:'ラベルをつける手間がかかりません。ただし、できたグループが何を意味するかは人が解釈する必要があります。データの傾向をつかむ探索的な分析に向いています。',
+   ex:[['顧客のグループ分け','購買履歴から似た客をまとめる'],
+       ['異常の検出','いつもと違う動きを見つける'],
+       ['文書の分類','内容の似た記事をまとめる']]},
+  {n:'強化学習', ico:'🎮',
+   d:'行動に報酬を与え、試行錯誤の中から報酬が最大になる行動を見つけさせます。良し悪しだけを伝える方法です。',
+   detail:'正解の行動は教えません。何度も試して、うまくいったやり方を強めていきます。学習に膨大な試行が必要ですが、人が思いつかない戦略を見つけることがあります。',
+   ex:[['ゲームの攻略','高得点なら報酬、ミスなら罰'],
+       ['ロボットの歩行','前に進めたら報酬'],
+       ['自動運転','安全に目的地へ着いたら報酬']]}
+];
+let kSel=0;
+function buildKind(){
+  const box=document.getElementById('kBtns');
+  box.innerHTML='';
+  KINDS.forEach((k,i)=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=k.ico+' '+k.n;
+    b.setAttribute('aria-pressed',String(i===kSel));
+    b.addEventListener('click',()=>{ kSel=i; buildKind(); });
+    box.appendChild(b);
+  });
+  const k=KINDS[kSel];
+  document.getElementById('kDetail').innerHTML=
+    `<h2>${k.ico} ${k.n}</h2>
+     <p style="margin:0 0 10px;font-size:15.5px;">${k.d}</p>
+     <p style="margin:0;font-size:15px;color:var(--ink);">${k.detail}</p>`;
+  document.getElementById('kExamples').innerHTML=k.ex.map(([t,d])=>
+    `<div style="background:#fff;border:1px solid var(--line);border-radius:10px;
+      padding:12px 16px;margin-bottom:9px;">
+      <div style="font-weight:700;color:var(--navy);font-size:15px;">${t}</div>
+      <div style="font-size:14px;color:var(--ink);margin-top:3px;">${d}</div>
+    </div>`).join('');
+}
+
+/* ===== 初期化 ===== */
+document.getElementById('tClear').click();
+newOver(); buildKind();
+</script>
+</body>
+</html>

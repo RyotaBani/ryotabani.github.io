@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>カリキュラム対応表 ｜ 情報Ⅰ・情報Ⅱの単元と教材の対応｜情報ラボ</title>
+<meta name="description" content="高校「情報Ⅰ」「情報Ⅱ」の学習指導要領の各単元と、対応する体験教材の一覧。授業でどの教材を使えばよいかが一目で分かります。">
+<link rel="canonical" href="https://joholab.net/curriculum/">
+<meta property="og:title" content="カリキュラム対応表｜情報ラボ">
+<meta property="og:description" content="情報Ⅰ・情報Ⅱの単元と、対応する体験教材の一覧。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://joholab.net/curriculum/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 18px; font-family:inherit; font-size:15px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .note{background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 18px; margin-bottom:20px; font-size:14px; color:var(--ink);}
+
+  /* 大項目 */
+  .sec{margin-bottom:30px;}
+  .sec-h{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff;
+    border-radius:10px 10px 0 0; padding:13px 18px;}
+  .sec-h .no{font-family:ui-monospace,Consolas,monospace; font-size:13px; color:#aebbd6;}
+  .sec-h h2{margin:0; font-size:17px;}
+  .sec-b{border:1px solid var(--line); border-top:none; border-radius:0 0 10px 10px;
+    overflow:hidden;}
+
+  /* 単元行 */
+  .unit{display:flex; gap:0; border-bottom:1px solid var(--line); background:#fff;}
+  .unit:last-child{border-bottom:none;}
+  .unit .u{flex:0 0 34%; padding:14px 16px; background:var(--panel); border-right:1px solid var(--line);}
+  .unit .u h3{margin:0 0 4px; font-size:15px; color:var(--ink);}
+  .unit .u p{margin:0; font-size:12.5px; color:var(--muted); line-height:1.6;}
+  .unit .m{flex:1; padding:12px 14px;}
+  .mats{display:flex; flex-wrap:wrap; gap:7px;}
+  .mat{display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    background:#fff; border:1px solid var(--line); border-radius:999px;
+    padding:6px 13px 6px 9px; font-size:13.5px; color:var(--ink);
+    transition:all .14s;}
+  .mat:hover{border-color:var(--navy); background:#EEF3FB; color:var(--navy);}
+  .mat .ic{font-size:15px;}
+  .mat .tb{font-size:11px; color:var(--muted); margin-left:2px;}
+  .none{font-size:13px; color:var(--muted); font-style:italic;}
+
+  @media (max-width:720px){
+    .unit{flex-direction:column;}
+    .unit .u{flex:1 1 auto; border-right:none; border-bottom:1px solid var(--line);}
+  }
+
+  /* 一覧表 */
+  table.all{border-collapse:collapse; width:100%; font-size:14px;}
+  table.all th, table.all td{border:1px solid var(--line); padding:9px 12px; text-align:left;}
+  table.all thead th{background:var(--navy); color:#fff; position:sticky; top:0;}
+  table.all tbody tr:nth-child(even){background:#FAFBFD;}
+  table.all a{color:var(--navy); text-decoration:none; font-weight:700;}
+  table.all a:hover{text-decoration:underline;}
+  table.all .tag{display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px;
+    background:var(--panel2); color:var(--navy);}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ カリキュラム対応表</p>
+    <h1>カリキュラム対応表</h1>
+    <p class="lead">学習指導要領の単元ごとに、使える教材をまとめました。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab1" aria-selected="true" aria-controls="tool1">情報Ⅰ</button>
+    <button class="tab" role="tab" id="tab2" aria-selected="false" aria-controls="tool2">情報Ⅱ</button>
+    <button class="tab" role="tab" id="tabAll" aria-selected="false" aria-controls="toolAll">教材の一覧</button>
+  </div>
+
+  <section class="tool show" id="tool1" role="tabpanel" aria-labelledby="tab1">
+    <div class="note">
+      高等学校学習指導要領（平成30年告示）「情報Ⅰ」の4つの内容にそって並べています。
+      単元名をクリックすると、その内容を扱っている教材が開きます。
+    </div>
+    <div id="c1"></div>
+  </section>
+
+  <section class="tool" id="tool2" role="tabpanel" aria-labelledby="tab2">
+    <div class="note">
+      「情報Ⅱ」は選択科目です。ここでは、データサイエンス領域を中心に対応する教材を示しています。
+      情報Ⅰの発展的な内容としても使えます。
+    </div>
+    <div id="c2"></div>
+  </section>
+
+  <section class="tool" id="toolAll" role="tabpanel" aria-labelledby="tabAll">
+    <div class="note">
+      公開しているすべての教材と、対応する単元の一覧です。
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="all" id="allTable"></table>
+    </div>
+  </section>
+
+  <div class="sitefoot" id="foot"></div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tab1','tool1'],['tab2','tool2'],['tabAll','toolAll']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+    });
+  });
+})();
+
+/* ===== 教材の定義 ===== */
+const M={
+  image:   {n:'画像のデジタル化', ic:'🖼️'},
+  sound:   {n:'音のデジタル化',   ic:'🔊'},
+  vector:  {n:'ラスタとベクタ',   ic:'🔍'},
+  bitop:   {n:'画像のビット演算', ic:'🎭'},
+  color:   {n:'色の表し方',       ic:'🎨'},
+  binary:  {n:'2進数・16進数',    ic:'🔢'},
+  charcode:{n:'文字コード',       ic:'🔤'},
+  bits:    {n:'データはすべて0と1',ic:'💾'},
+  parity:  {n:'パリティマジック', ic:'🎴'},
+  computer:{n:'コンピュータのしくみ',ic:'🖥️'},
+  logic:   {n:'論理回路',         ic:'🔌'},
+  algorithm:{n:'アルゴリズム',    ic:'🔎'},
+  network: {n:'ネットワークのしくみ',ic:'🌐'},
+  mail:    {n:'電子メールのしくみ',ic:'✉️'},
+  sysflow: {n:'情報システムとデータの流れ',ic:'🏛️'},
+  simulation:{n:'シミュレーション',ic:'🎲'},
+  dataviz: {n:'データの分析',     ic:'📈'},
+  datasize:{n:'データ量の計算',   ic:'📊'},
+  password:{n:'パスワードの強さ', ic:'🔑'},
+  crypto:  {n:'暗号のしくみ',     ic:'🔐'},
+  phishing:{n:'あやしいメールを見分ける',ic:'🎣'},
+  ml:      {n:'機械学習',         ic:'🤖'},
+  regression:{n:'回帰と予測',     ic:'📉'},
+  cluster: {n:'クラスタリング',   ic:'🧩'},
+  stats:   {n:'統計的推測',       ic:'🎯'}
+};
+
+/* ===== 情報Ⅰ ===== */
+const C1=[
+  {no:'(1)', t:'情報社会の問題解決', units:[
+    {u:'情報やメディアの特性', d:'情報の特性、メディアの種類と特徴',
+     m:[['bits',null],['datasize',null]]},
+    {u:'問題の発見・解決の方法', d:'問題解決の手順、評価と改善', m:[]},
+    {u:'情報に関する法規と制度', d:'知的財産権、個人情報の保護', m:[]},
+    {u:'情報セキュリティ', d:'不正アクセス、認証、マルウェア対策',
+     m:[['password','強さを計算する'],['phishing','判定クイズ'],['crypto','鍵をどう渡すか']]},
+    {u:'情報技術が果たす役割', d:'技術の進展と社会への影響',
+     m:[['sysflow','紙と電子のやり取り'],['computer',null]]}
+  ]},
+  {no:'(2)', t:'コミュニケーションと情報デザイン', units:[
+    {u:'情報のデジタル化', d:'アナログとデジタル、標本化・量子化・符号化',
+     m:[['image','二値化とマスク'],['sound','波を数値にする'],['bits','ファイルの中身']]},
+    {u:'数値と文字の表現', d:'2進法、16進法、文字コード',
+     m:[['binary','しくみを確かめる'],['charcode','ASCII表']]},
+    {u:'音声・静止画・動画の表現', d:'標本化周波数、画素、解像度、データ量',
+     m:[['sound','音質を聴き比べる'],['image','どっと絵をつくる'],['vector','拡大して比べる'],['datasize',null]]},
+    {u:'色の表現', d:'光の三原色、色の三原色、カラーコード',
+     m:[['color','RGB'],['color','混ぜ方のちがい'],['bitop','合成する']]},
+    {u:'情報デザインと表現', d:'目的に応じた表現、ユニバーサルデザイン',
+     m:[['dataviz','グラフのわな'],['vector','使い分け']]},
+    {u:'コミュニケーション手段', d:'メディアの特性、伝達の工夫',
+     m:[['mail','届くまでの流れ']]}
+  ]},
+  {no:'(3)', t:'コンピュータとプログラミング', units:[
+    {u:'コンピュータの構成', d:'5大装置、CPU、記憶装置、周辺機器',
+     m:[['computer','5つの装置'],['computer','記憶の階層']]},
+    {u:'演算のしくみ', d:'論理回路、2進数の演算、誤差',
+     m:[['logic','基本の回路'],['logic','足し算する回路'],['binary',null]]},
+    {u:'アルゴリズムとプログラミング', d:'探索、整列、順次・分岐・反復',
+     m:[['algorithm','探す（探索）'],['algorithm','並べる（整列）']]},
+    {u:'モデル化とシミュレーション', d:'モデルの種類、乱数、確率的モデル',
+     m:[['simulation','乱数とサイコロ'],['simulation','レジの待ち行列']]}
+  ]},
+  {no:'(4)', t:'情報通信ネットワークとデータの活用', units:[
+    {u:'ネットワークのしくみ', d:'プロトコル、IPアドレス、パケット通信',
+     m:[['network','IPアドレス'],['network','パケット通信'],['network','プロトコル']]},
+    {u:'情報セキュリティの確保', d:'暗号化、認証、電子署名',
+     m:[['crypto','鍵をどう渡すか'],['mail','なりすましと対策']]},
+    {u:'情報システムとサービス', d:'データベース、クラウド、システムの流れ',
+     m:[['sysflow','電子的なやり取り'],['sysflow','データベース']]},
+    {u:'データの収集・整理・分析', d:'量的・質的データ、代表値、散布図、相関',
+     m:[['dataviz','散布図と相関'],['dataviz','分布を見る']]},
+    {u:'データの表現と解釈', d:'グラフの選択、外れ値、誤った表現',
+     m:[['dataviz','グラフのわな']]},
+    {u:'誤りの検出', d:'パリティビット、チェックディジット',
+     m:[['parity','マジックをやってみる'],['parity','チェックディジット']]}
+  ]}
+];
+
+/* ===== 情報Ⅱ ===== */
+const C2=[
+  {no:'(1)', t:'情報社会の進展と情報技術', units:[
+    {u:'情報技術の発展', d:'技術の進展が社会に与えた影響',
+     m:[['computer',null],['sysflow',null]]},
+    {u:'情報技術の光と影', d:'利便性と課題、これからの社会',
+     m:[['ml','学習の種類'],['phishing',null]]}
+  ]},
+  {no:'(2)', t:'コミュニケーションとコンテンツ', units:[
+    {u:'コンテンツの制作', d:'画像・音声・動画の編集と表現',
+     m:[['bitop','合成する'],['color',null],['sound','自分の音で試す']]},
+    {u:'効果的なコミュニケーション', d:'受け手を意識した表現と評価',
+     m:[['dataviz','グラフのわな']]}
+  ]},
+  {no:'(3)', t:'情報とデータサイエンス', units:[
+    {u:'データの収集と整理', d:'前処理、欠損値、外れ値、尺度をそろえる',
+     m:[['dataviz','分布を見る'],['cluster','どこで使われるか']]},
+    {u:'統計的な推測', d:'母集団と標本、標本誤差、信頼区間',
+     m:[['stats','一部から全体を知る'],['stats','信頼区間のしくみ'],['stats','かたよりの危険']]},
+    {u:'回帰による分析', d:'最小二乗法、回帰直線、決定係数、予測',
+     m:[['regression','直線を合わせる'],['regression','予測してみる'],['regression','予測の落とし穴']]},
+    {u:'分類による分析', d:'教師あり学習、分類の境界、正解率',
+     m:[['ml','教えて、当てさせる'],['ml','覚えすぎる問題']]},
+    {u:'クラスタリング', d:'教師なし学習、k-means法、グループ数の決め方',
+     m:[['cluster','グループ分けの過程'],['cluster','いくつに分けるか']]},
+    {u:'機械学習と人工知能', d:'学習と推論、過学習、データのかたより',
+     m:[['ml','学習の種類'],['ml','覚えすぎる問題']]},
+    {u:'シミュレーションによる分析', d:'モンテカルロ法、確率的モデル',
+     m:[['simulation','円周率を求める'],['simulation','レジの待ち行列']]}
+  ]},
+  {no:'(4)', t:'情報システムとプログラミング', units:[
+    {u:'情報システムのしくみ', d:'クライアントとサーバ、Webシステム',
+     m:[['network','プロトコル'],['mail','届くまでの流れ'],['sysflow','電子的なやり取り']]},
+    {u:'データベース', d:'データの構造、検索と更新',
+     m:[['sysflow','データベース']]},
+    {u:'情報システムの開発', d:'設計、テスト、評価',
+     m:[['algorithm','計算量を比べる']]}
+  ]}
+];
+
+function renderCurriculum(data, el){
+  document.getElementById(el).innerHTML = data.map(sec=>
+    `<div class="sec">
+      <div class="sec-h"><span class="no">${sec.no}</span><h2>${sec.t}</h2></div>
+      <div class="sec-b">
+        ${sec.units.map(u=>`
+          <div class="unit">
+            <div class="u"><h3>${u.u}</h3><p>${u.d}</p></div>
+            <div class="m">
+              ${u.m.length ? `<div class="mats">${u.m.map(([k,tb])=>
+                `<a class="mat" href="/${k}/"><span class="ic">${M[k].ic}</span>${M[k].n}${
+                  tb?`<span class="tb">／${tb}</span>`:''}</a>`).join('')}</div>`
+                : '<span class="none">この単元に対応する教材は、まだありません</span>'}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+/* ===== 一覧表 ===== */
+function renderAll(){
+  // 教材 → 単元の逆引き
+  const rev={};
+  const add=(k,label)=>{ (rev[k]=rev[k]||[]).push(label); };
+  C1.forEach(s=>s.units.forEach(u=>u.m.forEach(([k])=>add(k,'情報Ⅰ '+s.no+' '+u.u))));
+  C2.forEach(s=>s.units.forEach(u=>u.m.forEach(([k])=>add(k,'情報Ⅱ '+s.no+' '+u.u))));
+
+  const rows=Object.keys(M).map(k=>{
+    const units=[...new Set(rev[k]||[])];
+    return `<tr>
+      <td><a href="/${k}/">${M[k].ic} ${M[k].n}</a></td>
+      <td>${units.length ? units.map(u=>`<span class="tag">${u}</span>`).join(' ') : '—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('allTable').innerHTML=
+    `<thead><tr><th style="width:32%;">教材</th><th>対応する単元</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+/* ===== フッター ===== */
+document.getElementById('foot').innerHTML=
+  '<span>&copy; 2026 情報ラボ</span><a href="/">ホーム</a><a href="/curriculum/">カリキュラム対応表</a>'+
+  Object.keys(M).map(k=>`<a href="/${k}/">${M[k].n}</a>`).join('');
+
+/* ===== 初期化 ===== */
+renderCurriculum(C1,'c1');
+renderCurriculum(C2,'c2');
+renderAll();
+</script>
+</body>
+</html>

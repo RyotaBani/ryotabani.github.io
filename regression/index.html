@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回帰で予測しよう（最小二乗法・回帰直線・決定係数）｜情報ラボ</title>
+<meta name="description" content="点を動かしながら、最小二乗法で回帰直線が決まるしくみを確かめられる無料ツール。誤差の合計が最小になる過程、決定係数、外挿の危険まで学べます。高校の情報IIに対応。">
+<link rel="canonical" href="https://joholab.net/regression/">
+<meta property="og:title" content="回帰で予測しよう｜情報ラボ">
+<meta property="og:description" content="最小二乗法のしくみを、直線を動かしながら確かめる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/regression/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.gold{background:var(--gold);} button.gold:hover{background:#dbae3c;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; margin:0 auto; touch-action:none;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+  .stt .v.ok{color:var(--ok);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .eq{background:#141c2e; color:#ffd97a; border-radius:10px; padding:14px 18px;
+    font-family:ui-monospace,Consolas,monospace; font-size:20px; text-align:center;
+    letter-spacing:1px;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 回帰と予測</p>
+    <h1>回帰で予測しよう</h1>
+    <p class="lead">点の集まりに、どうやって「いちばん合う直線」を引くのでしょうか。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabFit" aria-selected="true" aria-controls="toolFit">直線を合わせる</button>
+    <button class="tab" role="tab" id="tabPred" aria-selected="false" aria-controls="toolPred">予測してみる</button>
+    <button class="tab" role="tab" id="tabRisk" aria-selected="false" aria-controls="toolRisk">予測の落とし穴</button>
+  </div>
+
+  <!-- ===== 直線を合わせる ===== -->
+  <section class="tool show" id="toolFit" role="tabpanel" aria-labelledby="tabFit">
+    <div class="panel">
+      <h2>直線を動かして、誤差の合計を小さくしてみてください</h2>
+      <div class="row">
+        <div class="sl" style="flex:1 1 240px;">
+          <div class="top"><label for="fSlope">傾き</label><span class="val" id="fSlopeV">1.00</span></div>
+          <input type="range" id="fSlope" min="-300" max="300" step="1" value="100">
+        </div>
+        <div class="sl" style="flex:1 1 240px;">
+          <div class="top"><label for="fInter">切片</label><span class="val" id="fInterV">0.0</span></div>
+          <input type="range" id="fInter" min="-400" max="400" step="1" value="0">
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary gold" id="fBest">いちばん合う直線を求める</button>
+        <button class="chip" id="fNew">別のデータにする</button>
+        <span style="flex:1"></span>
+        <label style="font-size:13.5px;color:var(--ink);cursor:pointer;">
+          <input type="checkbox" id="fSquare" checked> 誤差を正方形で表示</label>
+      </div>
+      <p class="hint">正方形の面積の合計が、できるだけ小さくなる直線が「いちばん合う直線」です。</p>
+    </div>
+
+    <canvas id="fCv" width="700" height="440"></canvas>
+
+    <div class="stats">
+      <div class="stt"><div class="k">誤差の二乗の合計</div><div class="v gold" id="fSSE">–</div></div>
+      <div class="stt"><div class="k">最小の値</div><div class="v ok" id="fMin">–</div></div>
+      <div class="stt"><div class="k">最小との差</div><div class="v" id="fDiff">–</div></div>
+    </div>
+
+    <div class="msg" id="fMsg"></div>
+  </section>
+
+  <!-- ===== 予測 ===== -->
+  <section class="tool" id="toolPred" role="tabpanel" aria-labelledby="tabPred">
+    <div class="panel">
+      <h2>勉強時間から、テストの点数を予測します</h2>
+      <div class="row">
+        <button class="chip" data-pd="study" aria-pressed="true">勉強時間と点数</button>
+        <button class="chip" data-pd="height">身長と体重</button>
+        <button class="chip" data-pd="temp">気温とアイスの売上</button>
+      </div>
+      <div class="sl" style="margin-top:14px;">
+        <div class="top"><label for="pX" id="pXlabel">予測したい値</label>
+          <span class="val" id="pXv">–</span></div>
+        <input type="range" id="pX" min="0" max="100" step="1" value="50">
+      </div>
+    </div>
+
+    <canvas id="pCv" width="700" height="420"></canvas>
+
+    <div class="panel">
+      <h2>求められた式</h2>
+      <div class="eq" id="pEq">–</div>
+      <p class="hint" id="pEqNote"></p>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">予測した値</div><div class="v gold" id="pPred">–</div></div>
+      <div class="stt"><div class="k">相関係数</div><div class="v" id="pCorr">–</div></div>
+      <div class="stt"><div class="k">決定係数</div><div class="v" id="pR2">–</div></div>
+      <div class="stt"><div class="k">説明できる割合</div><div class="v" id="pExp">–</div></div>
+    </div>
+
+    <div class="msg" id="pMsg"></div>
+  </section>
+
+  <!-- ===== 落とし穴 ===== -->
+  <section class="tool" id="toolRisk" role="tabpanel" aria-labelledby="tabRisk">
+    <div class="panel">
+      <h2>データの範囲を超えて予測すると</h2>
+      <div class="sl">
+        <div class="top"><label for="rX">予測したい値</label><span class="val" id="rXv">–</span></div>
+        <input type="range" id="rX" min="0" max="100" step="1" value="30">
+      </div>
+      <p class="hint">灰色の帯が、実際にデータのある範囲です。その外側で予測すると、何が起きるでしょうか。</p>
+    </div>
+
+    <canvas id="rCv" width="700" height="400"></canvas>
+
+    <div class="msg" id="rMsg"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>気をつけたいこと</h2>
+      <div id="rPoints"></div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>回帰とは</h2>
+    <p>2つの数量に関係があるとき、片方から片方を予測したくなります。勉強時間から点数を、気温から売上を。この予測のために関係を式で表すことを回帰といいます。</p>
+    <p>最も基本的なのが、直線で表す単回帰です。式は次の形になります。</p>
+    <div class="formula">y ＝ a x ＋ b</div>
+    <p>a は傾き、b は切片です。この2つの値をどう決めるかが問題になります。</p>
+
+    <h2>最小二乗法</h2>
+    <p>直線は無数に引けます。その中で「いちばん合う」ものをどう選ぶのでしょうか。</p>
+    <p>考え方はこうです。各点について、直線からの<strong>ずれ</strong>を測ります。実際の値と、直線から予測される値の差です。これを残差といいます。</p>
+    <p>すべての残差を小さくしたいのですが、単純に合計すると問題が起きます。プラスとマイナスが打ち消し合ってしまうのです。そこで、<strong>残差を二乗してから合計</strong>します。</p>
+    <div class="formula">残差の二乗和 ＝ Σ（実際の値 − 予測値）²</div>
+    <p>この合計が最小になるように a と b を決める方法を、最小二乗法といいます。二乗するので、大きなずれほど強く効きます。</p>
+    <p>上のツールの1つ目では、残差を正方形として表示しています。正方形の面積の合計が、まさに残差の二乗和です。直線を動かすと面積の合計が変わり、最小になる位置が「いちばん合う直線」だと分かります。</p>
+
+    <h3>実際の求め方</h3>
+    <p>手で試行錯誤する必要はありません。数式で一発で求まります。</p>
+    <div class="formula">傾き a ＝ x と y の共分散 ÷ x の分散<br>
+    切片 b ＝ y の平均 − a × x の平均</div>
+    <p>この式から、回帰直線は必ず<strong>x の平均と y の平均が交わる点を通る</strong>ことが分かります。データの重心を通るわけです。</p>
+
+    <h2>決定係数 ― どれだけ説明できたか</h2>
+    <p>直線を引いたあと、「この直線はどれくらい当てになるのか」を知りたくなります。その指標が決定係数（R²）です。</p>
+    <p>0から1の値をとり、1に近いほど当てはまりが良いことを示します。</p>
+    <table>
+      <tr><th>決定係数</th><th>意味</th></tr>
+      <tr><td class="mono">0.9 以上</td><td>非常によく説明できている</td></tr>
+      <tr><td class="mono">0.5 〜 0.9</td><td>ある程度説明できている</td></tr>
+      <tr><td class="mono">0.5 未満</td><td>この直線ではあまり説明できない</td></tr>
+    </table>
+    <p>決定係数は「y のばらつきのうち、何割を x で説明できたか」と読めます。R² が 0.7 なら、点数のばらつきの7割は勉強時間で説明でき、残り3割は別の要因によるという意味です。</p>
+    <p>単回帰の場合、決定係数は相関係数の二乗と一致します。相関係数が 0.8 なら、決定係数は 0.64 です。</p>
+
+    <h2>予測の落とし穴</h2>
+
+    <h3>データの範囲外は保証されない</h3>
+    <p>最も危険なのが、データのない範囲まで直線を延ばして予測することです。これを外挿といいます。</p>
+    <p>1日3時間まで勉強したデータから作った式で、「20時間勉強すれば何点か」を計算すると、100点を超える値が出ます。式の上ではそうなりますが、現実にはありえません。</p>
+    <p>直線関係が成り立つのは、あくまでデータのあった範囲だけです。その外で同じ関係が続く保証はどこにもありません。上のツールの3つ目で、この様子を確かめられます。</p>
+
+    <h3>相関は因果ではない</h3>
+    <p>回帰式が求まっても、x が y の原因だとは限りません。逆かもしれませんし、両方に影響する第三の要因があるかもしれません。</p>
+    <p>「アイスの売上から水難事故の件数を予測する」式を作ることは可能です。数値としては当てはまりますが、アイスを減らせば事故が減るわけではありません。どちらも気温という共通の要因で動いているだけです。</p>
+
+    <h3>外れ値に引っ張られる</h3>
+    <p>最小二乗法は残差を二乗するため、大きく外れた点の影響を強く受けます。1つの異常なデータで、直線が大きく傾くことがあります。</p>
+    <p>回帰を行う前に散布図を見て、明らかにおかしな点がないか確認する習慣が大切です。数値だけを見ていると気づけません。</p>
+
+    <h2>いろいろな回帰</h2>
+    <table>
+      <tr><th>種類</th><th>特徴</th></tr>
+      <tr><td>単回帰</td><td>1つの変数から予測する。もっとも単純</td></tr>
+      <tr><td>重回帰</td><td>複数の変数から予測する。広さと駅からの距離で家賃を予測、など</td></tr>
+      <tr><td>多項式回帰</td><td>曲線で当てはめる。複雑にしすぎると過学習になる</td></tr>
+      <tr><td>ロジスティック回帰</td><td>数値ではなく、あり・なしの確率を予測する</td></tr>
+    </table>
+    <p>実際の分析では、複数の要因を同時に扱う重回帰がよく使われます。家賃なら、広さだけでなく駅からの距離、築年数、階数などをまとめて考えます。基本の考え方は単回帰と同じで、残差の二乗和を最小にします。</p>
+
+    <h2>残差を見る</h2>
+    <p>回帰式を求めたあと、必ず確認したいのが残差です。実際の値と予測値の差、つまり「予測が外れた分」です。</p>
+    <p>残差を横軸に予測値をとって描くと、当てはまりの良し悪しが見えてきます。理想は、残差が0のまわりにランダムに散らばっている状態です。</p>
+    <p>もし残差に規則性が見えたら、直線では不十分だという合図です。たとえば残差がU字形に並んでいれば、本当は曲線関係だということになります。数値だけを見ていては気づけない情報です。</p>
+
+    <h2>単位と係数の読み方</h2>
+    <p>回帰式の傾きは「xが1増えると、yがどれだけ増えるか」を表します。この解釈には、単位の確認が欠かせません。</p>
+    <p>気温とアイスの売上で傾きが9.5だったとします。これは「気温が1℃上がると、売上が9.5本増える」という意味です。単位を取り違えると、まったく違う解釈になってしまいます。</p>
+    <p>また、切片には意味がない場合があります。身長と体重の式で切片を求めると「身長0cmのときの体重」という、現実にありえない値になります。切片は計算上の値であって、必ずしも解釈できるとは限りません。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>直線を合わせる</strong>：傾きと切片を動かすと、誤差の正方形が変わります。「いちばん合う直線を求める」で最小二乗法の答えが出ます。</li>
+      <li><strong>予測してみる</strong>：3種類のデータで、回帰式と決定係数を確認できます。</li>
+      <li><strong>予測の落とし穴</strong>：データの範囲を超えて予測すると何が起きるかを試せます。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabFit','toolFit'],['tabPred','toolPred'],['tabRisk','toolRisk']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabPred') drawPred();
+      if(tid==='tabRisk') drawRisk();
+    });
+  });
+})();
+
+function gauss(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function fitLine(pts){
+  const n=pts.length;
+  const mx=pts.reduce((a,p)=>a+p.x,0)/n, my=pts.reduce((a,p)=>a+p.y,0)/n;
+  let sxy=0,sxx=0;
+  pts.forEach(p=>{ sxy+=(p.x-mx)*(p.y-my); sxx+=(p.x-mx)**2; });
+  const a = sxx===0 ? 0 : sxy/sxx;
+  return {a, b:my-a*mx, mx, my};
+}
+function sse(pts,a,b){
+  return pts.reduce((s,p)=>{ const e=p.y-(a*p.x+b); return s+e*e; },0);
+}
+function corr(pts){
+  const n=pts.length;
+  const mx=pts.reduce((a,p)=>a+p.x,0)/n, my=pts.reduce((a,p)=>a+p.y,0)/n;
+  let sxy=0,sxx=0,syy=0;
+  pts.forEach(p=>{ sxy+=(p.x-mx)*(p.y-my); sxx+=(p.x-mx)**2; syy+=(p.y-my)**2; });
+  return sxy/Math.sqrt(sxx*syy);
+}
+
+/* ===== 直線を合わせる ===== */
+let fPts=[];
+function newF(){
+  fPts=[];
+  const a=0.8+Math.random()*0.6, b=8+Math.random()*10;
+  for(let i=0;i<9;i++){
+    const x=6+i*4.2+gauss()*1.1;
+    fPts.push({x, y:a*x+b+gauss()*5.5});
+  }
+  drawF();
+}
+function drawF(){
+  const cv=document.getElementById('fCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height,PAD=46;
+  const a=+document.getElementById('fSlope').value/100;
+  const b=+document.getElementById('fInter').value/10;
+  document.getElementById('fSlopeV').textContent=a.toFixed(2);
+  document.getElementById('fInterV').textContent=b.toFixed(1);
+
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const X=x=>PAD+x/52*(W-PAD*2);
+  const Y=y=>H-PAD-y/70*(H-PAD*2);
+  // 軸
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=0;k<=5;k++){
+    c.beginPath(); c.moveTo(PAD,PAD+(H-PAD*2)*k/5); c.lineTo(W-PAD,PAD+(H-PAD*2)*k/5); c.stroke();
+  }
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD); c.lineTo(PAD,H-PAD); c.stroke();
+
+  // 誤差の正方形
+  if(document.getElementById('fSquare').checked){
+    fPts.forEach(p=>{
+      const py=a*p.x+b;
+      const y1=Y(p.y), y2=Y(py);
+      const side=Math.abs(y2-y1);
+      c.fillStyle='rgba(196,154,43,.22)';
+      c.strokeStyle='rgba(196,154,43,.7)'; c.lineWidth=1.5;
+      const left=X(p.x);
+      c.fillRect(left, Math.min(y1,y2), side, side);
+      c.strokeRect(left, Math.min(y1,y2), side, side);
+    });
+  }
+  // 残差の線
+  fPts.forEach(p=>{
+    const py=a*p.x+b;
+    c.strokeStyle='rgba(192,57,43,.6)'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(X(p.x),Y(p.y)); c.lineTo(X(p.x),Y(py)); c.stroke();
+  });
+  // 直線
+  c.strokeStyle='#2F5496'; c.lineWidth=3;
+  c.beginPath(); c.moveTo(X(0),Y(b)); c.lineTo(X(52),Y(a*52+b)); c.stroke();
+  // 点
+  fPts.forEach(p=>{
+    c.fillStyle='#1F3864';
+    c.beginPath(); c.arc(X(p.x),Y(p.y),6,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2; c.stroke();
+  });
+
+  const cur=sse(fPts,a,b);
+  const best=fitLine(fPts);
+  const bestS=sse(fPts,best.a,best.b);
+  document.getElementById('fSSE').textContent=cur.toFixed(1);
+  document.getElementById('fMin').textContent=bestS.toFixed(1);
+  document.getElementById('fDiff').textContent='+'+(cur-bestS).toFixed(1);
+
+  const m=document.getElementById('fMsg');
+  const ratio=cur/bestS;
+  if(ratio<1.02){
+    m.className='msg ok';
+    m.innerHTML='<div class="t">最小に到達しました</div>'+
+      `誤差の二乗の合計が <b>${cur.toFixed(1)}</b> で、これが最小の値です。`+
+      `この直線が<b>最小二乗法の答え</b>です。傾き ${a.toFixed(2)}、切片 ${b.toFixed(1)}。`;
+  }else{
+    m.className='msg';
+    m.innerHTML='<div class="t">正方形の面積を、もっと小さくできます</div>'+
+      `いまの合計は <b>${cur.toFixed(1)}</b>。最小の <b>${bestS.toFixed(1)}</b> より`+
+      `${(cur-bestS).toFixed(1)} 大きい状態です。`+
+      `　傾きと切片を動かして、正方形の合計面積を小さくしてみてください。`;
+  }
+}
+document.getElementById('fSlope').addEventListener('input',drawF);
+document.getElementById('fInter').addEventListener('input',drawF);
+document.getElementById('fSquare').addEventListener('change',drawF);
+document.getElementById('fNew').addEventListener('click',newF);
+document.getElementById('fBest').addEventListener('click',()=>{
+  const best=fitLine(fPts);
+  document.getElementById('fSlope').value=Math.round(best.a*100);
+  document.getElementById('fInter').value=Math.round(best.b*10);
+  drawF();
+});
+
+/* ===== 予測 ===== */
+const PDATA={
+  study:{xl:'勉強した時間（時間）',yl:'テストの点数',xmax:8,ymax:100,
+    gen:()=>Array.from({length:22},()=>{ const x=0.5+Math.random()*7;
+      return {x, y:Math.max(10,Math.min(100, 38+x*7.2+gauss()*8))}; }),
+    unit:'点', xunit:'時間'},
+  height:{xl:'身長（cm）',yl:'体重（kg）',xmin:145,xmax:185,ymax:90,
+    gen:()=>Array.from({length:22},()=>{ const x=148+Math.random()*34;
+      return {x, y:Math.max(35,Math.min(90,(x-100)*0.9+gauss()*5))}; }),
+    unit:'kg', xunit:'cm'},
+  temp:{xl:'最高気温（℃）',yl:'アイスの売上（本）',xmax:38,ymax:400,
+    gen:()=>Array.from({length:22},()=>{ const x=5+Math.random()*30;
+      return {x, y:Math.max(10,Math.min(400, x*9.5-30+gauss()*32))}; }),
+    unit:'本', xunit:'℃'}
+};
+let pKind='study', pPts=[];
+function newPred(){
+  const d=PDATA[pKind];
+  pPts=d.gen();
+  const sl=document.getElementById('pX');
+  sl.min=Math.round(d.xmin||0); sl.max=Math.round(d.xmax);
+  sl.value=Math.round(((d.xmin||0)+d.xmax)/2);
+  document.getElementById('pXlabel').textContent=d.xl;
+  drawPred();
+}
+function drawPred(){
+  if(!pPts.length) return;
+  const d=PDATA[pKind];
+  const cv=document.getElementById('pCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height,PAD=52;
+  const x0=d.xmin||0, x1=d.xmax;
+  const X=x=>PAD+(x-x0)/(x1-x0)*(W-PAD*2);
+  const Y=y=>H-PAD-y/d.ymax*(H-PAD*2);
+
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=0;k<=5;k++){
+    c.beginPath(); c.moveTo(PAD,PAD+(H-PAD*2)*k/5); c.lineTo(W-PAD,PAD+(H-PAD*2)*k/5); c.stroke();
+  }
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD); c.lineTo(PAD,H-PAD); c.stroke();
+  c.fillStyle='#5B6472'; c.font='12px sans-serif'; c.textAlign='center';
+  c.fillText(d.xl, W/2, H-16);
+  c.save(); c.translate(16,H/2); c.rotate(-Math.PI/2); c.fillText(d.yl,0,0); c.restore();
+
+  const {a,b,mx,my}=fitLine(pPts);
+  // 回帰直線
+  c.strokeStyle='#C49A2B'; c.lineWidth=3;
+  c.beginPath(); c.moveTo(X(x0),Y(a*x0+b)); c.lineTo(X(x1),Y(a*x1+b)); c.stroke();
+  // 重心
+  c.fillStyle='rgba(196,154,43,.9)';
+  c.beginPath(); c.arc(X(mx),Y(my),7,0,Math.PI*2); c.fill();
+  c.strokeStyle='#fff'; c.lineWidth=2; c.stroke();
+  // 点
+  c.fillStyle='rgba(47,84,150,.72)';
+  pPts.forEach(p=>{ c.beginPath(); c.arc(X(p.x),Y(p.y),5.5,0,Math.PI*2); c.fill(); });
+  // 予測
+  const qx=+document.getElementById('pX').value;
+  const qy=a*qx+b;
+  c.strokeStyle='#C0392B'; c.lineWidth=2; c.setLineDash([5,4]);
+  c.beginPath(); c.moveTo(X(qx),H-PAD); c.lineTo(X(qx),Y(qy)); c.stroke();
+  c.beginPath(); c.moveTo(PAD,Y(qy)); c.lineTo(X(qx),Y(qy)); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle='#C0392B';
+  c.beginPath(); c.arc(X(qx),Y(qy),9,0,Math.PI*2); c.fill();
+  c.strokeStyle='#fff'; c.lineWidth=2.5; c.stroke();
+
+  document.getElementById('pXv').textContent=qx+' '+d.xunit;
+  document.getElementById('pPred').textContent=Math.round(qy)+' '+d.unit;
+  const r=corr(pPts);
+  document.getElementById('pCorr').textContent=r.toFixed(3);
+  document.getElementById('pR2').textContent=(r*r).toFixed(3);
+  document.getElementById('pExp').textContent=(r*r*100).toFixed(0)+'%';
+  document.getElementById('pEq').textContent=
+    `y = ${a.toFixed(2)} x ${b>=0?'+':'−'} ${Math.abs(b).toFixed(1)}`;
+  document.getElementById('pEqNote').textContent=
+    `${d.xl}が1${d.xunit}増えると、${d.yl}は約${a.toFixed(2)}${d.unit}増える、という関係です。`+
+    `オレンジの点は、xとyの平均が交わる点。回帰直線は必ずここを通ります。`;
+
+  const m=document.getElementById('pMsg');
+  const r2=r*r;
+  m.className='msg'+(r2>=0.7?' ok':'');
+  m.innerHTML=`<div class="t">${d.xl} が ${qx}${d.xunit} なら、${d.yl} は約 ${Math.round(qy)}${d.unit}</div>`+
+    `決定係数は <b>${r2.toFixed(3)}</b>。${d.yl}のばらつきのうち、`+
+    `<b>${(r2*100).toFixed(0)}%</b> を${d.xl}で説明できるという意味です。`+
+    (r2>=0.7 ? '　よく当てはまっています。' :
+     r2>=0.4 ? '　ある程度の関係はありますが、他の要因も大きく効いています。' :
+               '　関係は弱く、この予測はあまり当てになりません。');
+}
+document.getElementById('pX').addEventListener('input',drawPred);
+document.querySelectorAll('[data-pd]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-pd]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    pKind=b.dataset.pd; newPred();
+  });
+});
+
+/* ===== 落とし穴 ===== */
+let rPts=[];
+function newRisk(){
+  rPts=[];
+  for(let i=0;i<16;i++){
+    const x=0.5+Math.random()*3;   // 0.5〜3.5時間のデータしかない
+    rPts.push({x, y:Math.max(20,Math.min(100, 42+x*11+gauss()*6))});
+  }
+  drawRisk();
+}
+function drawRisk(){
+  if(!rPts.length) return;
+  const cv=document.getElementById('rCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height,PAD=52;
+  const XMAX=14, YMAX=210;
+  const X=x=>PAD+x/XMAX*(W-PAD*2);
+  const Y=y=>H-PAD-y/YMAX*(H-PAD*2);
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+
+  // データのある範囲
+  const dmin=Math.min(...rPts.map(p=>p.x)), dmax=Math.max(...rPts.map(p=>p.x));
+  c.fillStyle='rgba(90,100,114,.10)';
+  c.fillRect(X(dmin),PAD,X(dmax)-X(dmin),H-PAD*2);
+  c.fillStyle='#5B6472'; c.font='11px sans-serif'; c.textAlign='center';
+  c.fillText('データのある範囲', (X(dmin)+X(dmax))/2, PAD-8);
+
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let k=0;k<=5;k++){
+    c.beginPath(); c.moveTo(PAD,PAD+(H-PAD*2)*k/5); c.lineTo(W-PAD,PAD+(H-PAD*2)*k/5); c.stroke();
+  }
+  // 100点のライン
+  c.strokeStyle='rgba(192,57,43,.55)'; c.lineWidth=2; c.setLineDash([6,5]);
+  c.beginPath(); c.moveTo(PAD,Y(100)); c.lineTo(W-PAD,Y(100)); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle='#C0392B'; c.font='bold 11px sans-serif'; c.textAlign='left';
+  c.fillText('満点（100点）', PAD+6, Y(100)-6);
+
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD); c.lineTo(PAD,H-PAD); c.stroke();
+  c.fillStyle='#5B6472'; c.font='12px sans-serif'; c.textAlign='center';
+  c.fillText('勉強した時間（時間）', W/2, H-16);
+
+  const {a,b}=fitLine(rPts);
+  // データ範囲内は実線、外は点線
+  c.strokeStyle='#C49A2B'; c.lineWidth=3;
+  c.beginPath(); c.moveTo(X(dmin),Y(a*dmin+b)); c.lineTo(X(dmax),Y(a*dmax+b)); c.stroke();
+  c.strokeStyle='rgba(196,154,43,.5)'; c.lineWidth=2.5; c.setLineDash([8,6]);
+  c.beginPath(); c.moveTo(X(dmax),Y(a*dmax+b)); c.lineTo(X(XMAX),Y(a*XMAX+b)); c.stroke();
+  c.beginPath(); c.moveTo(X(0),Y(b)); c.lineTo(X(dmin),Y(a*dmin+b)); c.stroke();
+  c.setLineDash([]);
+
+  c.fillStyle='rgba(47,84,150,.75)';
+  rPts.forEach(p=>{ c.beginPath(); c.arc(X(p.x),Y(p.y),5.5,0,Math.PI*2); c.fill(); });
+
+  const qx=+document.getElementById('rX').value/100*XMAX;
+  const qy=a*qx+b;
+  document.getElementById('rXv').textContent=qx.toFixed(1)+' 時間';
+  const outside = qx<dmin || qx>dmax;
+  c.strokeStyle=outside?'#C0392B':'#2E7D4F'; c.lineWidth=2; c.setLineDash([5,4]);
+  c.beginPath(); c.moveTo(X(qx),H-PAD); c.lineTo(X(qx),Y(qy)); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle=outside?'#C0392B':'#2E7D4F';
+  c.beginPath(); c.arc(X(qx),Y(Math.min(qy,YMAX)),9,0,Math.PI*2); c.fill();
+  c.strokeStyle='#fff'; c.lineWidth=2.5; c.stroke();
+
+  const m=document.getElementById('rMsg');
+  if(!outside){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">${qx.toFixed(1)}時間 → 約 ${Math.round(qy)}点</div>`+
+      'データのある範囲内なので、この予測には<b>根拠があります</b>。'+
+      '実際に同じくらい勉強した人のデータが、まわりにあります。';
+  }else if(qy>100){
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">${qx.toFixed(1)}時間 → 約 ${Math.round(qy)}点？</div>`+
+      `式の上ではこうなりますが、<b>100点満点を超えています</b>。`+
+      'データがあるのは 0.5〜3.5時間の範囲だけ。その外では、'+
+      '同じ直線関係が続く保証はありません。これが<b>外挿の危険</b>です。'+
+      '　現実には、ある程度で伸びが鈍る（頭打ちになる）はずです。';
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">${qx.toFixed(1)}時間 → 約 ${Math.round(qy)}点</div>`+
+      'データのない範囲での予測です。点線の部分には、<b>裏づけとなるデータがありません</b>。'+
+      '式は計算できますが、当たる保証はありません。';
+  }
+}
+document.getElementById('rX').addEventListener('input',drawRisk);
+
+const RISK_POINTS=[
+  ['データの範囲を超えない','直線関係が成り立つのは、データがあった範囲だけです。その外は別の関係かもしれません。'],
+  ['散布図を必ず見る','決定係数だけでは、曲線関係や外れ値に気づけません。目で見るのが最も確実です。'],
+  ['外れ値の影響を確認する','最小二乗法は残差を二乗するので、1つの極端な値で直線が大きく傾くことがあります。'],
+  ['相関を因果と混同しない','よく当てはまる式ができても、xがyの原因とは限りません。']
+];
+document.getElementById('rPoints').innerHTML=RISK_POINTS.map(([t,d],i)=>
+  `<div style="background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:12px 16px;margin-bottom:9px;">
+    <div style="font-weight:700;color:var(--navy);font-size:15px;">${i+1}. ${t}</div>
+    <div style="font-size:14px;color:var(--ink);margin-top:3px;">${d}</div>
+  </div>`).join('');
+
+/* ===== 初期化 ===== */
+newF(); newPred(); newRisk();
+</script>
+</body>
+</html>

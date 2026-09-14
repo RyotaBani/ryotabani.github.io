@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クラスタリングを体験しよう（k-means法・教師なし学習）｜情報ラボ</title>
+<meta name="description" content="データが自動でグループ分けされていく過程を、1ステップずつ確かめられる無料ツール。k-means法のしくみ、グループ数の決め方まで学べます。高校の情報IIに対応。">
+<link rel="canonical" href="https://joholab.net/cluster/">
+<meta property="og:title" content="クラスタリングを体験しよう｜情報ラボ">
+<meta property="og:description" content="k-means法でデータがグループ分けされる過程を、1歩ずつ見られる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/cluster/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  button.gold{background:var(--gold);} button.gold:hover{background:#dbae3c;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  canvas{display:block; background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-width:100%; margin:0 auto;}
+
+  .steps{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .st{flex:1 1 160px; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 14px; font-size:13.5px; color:var(--muted);}
+  .st b{display:block; font-size:11.5px;}
+  .st.now{border-color:var(--navy); background:#EEF3FB; color:var(--ink); font-weight:700;}
+  .st.done{border-color:var(--ok); background:#F1F8F3; color:var(--ok);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ クラスタリング</p>
+    <h1>クラスタリングを体験しよう</h1>
+    <p class="lead">正解を教えなくても、コンピュータは似たものをまとめられます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabRun" aria-selected="true" aria-controls="toolRun">グループ分けの過程</button>
+    <button class="tab" role="tab" id="tabK" aria-selected="false" aria-controls="toolK">いくつに分けるか</button>
+    <button class="tab" role="tab" id="tabUse" aria-selected="false" aria-controls="toolUse">どこで使われるか</button>
+  </div>
+
+  <!-- ===== 実行 ===== -->
+  <section class="tool show" id="toolRun" role="tabpanel" aria-labelledby="tabRun">
+    <div class="steps">
+      <div class="st" id="cs1"><b>ステップ 1</b>中心を適当に置く</div>
+      <div class="st" id="cs2"><b>ステップ 2</b>近い中心に振り分ける</div>
+      <div class="st" id="cs3"><b>ステップ 3</b>中心を移動する</div>
+      <div class="st" id="cs4"><b>ステップ 4</b>変わらなくなったら終了</div>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <button class="primary" id="cStep">1歩すすめる</button>
+        <button class="primary gold" id="cAuto">最後まで自動で</button>
+        <button class="chip" id="cReset">最初から</button>
+        <span style="flex:1"></span>
+        <span style="font-size:13.5px;color:var(--ink);">グループ数</span>
+        <button class="chip" data-k="2">2</button>
+        <button class="chip" data-k="3" aria-pressed="true">3</button>
+        <button class="chip" data-k="4">4</button>
+        <button class="chip" id="cNewData">別のデータ</button>
+      </div>
+      <p class="hint" id="cHint"></p>
+    </div>
+
+    <canvas id="cCv" width="700" height="460"></canvas>
+
+    <div class="stats">
+      <div class="stt"><div class="k">くり返した回数</div><div class="v" id="cIter">0</div></div>
+      <div class="stt"><div class="k">グループ数</div><div class="v" id="cK">3</div></div>
+      <div class="stt"><div class="k">まとまりの良さ</div><div class="v gold" id="cSSE">–</div></div>
+      <div class="stt"><div class="k">状態</div><div class="v" id="cState" style="font-size:15px;">開始前</div></div>
+    </div>
+
+    <div class="msg" id="cMsg"></div>
+  </section>
+
+  <!-- ===== k の決め方 ===== -->
+  <section class="tool" id="toolK" role="tabpanel" aria-labelledby="tabK">
+    <div class="panel">
+      <h2>グループ数はいくつが適切でしょうか</h2>
+      <div class="row">
+        <button class="chip" data-kd="three" aria-pressed="true">3つの集まり</button>
+        <button class="chip" data-kd="two">2つの集まり</button>
+        <button class="chip" data-kd="none">かたまりなし</button>
+      </div>
+      <p class="hint">グループ数を変えたときの「まとまりの良さ」の変化を見ます。折れ曲がるところが目安です。</p>
+    </div>
+
+    <canvas id="kCv" width="700" height="330"></canvas>
+    <p style="text-align:center;font-size:12.5px;color:var(--muted);margin:8px 0 14px;">
+      グループ数と、まとまりの良さの関係（エルボー法）</p>
+
+    <div class="panel">
+      <h2>グループ数を選んで結果を見る</h2>
+      <div class="sl">
+        <div class="top"><label for="kSel">グループ数</label><span class="val" id="kSelV">3</span></div>
+        <input type="range" id="kSel" min="1" max="8" step="1" value="3">
+      </div>
+    </div>
+
+    <canvas id="kResult" width="700" height="380"></canvas>
+
+    <div class="msg" id="kMsg"></div>
+  </section>
+
+  <!-- ===== 用途 ===== -->
+  <section class="tool" id="toolUse" role="tabpanel" aria-labelledby="tabUse">
+    <div class="panel">
+      <h2>クラスタリングが使われる場面</h2>
+      <div id="uList"></div>
+    </div>
+    <div class="panel">
+      <h2>教師あり学習との違い</h2>
+      <table style="border-collapse:collapse;width:100%;font-size:14.5px;">
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);width:8em;"></th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">教師あり学習（分類）</th>
+            <th style="border:1px solid var(--line);padding:8px 12px;background:var(--navy);color:#fff;">教師なし学習（クラスタリング）</th></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">正解ラベル</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;">必要（人がつける）</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;">不要</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">グループの意味</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;">あらかじめ決まっている</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">あとから人が解釈する</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">向いている場面</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;">分けたいものが決まっている</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;">どう分かれるか自体を知りたい</td></tr>
+        <tr><th style="border:1px solid var(--line);padding:8px 12px;background:var(--panel);text-align:left;">準備の手間</th>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#FBEEEE;">ラベル付けに人手がかかる</td>
+            <td style="border:1px solid var(--line);padding:8px 12px;background:#EAF3EE;">データだけあればよい</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>クラスタリングとは</h2>
+    <p>たくさんのデータがあるとき、似たものどうしをまとめて グループ に分けることをクラスタリングといいます。できたグループをクラスタと呼びます。</p>
+    <p>特徴は、<strong>正解を教えないこと</strong>です。「これはAグループ」といったラベルは一切与えません。データの位置関係だけを見て、コンピュータが自分でまとまりを見つけます。教師なし学習の代表例です。</p>
+    <p>そのため、できたグループが何を意味するかは、あらかじめ決まっていません。結果を見て人が「これは若い層だ」「これは購入頻度の高い客だ」と解釈します。</p>
+
+    <h2>k-means法のしくみ</h2>
+    <p>最もよく使われる手法が k-means法（k平均法）です。手順は驚くほど単純です。</p>
+    <ol>
+      <li><strong>中心を適当に置く</strong>：分けたいグループの数だけ、点を適当な位置に置きます</li>
+      <li><strong>振り分ける</strong>：各データを、いちばん近い中心のグループに入れます</li>
+      <li><strong>中心を動かす</strong>：各グループに集まったデータの平均の位置へ、中心を移動します</li>
+      <li><strong>くり返す</strong>：2と3を、中心が動かなくなるまでくり返します</li>
+    </ol>
+    <p>この4つだけです。中心が動かなくなれば完成で、たいてい数回のくり返しで落ち着きます。上のツールで、1歩ずつ進めながら確かめられます。</p>
+    <p>名前の「means（平均）」は、手順3で平均を使うことに由来します。「k」は分けるグループの数で、人が指定します。</p>
+
+    <h3>なぜこれでうまくいくのか</h3>
+    <p>この手順は、ある値を小さくするように働いています。各データから、自分が属するグループの中心までの距離。その二乗の合計です。</p>
+    <div class="formula">まとまりの良さ ＝ Σ（各データから、属する中心までの距離）²</div>
+    <p>手順2では、より近い中心に移すので、この合計が減ります。手順3では、平均の位置が距離の二乗和を最小にするので、やはり減ります。減り続けて、それ以上減らなくなったところで止まる。だから必ず終わります。</p>
+
+    <h2>グループ数をどう決めるか</h2>
+    <p>k-means法の弱点は、<strong>分ける数を人が決めなければならない</strong>ことです。データを見ただけでは、いくつが適切か分かりません。</p>
+    <p>判断の目安になるのがエルボー法です。グループ数を1から順に増やしながら、まとまりの良さを計算してグラフにします。</p>
+    <p>グループ数を増やせば、まとまりは必ず良くなります。極端な話、データの数だけグループを作れば、まとまりは完璧です。しかしそれでは意味がありません。</p>
+    <p>グラフを見ると、ある数を境に改善の度合いが急に鈍る場所があります。ひじ（elbow）のように折れ曲がるので、エルボー法と呼ばれます。<strong>その折れ曲がる点が、適切なグループ数の目安</strong>です。</p>
+    <p>ただし、これは絶対的な答えではありません。目的によって適切な数は変わります。顧客を分けるとき、施策を打てるのが3種類までなら、3つに分けるのが実用的です。</p>
+
+    <h2>注意すべき点</h2>
+
+    <h3>初期位置で結果が変わる</h3>
+    <p>最初に中心を置く位置によって、たどりつく答えが変わることがあります。偶然、悪い位置から始まると、不自然な分かれ方で止まってしまいます。</p>
+    <p>対策として、初期位置を変えて何度か実行し、最もまとまりの良い結果を採用する方法がとられます。</p>
+
+    <h3>丸いかたまりを想定している</h3>
+    <p>k-means法は、距離だけを見てグループを作ります。そのため、丸く集まったデータには強い一方、細長い形やドーナツ状のデータはうまく分けられません。</p>
+    <p>そうした場合は、密度に注目する手法や、階層的にまとめていく手法など、別の方法が使われます。</p>
+
+    <h3>かたまりがなくても分けてしまう</h3>
+    <p>データが均一に散らばっていても、k-means法は指示された数のグループに分けます。「分かれていません」とは答えてくれません。</p>
+    <p>結果が出たからといって、そこに意味のあるまとまりがあるとは限らない。この点は必ず意識しておく必要があります。上のツールの「かたまりなし」で、この様子を確かめられます。</p>
+
+    <h2>データの単位をそろえる</h2>
+    <p>実際のデータでは、項目ごとに単位や桁が違います。年齢は0〜100、年収は0〜1000万。このまま距離を計算すると、桁の大きい年収だけで結果が決まってしまいます。</p>
+    <p>そこで、あらかじめ各項目を同じ尺度にそろえます。これを標準化や正規化といいます。前処理を怠ると、意味のない結果が出ます。</p>
+
+    <h2>ほかのクラスタリング手法</h2>
+    <p>k-means法は最も基本的な方法ですが、ほかにもいくつかの手法があります。</p>
+    <table>
+      <tr><th>手法</th><th>特徴</th></tr>
+      <tr><td>階層的クラスタリング</td><td>近いものから順にまとめていく。グループ数を先に決めなくてよい</td></tr>
+      <tr><td>密度による手法</td><td>点が密集した領域をグループとみなす。細長い形にも対応できる</td></tr>
+      <tr><td>混合ガウスモデル</td><td>それぞれのグループを確率分布として扱う。所属を確率で表せる</td></tr>
+    </table>
+    <p>階層的クラスタリングでは、まとめていく過程を樹形図（デンドログラム）として描けます。どこで切るかによってグループ数を後から選べるのが利点です。</p>
+
+    <h2>結果をどう解釈するか</h2>
+    <p>クラスタリングで難しいのは、計算よりも<strong>できたグループの意味づけ</strong>です。コンピュータは「これが1番のグループ」としか教えてくれません。</p>
+    <p>顧客データを3つに分けたとき、それぞれの平均を見比べます。「このグループは購入頻度が高く、単価は低い」「こちらは年に数回だが高額商品を買う」。こうして特徴を読み取り、名前をつけていきます。</p>
+    <p>この作業には、データそのものだけでなく、業務や分野についての知識が必要です。分析は計算で終わりではなく、<strong>解釈まで含めて初めて役に立ちます</strong>。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>グループ分けの過程</strong>：「1歩すすめる」で、振り分けと中心の移動を交互に確認できます。中心が動かなくなったら完成です。</li>
+      <li><strong>いくつに分けるか</strong>：エルボー法のグラフで、適切なグループ数の目安を確かめられます。</li>
+      <li><strong>どこで使われるか</strong>：実際の活用例と、教師あり学習との違いを整理しています。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabRun','toolRun'],['tabK','toolK'],['tabUse','toolUse']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabK') drawElbow();
+      if(tid==='tabUse') buildUse();
+    });
+  });
+})();
+
+const COLORS=['#C0392B','#2F5496','#2E7D4F','#B07A1E','#7B4FA0','#1B8A8A','#C2569C','#5A6B7B'];
+function gauss(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+/* ===== 実行 ===== */
+let cPts=[], cK=3, cCent=[], cIter=0, cPhase=0, cDone=false, cAuto=null;
+function newCData(){
+  cPts=[];
+  const centers=[[170,130],[520,150],[330,350]];
+  centers.forEach(([cx,cy])=>{
+    for(let i=0;i<26;i++){
+      cPts.push({x:cx+gauss()*52, y:cy+gauss()*46, g:-1});
+    }
+  });
+  cPts.forEach(p=>{ p.x=Math.max(25,Math.min(675,p.x)); p.y=Math.max(25,Math.min(435,p.y)); });
+  resetC();
+}
+function resetC(){
+  cIter=0; cPhase=0; cDone=false;
+  cPts.forEach(p=>p.g=-1);
+  // 初期中心：データからランダムに選ぶ
+  const idx=[];
+  while(idx.length<cK){
+    const i=Math.floor(Math.random()*cPts.length);
+    if(!idx.includes(i)) idx.push(i);
+  }
+  cCent=idx.map(i=>({x:cPts[i].x, y:cPts[i].y}));
+  setCStage(0);
+  drawC();
+  document.getElementById('cState').textContent='開始前';
+  document.getElementById('cIter').textContent='0';
+  document.getElementById('cSSE').textContent='–';
+  document.getElementById('cHint').textContent=
+    'それぞれの色の点が「中心」です。まずランダムな位置に置かれています。';
+  document.getElementById('cMsg').className='msg';
+  document.getElementById('cMsg').innerHTML=
+    '<div class="t">k-means法</div>'+
+    `${cK}個の中心を適当に置きました。ここから「近い中心に振り分ける」「中心を動かす」を`+
+    'くり返します。「1歩すすめる」を押してください。';
+}
+function setCStage(k){
+  ['cs1','cs2','cs3','cs4'].forEach((id,i)=>{
+    document.getElementById(id).className='st'+(i<k?' done':(i===k?' now':''));
+  });
+}
+function assignC(){
+  let changed=false;
+  cPts.forEach(p=>{
+    let best=0, bd=Infinity;
+    cCent.forEach((c,i)=>{
+      const d=(p.x-c.x)**2+(p.y-c.y)**2;
+      if(d<bd){ bd=d; best=i; }
+    });
+    if(p.g!==best){ changed=true; p.g=best; }
+  });
+  return changed;
+}
+function moveC(){
+  let moved=0;
+  cCent.forEach((c,i)=>{
+    const g=cPts.filter(p=>p.g===i);
+    if(g.length===0) return;
+    const nx=g.reduce((a,p)=>a+p.x,0)/g.length;
+    const ny=g.reduce((a,p)=>a+p.y,0)/g.length;
+    moved+=Math.hypot(nx-c.x, ny-c.y);
+    c.x=nx; c.y=ny;
+  });
+  return moved;
+}
+function sseC(){
+  return cPts.reduce((s,p)=> p.g<0 ? s : s+(p.x-cCent[p.g].x)**2+(p.y-cCent[p.g].y)**2, 0);
+}
+function drawC(){
+  const cv=document.getElementById('cCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  // 所属を示す線
+  if(cPhase>=1){
+    cPts.forEach(p=>{
+      if(p.g<0) return;
+      c.strokeStyle=COLORS[p.g]+'33'; c.lineWidth=1;
+      c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(cCent[p.g].x,cCent[p.g].y); c.stroke();
+    });
+  }
+  // 点
+  cPts.forEach(p=>{
+    c.fillStyle = p.g<0 ? '#8892A4' : COLORS[p.g];
+    c.beginPath(); c.arc(p.x,p.y,6,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=1.5; c.stroke();
+  });
+  // 中心
+  cCent.forEach((ct,i)=>{
+    c.fillStyle=COLORS[i];
+    c.beginPath();
+    c.moveTo(ct.x, ct.y-14);
+    for(let k=1;k<10;k++){
+      const a=Math.PI*2*k/10 - Math.PI/2;
+      const r=(k%2===0)?14:6.5;
+      c.lineTo(ct.x+Math.cos(a)*r, ct.y+Math.sin(a)*r);
+    }
+    c.closePath(); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2.5; c.stroke();
+  });
+  document.getElementById('cK').textContent=cK;
+  if(cPhase>=1) document.getElementById('cSSE').textContent=(sseC()/1000).toFixed(1);
+}
+function stepC(){
+  if(cDone) return true;
+  if(cPhase===0){
+    const changed=assignC();
+    cPhase=1; setCStage(2);
+    drawC();
+    document.getElementById('cState').textContent='振り分けた';
+    document.getElementById('cHint').textContent=
+      '各データを、いちばん近い中心のグループに入れました（手順2）。';
+    document.getElementById('cMsg').className='msg';
+    document.getElementById('cMsg').innerHTML=
+      `<div class="t">近い中心に振り分けました（${cIter+1}回目）</div>`+
+      '線は「どの中心に属しているか」を示しています。'+
+      '次に、集まったデータの<b>平均の位置へ中心を動かします</b>。';
+    if(!changed && cIter>0){ cDone=true; finishC(); }
+    return cDone;
+  }else{
+    const moved=moveC();
+    cIter++; cPhase=0; setCStage(3);
+    drawC();
+    document.getElementById('cIter').textContent=cIter;
+    document.getElementById('cState').textContent='中心を移動';
+    document.getElementById('cHint').textContent=
+      'グループの平均の位置へ、中心を移動しました（手順3）。';
+    if(moved<0.6){
+      cDone=true; finishC();
+    }else{
+      document.getElementById('cMsg').className='msg';
+      document.getElementById('cMsg').innerHTML=
+        `<div class="t">中心を動かしました（${cIter}回目）</div>`+
+        `中心が合計 <b>${moved.toFixed(1)}</b> 移動しました。`+
+        'まだ動いているので、もう一度振り分けからくり返します。';
+    }
+    return cDone;
+  }
+}
+function finishC(){
+  setCStage(4);
+  document.getElementById('cState').textContent='完成';
+  document.getElementById('cHint').textContent='中心が動かなくなったので終了です。';
+  const m=document.getElementById('cMsg');
+  m.className='msg ok';
+  m.innerHTML=`<div class="t">完成しました（${cIter}回のくり返し）</div>`+
+    `中心が動かなくなったので終了です。`+
+    `<b>正解は一度も教えていません。</b>それでも、似たものどうしが自然にまとまりました。`+
+    `　まとまりの良さは <b>${(sseC()/1000).toFixed(1)}</b>（小さいほど良い）。`;
+}
+document.getElementById('cStep').addEventListener('click',()=>{ if(!cAuto) stepC(); });
+document.getElementById('cAuto').addEventListener('click',()=>{
+  if(cAuto){ clearInterval(cAuto); cAuto=null; document.getElementById('cAuto').textContent='最後まで自動で'; return; }
+  document.getElementById('cAuto').textContent='とめる';
+  cAuto=setInterval(()=>{
+    if(stepC()){ clearInterval(cAuto); cAuto=null;
+      document.getElementById('cAuto').textContent='最後まで自動で'; }
+  },700);
+});
+document.getElementById('cReset').addEventListener('click',()=>{
+  if(cAuto){ clearInterval(cAuto); cAuto=null; document.getElementById('cAuto').textContent='最後まで自動で'; }
+  resetC();
+});
+document.getElementById('cNewData').addEventListener('click',()=>{
+  if(cAuto){ clearInterval(cAuto); cAuto=null; document.getElementById('cAuto').textContent='最後まで自動で'; }
+  newCData();
+});
+document.querySelectorAll('[data-k]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-k]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    cK=+b.dataset.k;
+    if(cAuto){ clearInterval(cAuto); cAuto=null; document.getElementById('cAuto').textContent='最後まで自動で'; }
+    resetC();
+  });
+});
+
+/* ===== エルボー法 ===== */
+let kPts=[], kKind='three';
+function makeKData(){
+  kPts=[];
+  if(kKind==='three'){
+    [[170,120],[520,140],[340,290]].forEach(([cx,cy])=>{
+      for(let i=0;i<25;i++) kPts.push({x:cx+gauss()*44, y:cy+gauss()*38});
+    });
+  }else if(kKind==='two'){
+    [[190,190],[500,200]].forEach(([cx,cy])=>{
+      for(let i=0;i<38;i++) kPts.push({x:cx+gauss()*50, y:cy+gauss()*48});
+    });
+  }else{
+    for(let i=0;i<75;i++) kPts.push({x:70+Math.random()*560, y:50+Math.random()*280});
+  }
+  kPts.forEach(p=>{ p.x=Math.max(25,Math.min(675,p.x)); p.y=Math.max(25,Math.min(355,p.y)); });
+  drawElbow();
+}
+function runKMeans(pts,k,tries){
+  let best=null;
+  for(let t=0;t<(tries||6);t++){
+    const idx=[];
+    while(idx.length<k){
+      const i=Math.floor(Math.random()*pts.length);
+      if(!idx.includes(i)) idx.push(i);
+    }
+    let cent=idx.map(i=>({x:pts[i].x,y:pts[i].y}));
+    const g=new Array(pts.length).fill(-1);
+    for(let it=0; it<60; it++){
+      let changed=false;
+      pts.forEach((p,pi)=>{
+        let b=0,bd=Infinity;
+        cent.forEach((c,ci)=>{ const d=(p.x-c.x)**2+(p.y-c.y)**2; if(d<bd){bd=d;b=ci;} });
+        if(g[pi]!==b){ changed=true; g[pi]=b; }
+      });
+      cent.forEach((c,ci)=>{
+        const mem=pts.filter((_,pi)=>g[pi]===ci);
+        if(!mem.length) return;
+        c.x=mem.reduce((a,p)=>a+p.x,0)/mem.length;
+        c.y=mem.reduce((a,p)=>a+p.y,0)/mem.length;
+      });
+      if(!changed && it>0) break;
+    }
+    const s=pts.reduce((acc,p,pi)=>acc+(p.x-cent[g[pi]].x)**2+(p.y-cent[g[pi]].y)**2,0);
+    if(!best || s<best.sse) best={sse:s, cent, g:[...g]};
+  }
+  return best;
+}
+function drawElbow(){
+  if(!kPts.length) return;
+  const vals=[];
+  for(let k=1;k<=8;k++) vals.push(runKMeans(kPts,k).sse/1000);
+
+  const cv=document.getElementById('kCv'), c=cv.getContext('2d');
+  const W=cv.width,H=cv.height,PAD=52;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const mx=Math.max(...vals);
+  const X=k=>PAD+(k-1)/7*(W-PAD*2);
+  const Y=v=>H-PAD-v/mx*(H-PAD*1.6);
+  c.strokeStyle='#EDF1F7'; c.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    c.beginPath(); c.moveTo(PAD,PAD*0.6+(H-PAD*1.6)*i/4); c.lineTo(W-PAD,PAD*0.6+(H-PAD*1.6)*i/4); c.stroke();
+  }
+  c.strokeStyle='#5B6472'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(PAD,H-PAD); c.lineTo(W-PAD,H-PAD); c.stroke();
+  c.beginPath(); c.moveTo(PAD,PAD*0.5); c.lineTo(PAD,H-PAD); c.stroke();
+
+  c.strokeStyle='#2F5496'; c.lineWidth=3;
+  c.beginPath();
+  vals.forEach((v,i)=>{ i?c.lineTo(X(i+1),Y(v)):c.moveTo(X(i+1),Y(v)); });
+  c.stroke();
+
+  // ひじの検出（変化率が最も鈍る点）
+  let elbow=1, bestDrop=0;
+  for(let i=1;i<vals.length-1;i++){
+    const d1=vals[i-1]-vals[i], d2=vals[i]-vals[i+1];
+    const ratio=d1-d2;
+    if(ratio>bestDrop){ bestDrop=ratio; elbow=i+1; }
+  }
+  vals.forEach((v,i)=>{
+    const k=i+1;
+    c.fillStyle = k===elbow ? '#C49A2B' : '#2F5496';
+    c.beginPath(); c.arc(X(k),Y(v), k===elbow?10:6, 0, Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2.5; c.stroke();
+    c.fillStyle='#5B6472'; c.font='12px sans-serif'; c.textAlign='center';
+    c.fillText(k, X(k), H-PAD+18);
+  });
+  c.fillStyle='#C49A2B'; c.font='bold 12px sans-serif';
+  c.fillText('ここが目安', X(elbow), Y(vals[elbow-1])-20);
+  c.fillStyle='#5B6472'; c.font='12px sans-serif';
+  c.fillText('グループ数', W/2, H-14);
+
+  drawKResult(elbow);
+}
+function drawKResult(elbow){
+  const k=+document.getElementById('kSel').value;
+  document.getElementById('kSelV').textContent=k;
+  const res=runKMeans(kPts,k,8);
+  const cv=document.getElementById('kResult'), c=cv.getContext('2d');
+  c.fillStyle='#fff'; c.fillRect(0,0,cv.width,cv.height);
+  kPts.forEach((p,i)=>{
+    c.fillStyle=COLORS[res.g[i]%COLORS.length];
+    c.beginPath(); c.arc(p.x,p.y,6,0,Math.PI*2); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=1.5; c.stroke();
+  });
+  res.cent.forEach((ct,i)=>{
+    c.fillStyle=COLORS[i%COLORS.length];
+    c.beginPath();
+    for(let s=0;s<10;s++){
+      const a=Math.PI*2*s/10 - Math.PI/2;
+      const r=(s%2===0)?13:6;
+      s?c.lineTo(ct.x+Math.cos(a)*r, ct.y+Math.sin(a)*r):c.moveTo(ct.x, ct.y-13);
+    }
+    c.closePath(); c.fill();
+    c.strokeStyle='#fff'; c.lineWidth=2.5; c.stroke();
+  });
+
+  const m=document.getElementById('kMsg');
+  const real={three:3,two:2,none:0}[kKind];
+  if(kKind==='none'){
+    m.className='msg';
+    m.innerHTML=`<div class="t">${k}個に分けました</div>`+
+      'このデータには、もともと<b>まとまりがありません</b>。均一に散らばっているだけです。'+
+      'それでも k-means法は、指示された数に分けてしまいます。'+
+      '　エルボー法のグラフを見ても、はっきり折れ曲がる点がないのが分かります。'+
+      '<b>結果が出たからといって、意味のあるまとまりがあるとは限りません。</b>';
+  }else if(k===real){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">${k}個に分けました　—　適切です</div>`+
+      `もともと${real}つの集まりでできているデータなので、きれいに分かれました。`+
+      'エルボー法のグラフでも、ここで折れ曲がっています。';
+  }else if(k<real){
+    m.className='msg';
+    m.innerHTML=`<div class="t">${k}個に分けました　—　少なすぎます</div>`+
+      `本来${real}つある集まりが、まとめられてしまいました。`+
+      'まとまりの良さの値も大きい（＝悪い）ままです。';
+  }else{
+    m.className='msg';
+    m.innerHTML=`<div class="t">${k}個に分けました　—　多すぎます</div>`+
+      `1つの集まりが、無理に${k-real+1}つに割られています。`+
+      'まとまりの良さは改善しますが、<b>意味のない分割</b>です。'+
+      'グループ数を増やせば値は必ず良くなるので、数値だけで判断してはいけません。';
+  }
+}
+document.getElementById('kSel').addEventListener('input',()=>drawElbow());
+document.querySelectorAll('[data-kd]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-kd]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    kKind=b.dataset.kd; makeKData();
+  });
+});
+
+/* ===== 用途 ===== */
+const USES=[
+  ['🛒','顧客のグループ分け','購買履歴からタイプを分け、それぞれに合った案内を出す。「よく買う人」「たまに買う人」といったまとまりが自動で見つかります。'],
+  ['📰','記事や文書の整理','内容の似た記事をまとめる。ニュースアプリで同じ話題の記事がまとめて表示されるのは、この仕組みです。'],
+  ['🖼️','画像の色を減らす','似た色をまとめて代表色にする。画像の減色や圧縮に使われます。'],
+  ['🔍','異常の発見','どのグループにも入らない、離れたデータを見つける。不正利用の検知などに使われます。'],
+  ['🧬','生物の分類','遺伝子の似たものをまとめて、種類や特徴を調べる。'],
+  ['🏙️','地域の分類','人口や産業のデータから、似た性格の地域をまとめて政策を考える。']
+];
+function buildUse(){
+  const box=document.getElementById('uList');
+  if(box.dataset.done) return;
+  box.innerHTML=USES.map(([ic,t,d])=>
+    `<div style="display:flex;gap:14px;background:#fff;border:1px solid var(--line);
+      border-radius:10px;padding:14px 16px;margin-bottom:9px;">
+      <div style="font-size:26px;flex:0 0 auto;">${ic}</div>
+      <div><div style="font-weight:700;color:var(--navy);font-size:15.5px;">${t}</div>
+      <div style="font-size:14px;color:var(--ink);margin-top:3px;">${d}</div></div>
+    </div>`).join('');
+  box.dataset.done='1';
+}
+
+/* ===== 初期化 ===== */
+newCData(); makeKData(); buildUse();
+</script>
+</body>
+</html>
