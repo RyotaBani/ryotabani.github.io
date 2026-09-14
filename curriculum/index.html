@@ -128,7 +128,36 @@
     </div>
   </section>
 
-  <div class="sitefoot" id="foot"></div>
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+  </div>
 </div>
 
 <script>
@@ -304,11 +333,6 @@ function renderAll(){
   document.getElementById('allTable').innerHTML=
     `<thead><tr><th style="width:32%;">教材</th><th>対応する単元</th></tr></thead><tbody>${rows}</tbody>`;
 }
-
-/* ===== フッター ===== */
-document.getElementById('foot').innerHTML=
-  '<span>&copy; 2026 情報ラボ</span><a href="/">ホーム</a><a href="/curriculum/">カリキュラム対応表</a>'+
-  Object.keys(M).map(k=>`<a href="/${k}/">${M[k].n}</a>`).join('');
 
 /* ===== 初期化 ===== */
 renderCurriculum(C1,'c1');
