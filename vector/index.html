@@ -123,7 +123,7 @@
     <div class="panel">
       <div class="sl">
         <div class="top"><label for="zZoom">拡大率</label><span class="val" id="zZoomV">1 倍</span></div>
-        <input type="range" id="zZoom" min="1" max="16" step="0.1" value="1">
+        <input type="range" id="zZoom" min="1" max="40" step="0.5" value="1">
       </div>
       <div class="row">
         <span style="font-size:13.5px;font-weight:700;color:var(--ink);">絵を選ぶ</span>
@@ -132,9 +132,12 @@
         <button class="chip" data-fig="text" aria-pressed="false">文字</button>
         <span style="flex:1"></span>
         <span style="font-size:13.5px;font-weight:700;color:var(--ink);">元の画素数</span>
+        <button class="chip" data-px="16" aria-pressed="false">16×16</button>
         <button class="chip" data-px="32" aria-pressed="false">32×32</button>
-        <button class="chip" data-px="64" aria-pressed="true">64×64</button>
-        <button class="chip" data-px="128" aria-pressed="false">128×128</button>
+        <button class="chip" data-px="64" aria-pressed="false">64×64</button>
+        <button class="chip" data-px="128" aria-pressed="true">128×128</button>
+        <button class="chip" data-px="256" aria-pressed="false">256×256</button>
+        <button class="chip" data-px="512" aria-pressed="false">512×512</button>
       </div>
     </div>
 
@@ -358,7 +361,7 @@ const FIGS={
   text:`<text x="50" y="66" font-size="52" font-weight="700" text-anchor="middle"
     fill="#2F5496" font-family="Helvetica,Arial,sans-serif">Ai</text>`
 };
-let figKind='apple', basePx=64;
+let figKind='apple', basePx=128;
 
 function svgMarkup(fig, size){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">
@@ -446,7 +449,7 @@ document.querySelectorAll('[data-px]').forEach(b=>{
 async function renderRes(){
   const box=document.getElementById('rBox');
   if(box.dataset.done==='1') return;
-  const sizes=[128,64,32,16,8];
+  const sizes=[512,256,128,64,32,16,8];
   box.innerHTML='';
   for(const s of sizes){
     const small=await rasterize(figKind==='text'?'apple':figKind, s);

@@ -104,6 +104,14 @@
   .status.err{color:var(--ng);}
 
   /* 記事 */
+  .fbtns{display:flex; gap:6px; flex-wrap:wrap;}
+  .fbtns .pb{padding:7px 13px; border-radius:9px; border:2px solid var(--line); cursor:pointer;
+    font-family:inherit; font-size:13px; background:#fff; color:var(--ink);}
+  .fbtns .pb[aria-pressed=true]{border-color:var(--navy); background:#EEF3FB; color:var(--navy);
+    font-weight:700;}
+  .fbtns .pb small{display:block; font-size:10.5px; color:var(--muted); font-weight:400;}
+  .fbtns .pb[aria-pressed=true] small{color:var(--navy);}
+
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
   .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
@@ -125,7 +133,7 @@
   .sitefoot a{color:var(--muted);}
   @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
 </style>
-<!-- ▼ Google AdSense -->
+<!-- ▼ Google AdSense（ca-pub-7076767152814369 を自分のIDに置き換える） -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -214,6 +222,20 @@
         <div class="vol">音量 <input type="range" id="iVol" min="0" max="50" value="12"><span id="iVolV">12%</span></div>
       </div>
       <div class="row" style="margin-top:12px;">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);flex:0 0 5.5em;">模様で試す</span>
+        <div class="fbtns" id="iPat"></div>
+      </div>
+      <p class="hint" id="iPatNote">
+        しま模様を読み取ると、きれいな音になります。しまの細かさが<strong>音の高さ</strong>、
+        濃さが<strong>音の大きさ</strong>にあたります。
+      </p>
+      <div class="row" style="margin-top:12px;">
+        <span style="font-size:13.5px;font-weight:700;color:var(--ink);">読み取る順</span>
+        <button class="chip" id="iRow" aria-pressed="true">→ 横に読む（標準）</button>
+        <button class="chip" id="iCol" aria-pressed="false">↓ 縦に読む</button>
+      </div>
+      <p class="hint" id="iOrderNote"></p>
+      <div class="row" style="margin-top:12px;">
         <button class="primary" id="iPlay" disabled>音として再生する</button>
         <button class="primary danger" id="iStop" disabled>とめる</button>
       </div>
@@ -226,7 +248,11 @@
       </div>
       <div class="cv">
         <canvas id="iWave" width="480" height="360"></canvas>
-        <p class="cap">その画素の値を波形として並べたもの</p>
+        <p class="cap" id="iWaveCap">その画素の値を、読み取った順に並べたもの</p>
+        <div class="row" style="justify-content:center;margin-top:4px;">
+          <button class="chip" id="iWhole" aria-pressed="true">全体を見る</button>
+          <button class="chip" id="iZoomW" aria-pressed="false">波の形を拡大</button>
+        </div>
       </div>
     </div>
     <div class="status" id="iStatus"></div>
@@ -279,6 +305,23 @@
     <p>空や壁のように色が一様な部分は、似た数値が続きます。数値の変化が小さいので、低くこもった音になります。逆に、模様が細かい部分や輪郭の部分では数値が激しく上下するので、高くざらついた音になります。<strong>画像の「見た目の複雑さ」が、そのまま音の「にぎやかさ」として聞こえる</strong>わけです。</p>
     <p>また、多くの画像は上から下へ、左から右へと画素が並んでいます。そのため、横縞のある画像を再生すると、規則的な繰り返し音が聞こえることがあります。データの並び方が、そのまま音のリズムになるのです。</p>
 
+    <h3>画像はどの順で読まれるのか</h3>
+    <p>画像を1列の数値の並びにするには、2次元に並んだ画素をどの順で読むかを決める必要があります。標準は<strong>左上から右へ1行ずつ読み、行が終わったら1つ下の行の左端へ戻る</strong>という順序です。文章を読むのと同じ動きで、ラスタスキャン順といいます。</p>
+    <p>この順序は、画像ファイルの中でも、ディスプレイへの表示でも共通して使われています。上のツールでは、再生中に黄色い線が上から下へ進みますが、これが「いまどの行を読んでいるか」を示しています。</p>
+    <p>順序を変えると、同じ画像でもまったく違う音になります。上下に読む設定に切り替えると確かめられます。<strong>データそのものは同じでも、並べる順が変われば別のものになる</strong>ということです。</p>
+
+    <h3>しまの細かさが、音の高さになる</h3>
+    <p>画像を音にしたとき、何が音の高さを決めるのでしょうか。答えは<strong>明暗が入れかわる間隔</strong>です。</p>
+    <p>1秒間に7200画素を読む設定なら、36画素ごとに明暗がくり返す模様は、1秒間に200回の振動になります。つまり200ヘルツの音です。</p>
+    <div class="formula">音の高さ（Hz） ＝ 1秒あたりに読む画素数 ÷ しまの間隔（画素）</div>
+    <p>しまが細かいほど、明暗の入れかわりが速くなり、音は高くなります。上のツールの「低い音」（36画素間隔＝200Hz）と「高い音」（9画素間隔＝800Hz）を聴き比べると、この関係がはっきり分かります。</p>
+    <p>写真のこまかい部分がザラついた高い音になるのも、同じ理由です。細部は画素ごとの明暗の変化が激しく、高い周波数の成分を多く含むためです。</p>
+
+    <h3>濃淡の差が、音の大きさになる</h3>
+    <p>一方、音の大きさを決めるのは<strong>明暗の差の大きさ</strong>、つまりコントラストです。</p>
+    <p>真っ白と真っ黒がくり返す模様は大きな音になり、うすい灰色どうしがくり返す模様は小さな音になります。しまの間隔が同じなら、音の高さは変わりません。変わるのは音量だけです。</p>
+    <p>波形でいえば、高さ（振幅）の違いにあたります。上のツールの「音が大きくなる」を選ぶと、しまの細かさはそのままに濃淡だけが強くなっていき、音の高さを保ったまま音量が上がっていくのが確かめられます。</p>
+
     <h3>音を画像にすると、何が見えるか</h3>
     <p>逆に、音の数値を画素の明るさとして並べると、縞模様が現れます。音の波は上がって下がってをくり返すので、明るい・暗いが周期的に並ぶためです。高い音ほど周期が短く、細かい縞になります。静かな部分は数値が中央付近に集まるので、灰色の平らな面になります。</p>
 
@@ -303,7 +346,7 @@
     <ul>
       <li><strong>ファイルの中身</strong>：どんなファイルでも読み込めます。2進数と16進数を切り替えて、同じデータの見え方の違いも確かめられます。</li>
       <li><strong>音を数値で見る</strong>：マイクの音を波形と数値で表示します。声を出したり、手をたたいたりすると、数値が大きく動きます。</li>
-      <li><strong>画像を音で聴く</strong>：画像の画素を音として再生します。空の写真と細かい模様の写真で、音がどう違うか比べてみてください。</li>
+      <li><strong>画像を音で聴く</strong>：まず「模様で試す」で、しまの細かさと音の高さの関係を確かめてください。そのあと画像の画素を音として再生します。空の写真と細かい模様の写真で、音がどう違うか比べてみてください。読み取る順（横・縦）を切り替えると、同じ画像でも音が変わります。</li>
       <li><strong>音を画像で見る</strong>：音の数値を画素として並べます。高い音と低い音で縞の細かさが変わります。</li>
     </ul>
     <p>マイクを使う機能では、音声はこの画面の中だけで処理され、どこにも保存も送信もされません。</p>
@@ -643,7 +686,13 @@ function sampleImageCanvas(w=256,h=256){
   }
   document.getElementById('iVol').addEventListener('input',setVol);
 
-  let drawn=null; // 画像の描画位置（マーカー用）
+  let drawn=null;      // 画像の描画位置（マーカー用）
+  let iOrder='row';    // 'row' = 左から右へ1行ずつ / 'col' = 上から下へ1列ずつ
+  let gridW=0, gridH=0, lum2d=null;
+
+  const I_RATE=7200;   // 音の標本化周波数（しまの間隔で割り切れる値にしてある）
+  const I_SEC=4.5;     // 再生時間（画像によらず一定にする）
+
   function fromCanvas(c){
     // 表示
     ix.fillStyle='#fff'; ix.fillRect(0,0,iImg.width,iImg.height);
@@ -653,37 +702,101 @@ function sampleImageCanvas(w=256,h=256){
     ix.drawImage(c,ox,oy,w,h);
     drawn={src:c, ox, oy, w, h};
 
-    // 画素値 → 音のサンプル（明るさを -1..1 に）
+    // 画素の総数を、どの画像でもそろえる（＝再生時間を一定にする）
+    const TARGET=I_RATE*I_SEC;                       // 32,000 画素
+    const aspect=c.height/c.width;
+    gridW=Math.max(8,Math.round(Math.sqrt(TARGET/aspect)));
+    gridH=Math.max(8,Math.round(gridW*aspect));
+
     const small=document.createElement('canvas');
-    const SW=200, SH=Math.max(1,Math.round(c.height*SW/c.width));
-    small.width=SW; small.height=SH;
-    small.getContext('2d').drawImage(c,0,0,SW,SH);
-    const d=small.getContext('2d',{willReadFrequently:true}).getImageData(0,0,SW,SH).data;
-    const n=SW*SH;
-    samples=new Float32Array(n);
-    for(let i=0;i<n;i++){
+    small.width=gridW; small.height=gridH;
+    const sc=small.getContext('2d',{willReadFrequently:true});
+    sc.drawImage(c,0,0,gridW,gridH);
+    const d=sc.getImageData(0,0,gridW,gridH).data;
+
+    // 明るさを2次元で保持しておく（読み取る順を変えられるように）
+    lum2d=new Float32Array(gridW*gridH);
+    for(let i=0;i<gridW*gridH;i++){
       const p=i*4;
-      const lum=(0.299*d[p]+0.587*d[p+1]+0.114*d[p+2]);
-      samples[i]=(lum/127.5)-1; // -1 〜 1
+      lum2d[i]=(0.299*d[p]+0.587*d[p+1]+0.114*d[p+2])/127.5-1;  // -1〜1
     }
-    drawWave();
+    buildSamples();
     document.getElementById('iPlay').disabled=false;
-    st.textContent=`画素 ${n.toLocaleString()} 個ぶんの数値を、音のサンプルとして並べました。`;
   }
 
-  function drawWave(){
-    wx.fillStyle='#fff'; wx.fillRect(0,0,iWave.width,iWave.height);
-    wx.strokeStyle='#D3DBEA'; wx.lineWidth=1;
-    wx.beginPath(); wx.moveTo(0,iWave.height/2); wx.lineTo(iWave.width,iWave.height/2); wx.stroke();
-    wx.strokeStyle='#2F5496'; wx.lineWidth=1;
-    wx.beginPath();
-    const n=samples.length;
-    for(let x=0;x<iWave.width;x++){
-      const i=Math.floor(x/iWave.width*n);
-      const y=(1-(samples[i]+1)/2)*iWave.height;
-      x?wx.lineTo(x,y):wx.moveTo(x,y);
+  // 読み取る順にしたがって、1次元に並べ直す
+  function buildSamples(){
+    if(!lum2d) return;
+    const n=gridW*gridH;
+    samples=new Float32Array(n);
+    if(iOrder==='row'){
+      // 左から右へ1行ずつ、終わったら1つ下の行へ（ラスタスキャン順）
+      samples.set(lum2d);
+    }else{
+      // 上から下へ1列ずつ、終わったら1つ右の列へ
+      let k=0;
+      for(let x=0;x<gridW;x++)
+        for(let y=0;y<gridH;y++)
+          samples[k++]=lum2d[y*gridW+x];
     }
-    wx.stroke();
+    drawWave();
+    const st2=document.getElementById('iStatus');
+    st2.className='status';
+    st2.textContent=
+      `${gridW}×${gridH} ＝ ${n.toLocaleString()}個の画素を、`+
+      (iOrder==='row' ? '左から右へ1行ずつ' : '上から下へ1列ずつ')+
+      `読み取って並べました（約${(n/I_RATE).toFixed(1)}秒）。`;
+    updateOrderNote();
+  }
+  function updateOrderNote(){
+    document.getElementById('iOrderNote').innerHTML = iOrder==='row'
+      ? '画像を左上から<strong>右へ1行ずつ</strong>読み、行が終わったら1つ下の行の左端へ戻ります。'+
+        'コンピュータが画像を扱うときの標準の順序で、文章を読むのと同じです。'
+      : '画像を左上から<strong>下へ1列ずつ</strong>読み、列が終わったら1つ右の列の上端へ戻ります。'+
+        '順序を変えると、同じ画像でもまったく違う音になります。';
+    document.getElementById('iWaveCap').textContent = iOrder==='row'
+      ? 'その画素の値を、左から右へ1行ずつ読み取って並べたもの'
+      : 'その画素の値を、上から下へ1列ずつ読み取って並べたもの';
+  }
+
+  let waveZoom=false;
+  function drawWave(){
+    const W=iWave.width, H=iWave.height;
+    wx.fillStyle='#fff'; wx.fillRect(0,0,W,H);
+    wx.strokeStyle='#D3DBEA'; wx.lineWidth=1;
+    wx.beginPath(); wx.moveTo(0,H/2); wx.lineTo(W,H/2); wx.stroke();
+    const n=samples.length;
+    if(!n) return;
+
+    if(waveZoom){
+      // 波の形が見えるよう、先頭のごく一部だけを線で描く
+      const SHOW=Math.min(n, Math.round(I_RATE*0.02));   // 20ミリ秒ぶん
+      wx.strokeStyle='#2F5496'; wx.lineWidth=2;
+      wx.beginPath();
+      for(let x=0;x<W;x++){
+        const i=Math.min(SHOW-1, Math.floor(x/W*SHOW));
+        const y=(1-(samples[i]+1)/2)*H;
+        x?wx.lineTo(x,y):wx.moveTo(x,y);
+      }
+      wx.stroke();
+      wx.fillStyle='#5B6472'; wx.font='11px sans-serif'; wx.textAlign='left';
+      wx.fillText('先頭の 20ミリ秒ぶん（'+SHOW+'サンプル）', 8, 14);
+    }else{
+      // 全体：1列ごとに最大と最小を塗る（音声編集ソフトと同じ描き方）
+      wx.fillStyle='rgba(47,84,150,.8)';
+      for(let x=0;x<W;x++){
+        const i0=Math.floor(x/W*n);
+        const i1=Math.max(i0+1, Math.floor((x+1)/W*n));
+        let mn=1, mx=-1;
+        for(let i=i0;i<i1;i++){
+          const v=samples[i];
+          if(v<mn) mn=v;
+          if(v>mx) mx=v;
+        }
+        const y1=(1-(mx+1)/2)*H, y2=(1-(mn+1)/2)*H;
+        wx.fillRect(x, y1, 1, Math.max(1, y2-y1));
+      }
+    }
   }
 
   document.getElementById('iPick').addEventListener('change',e=>{
@@ -699,13 +812,20 @@ function sampleImageCanvas(w=256,h=256){
     img.onerror=()=>{ st.className='status err'; st.textContent='画像を読み込めませんでした。'; };
     img.src=URL.createObjectURL(f);
   });
-  document.getElementById('iSample').addEventListener('click',()=>fromCanvas(sampleImageCanvas(320,320)));
+  document.getElementById('iSample').addEventListener('click',()=>{
+    patSel=-1; buildPatterns();
+    document.getElementById('iPatNote').innerHTML=
+      'しま模様を読み取ると、きれいな音になります。しまの細かさが<strong>音の高さ</strong>、'+
+      '濃さが<strong>音の大きさ</strong>にあたります。';
+    fromCanvas(sampleImageCanvas(320,320));
+    setWaveView(false);
+  });
 
   document.getElementById('iPlay').addEventListener('click',()=>{
     if(!samples) return;
     stop();
     const ctx=audioCtx();
-    const RATE=8000;
+    const RATE=I_RATE;
     const buf=ctx.createBuffer(1,samples.length,RATE);
     const ch=buf.getChannelData(0);
     ch.set(samples);
@@ -720,7 +840,8 @@ function sampleImageCanvas(w=256,h=256){
     srcNode.start();
     document.getElementById('iStop').disabled=false;
     st.className='status';
-    st.textContent=`再生中（約 ${totalSec.toFixed(1)} 秒）。黄色い線が、いま鳴っている場所です。`;
+    st.textContent=`再生中（約 ${totalSec.toFixed(1)} 秒）。黄色い線が、いま読み取っている場所です。`+
+      (iOrder==='row' ? '線は上から下へ進みます。' : '線は左から右へ進みます。');
     runMarker();
   });
   let startedAt=0, totalSec=0, mraf=null;
@@ -734,12 +855,19 @@ function sampleImageCanvas(w=256,h=256){
     const ctx=audioCtx();
     const prog=Math.min(1,(ctx.currentTime-startedAt)/totalSec);
     redrawImage();
-    // 画像上：いま鳴っている行
-    const y=drawn.oy + prog*drawn.h;
     ix.strokeStyle='#E8B21F'; ix.lineWidth=3;
-    ix.beginPath(); ix.moveTo(drawn.ox,y); ix.lineTo(drawn.ox+drawn.w,y); ix.stroke();
     ix.fillStyle='rgba(0,0,0,.35)';
-    ix.fillRect(drawn.ox, drawn.oy, drawn.w, Math.max(0,y-drawn.oy));
+    if(iOrder==='row'){
+      // 横に読む → 走査線は上から下へ
+      const y=drawn.oy + prog*drawn.h;
+      ix.beginPath(); ix.moveTo(drawn.ox,y); ix.lineTo(drawn.ox+drawn.w,y); ix.stroke();
+      ix.fillRect(drawn.ox, drawn.oy, drawn.w, Math.max(0,y-drawn.oy));
+    }else{
+      // 縦に読む → 走査線は左から右へ
+      const x=drawn.ox + prog*drawn.w;
+      ix.beginPath(); ix.moveTo(x,drawn.oy); ix.lineTo(x,drawn.oy+drawn.h); ix.stroke();
+      ix.fillRect(drawn.ox, drawn.oy, Math.max(0,x-drawn.ox), drawn.h);
+    }
     // 波形上：同じ位置
     drawWave();
     const wxp=prog*iWave.width;
@@ -757,6 +885,100 @@ function sampleImageCanvas(w=256,h=256){
     document.getElementById('iStop').disabled=true;
   }
   document.getElementById('iStop').addEventListener('click',()=>{ stop(); st.textContent='とめました。'; });
+  /* --- 周波数・振幅を確かめる模様 --- */
+  // 読み取る順に沿った通し番号から明るさを決めるので、
+  // 「しまの細かさ＝音の高さ」「しまの濃さ＝音の大きさ」がそのまま対応する
+  const I_SQ=Math.round(Math.sqrt(I_RATE*I_SEC));   // 正方形のときの1辺（=179）
+  function patternCanvas(fn){
+    const c=document.createElement('canvas');
+    c.width=I_SQ; c.height=I_SQ;
+    const x=c.getContext('2d');
+    const img=x.createImageData(I_SQ,I_SQ);
+    for(let y=0;y<I_SQ;y++){
+      for(let px=0;px<I_SQ;px++){
+        const idx=y*I_SQ+px;                 // 読み取る順の通し番号
+        const v=Math.max(-1,Math.min(1,fn(idx,px,y)));
+        const g=Math.round((v+1)/2*255);
+        const p=idx*4;
+        img.data[p]=img.data[p+1]=img.data[p+2]=g; img.data[p+3]=255;
+      }
+    }
+    x.putImageData(img,0,0);
+    return c;
+  }
+  const PATTERNS=[
+    {n:'低い音', d:'200 Hz', zoom:true,
+     mk:()=>patternCanvas((i,px)=>Math.sin(2*Math.PI*px/36)),
+     say:'しまの間隔は36画素。1秒間に7200画素読むので、7200÷36＝<b>200Hz</b>の音になります。'},
+    {n:'高い音', d:'800 Hz', zoom:true,
+     mk:()=>patternCanvas((i,px)=>Math.sin(2*Math.PI*px/9)),
+     say:'しまの間隔は9画素。7200÷9＝<b>800Hz</b>。しまが細かいほど音は高くなります。「低い音」と見比べてください。'},
+    {n:'4段階で上がる', d:'200→1800 Hz', zoom:false,
+     mk:()=>patternCanvas((i,px,y)=>{
+        const band=Math.floor(y/(I_SQ/4));
+        const P=[36,18,9,4][Math.min(3,band)];
+        return Math.sin(2*Math.PI*px/P);
+     }),
+     say:'上から順に 200 / 400 / 800 / 1800 Hz。<b>4段階で音が高くなります。</b>下へ行くほど、しまが細かいのが見えます。'},
+    {n:'なめらかに上がる', d:'200→2000 Hz', zoom:false,
+     mk:()=>patternCanvas((i)=>{
+        const n=I_SQ*I_SQ, f0=200, f1=2000;
+        const ph=2*Math.PI*(f0*i/I_RATE + (f1-f0)*i*i/(2*n*I_RATE));
+        return Math.sin(ph);
+     }),
+     say:'下へ行くほど、しまがだんだん細かくなります。読み進むにつれて<b>音がなめらかに高くなります</b>。'},
+    {n:'音が大きくなる', d:'400 Hz・振幅0→最大', zoom:false,
+     mk:()=>patternCanvas((i,px,y)=>Math.sin(2*Math.PI*px/18)*(y/I_SQ)),
+     say:'しまの細かさは同じまま、下へ行くほど<b>濃淡がはっきり</b>します。音の高さは400Hzのまま、<b>大きさだけ</b>が増します。波形の形（三角）に注目してください。'},
+    {n:'ざらざら', d:'雑音', zoom:false,
+     mk:()=>patternCanvas(()=>Math.random()*2-1),
+     say:'でたらめな明るさを並べたものです。規則性がないので<b>ザーッという雑音</b>になります。写真のこまかい部分も、これに近い音です。'}
+  ];
+  let patSel=-1;
+  function buildPatterns(){
+    const box=document.getElementById('iPat');
+    box.innerHTML='';
+    PATTERNS.forEach((p,i)=>{
+      const b=document.createElement('button');
+      b.className='pb'; b.setAttribute('aria-pressed',String(i===patSel));
+      b.innerHTML=p.n+'<small>'+p.d+'</small>';
+      b.addEventListener('click',()=>{
+        patSel=i; buildPatterns(); stop();
+        fromCanvas(p.mk());
+        document.getElementById('iPatNote').innerHTML=p.say;
+        // 音の高さを見せたい模様は「波の形を拡大」、
+        // 大きさの変化を見せたい模様は「全体」に自動で合わせる
+        setWaveView(p.zoom);
+      });
+      box.appendChild(b);
+    });
+  }
+  buildPatterns();
+
+  function setWaveView(zoom){
+    waveZoom=!!zoom;
+    document.getElementById('iWhole').setAttribute('aria-pressed',String(!waveZoom));
+    document.getElementById('iZoomW').setAttribute('aria-pressed',String(waveZoom));
+    drawWave();
+  }
+  document.getElementById('iWhole').addEventListener('click',()=>setWaveView(false));
+  document.getElementById('iZoomW').addEventListener('click',()=>setWaveView(true));
+
+  document.getElementById('iRow').addEventListener('click',()=>{
+    if(iOrder==='row') return;
+    iOrder='row'; stop();
+    document.getElementById('iRow').setAttribute('aria-pressed','true');
+    document.getElementById('iCol').setAttribute('aria-pressed','false');
+    buildSamples();
+  });
+  document.getElementById('iCol').addEventListener('click',()=>{
+    if(iOrder==='col') return;
+    iOrder='col'; stop();
+    document.getElementById('iRow').setAttribute('aria-pressed','false');
+    document.getElementById('iCol').setAttribute('aria-pressed','true');
+    buildSamples();
+  });
+  updateOrderNote();
 })();
 
 /* ===== 4. 音を画像で見る ===== */
@@ -852,10 +1074,7 @@ function sampleImageCanvas(w=256,h=256){
   // 初期表示
   cx.fillStyle='#F2F5FA'; cx.fillRect(0,0,cv.width,cv.height);
   cx.fillStyle='#9AA3B0'; cx.font='14px sans-serif'; cx.textAlign='center';
-  // 1行だとcanvasの幅(256px)に収まらず見切れるので2行に分ける
-  ['音声ファイルを選ぶか、','マイクを使ってください'].forEach((line,i)=>{
-    cx.fillText(line, cv.width/2, cv.height/2 - 10 + i*20);
-  });
+  cx.fillText('音声ファイルを選ぶか、マイクを使ってください', cv.width/2, cv.height/2);
 })();
 </script>
 </body>
