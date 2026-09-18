@@ -123,7 +123,7 @@
     <div class="panel">
       <div class="sl">
         <div class="top"><label for="zZoom">拡大率</label><span class="val" id="zZoomV">1 倍</span></div>
-        <input type="range" id="zZoom" min="1" max="40" step="0.5" value="1">
+        <input type="range" id="zZoom" min="1" max="16" step="0.5" value="1">
       </div>
       <div class="row">
         <span style="font-size:13.5px;font-weight:700;color:var(--ink);">絵を選ぶ</span>
@@ -362,6 +362,25 @@ const FIGS={
     fill="#2F5496" font-family="Helvetica,Arial,sans-serif">Ai</text>`
 };
 let figKind='apple', basePx=128;
+// 拡大の中心。実際の画像を走査して「輪郭のある場所」を自動で探す
+let focusPt={x:0.5, y:0.5};
+function findEdge(cv,px){
+  const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,px,px).data;
+  const lum=(x,y)=>{const p=(y*px+x)*4; return (d[p]+d[p+1]+d[p+2])/3;};
+  // となりの画素との明るさの差が最も大きい場所＝輪郭
+  let best={x:px/2, y:px/2}, bestD=-1;
+  const m=Math.max(1,Math.floor(px*0.08));   // 端は避ける
+  for(let y=m;y<px-m;y++){
+    for(let x=m;x<px-m;x++){
+      const diff=Math.abs(lum(x,y)-lum(x+1,y))+Math.abs(lum(x,y)-lum(x,y+1));
+      // 中央に近いほど拡大しても収まりやすいので、わずかに優先する
+      const bias=1-0.25*(Math.abs(x-px/2)+Math.abs(y-px/2))/px;
+      const score=diff*bias;
+      if(score>bestD){ bestD=score; best={x,y}; }
+    }
+  }
+  return {x:(best.x+0.5)/px, y:(best.y+0.5)/px};
+}
 
 function svgMarkup(fig, size){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}">
@@ -396,6 +415,7 @@ async function render(){
   if(cachedKey!==key){
     cachedRaster=await rasterize(figKind, basePx);
     cachedKey=key;
+    if(cachedRaster) focusPt=findEdge(cachedRaster, basePx);
   }
 
   // ラスタ側：小さい画像を拡大（補間なし＝ジャギーが出る）
@@ -405,14 +425,18 @@ async function render(){
   c.fillStyle='#fff'; c.fillRect(0,0,S,S);
   if(cachedRaster){
     const src=basePx/zoom;           // 切り出す範囲（拡大するほど狭く）
-    const off=(basePx-src)/2;
-    c.drawImage(cachedRaster, off, off, src, src, 0, 0, S, S);
+    // 注目点を中心にしつつ、画像の外へはみ出さないように収める
+    const ox=Math.max(0, Math.min(basePx-src, focusPt.x*basePx - src/2));
+    const oy=Math.max(0, Math.min(basePx-src, focusPt.y*basePx - src/2));
+    c.drawImage(cachedRaster, ox, oy, src, src, 0, 0, S, S);
   }
 
   // ベクタ側：SVGのviewBoxを狭める＝その都度描き直す
-  const view=100/zoom, o=(100-view)/2;
+  const view=100/zoom;
+  const ovx=Math.max(0, Math.min(100-view, focusPt.x*100 - view/2));
+  const ovy=Math.max(0, Math.min(100-view, focusPt.y*100 - view/2));
   document.getElementById('zVectorBox').innerHTML=
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${o} ${o} ${view} ${view}">
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${ovx} ${ovy} ${view} ${view}">
       <rect x="0" y="0" width="100" height="100" fill="#ffffff"/>${FIGS[figKind]}</svg>`;
 
   // 説明文
