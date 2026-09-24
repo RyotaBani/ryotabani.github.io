@@ -81,6 +81,9 @@
   .resbox .lab{font-size:12.5px; color:var(--muted); margin-top:6px;}
   .resbox .lab b{color:var(--ink); font-size:14px; display:block;}
 
+  .viewbox.pan{cursor:grab; touch-action:none;}
+  .viewbox.pan.dragging{cursor:grabbing;}
+
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
   .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
@@ -139,17 +142,21 @@
         <button class="chip" data-px="256" aria-pressed="false">256×256</button>
         <button class="chip" data-px="512" aria-pressed="false">512×512</button>
       </div>
+      <div class="row" style="margin-top:10px;">
+        <span class="hint" style="margin:0;flex:1;">拡大したあと、画像を<strong>ドラッグすると見る場所を動かせます</strong>。左右は同じ場所を映します。</span>
+        <button class="chip" id="zBack">輪郭の位置に戻す</button>
+      </div>
     </div>
 
     <div class="side">
       <div class="s raster">
         <h3>ラスタ画像（点の集まり）</h3>
-        <div class="viewbox"><canvas id="zRaster" width="512" height="512"></canvas></div>
+        <div class="viewbox pan" id="zRasterBox"><canvas id="zRaster" width="512" height="512"></canvas></div>
         <p class="cap" id="zRasterCap"></p>
       </div>
       <div class="s vector">
         <h3>ベクタ画像（計算で描く）</h3>
-        <div class="viewbox" id="zVectorBox"></div>
+        <div class="viewbox pan" id="zVectorBox"></div>
         <p class="cap">形は「座標と数式」で記録されているので、拡大するときに描き直されます。何倍にしてもなめらかなままです。</p>
       </div>
     </div>
@@ -330,6 +337,7 @@
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
   </div>
 </div>
 
@@ -364,6 +372,7 @@ const FIGS={
 let figKind='apple', basePx=128;
 // 拡大の中心。実際の画像を走査して「輪郭のある場所」を自動で探す
 let focusPt={x:0.5, y:0.5};
+let edgePt={x:0.5, y:0.5};   // 自動で見つけた輪郭の位置（戻すとき用）
 function findEdge(cv,px){
   const d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,px,px).data;
   const lum=(x,y)=>{const p=(y*px+x)*4; return (d[p]+d[p+1]+d[p+2])/3;};
@@ -407,6 +416,45 @@ function rasterize(fig, px){
 }
 
 let cachedRaster=null, cachedKey='';
+/* --- ドラッグで見る場所を動かす（左右どちらをつかんでも同じ動き） --- */
+(() => {
+  let drag=null;
+  function start(e){
+    const zoom=+document.getElementById('zZoom').value;
+    if(zoom<=1) return;                                  // 等倍のときは動かす必要がない
+    const box=e.currentTarget;
+    drag={x:e.clientX, y:e.clientY, fx:focusPt.x, fy:focusPt.y, w:box.clientWidth, box};
+    box.classList.add('dragging');
+    box.setPointerCapture(e.pointerId);
+  }
+  function move(e){
+    if(!drag) return;
+    const zoom=+document.getElementById('zZoom').value;
+    // 画面上の移動量を、画像全体に対する割合に直す（拡大するほど細かく動く）
+    const dx=(e.clientX-drag.x)/drag.w/zoom;
+    const dy=(e.clientY-drag.y)/drag.w/zoom;
+    const half=0.5/zoom;                                 // 見えている範囲の半分
+    focusPt={x:Math.max(half,Math.min(1-half,drag.fx-dx)),
+             y:Math.max(half,Math.min(1-half,drag.fy-dy))};
+    render();
+  }
+  function end(){
+    if(!drag) return;
+    drag.box.classList.remove('dragging');
+    drag=null;
+  }
+  ['zRasterBox','zVectorBox'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener('pointerdown',start);
+    el.addEventListener('pointermove',move);
+    el.addEventListener('pointerup',end);
+    el.addEventListener('pointercancel',end);
+  });
+  document.getElementById('zBack').addEventListener('click',()=>{
+    focusPt={...edgePt}; render();
+  });
+})();
+
 async function render(){
   const zoom=+document.getElementById('zZoom').value;
   document.getElementById('zZoomV').textContent=zoom.toFixed(1).replace(/\.0$/,'')+' 倍';
@@ -415,7 +463,7 @@ async function render(){
   if(cachedKey!==key){
     cachedRaster=await rasterize(figKind, basePx);
     cachedKey=key;
-    if(cachedRaster) focusPt=findEdge(cachedRaster, basePx);
+    if(cachedRaster){ focusPt=findEdge(cachedRaster, basePx); edgePt={...focusPt}; }
   }
 
   // ラスタ側：小さい画像を拡大（補間なし＝ジャギーが出る）

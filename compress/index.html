@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>データ圧縮を体験しよう（ランレングス圧縮・ハフマン符号化・可逆と非可逆）｜情報ラボ</title>
+<meta name="description" content="絵をかいてランレングス圧縮、文章からハフマン符号を作り、写真の画質とファイルの大きさの関係を確かめられる無料ツール。可逆圧縮と非可逆圧縮のちがいを体験で学べます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/compress/">
+<meta property="og:title" content="データ圧縮を体験しよう｜情報ラボ">
+<meta property="og:description" content="ランレングス圧縮・ハフマン符号化・JPEGの画質と容量を体験する無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/compress/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  label.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer;}
+
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.gold{color:var(--gold);} .stt .v.ng{color:var(--ng);} .stt .v.ok{color:var(--ok);}
+
+  /* ランレングス */
+  .rlwrap{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start;}
+  .grid{display:grid; grid-template-columns:repeat(16,22px); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:6px; overflow:hidden; touch-action:none; user-select:none;
+    flex:0 0 auto;}
+  .cell{width:22px; height:22px; background:#fff; cursor:pointer;}
+  .cell.on{background:#1F3864;}
+  .codes{flex:1 1 320px; min-width:280px; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; font-family:ui-monospace,Consolas,monospace; font-size:12.5px; line-height:1.55;
+    max-height:376px; overflow:auto;}
+  .codes .ln{display:flex; gap:8px; white-space:nowrap;}
+  .codes .no{color:var(--muted); flex:0 0 2.6em;}
+  .codes .w{color:#8892A4;} .codes .b{color:#1F3864; font-weight:700;}
+  .codes .bits{margin-left:auto; color:var(--gold); flex:0 0 auto;}
+  .bars{margin-top:12px;}
+  .bar{margin-bottom:9px;}
+  .bar .t{display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:4px;}
+  .bar .t b{font-family:ui-monospace,Consolas,monospace;}
+  .bar .track{height:14px; background:var(--panel2); border-radius:999px; overflow:hidden;}
+  .bar .fill{height:100%; background:var(--navy); border-radius:999px; transition:width .2s;}
+  .bar .fill.gold{background:var(--gold);} .bar .fill.ng{background:var(--ng);}
+  @media (max-width:560px){ .grid{grid-template-columns:repeat(16,17px);} .cell{width:17px;height:17px;} }
+
+  /* ハフマン */
+  input.txt{font-size:18px; padding:11px 13px; width:100%; border:2px solid var(--line); border-radius:10px;
+    font-family:inherit;}
+  input.txt:focus{outline:none; border-color:var(--navy);}
+  table.hf{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.hf th, table.hf td{border:1px solid var(--line); padding:7px 10px; text-align:center;}
+  table.hf th{background:var(--navy); color:#fff;}
+  table.hf td.code{font-family:ui-monospace,Consolas,monospace; font-weight:700; color:var(--navy); letter-spacing:1px;}
+  table.hf td.ch{font-size:17px; font-weight:700;}
+  .treebox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; overflow-x:auto;}
+  .treebox svg{display:block; margin:0 auto;}
+  .bitstr{background:#141c2e; color:#ffd97a; border-radius:10px; padding:12px 14px;
+    font-family:ui-monospace,Consolas,monospace; font-size:13px; word-break:break-all; line-height:1.8;}
+
+  /* JPEG */
+  .jwrap{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;}
+  .jwrap .box{flex:1 1 300px; min-width:260px; text-align:center;}
+  .jwrap img, .jwrap canvas{max-width:100%; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  .jwrap .cap{font-size:12.5px; color:var(--muted); margin-top:6px;}
+  #jZoom{image-rendering:pixelated;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .ad-slot{margin:30px auto 4px; max-width:728px; text-align:center;}
+  .ad-label{display:block; font-size:11px; color:#9aa3b0; letter-spacing:.1em; margin-bottom:5px;}
+  .ad-placeholder{border:1px dashed var(--line); border-radius:8px; padding:28px 12px;
+    color:#9aa3b0; font-size:13px; background:#fafbfd;}
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ データ圧縮</p>
+    <h1>データ圧縮を体験しよう</h1>
+    <p class="lead">同じ内容を、もっと少ないビットで表せないか。そのための工夫が圧縮です。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabRl" aria-selected="true" aria-controls="toolRl">ランレングス圧縮</button>
+    <button class="tab" role="tab" id="tabHf" aria-selected="false" aria-controls="toolHf">ハフマン符号化</button>
+    <button class="tab" role="tab" id="tabJp" aria-selected="false" aria-controls="toolJp">画質と容量</button>
+  </div>
+
+  <!-- ===== ランレングス圧縮 ===== -->
+  <section class="tool show" id="toolRl" role="tabpanel" aria-labelledby="tabRl">
+    <div class="panel">
+      <h2>白黒の絵を「何色が何個つづくか」で記録します</h2>
+      <div class="row">
+        <button class="chip" id="rlPenB" aria-pressed="true">黒でぬる</button>
+        <button class="chip" id="rlPenW" aria-pressed="false">白でぬる</button>
+        <span style="flex:1"></span>
+        <button class="chip" data-rl="blank">まっ白</button>
+        <button class="chip" data-rl="hstripe">横じま</button>
+        <button class="chip" data-rl="mount">山</button>
+        <button class="chip" data-rl="smile">にこちゃん</button>
+        <button class="chip" data-rl="vstripe">たてじま</button>
+        <button class="chip" data-rl="check">チェック模様</button>
+      </div>
+      <p class="hint">マス目をクリックまたはドラッグして、絵をかけます。16×16＝256マスで、1マス1ビット（白0・黒1）です。</p>
+    </div>
+
+    <div class="rlwrap">
+      <div class="grid" id="rlGrid" aria-label="16×16のマス目"></div>
+      <div class="codes" id="rlCodes"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>データ量のくらべ</h2>
+      <div class="bars" id="rlBars"></div>
+      <p class="hint">
+        この教材では、1つの「つづき」を <b>色1ビット＋個数4ビット＝5ビット</b> で記録します（個数1〜16を0〜15で表す）。
+        行ごとに区切って数えています。
+      </p>
+    </div>
+
+    <div class="msg" id="rlMsg"></div>
+  </section>
+
+  <!-- ===== ハフマン符号化 ===== -->
+  <section class="tool" id="toolHf" role="tabpanel" aria-labelledby="tabHf">
+    <div class="panel">
+      <h2>よく出る文字には短い符号、めったに出ない文字には長い符号を</h2>
+      <input class="txt" id="hfIn" type="text" value="ABRACADABRA" maxlength="40" autocomplete="off" spellcheck="false">
+      <div class="row" style="margin-top:12px;">
+        <button class="chip" data-hf="ABRACADABRA">ABRACADABRA</button>
+        <button class="chip" data-hf="すもももももももものうち">すもももももも…</button>
+        <button class="chip" data-hf="AAAAAAAABC">かたよりが大きい</button>
+        <button class="chip" data-hf="ABCDEFGH">かたよりがない</button>
+      </div>
+      <p class="hint">文字の出てくる回数を数え、回数の少ないものから2つずつまとめて木を作ります。左の枝を0、右の枝を1とします。</p>
+    </div>
+
+    <div class="treebox"><svg id="hfTree" width="760" height="300"></svg></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>できあがった符号</h2>
+      <div style="overflow-x:auto;"><table class="hf" id="hfTable"></table></div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">文字数</div><div class="v" id="hfN">–</div></div>
+      <div class="stt"><div class="k">同じ長さの符号なら</div><div class="v" id="hfFix">–</div></div>
+      <div class="stt"><div class="k">ハフマン符号なら</div><div class="v gold" id="hfHuf">–</div></div>
+      <div class="stt"><div class="k">圧縮率</div><div class="v ok" id="hfRate">–</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>符号にした結果（区切りなしで並べても、元に戻せます）</h2>
+      <div class="bitstr" id="hfBits"></div>
+    </div>
+
+    <div class="msg" id="hfMsg"></div>
+  </section>
+
+  <!-- ===== 画質と容量 ===== -->
+  <section class="tool" id="toolJp" role="tabpanel" aria-labelledby="tabJp">
+    <div class="panel">
+      <h2>写真の画質を下げると、ファイルはどこまで小さくなるか</h2>
+      <div class="row">
+        <button class="chip" data-jp="photo" aria-pressed="true">風景</button>
+        <button class="chip" data-jp="flat" aria-pressed="false">イラスト</button>
+        <label class="chip">画像を選ぶ<input id="jPick" type="file" accept="image/*" hidden></label>
+      </div>
+      <div class="sl" style="margin-top:14px;">
+        <div class="top"><label for="jQ">JPEGの画質</label><span class="val" id="jQv">80</span></div>
+        <input type="range" id="jQ" min="1" max="100" step="1" value="80">
+      </div>
+    </div>
+
+    <div class="jwrap">
+      <div class="box"><img id="jImg" alt="JPEGで圧縮した画像"><div class="cap">JPEGで圧縮した画像</div></div>
+      <div class="box"><canvas id="jZoom" width="320" height="320"></canvas><div class="cap">中央を8倍に拡大（ブロック状のノイズに注目）</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>ファイルの大きさ</h2>
+      <div class="bars" id="jBars"></div>
+    </div>
+
+    <div class="msg" id="jMsg"></div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>データ圧縮とは</h2>
+    <p>写真や音楽、動画は、そのままではデータ量がとても大きくなります。そこで、同じ内容をもっと少ないビットで表す工夫をします。これがデータ圧縮です。</p>
+    <p>圧縮すると、保存に必要な容量が減り、送るのにかかる時間も短くなります。インターネットで写真や動画を気軽にやり取りできるのは、ほぼすべてのデータが圧縮されているからです。</p>
+    <p>圧縮後のデータ量が元の何％になったかを、圧縮率といいます。</p>
+    <div class="formula">圧縮率（％） ＝ 圧縮後のデータ量 ÷ 圧縮前のデータ量 × 100</div>
+    <p>数字が小さいほど、よく縮んだことを表します。</p>
+
+    <h2>可逆圧縮と非可逆圧縮</h2>
+    <p>圧縮には、大きく分けて2つの種類があります。</p>
+    <table>
+      <tr><th>種類</th><th>元に戻せるか</th><th>主な使いみち</th><th>例</th></tr>
+      <tr><td>可逆圧縮</td><td>完全に戻せる</td><td>文書、プログラム、図</td><td class="mono">ZIP、PNG</td></tr>
+      <tr><td>非可逆圧縮</td><td>完全には戻せない</td><td>写真、音楽、動画</td><td class="mono">JPEG、MP3、MP4</td></tr>
+    </table>
+    <p>文書やプログラムは、1文字でも変わると意味が変わったり動かなくなったりします。そのため、完全に元に戻せる可逆圧縮を使います。</p>
+    <p>一方、写真や音楽は、人が気づきにくい細かい情報を少し捨てても、見た目や聞こえ方はほとんど変わりません。その性質を利用して、大きく縮めるのが非可逆圧縮です。</p>
+
+    <h2>ランレングス圧縮</h2>
+    <p>同じ値が続く部分を、「何が何個続くか」という情報に置きかえる方法です。ランレングスとは「続く長さ」という意味です。</p>
+    <p>たとえば「白白白白白黒黒黒」という8マスは、「白5 黒3」と書けます。同じ色が長く続くほど、短く表せます。</p>
+    <p>ただし、注意すべき点があります。<strong>白と黒が細かく入れかわる絵では、かえってデータ量が増えてしまいます</strong>。1マスごとに「白1 黒1 白1…」と記録することになり、1マス1ビットで記録するより大きくなるからです。上のツールで「チェック模様」を選ぶと、この様子を確かめられます。</p>
+    <p>ランレングス圧縮は、ファクスの画像や、単色の部分が多いイラストなどで効果を発揮します。</p>
+    <p>上のツールで「山」と「にこちゃん」を比べると、同じ白黒の絵でも結果が大きく変わることが分かります。山は1行の中で色の切りかわりが少ないのでよく縮みますが、にこちゃんは目や口で切りかわりが増えるため、この小さなマス目ではかえって大きくなります。圧縮の効果は、データの中身によって決まるのです。</p>
+
+    <h2>ハフマン符号化</h2>
+    <p>文字をビットで表すとき、ふつうはすべての文字に同じ長さの符号を割り当てます。4種類の文字なら、どれも2ビットです。</p>
+    <p>しかし実際の文章では、文字の出てくる回数にかたよりがあります。そこで、<strong>よく出る文字には短い符号、めったに出ない文字には長い符号</strong>を割り当てれば、全体を短くできます。これがハフマン符号化の考え方です。</p>
+
+    <h3>符号の作り方</h3>
+    <ol>
+      <li>それぞれの文字の出てくる回数を数える</li>
+      <li>回数の少ないものから2つを選び、1つにまとめる（回数は2つの合計）</li>
+      <li>全体が1つにまとまるまで、2をくり返す</li>
+      <li>できた木の枝に、左0・右1を割り当て、根から文字までの道順を符号にする</li>
+    </ol>
+    <p>よく出る文字は根の近くに、めったに出ない文字は遠くに置かれるので、自然に符号の長さに差がつきます。</p>
+
+    <h3>区切りがなくても元に戻せる</h3>
+    <p>符号の長さがばらばらだと、どこで区切ればよいか分からなくなりそうです。しかしハフマン符号では、<strong>ある文字の符号が、ほかの文字の符号の始まりの部分になることがありません</strong>。そのため、先頭から読んでいけば、区切りを入れなくても1通りに元に戻せます。</p>
+
+    <h3>効果が出ない場合</h3>
+    <p>どの文字も同じ回数ずつ出てくる場合は、符号の長さに差をつける意味がなく、ほとんど縮みません。上のツールの「かたよりがない」で確かめられます。圧縮の効果は、データのかたよりの大きさで決まります。</p>
+
+    <h2>画質と容量の関係</h2>
+    <p>JPEGは、写真のための非可逆圧縮の形式です。画像を小さなブロックに分け、人の目が気づきにくい細かい変化を捨てることで、データ量を大きく減らします。</p>
+    <p>保存するときに画質を選べるのは、どれだけ情報を捨てるかを決めているからです。画質を下げるほどファイルは小さくなりますが、ブロック状のノイズや、輪郭のまわりのもやもやが目立つようになります。上のツールで画質を変えながら、拡大した部分を見比べてください。</p>
+    <p>写真は細かい色の変化が多く、PNGのような可逆圧縮ではあまり縮みません。反対に、色数が少ないイラストや図はPNGでよく縮み、JPEGにすると輪郭がにじみやすくなります。目的に合わせて形式を選ぶことが大切です。</p>
+
+    <h2>圧縮できないデータ</h2>
+    <p>どんなデータでも圧縮できるわけではありません。まったくでたらめなデータには、くり返しやかたよりがないので、縮めようがありません。</p>
+    <p>また、すでに圧縮されたデータを、さらに圧縮してもほとんど縮みません。JPEGの写真やMP3の音楽をZIPでまとめても、大きさがあまり変わらないのはこのためです。圧縮によって、かたよりがすでに取りのぞかれているからです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>ランレングス圧縮</strong>：マス目に絵をかくと、行ごとの記録とデータ量がすぐに計算されます。模様によって、縮んだり逆に増えたりします。</li>
+      <li><strong>ハフマン符号化</strong>：文章を入力すると、ハフマン木と符号表が作られます。同じ長さの符号と比べて、どれだけ短くなるかが分かります。</li>
+      <li><strong>画質と容量</strong>：JPEGの画質を変えると、ファイルの大きさと見た目がどう変わるかを確かめられます。自分の画像でも試せます。画像はこの画面の中だけで処理され、どこにも送信されません。</li>
+    </ul>
+  </section>
+
+  <div class="ad-slot" aria-label="広告">
+    <span class="ad-label">広告 / PR</span>
+    <div class="ad-placeholder" id="adBanner">広告枠（AdSenseの審査通過後にここへ表示されます）</div>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-7076767152814369"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+  </div>
+</div>
+
+<script>
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabRl','toolRl'],['tabHf','toolHf'],['tabJp','toolJp']];
+  tabs.forEach(([tid,pid])=>{
+    document.getElementById(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{
+        const on=t===tid;
+        document.getElementById(t).setAttribute('aria-selected',String(on));
+        document.getElementById(p).classList.toggle('show',on);
+      });
+      if(tid==='tabJp') jRun();
+    });
+  });
+})();
+
+function barsHTML(items){
+  const max=Math.max(...items.map(x=>x.v),1);
+  return items.map(x=>`<div class="bar"><div class="t"><span>${x.n}</span><b>${x.label}</b></div>
+    <div class="track"><div class="fill ${x.cls||''}" style="width:${Math.max(0.8,x.v/max*100)}%"></div></div></div>`).join('');
+}
+
+/* ===== ランレングス圧縮 ===== */
+const N=16;
+let rl=new Array(N*N).fill(0), pen=1, painting=false;
+const RL_PRESET={
+  blank:()=>0,
+  hstripe:(x,y)=>Math.floor(y/2)%2,
+  vstripe:(x,y)=>Math.floor(x/2)%2,
+  check:(x,y)=>(x+y)%2,
+  mount:(x,y)=>{ const top=12-Math.max(0,5-Math.abs(x-8)); return y>=top?1:0; },
+  smile:(x,y)=>{
+    const dx=x-7.5, dy=y-7.5, r=Math.hypot(dx,dy);
+    if(r>7.2) return 0;
+    if(r>6.1) return 1;                                   // 輪郭
+    if((x===5||x===10)&&(y===5||y===6)) return 1;          // 目
+    if(y===10 && x>=5 && x<=10) return 1;                  // 口
+    if(y===9 && (x===4||x===11)) return 1;
+    return 0;
+  }
+};
+function rlRuns(){
+  const rows=[];
+  for(let y=0;y<N;y++){
+    const runs=[]; let cur=rl[y*N], cnt=0;
+    for(let x=0;x<N;x++){
+      const v=rl[y*N+x];
+      if(v===cur) cnt++;
+      else { runs.push([cur,cnt]); cur=v; cnt=1; }
+    }
+    runs.push([cur,cnt]);
+    rows.push(runs);
+  }
+  return rows;
+}
+function buildGrid(){
+  const g=document.getElementById('rlGrid');
+  g.innerHTML='';
+  for(let i=0;i<N*N;i++){
+    const c=document.createElement('div');
+    c.className='cell'; c.dataset.i=i;
+    g.appendChild(c);
+  }
+  const paint=e=>{
+    const t=document.elementFromPoint(e.clientX,e.clientY);
+    if(!t || !t.classList.contains('cell')) return;
+    const i=+t.dataset.i;
+    if(rl[i]!==pen){ rl[i]=pen; drawRl(); }
+  };
+  g.addEventListener('pointerdown',e=>{ painting=true; g.setPointerCapture(e.pointerId); paint(e); });
+  g.addEventListener('pointermove',e=>{ if(painting) paint(e); });
+  const stop=()=>{ painting=false; };
+  g.addEventListener('pointerup',stop); g.addEventListener('pointercancel',stop);
+}
+function drawRl(){
+  document.querySelectorAll('#rlGrid .cell').forEach((c,i)=>c.classList.toggle('on',!!rl[i]));
+  const rows=rlRuns();
+  let total=0, runCount=0;
+  const lines=rows.map((runs,y)=>{
+    const bits=runs.length*5; total+=bits; runCount+=runs.length;
+    const txt=runs.map(([v,n])=>`<span class="${v?'b':'w'}">${v?'黒':'白'}${n}</span>`).join(' ');
+    return `<div class="ln"><span class="no">${String(y+1).padStart(2,' ')}行</span><span>${txt}</span><span class="bits">${bits}ビット</span></div>`;
+  }).join('');
+  document.getElementById('rlCodes').innerHTML=lines;
+  const orig=N*N;
+  const rate=total/orig*100;
+  document.getElementById('rlBars').innerHTML=barsHTML([
+    {n:'そのまま（1マス1ビット）', v:orig, label:orig+' ビット'},
+    {n:`ランレングス圧縮（${runCount}個のつづき × 5ビット）`, v:total, label:total+' ビット', cls: total>orig?'ng':'gold'}
+  ]);
+  const m=document.getElementById('rlMsg');
+  if(total<orig*0.5){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">圧縮率 ${rate.toFixed(0)}%　—　よく縮みました</div>`+
+      `同じ色が長く続いているので、「何色が何個」とまとめて書くと <b>${orig}ビット → ${total}ビット</b> に減りました。`;
+  }else if(total<=orig){
+    m.className='msg';
+    m.innerHTML=`<div class="t">圧縮率 ${rate.toFixed(0)}%</div>`+
+      `少しは縮みましたが、色の切りかわりが多い行ほど記録が長くなります。右の行ごとの記録を見てください。`;
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">圧縮率 ${rate.toFixed(0)}%　—　かえって増えました</div>`+
+      `白と黒が細かく入れかわるので、「白1 黒1 白1…」と記録することになり、<b>${orig}ビット → ${total}ビット</b> に増えてしまいました。`+
+      `ランレングス圧縮は、<b>同じ値が続くデータでしか効きません</b>。`;
+  }
+}
+function setPen(v){
+  pen=v;
+  document.getElementById('rlPenB').setAttribute('aria-pressed',String(v===1));
+  document.getElementById('rlPenW').setAttribute('aria-pressed',String(v===0));
+}
+document.getElementById('rlPenB').addEventListener('click',()=>setPen(1));
+document.getElementById('rlPenW').addEventListener('click',()=>setPen(0));
+document.querySelectorAll('[data-rl]').forEach(b=>b.addEventListener('click',()=>{
+  const f=RL_PRESET[b.dataset.rl];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) rl[y*N+x]=f(x,y);
+  drawRl();
+}));
+
+/* ===== ハフマン符号化 ===== */
+function huffman(text){
+  const chars=[...text];
+  const freq=new Map();
+  chars.forEach(c=>freq.set(c,(freq.get(c)||0)+1));
+  // 出てくる順で並べておき、同じ回数のときの並びを一定にする
+  let order=0;
+  let nodes=[...freq.entries()].map(([ch,f])=>({ch,f,id:order++}));
+  if(nodes.length===1){
+    const only=nodes[0];
+    return {root:{f:only.f,left:only,right:null,id:order++}, codes:new Map([[only.ch,'0']]), freq};
+  }
+  while(nodes.length>1){
+    nodes.sort((a,b)=>a.f-b.f || a.id-b.id);
+    const a=nodes.shift(), b=nodes.shift();
+    nodes.push({f:a.f+b.f,left:a,right:b,id:order++});
+  }
+  const root=nodes[0];
+  const codes=new Map();
+  (function walk(n,code){
+    if(!n) return;
+    if(n.ch!==undefined){ codes.set(n.ch,code||'0'); return; }
+    walk(n.left,code+'0'); walk(n.right,code+'1');
+  })(root,'');
+  return {root,codes,freq};
+}
+function drawTree(root){
+  const svg=document.getElementById('hfTree');
+  // 葉の並び順で横位置を決める
+  let leaf=0, maxDepth=0;
+  (function lay(n,d){
+    if(!n) return;
+    n.depth=d; maxDepth=Math.max(maxDepth,d);
+    if(n.ch!==undefined){ n.xi=leaf++; return; }
+    lay(n.left,d+1); lay(n.right,d+1);
+    const xs=[n.left,n.right].filter(Boolean).map(c=>c.xi);
+    n.xi=(Math.min(...xs)+Math.max(...xs))/2;
+  })(root,0);
+  const W=Math.max(360, leaf*64+40), H=Math.max(160,(maxDepth+1)*62+30);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const X=xi=> leaf<=1 ? W/2 : 30+xi*(W-60)/(leaf-1);
+  const Y=d=>26+d*62;
+  let h='';
+  (function edges(n){
+    if(!n || n.ch!==undefined) return;
+    [[n.left,'0'],[n.right,'1']].forEach(([c,lab])=>{
+      if(!c) return;
+      const x1=X(n.xi), y1=Y(n.depth), x2=X(c.xi), y2=Y(c.depth);
+      h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#9AA6BC" stroke-width="2"/>`;
+      h+=`<text x="${(x1+x2)/2+(lab==='0'?-10:10)}" y="${(y1+y2)/2}" font-size="13" font-weight="700"
+            fill="${lab==='0'?'#2F5496':'#C49A2B'}" text-anchor="middle">${lab}</text>`;
+      edges(c);
+    });
+  })(root);
+  (function nodes(n){
+    if(!n) return;
+    const x=X(n.xi), y=Y(n.depth);
+    if(n.ch!==undefined){
+      h+=`<rect x="${x-20}" y="${y-17}" width="40" height="34" rx="8" fill="#EEF3FB" stroke="#2F5496" stroke-width="2"/>`;
+      h+=`<text x="${x}" y="${y+1}" font-size="16" font-weight="700" fill="#1F3864" text-anchor="middle">${n.ch===' '?'␣':n.ch}</text>`;
+      h+=`<text x="${x}" y="${y+30}" font-size="11" fill="#5B6472" text-anchor="middle">${n.f}回</text>`;
+    }else{
+      h+=`<circle cx="${x}" cy="${y}" r="15" fill="#fff" stroke="#9AA6BC" stroke-width="2"/>`;
+      h+=`<text x="${x}" y="${y+4}" font-size="12" fill="#5B6472" text-anchor="middle">${n.f}</text>`;
+      nodes(n.left); nodes(n.right);
+    }
+  })(root);
+  svg.innerHTML=h;
+}
+function drawHf(){
+  const text=document.getElementById('hfIn').value;
+  const m=document.getElementById('hfMsg');
+  if(!text){
+    document.getElementById('hfTree').innerHTML='';
+    document.getElementById('hfTable').innerHTML='';
+    ['hfN','hfFix','hfHuf','hfRate'].forEach(id=>document.getElementById(id).textContent='–');
+    document.getElementById('hfBits').textContent='';
+    m.className='msg'; m.innerHTML='<div class="t">文章を入力してください</div>';
+    return;
+  }
+  const {root,codes,freq}=huffman(text);
+  drawTree(root);
+  const chars=[...text];
+  const kinds=freq.size;
+  const fixLen=Math.max(1,Math.ceil(Math.log2(kinds)));
+  const fixTotal=chars.length*fixLen;
+  let hufTotal=0;
+  const rows=[...freq.entries()].sort((a,b)=>b[1]-a[1]).map(([ch,f])=>{
+    const code=codes.get(ch); hufTotal+=f*code.length;
+    return `<tr><td class="ch">${ch===' '?'␣':ch}</td><td>${f}回</td><td class="code">${code}</td>`+
+      `<td>${code.length}ビット</td><td>${f}×${code.length}＝${f*code.length}</td></tr>`;
+  }).join('');
+  document.getElementById('hfTable').innerHTML=
+    `<tr><th>文字</th><th>回数</th><th>ハフマン符号</th><th>長さ</th><th>小計</th></tr>`+rows+
+    `<tr><td colspan="4" style="text-align:right;font-weight:700;">合計</td><td style="font-weight:700;">${hufTotal}ビット</td></tr>`;
+  const rate=hufTotal/fixTotal*100;
+  document.getElementById('hfN').textContent=chars.length+' 字';
+  document.getElementById('hfFix').textContent=`${fixTotal} ビット`;
+  document.getElementById('hfHuf').textContent=`${hufTotal} ビット`;
+  document.getElementById('hfRate').textContent=rate.toFixed(0)+'%';
+  const enc=chars.map(c=>codes.get(c)).join('');
+  document.getElementById('hfBits').textContent=enc.length>400?enc.slice(0,400)+'…':enc;
+
+  if(kinds===1){
+    m.className='msg';
+    m.innerHTML='<div class="t">1種類の文字だけです</div>文字が1種類なら、1ビットで十分に区別できます。';
+  }else if(rate<80){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">圧縮率 ${rate.toFixed(0)}%　—　よく縮みました</div>`+
+      `${kinds}種類の文字を同じ長さで表すと、1文字 <b>${fixLen}ビット</b> 必要です。`+
+      `ハフマン符号では、よく出る文字を短くしたので、<b>${fixTotal}ビット → ${hufTotal}ビット</b> になりました。`;
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">圧縮率 ${rate.toFixed(0)}%　—　ほとんど縮みません</div>`+
+      `文字の出てくる回数に<b>かたよりが少ない</b>ため、符号の長さに差をつける意味がありません。`+
+      `ハフマン符号化の効果は、かたよりの大きさで決まります。`;
+  }
+}
+document.getElementById('hfIn').addEventListener('input',drawHf);
+document.querySelectorAll('[data-hf]').forEach(b=>b.addEventListener('click',()=>{
+  document.getElementById('hfIn').value=b.dataset.hf; drawHf();
+}));
+
+/* ===== 画質と容量 ===== */
+let jSrc=null, jKind='photo', jPngSize=0, jTimer=0, jUrl='';
+function makePhoto(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  const sky=x.createLinearGradient(0,0,0,H*0.6);
+  sky.addColorStop(0,'#3F76C8'); sky.addColorStop(1,'#CFE3F6');
+  x.fillStyle=sky; x.fillRect(0,0,W,H);
+  const sun=x.createRadialGradient(W*0.78,H*0.2,4,W*0.78,H*0.2,H*0.18);
+  sun.addColorStop(0,'rgba(255,245,200,1)'); sun.addColorStop(1,'rgba(255,245,200,0)');
+  x.fillStyle=sun; x.fillRect(0,0,W,H);
+  x.fillStyle='#6E8FA8';
+  x.beginPath(); x.moveTo(0,H*0.62); x.lineTo(W*0.22,H*0.34); x.lineTo(W*0.4,H*0.55); x.lineTo(W*0.6,H*0.3);
+  x.lineTo(W*0.85,H*0.58); x.lineTo(W,H*0.45); x.lineTo(W,H); x.lineTo(0,H); x.fill();
+  const g=x.createLinearGradient(0,H*0.55,0,H);
+  g.addColorStop(0,'#5E9A4C'); g.addColorStop(1,'#2F5E2A');
+  x.fillStyle=g; x.fillRect(0,H*0.62,W,H*0.38);
+  // 木（輪郭のある物）
+  for(let i=0;i<7;i++){
+    const tx=W*(0.08+i*0.13), ty=H*(0.7+((i*37)%10)/60);
+    x.fillStyle='#5A3A1E'; x.fillRect(tx-3,ty,6,H*0.08);
+    x.fillStyle=i%2?'#23572A':'#2E6B34';
+    x.beginPath(); x.arc(tx,ty,H*0.06,0,Math.PI*2); x.fill();
+  }
+  // 自然なざらつき（写真らしさ）
+  const img=x.getImageData(0,0,W,H), d=img.data;
+  let seed=12345; const rnd=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+  for(let i=0;i<d.length;i+=4){ const n=(rnd()-0.5)*18; d[i]+=n; d[i+1]+=n; d[i+2]+=n; }
+  x.putImageData(img,0,0);
+  return c;
+}
+function makeFlat(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,H);
+  x.fillStyle='#F6D55C'; x.beginPath(); x.arc(W*0.3,H*0.45,H*0.28,0,Math.PI*2); x.fill();
+  x.fillStyle='#1F3864'; x.beginPath(); x.arc(W*0.24,H*0.4,H*0.03,0,Math.PI*2); x.arc(W*0.36,H*0.4,H*0.03,0,Math.PI*2); x.fill();
+  x.strokeStyle='#1F3864'; x.lineWidth=H*0.02;
+  x.beginPath(); x.arc(W*0.3,H*0.5,H*0.1,0.15*Math.PI,0.85*Math.PI); x.stroke();
+  x.fillStyle='#2F5496'; x.fillRect(W*0.62,H*0.2,W*0.28,H*0.55);
+  x.fillStyle='#C0392B'; x.font=`bold ${Math.round(H*0.16)}px sans-serif`; x.textAlign='center';
+  x.fillText('情報', W*0.76, H*0.56);
+  return c;
+}
+function jSource(){
+  if(jSrc) return jSrc;
+  return jKind==='photo' ? makePhoto(480,320) : makeFlat(480,320);
+}
+function toBlobP(c,type,q){ return new Promise(r=>c.toBlob(r,type,q)); }
+async function jRun(pngToo){
+  const src=jSource();
+  const q=+document.getElementById('jQ').value;
+  document.getElementById('jQv').textContent=q;
+  if(pngToo || !jPngSize){
+    const pb=await toBlobP(src,'image/png'); jPngSize=pb?pb.size:0;
+  }
+  const jb=await toBlobP(src,'image/jpeg',q/100);
+  if(!jb) return;
+  if(jUrl) URL.revokeObjectURL(jUrl);
+  jUrl=URL.createObjectURL(jb);
+  const img=document.getElementById('jImg');
+  img.onload=()=>{
+    const z=document.getElementById('jZoom'), zc=z.getContext('2d');
+    zc.imageSmoothingEnabled=false;
+    const cw=40, ch=40;
+    const sx=img.naturalWidth/2-cw/2, sy=img.naturalHeight/2-ch/2;
+    zc.clearRect(0,0,z.width,z.height);
+    zc.drawImage(img,sx,sy,cw,ch,0,0,z.width,z.height);
+  };
+  img.src=jUrl;
+  const raw=src.width*src.height*3;
+  const kb=b=>(b/1024).toFixed(1)+' KB';
+  document.getElementById('jBars').innerHTML=barsHTML([
+    {n:'圧縮なし（1画素24ビット）', v:raw, label:kb(raw)},
+    {n:'PNG（可逆圧縮）', v:jPngSize, label:kb(jPngSize)+`（${(jPngSize/raw*100).toFixed(0)}%）`},
+    {n:`JPEG 画質${q}（非可逆圧縮）`, v:jb.size, label:kb(jb.size)+`（${(jb.size/raw*100).toFixed(1)}%）`, cls:'gold'}
+  ]);
+  const m=document.getElementById('jMsg');
+  const pct=(jb.size/raw*100);
+  if(q>=85){
+    m.className='msg';
+    m.innerHTML=`<div class="t">画質${q}：元の ${pct.toFixed(1)}% の大きさ</div>`+
+      `見た目はほとんど変わりませんが、圧縮なしに比べて <b>大きく縮んでいます</b>。人の目が気づきにくい情報から捨てているからです。`;
+  }else if(q>=40){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">画質${q}：元の ${pct.toFixed(1)}% の大きさ</div>`+
+      `ふつうに見るぶんには十分な画質です。拡大すると、<b>8×8画素のブロック</b>の境目がうっすら見えてきます。`;
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">画質${q}：元の ${pct.toFixed(1)}% の大きさ</div>`+
+      `とても小さくなりましたが、<b>ブロック状のノイズ</b>がはっきり見えます。捨てた情報は、もう元には戻せません。これが<b>非可逆圧縮</b>です。`;
+  }
+  if(jKind==='flat' && !jSrc){
+    m.innerHTML+='　イラストのように色の少ない絵は、<b>PNG でもよく縮みます</b>。JPEG にすると、文字や輪郭のまわりがにじみます。';
+  }
+}
+document.getElementById('jQ').addEventListener('input',()=>{
+  clearTimeout(jTimer); jTimer=setTimeout(()=>jRun(false),60);
+});
+document.querySelectorAll('[data-jp]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-jp]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  jKind=b.dataset.jp; jSrc=null; jRun(true);
+}));
+document.getElementById('jPick').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const im=new Image();
+  im.onload=()=>{
+    const maxW=640, r=Math.min(1,maxW/im.width);
+    const c=document.createElement('canvas');
+    c.width=Math.round(im.width*r); c.height=Math.round(im.height*r);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    jSrc=c;
+    document.querySelectorAll('[data-jp]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    jRun(true); URL.revokeObjectURL(im.src);
+  };
+  im.src=URL.createObjectURL(f);
+});
+
+/* ===== 初期化 ===== */
+buildGrid();
+(()=>{ const f=RL_PRESET.mount; for(let y=0;y<N;y++) for(let x=0;x<N;x++) rl[y*N+x]=f(x,y); })();
+drawRl(); drawHf();
+</script>
+</body>
+</html>

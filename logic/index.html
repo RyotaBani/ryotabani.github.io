@@ -82,6 +82,36 @@
   .gate .sym{font-size:13px; color:var(--muted); font-family:ui-monospace,Consolas,monospace;}
   .gate p{margin:8px 0 0; font-size:13.5px; color:var(--ink); text-align:left;}
 
+  /* 全加算器・4ビット加算器 */
+  .fa-io{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:6px 0 4px;}
+  .fa-io button{min-width:86px; padding:10px 12px; border-radius:10px; border:2px solid var(--line);
+    background:#fff; font-family:inherit; cursor:pointer; color:var(--ink);}
+  .fa-io button .k{display:block; font-size:11.5px; color:var(--muted);}
+  .fa-io button .v{display:block; font-size:24px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .fa-io button[aria-pressed=true]{border-color:var(--on); background:#FDEDEB;}
+  .fa-io button[aria-pressed=true] .v{color:var(--on);}
+  .adder{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px;}
+  .stage{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 8px;
+    text-align:center; position:relative;}
+  .stage .pos{font-size:11px; color:var(--muted);}
+  .bitbtn{width:48px; height:44px; border-radius:9px; border:2px solid var(--line); background:#fff;
+    font-family:ui-monospace,Consolas,monospace; font-size:20px; font-weight:700; cursor:pointer;
+    color:var(--muted); margin:3px auto; display:block;}
+  .bitbtn[aria-pressed=true]{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .fa-box{margin:8px auto; width:70px; padding:8px 0; border-radius:8px; background:#EEF2F8;
+    border:2px solid #5B6472; font-weight:700; font-size:13px; color:var(--ink);}
+  .sum-bit{font-family:ui-monospace,Consolas,monospace; font-size:24px; font-weight:700;}
+  .sum-bit.on{color:var(--on);} .sum-bit.off{color:var(--muted);}
+  .carry{position:absolute; left:-17px; top:50%; transform:translateY(-50%);
+    font-size:11px; font-weight:700; padding:3px 5px; border-radius:6px; background:#EEF2F8;
+    color:var(--muted); z-index:2;}
+  .carry.on{background:var(--on); color:#fff;}
+  .result-row{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-top:14px;}
+  .res{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 16px; text-align:center;}
+  .res .k{font-size:11.5px; color:var(--muted);}
+  .res .v{font-size:22px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  @media (max-width:560px){ .bitbtn{width:40px;height:40px;font-size:17px;} .fa-box{width:56px;} }
+
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
   .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
@@ -116,6 +146,7 @@
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tabGate" aria-selected="true" aria-controls="toolGate">基本の回路</button>
     <button class="tab" role="tab" id="tabAdd" aria-selected="false" aria-controls="toolAdd">足し算する回路</button>
+    <button class="tab" role="tab" id="tabFull" aria-selected="false" aria-controls="toolFull">4ビットの足し算</button>
     <button class="tab" role="tab" id="tabQuiz" aria-selected="false" aria-controls="toolQuiz">真理値表クイズ</button>
   </div>
 
@@ -192,6 +223,43 @@
     <div class="msg" id="qMsg" style="display:none;"></div>
   </section>
 
+  <!-- ===== 4ビットの足し算 ===== -->
+  <section class="tool" id="toolFull" role="tabpanel" aria-labelledby="tabFull">
+    <div class="panel">
+      <h2>下の桁からのくり上がりも足す回路（全加算器）</h2>
+      <p class="hint" style="margin-top:0;">
+        半加算器は、下の桁からのくり上がりを受け取れません。入力を3つにしたものが全加算器です。
+        中身は、半加算器2つとOR回路1つでできています。
+      </p>
+      <div class="fa-io" id="fIn"></div>
+      <div class="io">
+        <div class="iobox"><div class="k">S（和）</div><div class="v" id="fS">0</div></div>
+        <div class="iobox"><div class="k">C（上の桁へのくり上がり）</div><div class="v" id="fC">0</div></div>
+      </div>
+      <table class="tt" id="fTT" style="margin-top:14px;"></table>
+    </div>
+
+    <div class="panel">
+      <h2>全加算器を4つ並べると、4桁の2進数が足せる</h2>
+      <p class="hint" style="margin-top:0;">数字をクリックして、2つの4ビットの数を決めてください。くり上がりが右から左へ伝わっていく様子が見えます。</p>
+      <div class="adder" id="adder"></div>
+      <div class="result-row">
+        <div class="res"><div class="k">A（10進）</div><div class="v" id="rA">0</div></div>
+        <div class="res"><div class="k">B（10進）</div><div class="v" id="rB">0</div></div>
+        <div class="res"><div class="k">答え（2進）</div><div class="v" id="rBin">0000</div></div>
+        <div class="res"><div class="k">答え（10進）</div><div class="v" id="rDec">0</div></div>
+      </div>
+      <div class="row" style="justify-content:center;margin-top:12px;">
+        <button class="chip" data-ex="5,3">5 + 3</button>
+        <button class="chip" data-ex="7,1">7 + 1（くり上がりが続く）</button>
+        <button class="chip" data-ex="9,6">9 + 6</button>
+        <button class="chip" data-ex="15,1">15 + 1（桁あふれ）</button>
+      </div>
+    </div>
+
+    <div class="msg" id="fMsg"></div>
+  </section>
+
   <!-- ===== 解説 ===== -->
   <section class="article">
     <h2>コンピュータは「スイッチの集まり」</h2>
@@ -239,6 +307,12 @@
     <p>次に、くり上がり（C）の列を見ます。<strong>両方が1のときだけ1</strong>です。これはANDそのものです。</p>
     <p>つまり、XORとANDを1つずつ並べるだけで、1桁の足し算ができる回路になります。これを半加算器といいます。上のツールで実際に動かせます。</p>
 
+    <h3>全加算器</h3>
+    <p>半加算器が足せるのは、A と B の2つだけです。しかし2桁目より上では、下の桁からのくり上がりも足さなければなりません。入力が3つ必要です。</p>
+    <p>そこで、A・B・下からのくり上がり（C<sub>in</sub>）の3つを足して、和（S）と上へのくり上がり（C<sub>out</sub>）を出す回路を作ります。これが全加算器です。</p>
+    <p>全加算器は、半加算器を2つ使って作れます。まず A と B を1つ目の半加算器で足し、その和と C<sub>in</sub> を2つ目の半加算器で足します。2つの半加算器のどちらかでくり上がりが出たら、それが C<sub>out</sub> になります。「どちらか」なので OR 回路でまとめます。</p>
+    <div class="formula">全加算器 ＝ 半加算器 ＋ 半加算器 ＋ OR回路</div>
+
     <h3>桁を増やすには</h3>
     <p>半加算器には弱点があります。下の桁からのくり上がりを受け取れないのです。そこで入力を3つ（A、B、下からのくり上がり）にした全加算器を作り、それを桁数だけ並べます。</p>
     <p>8桁の足し算なら全加算器を8個、64桁なら64個。実際のCPUの中では、この構造がびっしりと並んでいます。あらゆる計算の土台が、AND・OR・NOTの組み合わせでできているのです。</p>
@@ -268,6 +342,7 @@
     <ul>
       <li><strong>基本の回路</strong>：回路を選び、スイッチを押すと出力が変わります。真理値表の該当する行が光ります。</li>
       <li><strong>足し算する回路</strong>：半加算器を動かせます。1+1のときにくり上がりが出る様子を確認してください。</li>
+      <li><strong>4ビットの足し算</strong>：全加算器の動きと、それを4つ並べた回路で4桁の2進数を足す様子を確認できます。15+1で桁あふれも確かめられます。</li>
       <li><strong>真理値表クイズ</strong>：表を見て、どの回路かを当てる練習ができます。</li>
     </ul>
   </section>
@@ -313,13 +388,14 @@
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
   </div>
 </div>
 
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabGate','toolGate'],['tabAdd','toolAdd'],['tabQuiz','toolQuiz']];
+  const tabs=[['tabGate','toolGate'],['tabAdd','toolAdd'],['tabFull','toolFull'],['tabQuiz','toolQuiz']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -328,6 +404,7 @@
         document.getElementById(p).classList.toggle('show',on);
       });
       if(tid==='tabAdd') drawAdd();
+      if(tid==='tabFull') drawFull();
       if(tid==='tabQuiz' && !qCur) newQuiz();
     });
   });
@@ -590,8 +667,107 @@ function answer(k,btn){
 }
 document.getElementById('qNext').addEventListener('click',newQuiz);
 
+/* ===== 全加算器・4ビット加算器 ===== */
+let fa={A:0,B:0,Cin:0};
+function fullAdd(a,b,c){ const s=a^b^c; const co=(a&b)|(c&(a^b)); return {s,co}; }
+function drawFull(){
+  // 全加算器の入力ボタン
+  const box=document.getElementById('fIn');
+  box.innerHTML='';
+  [['A','A'],['B','B'],['Cin','C<sub>in</sub>（下からのくり上がり）']].forEach(([k,lab])=>{
+    const b=document.createElement('button');
+    b.setAttribute('aria-pressed',String(!!fa[k]));
+    b.innerHTML=`<span class="k">${lab}</span><span class="v">${fa[k]}</span>`;
+    b.addEventListener('click',()=>{ fa[k]^=1; drawFull(); });
+    box.appendChild(b);
+  });
+  const r=fullAdd(fa.A,fa.B,fa.Cin);
+  const S=document.getElementById('fS'), C=document.getElementById('fC');
+  S.textContent=r.s; S.className='v '+(r.s?'on':'off');
+  C.textContent=r.co; C.className='v '+(r.co?'on':'off');
+  let t='<tr><th>A</th><th>B</th><th>C<sub>in</sub></th><th>S</th><th>C<sub>out</sub></th></tr>';
+  for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
+    const q=fullAdd(a,b,c);
+    const now=(a===fa.A&&b===fa.B&&c===fa.Cin)?' class="now"':'';
+    t+=`<tr${now}><td>${a}</td><td>${b}</td><td>${c}</td><td class="o${q.s}">${q.s}</td><td class="o${q.co}">${q.co}</td></tr>`;
+  }
+  document.getElementById('fTT').innerHTML=t;
+  drawAdder();
+}
+
+let bA=[0,1,0,1], bB=[0,0,1,1];   // 上位ビットから [8,4,2,1]
+function toDec(bits){ return bits.reduce((a,v)=>a*2+v,0); }
+function setFromDec(n){ return [8,4,2,1].map(w=>(n&w)?1:0); }
+function drawAdder(){
+  const box=document.getElementById('adder');
+  // 右（1の位）から順に計算
+  const S=[0,0,0,0], carryIn=[0,0,0,0];
+  let c=0;
+  for(let i=3;i>=0;i--){
+    carryIn[i]=c;
+    const r=fullAdd(bA[i],bB[i],c);
+    S[i]=r.s; c=r.co;
+  }
+  const cout=c;
+  box.innerHTML='';
+  const W=[8,4,2,1];
+  for(let i=0;i<4;i++){
+    const st=document.createElement('div'); st.className='stage';
+    st.innerHTML=`<div class="pos">${W[i]}の位</div>`;
+    const ba=document.createElement('button'); ba.className='bitbtn';
+    ba.setAttribute('aria-pressed',String(!!bA[i])); ba.textContent=bA[i];
+    ba.setAttribute('aria-label',`Aの${W[i]}の位`);
+    ba.addEventListener('click',()=>{ bA[i]^=1; drawAdder(); });
+    const bb=document.createElement('button'); bb.className='bitbtn';
+    bb.setAttribute('aria-pressed',String(!!bB[i])); bb.textContent=bB[i];
+    bb.setAttribute('aria-label',`Bの${W[i]}の位`);
+    bb.addEventListener('click',()=>{ bB[i]^=1; drawAdder(); });
+    const fb=document.createElement('div'); fb.className='fa-box'; fb.textContent='全加算器';
+    const sb=document.createElement('div'); sb.className='sum-bit '+(S[i]?'on':'off'); sb.textContent=S[i];
+    st.append(ba,bb,fb,sb);
+    // 右隣からのくり上がり（このステージの左端に表示＝左の桁へ渡す値）
+    if(i>0){
+      const co=carryIn[i-1];   // i-1 番目（左隣）へ渡すくり上がり
+      const cr=document.createElement('div'); cr.className='carry'+(co?' on':''); cr.textContent='C'+co;
+      st.appendChild(cr);
+    }
+    box.appendChild(st);
+  }
+  const a=toDec(bA), b=toDec(bB);
+  const sum=cout*16+toDec(S);
+  document.getElementById('rA').textContent=a;
+  document.getElementById('rB').textContent=b;
+  document.getElementById('rBin').textContent=(cout?'1':'')+S.join('');
+  document.getElementById('rDec').textContent=sum;
+
+  const carries=carryIn.slice(0,3).filter(x=>x).length + (cout?1:0);
+  const m=document.getElementById('fMsg');
+  if(cout){
+    m.className='msg';
+    m.style.background='linear-gradient(180deg,#8E2B22,#6d1f18)';
+    m.innerHTML=`<div class="t">${a} + ${b} = ${sum}　—　桁があふれました</div>`+
+      `答えの ${sum} は4ビット（最大15）では表せません。いちばん左の全加算器から出たくり上がりが、`+
+      `<b>5桁目</b>になっています。4ビットの枠しかない場合、この1は失われて答えは ${toDec(S)} になってしまいます。`+
+      `これを<b>桁あふれ（オーバーフロー）</b>といいます。`;
+  }else{
+    m.className='msg';
+    m.style.background='';
+    m.innerHTML=`<div class="t">${a} + ${b} = ${sum}　（2進数で ${S.join('')}）</div>`+
+      (carries
+        ? `くり上がりが <b>${carries}回</b> 起きています。赤く光った C1 が、右の全加算器から左の全加算器へ渡されている値です。`
+        : 'くり上がりは起きていません。各桁を別々に足すだけで答えが出ます。')+
+      '　全加算器を増やせば、何桁でも同じしくみで足し算できます。';
+  }
+}
+document.querySelectorAll('[data-ex]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const [x,y]=b.dataset.ex.split(',').map(Number);
+    bA=setFromDec(x); bB=setFromDec(y); drawAdder();
+  });
+});
+
 /* ===== 初期化 ===== */
-drawGate(); drawAdd(); newQuiz();
+drawGate(); drawAdd(); drawFull(); newQuiz();
 </script>
 </body>
 </html>

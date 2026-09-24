@@ -116,6 +116,31 @@
   .fi2 .v{font-size:17px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);
     overflow-wrap:anywhere;}
 
+  /* 標本化定理・ハイレゾ */
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .nq-read{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .nq-read .b{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:9px 12px; text-align:center;}
+  .nq-read .k{font-size:11px; color:var(--muted);}
+  .nq-read .v{font-size:18px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .nq-read .v.gold{color:var(--gold);} .nq-read .v.ng{color:var(--ng);} .nq-read .v.ok{color:var(--ok);}
+  .hz-big{font-size:clamp(34px,6vw,54px); font-weight:700; text-align:center; color:var(--navy);
+    font-family:ui-monospace,Consolas,monospace; margin:6px 0 2px;}
+  table.fmt{border-collapse:collapse; width:100%; font-size:13.5px;}
+  table.fmt th, table.fmt td{border:1px solid var(--line); padding:8px 10px; text-align:right;}
+  table.fmt th{background:var(--navy); color:#fff; text-align:center;}
+  table.fmt td.l{text-align:left; font-weight:700; color:var(--ink);}
+  table.fmt td.m{font-family:ui-monospace,Consolas,monospace;}
+  table.fmt td.over{color:var(--muted); background:#F6F7F9;}
+  table.fmt tr.cd td{background:#FFFBEF;}
+  .mbar{height:8px; background:var(--panel2); border-radius:999px; overflow:hidden; margin-top:4px;}
+  .mbar i{display:block; height:100%; background:var(--navy);}
+
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
   .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
@@ -149,8 +174,10 @@
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" id="tabWave" aria-selected="true" aria-controls="toolWave">波を数値にする</button>
+    <button class="tab" role="tab" id="tabNyq" aria-selected="false" aria-controls="toolNyq">標本化定理</button>
     <button class="tab" role="tab" id="tabListen" aria-selected="false" aria-controls="toolListen">音質を聴き比べる</button>
     <button class="tab" role="tab" id="tabMy" aria-selected="false" aria-controls="toolMy">自分の音で試す</button>
+    <button class="tab" role="tab" id="tabHi" aria-selected="false" aria-controls="toolHi">聞こえる範囲とハイレゾ</button>
     <button class="tab" role="tab" id="tabData" aria-selected="false" aria-controls="toolData">データ量を計算する</button>
   </div>
 
@@ -190,6 +217,46 @@
   </section>
 
   <!-- ===== 聴き比べ ===== -->
+  <section class="tool" id="toolNyq" role="tabpanel" aria-labelledby="tabNyq">
+    <div class="warn">
+      <b>音量に注意。</b> 音が鳴ります。イヤホンを使うときは、先に音量を下げてください。
+    </div>
+    <div class="panel">
+      <h2>はかる回数が足りないと、別の音になってしまう</h2>
+      <div class="sl">
+        <div class="top"><label for="nqF">元の音の高さ</label><span class="val" id="nqFv">440 Hz</span></div>
+        <input type="range" id="nqF" min="50" max="4000" step="10" value="440">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="nqS">標本化周波数（1秒にはかる回数）</label><span class="val" id="nqSv">4,000 Hz</span></div>
+        <input type="range" id="nqS" min="500" max="8000" step="100" value="4000">
+      </div>
+      <div class="row">
+        <button class="chip" data-nq="440,4000">十分な回数</button>
+        <button class="chip" data-nq="500,1000">ちょうど2倍</button>
+        <button class="chip" data-nq="900,1000">足りない（900Hz→100Hz）</button>
+        <button class="chip" data-nq="1100,1000">足りない（1100Hz→100Hz）</button>
+      </div>
+    </div>
+
+    <canvas id="nqCv" width="1000" height="300"></canvas>
+    <p class="cap">うすい線：元の音　赤い点：はかった値　金色の線：点から復元される音</p>
+
+    <div class="nq-read">
+      <div class="b"><div class="k">元の音</div><div class="v" id="nqR1">–</div></div>
+      <div class="b"><div class="k">再現できる上限（標本化周波数の半分）</div><div class="v gold" id="nqR2">–</div></div>
+      <div class="b"><div class="k">復元される音</div><div class="v" id="nqR3">–</div></div>
+    </div>
+
+    <div class="row" style="justify-content:center;margin-top:14px;">
+      <button class="primary" id="nqPlayO">元の音を聴く</button>
+      <button class="primary" id="nqPlayR" style="background:var(--gold)">復元された音を聴く</button>
+      <button class="primary danger" id="nqStop" disabled>とめる</button>
+    </div>
+
+    <div class="msg" id="nqMsg"></div>
+  </section>
+
   <section class="tool" id="toolListen" role="tabpanel" aria-labelledby="tabListen">
     <div class="warn">
       <b>音量に注意。</b> 音が鳴ります。イヤホンを使うときは、先に音量を下げてください。
@@ -320,12 +387,65 @@
   </section>
 
   <!-- ===== データ量 ===== -->
+  <section class="tool" id="toolHi" role="tabpanel" aria-labelledby="tabHi">
+    <div class="warn">
+      <b>音量に注意。</b> 高い音は小さく聞こえにくいので、音量を上げすぎないでください。
+      スピーカーやイヤホンによっては、高い音がそもそも出ないことがあります。
+    </div>
+
+    <div class="panel">
+      <h2>自分の耳は、どこまで高い音が聞こえるか</h2>
+      <div class="hz-big" id="hiHz">1,000 Hz</div>
+      <div class="sl">
+        <div class="top"><label for="hiF">音の高さ</label><span class="val" id="hiLbl">1,000 Hz</span></div>
+        <input type="range" id="hiF" min="0" max="1000" step="1" value="500">
+      </div>
+      <div class="row">
+        <button class="primary" id="hiPlay">鳴らす</button>
+        <button class="primary danger" id="hiStop" disabled>とめる</button>
+        <span style="flex:1"></span>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;">
+          音量 <input type="range" id="hiVol" min="0" max="60" value="15" style="width:110px;accent-color:var(--navy);">
+          <span id="hiVolV">15%</span>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="hiSweep" style="background:var(--gold)">8,000Hz から自動で上げていく</button>
+        <button class="primary" id="hiMark" disabled>聞こえなくなった</button>
+      </div>
+      <p class="hint" id="hiDevice"></p>
+      <div class="msg" id="hiMsg" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>音の規格をくらべる</h2>
+      <div style="overflow-x:auto;"><table class="fmt" id="hiTable"></table></div>
+      <p class="hint">
+        灰色の欄は、人の耳の上限（約20,000Hz）を超えている部分です。
+        データ量は、ステレオで1分間、圧縮しない場合の値です。
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>ハイレゾの違いを、このページで聴けない理由</h2>
+      <p style="margin:0 0 10px;font-size:15px;">
+        ブラウザが音を出すときは、パソコンやスマートフォンの再生装置の設定（多くは 44,100Hz か 48,000Hz）に合わせて変換されます。
+        そのため、96,000Hz や 192,000Hz のデータを用意しても、ここでは同じ音になってしまいます。
+      </p>
+      <p style="margin:0;font-size:15px;">
+        また、CD の 44,100Hz でも、人の耳の上限をこえる 22,050Hz まで再現できます。
+        ハイレゾの違いを聞き分けられるかどうかは、わずかに聞き分けられるとする研究もあれば、差はほとんどないとする研究もあり、
+        はっきりした結論は出ていません。ハイレゾには、録音や編集のときに余裕をもたせられるという利点もあります。
+      </p>
+    </div>
+  </section>
+
   <section class="tool" id="toolData" role="tabpanel" aria-labelledby="tabData">
     <div class="panel">
       <h2>条件を決めると、データ量が計算されます</h2>
       <div class="sl">
         <div class="top"><label for="dRate">標本化周波数</label><span class="val" id="dRateV">44,100 Hz</span></div>
-        <input type="range" id="dRate" min="0" max="5" step="1" value="5">
+        <input type="range" id="dRate" min="0" max="8" step="1" value="5">
       </div>
       <div class="sl">
         <div class="top"><label for="dBits">量子化ビット数</label><span class="val" id="dBitsV">16 ビット</span></div>
@@ -375,6 +495,12 @@
     <p>人が聞き取れる音は、およそ20Hzから20,000Hzまでといわれます。その上限の20,000Hzを再現するには40,000Hzより高い標本化周波数が必要です。CDの44,100Hzという数字は、この条件を満たすように決められています。</p>
     <p>逆に、電話は約8,000Hzで標本化しています。再現できるのは4,000Hzまでですが、人の話し声を聞き分けるにはこれで足ります。電話の声が少しこもって聞こえるのは、このためです。</p>
 
+    <h3>回数が足りないと、別の音に化ける</h3>
+    <p>標本化周波数が元の音の2倍に届かないと、どうなるのでしょうか。音が少し粗くなるだけではありません。<strong>まったく別の、低い音に化けてしまいます</strong>。</p>
+    <p>たとえば1秒に1,000回はかる設定で900Hzの音を記録すると、はかった点をつなぐと100Hzの波になります。900Hzの音は記録から消え、代わりに元の音には含まれていなかった100Hzの音が現れます。この現象をエイリアシング（折り返し）といいます。</p>
+    <p>映画で走る車のタイヤが、止まって見えたり逆回転して見えたりすることがあります。これも同じ現象です。1秒に24コマという撮影の回数が、タイヤの回転に対して足りないために起こります。</p>
+    <p>実際の録音機器では、標本化する前に、上限をこえる高い音をあらかじめ取り除いておきます。そうしないと、聞こえないはずの高い音が、聞こえる低い音に化けて混ざってしまうからです。</p>
+
     <h3>2. 量子化</h3>
     <p>取り出した値を、決められた段階のうち最も近いものに置きかえます。何段階で表すかを量子化ビット数で決めます。</p>
     <table>
@@ -422,11 +548,18 @@
     <h3>波形でも見える</h3>
     <p>ツールでは、元の波形と設定を落とした波形を上下に並べて表示しています。標本化周波数を下げると波形が階段状に粗くなり、ビット数を下げると縦方向の段差が大きくなります。耳で感じる違いが、目でも確認できます。</p>
 
+    <h2>人の耳の上限とハイレゾ</h2>
+    <p>人が聞き取れる音の高さには限りがあります。一般に上限は約20,000Hzといわれ、年齢とともに下がっていきます。上のツールの「聞こえる範囲とハイレゾ」で、自分の耳の上限を確かめられます。</p>
+    <p>CDの標本化周波数44,100Hzは、この上限をこえる22,050Hzまで再現できるように決められています。ハイレゾの96,000Hzや192,000Hzは、さらにその上まで記録できますが、その範囲は人の耳には聞こえません。</p>
+    <p>ハイレゾの価値は、聞こえる音を増やすことよりも、録音や編集の途中で余裕をもたせられる点にあるとも考えられています。量子化ビット数を24ビットにすると、小さな音から大きな音までの幅（ダイナミックレンジ）が広がり、音量を調整しても細部が失われにくくなります。</p>
+
     <h2>使い方</h2>
     <ul>
       <li><strong>波を数値にする</strong>：スライダーを動かすと、標本化と量子化のようすが図で確かめられます。粗くすると、元の波から離れていくのが見えます。</li>
       <li><strong>音質を聴き比べる</strong>：実際に音を鳴らします。設定を変えて聴き、CD品質と比べてみてください。</li>
       <li><strong>自分の音で試す</strong>：手持ちの音楽ファイルを読み込むか、マイクで録音して、音質を落とした音と聴き比べられます。「交互に聴き比べる」を使うと違いが分かりやすくなります。</li>
+      <li><strong>標本化定理</strong>：元の音の高さと、はかる回数を変えて、エイリアシング（別の音に化ける現象）を確かめられます。化けた音を実際に聴くこともできます。</li>
+      <li><strong>聞こえる範囲とハイレゾ</strong>：自分の耳が聞き取れる高さの上限を調べられます。CDとハイレゾの規格も比べられます。</li>
       <li><strong>データ量を計算する</strong>：条件を変えると、ファイルの大きさが自動で計算されます。身近なファイルとの比較も表示されます。</li>
     </ul>
   </section>
@@ -472,13 +605,14 @@
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
   </div>
 </div>
 
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabWave','toolWave'],['tabListen','toolListen'],['tabMy','toolMy'],['tabData','toolData']];
+  const tabs=[['tabWave','toolWave'],['tabNyq','toolNyq'],['tabListen','toolListen'],['tabMy','toolMy'],['tabHi','toolHi'],['tabData','toolData']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -487,6 +621,9 @@
         document.getElementById(p).classList.toggle('show',on);
       });
       if(tid==='tabWave') drawWave();
+      if(tid==='tabNyq') drawNyq();
+      if(tid!=='tabNyq') nqStopFn();
+      if(tid!=='tabHi') hiStopFn();
       if(tid==='tabListen') drawListen();
     });
   });
@@ -760,8 +897,9 @@ function drawListen(){
 
 /* ===== データ量 ===== */
 const D_BITS=[8,12,16,24];
+const D_RATES=[2000,4000,8000,11025,22050,44100,48000,96000,192000];
 function updateData(){
-  const rate=RATES[+document.getElementById('dRate').value];
+  const rate=D_RATES[+document.getElementById('dRate').value];
   const bits=D_BITS[+document.getElementById('dBits').value-1];
   const ch=+document.getElementById('dCh').value;
   const sec=+document.getElementById('dSec').value;
@@ -1114,8 +1252,224 @@ document.getElementById('playAB').addEventListener('click',()=>{
 });
 document.getElementById('myStop').addEventListener('click',myStop);
 
+/* ===== 標本化定理 ===== */
+let nqOsc=null, nqGain=null;
+function nqAlias(f,fs){
+  const k=Math.round(f/fs);
+  return f-k*fs;            // 符号つき。|値| が実際に聞こえる高さ
+}
+function drawNyq(){
+  const f=+document.getElementById('nqF').value;
+  const fs=+document.getElementById('nqS').value;
+  document.getElementById('nqFv').textContent=f.toLocaleString()+' Hz';
+  document.getElementById('nqSv').textContent=fs.toLocaleString()+' Hz';
+  const fa=nqAlias(f,fs), afa=Math.abs(fa);
+  const ok = f < fs/2;
+
+  // 表示する時間の長さ：元の波が3回、または復元の波が2回見える程度（点は最大60個）
+  let T=Math.max(3/f, 10/fs);
+  if(!ok && afa>0) T=Math.max(T, 2/afa);
+  T=Math.min(T, 60/fs);
+
+  const cv=document.getElementById('nqCv'), c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=26;
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  c.strokeStyle='#D3DBEA'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(0,H/2); c.lineTo(W,H/2); c.stroke();
+  const X=t=>t/T*W, Y=v=>H/2-v*(H/2-PAD);
+
+  // 元の波（うすく）
+  c.strokeStyle='rgba(47,84,150,.35)'; c.lineWidth=1.5; c.beginPath();
+  for(let x=0;x<=W;x++){ const t=x/W*T; const y=Y(Math.sin(2*Math.PI*f*t)); x?c.lineTo(x,y):c.moveTo(x,y); }
+  c.stroke();
+  // 復元される波（金色）
+  c.strokeStyle='#C49A2B'; c.lineWidth=3; c.beginPath();
+  for(let x=0;x<=W;x++){ const t=x/W*T; const y=Y(Math.sin(2*Math.PI*fa*t)); x?c.lineTo(x,y):c.moveTo(x,y); }
+  c.stroke();
+  // はかった点
+  c.fillStyle='#C0392B';
+  const n=Math.floor(T*fs);
+  for(let i=0;i<=n;i++){
+    const t=i/fs;
+    c.beginPath(); c.arc(X(t),Y(Math.sin(2*Math.PI*f*t)),5,0,Math.PI*2); c.fill();
+  }
+  c.fillStyle='#5B6472'; c.font='11px sans-serif'; c.textAlign='right';
+  c.fillText((T*1000).toFixed(1)+' ミリ秒ぶん', W-8, 14);
+
+  document.getElementById('nqR1').textContent=f.toLocaleString()+' Hz';
+  document.getElementById('nqR2').textContent=(fs/2).toLocaleString()+' Hz';
+  const r3=document.getElementById('nqR3');
+  r3.textContent=afa.toLocaleString()+' Hz';
+  r3.className='v '+(ok?'ok':'ng');
+
+  const m=document.getElementById('nqMsg');
+  if(ok){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">元の音がそのまま復元できます</div>`+
+      `元の音 ${f.toLocaleString()}Hz は、上限の ${(fs/2).toLocaleString()}Hz より低いので、`+
+      `赤い点をつなぐと<b>元と同じ ${f.toLocaleString()}Hz の波</b>になります。`;
+  }else if(f===fs/2){
+    m.className='msg';
+    m.innerHTML=`<div class="t">ちょうど2倍では、うまくいきません</div>`+
+      `はかる点がちょうど波の0の位置に重なり、<b>音が消えてしまいました</b>。`+
+      `標本化定理が「2倍<b>より大きく</b>」としているのは、このためです。`;
+  }else{
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">${f.toLocaleString()}Hz が ${afa.toLocaleString()}Hz の音に化けました</div>`+
+      `はかる回数が足りないため、赤い点をつなぐと<b>元とは別の、低い音の波</b>になってしまいます。`+
+      `この現象を<b>エイリアシング（折り返し）</b>といいます。`+
+      `防ぐには、標本化周波数を元の音の2倍より大きくします。`;
+  }
+}
+function nqStopFn(){
+  if(nqOsc){ try{ nqGain.gain.setTargetAtTime(0,audioCtx().currentTime,0.02); nqOsc.stop(audioCtx().currentTime+0.1);}catch(e){} nqOsc=null; }
+  const b=document.getElementById('nqStop'); if(b) b.disabled=true;
+}
+function nqPlay(freq){
+  nqStopFn();
+  if(freq<=0){ document.getElementById('nqMsg').insertAdjacentHTML('beforeend',
+    '<br>（復元される音は 0Hz、つまり音になりません）'); return; }
+  const ctx=audioCtx();
+  nqOsc=ctx.createOscillator(); nqGain=ctx.createGain();
+  nqOsc.type='sine'; nqOsc.frequency.value=freq;
+  nqGain.gain.setValueAtTime(0,ctx.currentTime);
+  nqGain.gain.linearRampToValueAtTime(0.15,ctx.currentTime+0.05);
+  nqOsc.connect(nqGain).connect(ctx.destination);
+  nqOsc.start();
+  nqOsc.stop(ctx.currentTime+1.6);
+  const o=nqOsc; o.onended=()=>{ if(nqOsc===o){ nqOsc=null; document.getElementById('nqStop').disabled=true; } };
+  document.getElementById('nqStop').disabled=false;
+}
+['nqF','nqS'].forEach(id=>document.getElementById(id).addEventListener('input',drawNyq));
+document.querySelectorAll('[data-nq]').forEach(b=>b.addEventListener('click',()=>{
+  const [f,fs]=b.dataset.nq.split(',').map(Number);
+  document.getElementById('nqF').value=f; document.getElementById('nqS').value=fs; drawNyq();
+}));
+document.getElementById('nqPlayO').addEventListener('click',()=>nqPlay(+document.getElementById('nqF').value));
+document.getElementById('nqPlayR').addEventListener('click',()=>{
+  const f=+document.getElementById('nqF').value, fs=+document.getElementById('nqS').value;
+  nqPlay(Math.abs(nqAlias(f,fs)));
+});
+document.getElementById('nqStop').addEventListener('click',nqStopFn);
+
+/* ===== 聞こえる範囲とハイレゾ ===== */
+let hiOsc=null, hiGain=null, hiSweepT0=0, hiRaf=0, hiSweeping=false;
+const HI_MIN=20, HI_MAX=20000;
+function hiFromSlider(v){ return Math.round(HI_MIN*Math.pow(HI_MAX/HI_MIN, v/1000)); }
+function hiToSlider(f){ return Math.round(1000*Math.log(f/HI_MIN)/Math.log(HI_MAX/HI_MIN)); }
+function hiShow(f){
+  const t=f.toLocaleString()+' Hz';
+  document.getElementById('hiHz').textContent=t;
+  document.getElementById('hiLbl').textContent=t;
+}
+function hiStopFn(){
+  hiSweeping=false; cancelAnimationFrame(hiRaf);
+  if(hiOsc){ try{ const ctx=audioCtx(); hiGain.gain.setTargetAtTime(0,ctx.currentTime,0.02); hiOsc.stop(ctx.currentTime+0.1);}catch(e){} hiOsc=null; }
+  const s=document.getElementById('hiStop'); if(s) s.disabled=true;
+  const mk=document.getElementById('hiMark'); if(mk) mk.disabled=true;
+}
+function hiStart(f){
+  hiStopFn();
+  const ctx=audioCtx();
+  hiOsc=ctx.createOscillator(); hiGain=ctx.createGain();
+  hiOsc.type='sine'; hiOsc.frequency.value=f;
+  hiGain.gain.setValueAtTime(0,ctx.currentTime);
+  hiGain.gain.linearRampToValueAtTime(+document.getElementById('hiVol').value/100*0.5, ctx.currentTime+0.05);
+  hiOsc.connect(hiGain).connect(ctx.destination);
+  hiOsc.start();
+  document.getElementById('hiStop').disabled=false;
+}
+document.getElementById('hiF').addEventListener('input',e=>{
+  const f=hiFromSlider(+e.target.value); hiShow(f);
+  if(hiOsc && !hiSweeping) hiOsc.frequency.setTargetAtTime(f,audioCtx().currentTime,0.01);
+});
+document.getElementById('hiVol').addEventListener('input',e=>{
+  document.getElementById('hiVolV').textContent=e.target.value+'%';
+  if(hiGain) hiGain.gain.setTargetAtTime(+e.target.value/100*0.5,audioCtx().currentTime,0.02);
+});
+document.getElementById('hiPlay').addEventListener('click',()=>{
+  hiStart(hiFromSlider(+document.getElementById('hiF').value));
+});
+document.getElementById('hiStop').addEventListener('click',()=>{
+  hiStopFn();
+  document.getElementById('hiMsg').className='msg';
+  document.getElementById('hiMsg').innerHTML='<div class="t">とめました</div>スライダーで高さを変えて、どこまで聞こえるか試してください。';
+});
+const SW_F0=8000, SW_F1=20000, SW_SEC=24;
+document.getElementById('hiSweep').addEventListener('click',()=>{
+  hiStart(SW_F0);
+  const ctx=audioCtx();
+  hiOsc.frequency.setValueAtTime(SW_F0,ctx.currentTime);
+  hiOsc.frequency.exponentialRampToValueAtTime(SW_F1,ctx.currentTime+SW_SEC);
+  hiOsc.stop(ctx.currentTime+SW_SEC+0.05);
+  hiSweeping=true; hiSweepT0=ctx.currentTime;
+  document.getElementById('hiMark').disabled=false;
+  document.getElementById('hiMsg').className='msg';
+  document.getElementById('hiMsg').innerHTML='<div class="t">音がだんだん高くなります</div>'+
+    '<b>聞こえなくなったら</b>「聞こえなくなった」を押してください。';
+  const tick=()=>{
+    if(!hiSweeping) return;
+    const el=audioCtx().currentTime-hiSweepT0;
+    const f=Math.round(SW_F0*Math.pow(SW_F1/SW_F0, Math.min(1,el/SW_SEC)));
+    hiShow(f); document.getElementById('hiF').value=hiToSlider(f);
+    if(el>=SW_SEC){ hiStopFn(); hiDone(null); return; }
+    hiRaf=requestAnimationFrame(tick);
+  };
+  hiRaf=requestAnimationFrame(tick);
+});
+document.getElementById('hiMark').addEventListener('click',()=>{
+  const el=audioCtx().currentTime-hiSweepT0;
+  const f=Math.round(SW_F0*Math.pow(SW_F1/SW_F0, Math.min(1,el/SW_SEC)));
+  hiStopFn(); hiShow(f); document.getElementById('hiF').value=hiToSlider(f);
+  hiDone(f);
+});
+function hiDone(f){
+  const m=document.getElementById('hiMsg');
+  m.className='msg ok';
+  if(f===null){
+    m.innerHTML='<div class="t">20,000Hz まで聞こえ続けました</div>'+
+      'ただし、実際には機器が高い音を出せていない可能性もあります。';
+    return;
+  }
+  const cdOk = f < 22050;
+  m.innerHTML=`<div class="t">約 ${f.toLocaleString()}Hz で聞こえなくなりました</div>`+
+    `人の耳が聞き取れる上限は、一般に約20,000Hzといわれ、年齢とともに下がります。`+
+    (cdOk ? `CD（44,100Hz）が再現できる上限は 22,050Hz なので、<b>あなたに聞こえる範囲はCDで十分に再現できています</b>。` : '')+
+    `　機器の性能や音量でも結果は変わるので、目安として考えてください。`;
+}
+function hiDeviceNote(){
+  try{
+    const sr=audioCtx().sampleRate;
+    document.getElementById('hiDevice').innerHTML=
+      `このブラウザは <strong>${sr.toLocaleString()}Hz</strong> で音を出しています。`+
+      `出せる最も高い音は、その半分の <strong>${(sr/2).toLocaleString()}Hz</strong> です（標本化定理）。`;
+  }catch(e){}
+}
+const FMTS=[
+  ['電話',8000,8],['昔のゲーム機の音声',11025,8],['FMラジオ相当',32000,16],
+  ['CD',44100,16],['動画・DVDなど',48000,16],['ハイレゾ',96000,24],['ハイレゾ',192000,24]
+];
+function buildHiTable(){
+  const maxMB=192000*24*2*60/8/1024/1024;
+  let h='<tr><th>用途</th><th>標本化周波数</th><th>ビット数</th><th>再現できる最高の音</th><th>音の大小の幅</th><th>1分のデータ量</th></tr>';
+  FMTS.forEach(([n,fs,b])=>{
+    const top=fs/2, mb=fs*b*2*60/8/1024/1024;
+    h+=`<tr${n==='CD'?' class="cd"':''}><td class="l">${n}</td>`+
+       `<td class="m">${fs.toLocaleString()} Hz</td><td class="m">${b} bit</td>`+
+       `<td class="m${top>20000?' over':''}">${top.toLocaleString()} Hz</td>`+
+       `<td class="m">約 ${Math.round(6.02*b)} dB</td>`+
+       `<td class="m">${mb.toFixed(1)} MB<div class="mbar"><i style="width:${Math.max(1,mb/maxMB*100)}%"></i></div></td></tr>`;
+  });
+  document.getElementById('hiTable').innerHTML=h;
+}
+
 /* ===== 初期化 ===== */
 drawWave(); updateListenLabels(); updateData();
+drawNyq(); buildHiTable(); hiShow(hiFromSlider(500));
+document.getElementById('hiMsg').className='msg';
+document.getElementById('hiMsg').innerHTML='<div class="t">聞こえる高さを調べる</div>'+
+  '「8,000Hz から自動で上げていく」を押して、聞こえなくなったところでボタンを押してください。';
+document.getElementById('tabHi').addEventListener('click',hiDeviceNote);
 </script>
 </body>
 </html>

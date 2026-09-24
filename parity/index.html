@@ -76,6 +76,10 @@
   .cell.rowhit{border-color:rgba(232,178,31,.75);}
   .cell.colhit{border-color:rgba(232,178,31,.75);}
   .cell.locked{cursor:default;} .cell.locked:hover{transform:none;}
+  .cell.flipped{box-shadow:inset 0 0 0 4px #ffd97a;}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .bit button.broken{outline:3px solid var(--ng); outline-offset:2px;}
+  .steplabel{font-size:13.5px; font-weight:700; color:var(--muted); padding:0 4px;}
   .cell .tag{position:absolute; right:3px; bottom:1px; font-size:9px; color:rgba(255,255,255,.75);}
 
   .glabel{font-size:11.5px; color:var(--muted); text-align:center; line-height:56px;}
@@ -173,6 +177,7 @@
       <div class="row">
         <button class="primary" id="mNew">① カードを並べる</button>
         <button class="primary gold" id="mParity" disabled>② パリティビットを追加</button>
+        <span class="steplabel">③ カードを1枚クリック</span>
         <button class="primary" id="mDetect" disabled>④ どこが裏返ったか当てる</button>
         <span style="flex:1"></span>
         <button class="chip" id="mSize5" aria-pressed="true">5×5</button>
@@ -426,6 +431,7 @@
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
   </div>
 </div>
 
@@ -459,6 +465,7 @@ function renderGrid(el, g, n, opts){
       b.setAttribute('aria-label',`${y+1}行${x+1}列`);
       if(isP){ const t=document.createElement('span'); t.className='tag'; t.textContent='P'; b.appendChild(t); }
       if(o.hit && o.hit.y===y && o.hit.x===x) b.classList.add('hit');
+      if(o.flips && o.flips.some(([fx,fy])=>fx===x&&fy===y)) b.classList.add('flipped');
       if(o.rowHits && o.rowHits.includes(y)) b.classList.add('rowhit');
       if(o.colHits && o.colHits.includes(x)) b.classList.add('colhit');
       if(o.onClick) b.addEventListener('click',()=>o.onClick(x,y));
@@ -511,7 +518,7 @@ function setStage(k){
   });
 }
 function drawMagic(hit){
-  const opts={withParity: mStage>=1, locked: mStage>=3};
+  const opts={withParity: mStage>=2, locked: mStage>=3};
   if(mStage===2) opts.onClick=(x,y)=>flipCard(x,y);
   if(hit){ opts.hit=hit.cell; opts.rowHits=hit.rows; opts.colHits=hit.cols; }
   renderGrid(document.getElementById('mGrid'), mG, mN, opts);
@@ -591,7 +598,7 @@ document.getElementById('mSize7').addEventListener('click',()=>{
 });
 
 /* ===== パリティビットの基本 ===== */
-let bData=[1,0,1,1,0,1,0], bEven=true, bBroken=-1;
+let bData=[1,0,1,1,0,1,0], bEven=true, bBroken=-1, bSentParity=null;
 function bParity(){
   const s=bData.reduce((a,v)=>a+v,0);
   return bEven ? (s%2) : (1-s%2);
@@ -599,16 +606,18 @@ function bParity(){
 function drawBits(){
   const box=document.getElementById('bBits');
   box.innerHTML='';
-  const p=bParity();
+  const broken = bBroken>=0;
+  // 壊れているときは、送ったときのパリティビットをそのまま見せる
+  const p = broken ? bSentParity : bParity();
   bData.forEach((v,i)=>{
     const d=document.createElement('div'); d.className='bit';
     const b=document.createElement('button');
     b.textContent=v; b.setAttribute('aria-pressed',String(!!v));
-    b.addEventListener('click',()=>{ bData[i]^=1; bBroken=-1; drawBits(); });
+    if(i===bBroken){ b.classList.add('broken'); b.setAttribute('aria-label',(i+1)+'ビット目（途中で反転）'); }
+    b.addEventListener('click',()=>{ bData[i]^=1; bBroken=-1; bSentParity=null; drawBits(); });
     const l=document.createElement('div'); l.className='lb'; l.textContent=(i+1)+'ビット目';
     d.append(b,l); box.appendChild(d);
   });
-  // パリティビット
   const d=document.createElement('div'); d.className='bit p';
   const b=document.createElement('button');
   b.textContent=p; b.setAttribute('aria-pressed',String(!!p)); b.disabled=true;
@@ -618,50 +627,49 @@ function drawBits(){
 
   const ones=bData.reduce((a,v)=>a+v,0);
   const total=ones+p;
+  const kind=bEven?'偶数':'奇数';
   const msg=document.getElementById('bMsg');
-  msg.className='msg';
-  msg.innerHTML=
-    `<div class="t">データの1の個数：${ones} 個　→　全体では ${total} 個</div>`+
-    (bEven
-      ? `偶数パリティなので、全体の1の個数が<b>偶数</b>になるようパリティビットを ${p} にします。`
-      : `奇数パリティなので、全体の1の個数が<b>奇数</b>になるようパリティビットを ${p} にします。`);
-
+  if(broken){
+    const okParity = bEven ? total%2===0 : total%2===1;
+    msg.className='msg '+(okParity?'ok':'ng');
+    msg.innerHTML=
+      `<div class="t">${okParity?'検査を通過してしまいました':'誤りを検出しました'}</div>`+
+      `${bBroken+1}ビット目（赤い枠）が途中で反転しました。受け取った全体の1の個数は <b>${total} 個</b>で、`+
+      `${kind}になるはずが${total%2===0?'偶数':'奇数'}になっています。`+
+      (okParity?'　（この場合は見逃してしまいます）':'　<b>途中で何かが変わった</b>と分かります。')+
+      '　「直す」で元に戻せます。';
+  }else{
+    msg.className='msg';
+    msg.innerHTML=
+      `<div class="t">データの1の個数：${ones} 個　→　全体では ${total} 個</div>`+
+      `${kind}パリティなので、全体の1の個数が<b>${kind}</b>になるようパリティビットを ${p} にします。`;
+  }
   document.getElementById('bExplain').innerHTML=
-    `届いたデータの1の個数を数えて、${bEven?'偶数':'奇数'}になっているかを確かめます。`+
+    `届いたデータの1の個数を数えて、${kind}になっているかを確かめます。`+
     `そうでなければ、途中で誤りが起きたと判断できます。`+
     `　この方法で増えるデータは<strong>わずか1ビット</strong>、7ビットに対して約14%だけです。`;
 }
+function bRestore(){
+  if(bBroken>=0){ bData[bBroken]^=1; }
+  bBroken=-1; bSentParity=null;
+}
 document.getElementById('bRand').addEventListener('click',()=>{
-  bData=Array.from({length:7},()=>Math.random()<0.5?1:0); bBroken=-1; drawBits();
+  bData=Array.from({length:7},()=>Math.random()<0.5?1:0); bBroken=-1; bSentParity=null; drawBits();
 });
 document.getElementById('bFlip').addEventListener('click',()=>{
+  bRestore();                       // すでに壊れていたら、いったん元に戻してから
+  bSentParity=bParity();            // 送ったときのパリティビット
   const i=Math.floor(Math.random()*7);
-  const p=bParity();
   bData[i]^=1; bBroken=i;
-  // 壊れた状態を表示（パリティは古いまま）
-  const box=document.getElementById('bBits');
   drawBits();
-  // パリティビットを「送信時の値」に戻して表示
-  const pbtn=box.querySelectorAll('.bit.p button')[0];
-  pbtn.textContent=p; pbtn.setAttribute('aria-pressed',String(!!p));
-  const ones=bData.reduce((a,v)=>a+v,0);
-  const total=ones+p;
-  const okParity = bEven ? total%2===0 : total%2===1;
-  const msg=document.getElementById('bMsg');
-  msg.className='msg '+(okParity?'ok':'ng');
-  msg.innerHTML=
-    `<div class="t">${okParity?'検査を通過してしまいました':'誤りを検出しました'}</div>`+
-    `${i+1}ビット目が途中で反転しました。全体の1の個数は <b>${total} 個</b>で、`+
-    `${bEven?'偶数':'奇数'}になるはずが${total%2===0?'偶数':'奇数'}です。`+
-    (okParity?'　（この場合は見逃してしまいます）':'　<b>途中で何かが変わった</b>と分かります。');
 });
-document.getElementById('bFix').addEventListener('click',()=>{ bBroken=-1; drawBits(); });
+document.getElementById('bFix').addEventListener('click',()=>{ bRestore(); drawBits(); });
 document.getElementById('bEven').addEventListener('click',()=>{
-  bEven=true; document.getElementById('bEven').setAttribute('aria-pressed','true');
+  bRestore(); bEven=true; document.getElementById('bEven').setAttribute('aria-pressed','true');
   document.getElementById('bOdd').setAttribute('aria-pressed','false'); drawBits();
 });
 document.getElementById('bOdd').addEventListener('click',()=>{
-  bEven=false; document.getElementById('bEven').setAttribute('aria-pressed','false');
+  bRestore(); bEven=false; document.getElementById('bEven').setAttribute('aria-pressed','false');
   document.getElementById('bOdd').setAttribute('aria-pressed','true'); drawBits();
 });
 
@@ -703,11 +711,12 @@ document.getElementById('lFlip4').addEventListener('click',()=>doFlip(4));
 document.getElementById('lCheck').addEventListener('click',()=>{
   if(!lG) return;
   const rows=oddRows(lG,lN), cols=oddCols(lG,lN);
-  const opts={withParity:true, locked:true, rowHits:rows, colHits:cols};
+  const opts={withParity:true, locked:true, rowHits:rows, colHits:cols, flips:lFlips};
   if(rows.length===1&&cols.length===1) opts.hit={x:cols[0],y:rows[0]};
   renderGrid(document.getElementById('lGrid'), lG, lN, opts);
   const m=document.getElementById('lMsg');
   const k=lFlips.length;
+  const where=lFlips.map(([x,y])=>`${y+1}行${x+1}列`).join('・');
   if(rows.length===0&&cols.length===0){
     m.className='msg ng';
     m.innerHTML='<div class="t">誤りを検出できませんでした</div>'+
@@ -720,11 +729,13 @@ document.getElementById('lCheck').addEventListener('click',()=>{
       '1か所だけの誤りなら、行と列の交点から<b>位置まで特定</b>できます。訂正も可能です。';
   }else{
     m.className='msg';
+    const cnt=(n,w)=> n ? `${w}が${n}つ` : `${w}はなし`;
     m.innerHTML='<div class="t">誤りは検出できましたが、場所は特定できません</div>'+
-      `奇数になった行が${rows.length}つ、列が${cols.length}つあります。`+
+      `赤の数が奇数になったのは、${cnt(rows.length,'行')}、${cnt(cols.length,'列')}です。`+
       '<b>「どこかが違う」ことは分かる</b>ものの、どれが誤りかは絞り込めません。'+
       'この場合は、データを送り直してもらうことになります。';
   }
+  if(k) m.innerHTML+=`<br><span style="font-size:13.5px;opacity:.9;">実際に裏返したのは ${where}（金色の内枠）です。</span>`;
 });
 
 /* ===== チェックディジット ===== */
@@ -755,7 +766,7 @@ function drawCd(){
   cdBase.forEach((v,i)=>{
     const d=document.createElement('div'); d.className='cdd';
     const b=document.createElement('div');
-    b.className='box'+(cdErrIdx===i?' err':'');
+    b.className='box'+((cdErrIdx===i || (cdOrig.length && cdBase[i]!==cdOrig[i]))?' err':'');
     b.textContent=v;
     b.addEventListener('click',()=>{
       cdBase[i]=(cdBase[i]+1)%10;

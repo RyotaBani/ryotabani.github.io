@@ -129,6 +129,24 @@
   .sp.r .lb{color:#C0392B;} .sp.g .lb{color:#1E8449;} .sp.b .lb{color:#2F5496;}
   .sp .sub{font-size:11.5px; color:var(--muted);}
 
+  /* 混色の強さ・色の読み取り */
+  .mixsl{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:4px 18px;}
+  .readout2{display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--line);
+    border-radius:10px; padding:10px 14px; margin-top:10px; flex-wrap:wrap;}
+  .readout2 .sw{width:46px; height:46px; border-radius:9px; border:1px solid var(--line); flex:0 0 auto;}
+  .readout2 .tx{font-family:ui-monospace,Consolas,monospace; font-size:15px; color:var(--ink);}
+  .readout2 .tx small{display:block; font-family:inherit; font-size:12px; color:var(--muted);}
+  /* 光で照らす */
+  .lightwrap{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; justify-content:center;}
+  .lightwrap canvas{max-width:100%; border-radius:10px; border:1px solid var(--line); background:#fff;}
+  .lamp2{width:64px; height:64px; border-radius:50%; margin:0 auto 6px;
+    box-shadow:0 0 24px 6px rgba(255,255,255,.0); border:2px solid var(--line);}
+  .vbox{background:linear-gradient(180deg,#22345a,#1b2c4d); color:#fff; border-radius:12px;
+    padding:14px 18px; margin-top:14px; font-size:14.5px;}
+  .vbox b{color:#ffd97a;}
+  .camnote{font-size:13px; color:var(--muted); margin-top:8px; min-height:1.4em;}
+  .camnote.err{color:var(--ng);}
+
   /* 記事 */
   .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
   .article h2{font-size:21px; color:var(--ink); margin:0 0 10px;}
@@ -180,6 +198,7 @@
     <button class="tab" role="tab" id="tabCmyk" aria-selected="false" aria-controls="toolCmyk">CMYK（色の三原色）</button>
     <button class="tab" role="tab" id="tabMix" aria-selected="false" aria-controls="toolMix">混ぜ方のちがい</button>
     <button class="tab" role="tab" id="tabFilter" aria-selected="false" aria-controls="toolFilter">カラーフィルタ</button>
+    <button class="tab" role="tab" id="tabLight" aria-selected="false" aria-controls="toolLight">光で照らす</button>
     <button class="tab" role="tab" id="tabZoom" aria-selected="false" aria-controls="toolZoom">画面を拡大する</button>
     <button class="tab" role="tab" id="tabSplit" aria-selected="false" aria-controls="toolSplit">色に分解する</button>
   </div>
@@ -292,6 +311,22 @@
       </div>
     </div>
 
+    <div class="panel" style="margin-top:14px;">
+      <h2 id="mixSlTitle">それぞれの光の強さ</h2>
+      <div class="mixsl">
+        <div class="sl"><div class="top"><label for="mixV0" id="mixL0">赤の光</label><span class="val" id="mixV0v">255</span></div>
+          <input type="range" id="mixV0" min="0" max="255" value="255"></div>
+        <div class="sl"><div class="top"><label for="mixV1" id="mixL1">緑の光</label><span class="val" id="mixV1v">255</span></div>
+          <input type="range" id="mixV1" min="0" max="255" value="255"></div>
+        <div class="sl"><div class="top"><label for="mixV2" id="mixL2">青の光</label><span class="val" id="mixV2v">255</span></div>
+          <input type="range" id="mixV2" min="0" max="255" value="255"></div>
+      </div>
+      <div class="readout2">
+        <div class="sw" id="mixSw"></div>
+        <div class="tx" id="mixTx"><small>円の上に指やマウスを置くと、その場所の色の値が出ます</small>–</div>
+      </div>
+    </div>
+
     <div class="verdict" id="mixVerdict" style="background:linear-gradient(180deg,#22345a,#1b2c4d);
       color:#fff;border-radius:12px;padding:14px 18px;margin-top:14px;font-size:14.5px;"></div>
   </section>
@@ -340,6 +375,47 @@
     </div>
   </section>
 
+  <!-- ===== 光で照らす ===== -->
+  <section class="tool" id="toolLight" role="tabpanel" aria-labelledby="tabLight">
+    <div class="panel">
+      <h2>物に当てる光の色を変えると、見え方はどう変わるでしょうか</h2>
+      <div class="row">
+        <button class="chip" data-lfig="fruits" aria-pressed="true">果物</button>
+        <button class="chip" data-lfig="flower" aria-pressed="false">花</button>
+        <button class="chip" data-lfig="sky" aria-pressed="false">空と草原</button>
+        <label class="chip" style="cursor:pointer;">画像を選ぶ<input id="lPick" type="file" accept="image/*" hidden></label>
+        <button class="chip" id="lCam">カメラを使う</button>
+      </div>
+      <p class="camnote" id="lCamNote"></p>
+      <div class="mixsl" style="margin-top:6px;">
+        <div class="sl"><div class="top"><label for="lR">光の赤</label><span class="val" id="lRv">255</span></div>
+          <input type="range" id="lR" min="0" max="255" value="255"></div>
+        <div class="sl"><div class="top"><label for="lG">光の緑</label><span class="val" id="lGv">255</span></div>
+          <input type="range" id="lG" min="0" max="255" value="255"></div>
+        <div class="sl"><div class="top"><label for="lB">光の青</label><span class="val" id="lBv">255</span></div>
+          <input type="range" id="lB" min="0" max="255" value="255"></div>
+      </div>
+      <div class="row">
+        <button class="chip" data-light="255,255,255">白い光</button>
+        <button class="chip" data-light="255,0,0">赤い光</button>
+        <button class="chip" data-light="0,255,0">緑の光</button>
+        <button class="chip" data-light="0,0,255">青い光</button>
+        <button class="chip" data-light="255,150,60">夕日</button>
+        <button class="chip" data-light="90,90,90">暗い部屋</button>
+      </div>
+    </div>
+
+    <div class="lightwrap">
+      <div style="text-align:center;">
+        <div class="lamp2" id="lLamp"></div>
+        <div style="font-size:12.5px;color:var(--muted);">当てている光</div>
+      </div>
+      <canvas id="lCv" width="420" height="420"></canvas>
+    </div>
+
+    <div class="vbox" id="lMsg"></div>
+  </section>
+
   <!-- ===== 画面を拡大する ===== -->
   <section class="tool" id="toolZoom" role="tabpanel" aria-labelledby="tabZoom">
     <div class="panel">
@@ -380,10 +456,18 @@
         <button class="chip" data-fig="flower" aria-pressed="false">花</button>
         <button class="chip" data-fig="sky" aria-pressed="false">空と草原</button>
         <label class="chip" style="cursor:pointer;">画像を選ぶ<input id="spPick" type="file" accept="image/*" hidden></label>
-        <span style="flex:1"></span>
+        <button class="chip" id="spCam">カメラを使う</button>
+      </div>
+      <p class="camnote" id="spCamNote"></p>
+      <div class="row" style="margin-top:6px;">
         <button class="chip" id="spRGB" aria-pressed="true">光の3色（RGB）</button>
         <button class="chip" id="spCMYK" aria-pressed="false">インクの4色（CMYK）</button>
         <button class="chip" id="spGray" aria-pressed="false">明るさで見る</button>
+        <button class="chip" id="spShiftBtn" aria-pressed="false">色ずらし</button>
+      </div>
+      <div class="sl" id="spShiftBox" style="display:none;margin-top:10px;">
+        <div class="top"><label for="spShift">3枚の板をずらす量</label><span class="val" id="spShiftV">8 画素</span></div>
+        <input type="range" id="spShift" min="0" max="24" step="1" value="8">
       </div>
       <p class="hint">「明るさで見る」に切り替えると、その色の光がどれだけ強いかが白黒の濃さで分かります。</p>
     </div>
@@ -476,16 +560,26 @@
     <p>違いは、最も明るい状態の扱いです。HSVではV=100%で最も鮮やかな色になりますが、HSLではL=100%にすると白になります。L=50%のときが最も鮮やかです。</p>
     <p>どちらが優れているというものではなく、用途で使い分けられています。ウェブページの色指定ではHSLがよく使われ、画像編集ソフトではHSVが主流です。上部の表示で、同じ色がHSVとHSLでどう違う数値になるかを見比べられます。</p>
 
+    <h2>物の色は、反射した光の色</h2>
+    <p>赤いりんごが赤く見えるのは、りんご自身が赤い光を出しているからではありません。当たった白い光のうち、<strong>赤い光だけを反射し、ほかの色は吸収している</strong>からです。</p>
+    <p>では、赤い光を含まない光で照らしたらどうなるでしょうか。緑の光だけを当てると、りんごは反射できる光がなく、黒っぽく見えます。上のツールの「光で照らす」で、実際に確かめられます。</p>
+    <p>お店の照明で、肉や魚が売り場ではおいしそうに見えたのに、家では色がちがって見えることがあります。照明に含まれる光の成分がちがうためです。写真を撮るときに白い紙で色を合わせる「ホワイトバランス」も、この問題を補正するしくみです。</p>
+
+    <h2>板がずれると色がにじむ</h2>
+    <p>カラー画像は、赤・緑・青の3枚の板が重なってできています。この3枚がぴったり重なっていれば元の画像になりますが、少しでもずれると、物の輪郭に色のにじみが出ます。</p>
+    <p>同じことは、カラー印刷で版がずれたときや、レンズが色ごとに光の曲げ方を変えてしまうとき（色収差）にも起こります。上のツールの「色ずらし」で、ずらす量を変えながら見比べられます。</p>
+
     <h2>使い方</h2>
     <ul>
       <li>どのタブで値を変えても、上の色見本と4つの表記がすべて連動して変わります。</li>
       <li><strong>RGB</strong>：スライダーの右に2進数も表示されます。カラーコードとの対応を確かめてみてください。</li>
       <li><strong>HSV</strong>：色相環をクリックして色あいを選び、四角の中で鮮やかさと明るさを決められます。</li>
       <li><strong>CMYK</strong>：インクの割合で指定します。K を上げると全体が暗くなります。</li>
-      <li><strong>混ぜ方のちがい</strong>：3つの円をドラッグして動かせます。光とインクを切り替えて、重なった部分の色を比べてみてください。</li>
+      <li><strong>混ぜ方のちがい</strong>：3つの円をドラッグして動かせます。光やインクの強さも変えられ、円の上を指すとその場所の色の値が分かります。</li>
+      <li><strong>光で照らす</strong>：写真に当てる光の色を変えると、物の見え方が変わります。カメラの映像でも試せます。</li>
       <li><strong>カラーフィルタ</strong>：光とフィルタの組み合わせを変えると、目に届く色が変わります。真っ暗になる組み合わせも探してみてください。</li>
       <li><strong>画面を拡大する</strong>：ディスプレイの1画素を拡大して、赤・緑・青の3本組が見える様子を確かめられます。</li>
-      <li><strong>色に分解する</strong>：画像を光の3色（RGB）または印刷の4色（CMYK）に分けて表示します。自分の画像を読み込んで試すこともできます。</li>
+      <li><strong>色に分解する</strong>：画像を光の3色（RGB）または印刷の4色（CMYK）に分けて表示します。自分の画像やカメラの映像でも試せます。「色ずらし」では、3枚の板をずらして重ねたときの見え方を確かめられます。</li>
     </ul>
   </section>
 
@@ -530,13 +624,14 @@
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
   </div>
 </div>
 
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix'],['tabFilter','toolFilter'],['tabZoom','toolZoom'],['tabSplit','toolSplit']];
+  const tabs=[['tabRgb','toolRgb'],['tabHsv','toolHsv'],['tabCmyk','toolCmyk'],['tabMix','toolMix'],['tabFilter','toolFilter'],['tabLight','toolLight'],['tabZoom','toolZoom'],['tabSplit','toolSplit']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -549,6 +644,8 @@
       if(tid==='tabFilter') drawFilter();
       if(tid==='tabZoom') drawZoom();
       if(tid==='tabSplit') drawSplit();
+      if(tid==='tabLight') drawLight();
+      if(camTarget && !((camTarget==='split'&&tid==='tabSplit')||(camTarget==='light'&&tid==='tabLight'))) camStop();
     });
   });
 })();
@@ -818,9 +915,10 @@ function drawMix(){
   c.fillStyle = add ? '#000000' : '#ffffff';
   c.fillRect(0,0,W,H);
 
+  const v=[0,1,2].map(i=>+document.getElementById('mixV'+i).value);
   const cols = add
-    ? ['rgb(255,0,0)','rgb(0,255,0)','rgb(0,0,255)']
-    : ['rgb(0,255,255)','rgb(255,0,255)','rgb(255,255,0)'];
+    ? [`rgb(${v[0]},0,0)`,`rgb(0,${v[1]},0)`,`rgb(0,0,${v[2]})`]
+    : [`rgb(${255-v[0]},255,255)`,`rgb(255,${255-v[1]},255)`,`rgb(255,255,${255-v[2]})`];
   const labs = add ? ['R','G','B'] : ['C','M','Y'];
 
   c.globalCompositeOperation = add ? 'lighter' : 'multiply';
@@ -849,6 +947,13 @@ function drawMix(){
   const vd=document.getElementById('mixVerdict');
   const hint=document.getElementById('mixHint');
 
+  [0,1,2].forEach(i=>{
+    document.getElementById('mixV'+i+'v').textContent = add ? v[i] : Math.round(v[i]/255*100)+'%';
+  });
+  document.getElementById('mixSlTitle').textContent = add ? 'それぞれの光の強さ' : 'それぞれのインクの濃さ';
+  document.getElementById('mixL0').textContent = add ? '赤の光' : 'シアンのインク';
+  document.getElementById('mixL1').textContent = add ? '緑の光' : 'マゼンタのインク';
+  document.getElementById('mixL2').textContent = add ? '青の光' : 'イエローのインク';
   if(add){
     hint.textContent='ディスプレイは自分で光を出すので、光を足していく「加法混色」です。';
     cap.textContent='円をドラッグして、重ね方を変えてみましょう（光の三原色）';
@@ -863,6 +968,16 @@ function drawMix(){
     else vd.innerHTML='円を動かして重ねてみてください。何もない部分が<b style="color:#ffd97a;">白</b>なのは、紙の色がそのまま見えているからです。';
   }
 }
+function mixRead(e){
+  const cv=document.getElementById('mixCv');
+  const p=mixPos(e);
+  const x=Math.max(0,Math.min(cv.width-1,Math.round(p.x))), y=Math.max(0,Math.min(cv.height-1,Math.round(p.y)));
+  const d=cv.getContext('2d').getImageData(x,y,1,1).data;
+  const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).toUpperCase().padStart(2,'0')).join('');
+  document.getElementById('mixSw').style.background=`rgb(${d[0]},${d[1]},${d[2]})`;
+  document.getElementById('mixTx').innerHTML=
+    `<small>この場所の色</small>R ${d[0]} ／ G ${d[1]} ／ B ${d[2]}　　${hex}`;
+}
 function mixPos(e){
   const cv=document.getElementById('mixCv');
   const r=cv.getBoundingClientRect();
@@ -871,6 +986,7 @@ function mixPos(e){
 (() => {
   const cv=document.getElementById('mixCv');
   cv.addEventListener('pointerdown',e=>{
+    mixRead(e);
     const p=mixPos(e);
     for(let i=circles.length-1;i>=0;i--){
       if(Math.hypot(p.x-circles[i].x,p.y-circles[i].y)<MIXR){ dragIdx=i; break; }
@@ -878,6 +994,7 @@ function mixPos(e){
     if(dragIdx>=0){ cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing'; }
   });
   cv.addEventListener('pointermove',e=>{
+    mixRead(e);
     if(dragIdx<0) return;
     const p=mixPos(e);
     circles[dragIdx]={x:Math.max(MIXR*0.3,Math.min(cv.width-MIXR*0.3,p.x)),
@@ -901,8 +1018,11 @@ document.getElementById('mixSub').addEventListener('click',()=>{
   drawMix();
 });
 document.getElementById('mixReset').addEventListener('click',()=>{
-  circles=HOME.map(p=>({...p})); drawMix();
+  circles=HOME.map(p=>({...p}));
+  [0,1,2].forEach(i=>document.getElementById('mixV'+i).value=255);
+  drawMix();
 });
+[0,1,2].forEach(i=>document.getElementById('mixV'+i).addEventListener('input',drawMix));
 
 /* ===== カラーフィルタ ===== */
 const LIGHTS=[
@@ -1108,22 +1228,29 @@ function makeFig(kind,S){
   return c;
 }
 
+let spLayout='';
 function drawSplit(){
   const S=210;
   const src = spSrc || makeFig(spFig,S);
   const grid=document.getElementById('spGrid');
 
-  const plates = spMode==='rgb'
-    ? [{id:'R',lb:'赤（R）だけ',cls:'r'},{id:'G',lb:'緑（G）だけ',cls:'g'},{id:'B',lb:'青（B）だけ',cls:'b'}]
-    : [{id:'C',lb:'シアン（C）',cls:''},{id:'M',lb:'マゼンタ（M）',cls:''},
+  let plates;
+  if(spMode==='rgb') plates=[{id:'R',lb:'赤（R）だけ',cls:'r'},{id:'G',lb:'緑（G）だけ',cls:'g'},{id:'B',lb:'青（B）だけ',cls:'b'}];
+  else if(spMode==='cmyk') plates=[{id:'C',lb:'シアン（C）',cls:''},{id:'M',lb:'マゼンタ（M）',cls:''},
        {id:'Y',lb:'イエロー（Y）',cls:''},{id:'K',lb:'黒（K）',cls:''}];
+  else plates=[{id:'X',lb:'3枚をずらして重ねたもの',cls:''}];
 
-  grid.innerHTML =
-    `<div class="sp"><canvas id="spAll" width="${S}" height="${S}"></canvas>
-      <div class="lb">元の画像</div><div class="sub">${plates.length}枚が重なった状態</div></div>` +
-    plates.map(p=>
-      `<div class="sp ${p.cls}"><canvas id="sp${p.id}" width="${S}" height="${S}"></canvas>
-        <div class="lb">${p.lb}</div><div class="sub" id="sp${p.id}s">–</div></div>`).join('');
+  // 形が変わったときだけ作り直す（カメラの映像を毎回描いても重くならないように）
+  const layout=spMode;
+  if(spLayout!==layout){
+    grid.innerHTML =
+      `<div class="sp"><canvas id="spAll" width="${S}" height="${S}"></canvas>
+        <div class="lb">元の画像</div><div class="sub">${spMode==='shift'?'3枚がぴったり重なった状態':plates.length+'枚が重なった状態'}</div></div>` +
+      plates.map(p=>
+        `<div class="sp ${p.cls}"><canvas id="sp${p.id}" width="${S}" height="${S}"></canvas>
+          <div class="lb">${p.lb}</div><div class="sub" id="sp${p.id}s">–</div></div>`).join('');
+    spLayout=layout;
+  }
 
   const all=document.getElementById('spAll'), ac=all.getContext('2d',{willReadFrequently:true});
   ac.fillStyle='#fff'; ac.fillRect(0,0,S,S);
@@ -1131,6 +1258,28 @@ function drawSplit(){
   const w=src.width*r, h=src.height*r;
   ac.drawImage(src,(S-w)/2,(S-h)/2,w,h);
   const data=ac.getImageData(0,0,S,S).data;
+
+  if(spMode==='shift'){
+    const k=+document.getElementById('spShift').value;
+    const cv=document.getElementById('spX'), c=cv.getContext('2d');
+    const img=c.createImageData(S,S);
+    const at=(x,y,ch)=>{ x=Math.max(0,Math.min(S-1,x)); y=Math.max(0,Math.min(S-1,y)); return data[(y*S+x)*4+ch]; };
+    const dy=Math.round(k/2);
+    for(let y=0;y<S;y++) for(let x=0;x<S;x++){
+      const p=(y*S+x)*4;
+      img.data[p]  =at(x+k,y+dy,0);   // 赤の板を左上へ
+      img.data[p+1]=at(x,y,1);        // 緑の板はそのまま
+      img.data[p+2]=at(x-k,y-dy,2);   // 青の板を右下へ
+      img.data[p+3]=255;
+    }
+    c.putImageData(img,0,0);
+    document.getElementById('spXs').textContent = k ? `赤を左上へ・青を右下へ ${k}画素` : 'ずれなし';
+    document.getElementById('spVerdict').innerHTML =
+      '赤・緑・青の3枚の板が<b style="color:#ffd97a;">ずれて重なる</b>と、輪郭に色のにじみが出ます。'+
+      '印刷で版がずれたときや、安いレンズで起きる色のにじみ（色収差）と同じ見え方です。'+
+      '　ずらす量を0にすると、元の画像に戻ります。';
+    return;
+  }
 
   plates.forEach(pl=>{
     const cv=document.getElementById('sp'+pl.id), c=cv.getContext('2d');
@@ -1146,7 +1295,6 @@ function drawSplit(){
         if(spGrayView){ col=[v,v,v]; }
         else col = pl.id==='R'?[v,0,0] : pl.id==='G'?[0,v,0] : [0,0,v];
       }else{
-        // RGB → CMYK
         const rr=R/255, gg=G/255, bb=B/255;
         const k=1-Math.max(rr,gg,bb);
         const den = (1-k)||1;
@@ -1155,7 +1303,6 @@ function drawSplit(){
         v=Math.round(amt*255); sum+=v;
         if(spGrayView){ const g2=255-v; col=[g2,g2,g2]; }
         else {
-          // インクの色を、量に応じて白地に載せる
           const ink = pl.id==='C'?[0,255,255] : pl.id==='M'?[255,0,255] :
                       pl.id==='Y'?[255,255,0] : [0,0,0];
           col=[Math.round(255-(255-ink[0])*amt), Math.round(255-(255-ink[1])*amt),
@@ -1178,7 +1325,7 @@ document.querySelectorAll('[data-fig]').forEach(b=>{
   b.addEventListener('click',()=>{
     document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
     b.setAttribute('aria-pressed','true');
-    spFig=b.dataset.fig; spSrc=null; drawSplit();
+    camStop(); spFig=b.dataset.fig; spSrc=null; drawSplit();
   });
 });
 document.getElementById('spPick').addEventListener('change',e=>{
@@ -1187,7 +1334,7 @@ document.getElementById('spPick').addEventListener('change',e=>{
   img.onload=()=>{
     const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
     c.getContext('2d').drawImage(img,0,0);
-    spSrc=c;
+    camStop(); spSrc=c;
     document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
     drawSplit();
     URL.revokeObjectURL(img.src);
@@ -1195,21 +1342,192 @@ document.getElementById('spPick').addEventListener('change',e=>{
   img.src=URL.createObjectURL(f);
 });
 function setSplitMode(m,gray){
+  if(m==='shift') gray=false;
   spMode=m; spGrayView=gray;
   document.getElementById('spRGB').setAttribute('aria-pressed',String(m==='rgb'&&!gray));
   document.getElementById('spCMYK').setAttribute('aria-pressed',String(m==='cmyk'&&!gray));
   document.getElementById('spGray').setAttribute('aria-pressed',String(gray));
+  document.getElementById('spShiftBtn').setAttribute('aria-pressed',String(m==='shift'));
+  document.getElementById('spShiftBox').style.display = m==='shift' ? '' : 'none';
   drawSplit();
 }
+document.getElementById('spShiftBtn').addEventListener('click',()=>setSplitMode('shift',false));
+document.getElementById('spShift').addEventListener('input',e=>{
+  document.getElementById('spShiftV').textContent=e.target.value+' 画素';
+  drawSplit();
+});
 document.getElementById('spRGB').addEventListener('click',()=>setSplitMode('rgb',false));
 document.getElementById('spCMYK').addEventListener('click',()=>setSplitMode('cmyk',false));
-document.getElementById('spGray').addEventListener('click',()=>setSplitMode(spMode,true));
+document.getElementById('spGray').addEventListener('click',()=>setSplitMode(spMode==='shift'?'rgb':spMode,true));
+
+/* ===== 光で照らす ===== */
+let lFig='fruits', lSrc=null;
+function makeScene(S){
+  const c=document.createElement('canvas'); c.width=S; c.height=S;
+  const x=c.getContext('2d');
+  // 壁と机
+  x.fillStyle='#EDEBE6'; x.fillRect(0,0,S,S*0.55);
+  x.fillStyle='#A8753F'; x.fillRect(0,S*0.55,S,S*0.45);
+  // 青い布
+  x.fillStyle='#2E5FB8'; x.beginPath();
+  x.moveTo(S*0.08,S*0.62); x.lineTo(S*0.92,S*0.60); x.lineTo(S*0.96,S*0.95); x.lineTo(S*0.04,S*0.97); x.closePath(); x.fill();
+  // 白い皿
+  x.fillStyle='#FAFAFA'; x.beginPath(); x.ellipse(S*0.5,S*0.76,S*0.36,S*0.12,0,0,Math.PI*2); x.fill();
+  x.strokeStyle='#C9CDD3'; x.lineWidth=S*0.008; x.stroke();
+  // バナナ（黄）
+  x.strokeStyle='#F2CE1B'; x.lineWidth=S*0.07; x.lineCap='round';
+  x.beginPath(); x.arc(S*0.34,S*0.52,S*0.2,Math.PI*0.25,Math.PI*0.8); x.stroke();
+  // オレンジ
+  x.fillStyle='#F28C1E'; x.beginPath(); x.arc(S*0.66,S*0.66,S*0.1,0,Math.PI*2); x.fill();
+  // りんご（赤）と葉（緑）
+  const g=x.createRadialGradient(S*0.46,S*0.6,S*0.02,S*0.5,S*0.65,S*0.14);
+  g.addColorStop(0,'#FF6B5A'); g.addColorStop(1,'#C21E12');
+  x.fillStyle=g; x.beginPath(); x.arc(S*0.5,S*0.65,S*0.13,0,Math.PI*2); x.fill();
+  x.fillStyle='#3E9A3E'; x.beginPath(); x.ellipse(S*0.56,S*0.5,S*0.06,S*0.028,-0.6,0,Math.PI*2); x.fill();
+  x.strokeStyle='#5A3210'; x.lineWidth=S*0.014;
+  x.beginPath(); x.moveTo(S*0.5,S*0.53); x.lineTo(S*0.52,S*0.47); x.stroke();
+  return c;
+}
+function lightSource(S){
+  if(lSrc) return lSrc;
+  return lFig==='fruits' ? makeScene(S) : makeFig(lFig,S);
+}
+function drawLight(){
+  const cv=document.getElementById('lCv'), c=cv.getContext('2d',{willReadFrequently:true});
+  const S=cv.width;
+  const src=lightSource(S);
+  c.fillStyle='#fff'; c.fillRect(0,0,S,S);
+  const r=Math.min(S/src.width,S/src.height);
+  const w=src.width*r, h=src.height*r;
+  c.drawImage(src,(S-w)/2,(S-h)/2,w,h);
+  const R=+document.getElementById('lR').value, G=+document.getElementById('lG').value, B=+document.getElementById('lB').value;
+  document.getElementById('lRv').textContent=R;
+  document.getElementById('lGv').textContent=G;
+  document.getElementById('lBv').textContent=B;
+  const lamp=document.getElementById('lLamp');
+  lamp.style.background=`rgb(${R},${G},${B})`;
+  lamp.style.boxShadow=`0 0 28px 8px rgba(${R},${G},${B},.55)`;
+  if(!(R===255&&G===255&&B===255)){
+    const img=c.getImageData(0,0,S,S), d=img.data;
+    const fr=R/255, fg=G/255, fb=B/255;
+    for(let i=0;i<d.length;i+=4){ d[i]*=fr; d[i+1]*=fg; d[i+2]*=fb; }
+    c.putImageData(img,0,0);
+  }
+  const m=document.getElementById('lMsg');
+  const eq=(a,b,cc)=>R===a&&G===b&&B===cc;
+  if(eq(255,255,255)){
+    m.innerHTML='白い光には、赤・緑・青のすべてが含まれています。物はそのうち<b>自分の色の光だけを反射</b>するので、いつもどおりの色に見えます。';
+  }else if(eq(255,0,0)){
+    m.innerHTML='<b>赤い光だけ</b>を当てました。赤いりんごは赤く見えますが、青い布や緑の葉は<b>黒っぽく</b>なります。反射できる光がないからです。';
+  }else if(eq(0,255,0)){
+    m.innerHTML='<b>緑の光だけ</b>を当てました。葉は明るく見えますが、赤いりんごは<b>黒っぽく</b>なります。赤いりんごは緑の光を吸収してしまうからです。';
+  }else if(eq(0,0,255)){
+    m.innerHTML='<b>青い光だけ</b>を当てました。青い布は見えますが、黄色いバナナまで<b>暗く</b>なります。黄色は赤と緑を反射する色で、青は反射しないからです。';
+  }else if(R===G&&G===B){
+    m.innerHTML='3色を同じ割合で弱めると、色のバランスはそのままで<b>全体が暗く</b>なります。';
+  }else{
+    m.innerHTML=`光の色は R ${R} ／ G ${G} ／ B ${B}。物の色は、<b>当たった光のうち反射した分</b>で決まります。光に含まれない色は、反射のしようがありません。`;
+  }
+}
+['lR','lG','lB'].forEach(id=>document.getElementById(id).addEventListener('input',drawLight));
+document.querySelectorAll('[data-light]').forEach(b=>b.addEventListener('click',()=>{
+  const [r,g,bb]=b.dataset.light.split(',').map(Number);
+  document.getElementById('lR').value=r; document.getElementById('lG').value=g; document.getElementById('lB').value=bb;
+  drawLight();
+}));
+document.querySelectorAll('[data-lfig]').forEach(b=>b.addEventListener('click',()=>{
+  camStop();
+  document.querySelectorAll('[data-lfig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed','true');
+  lFig=b.dataset.lfig; lSrc=null; drawLight();
+}));
+document.getElementById('lPick').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    camStop(); lSrc=c;
+    document.querySelectorAll('[data-lfig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    drawLight(); URL.revokeObjectURL(img.src);
+  };
+  img.src=URL.createObjectURL(f);
+});
+
+/* ===== カメラ（色に分解・光で照らす で共通） ===== */
+let camStream=null, camVideo=null, camFrame=null, camTarget=null, camRaf=0, camLast=0;
+function camErrorMessage(err){
+  const name=(err && err.name) ? err.name : '';
+  if(name==='NotAllowedError' || name==='SecurityError'){
+    if(location.protocol==='file:') return 'カメラは https のページでのみ使えます。localhost か本番URLで開いてください。';
+    return 'ブラウザのアドレスバー左のアイコンからカメラを許可してください。';
+  }
+  if(name==='NotFoundError' || name==='DevicesNotFoundError') return 'カメラが見つかりません。カメラがつながっているか確認してください。';
+  if(name==='NotReadableError') return 'カメラを開けませんでした。ほかのアプリがカメラを使っていないか確認してください。';
+  return 'カメラを使えませんでした。（'+(name||'原因不明')+'）';
+}
+function camNote(target,msg,isErr){
+  const el=document.getElementById(target==='split'?'spCamNote':'lCamNote');
+  if(el){ el.textContent=msg||''; el.className='camnote'+(isErr?' err':''); }
+}
+function camButtons(){
+  document.getElementById('spCam').textContent = camTarget==='split' ? 'カメラを止める' : 'カメラを使う';
+  document.getElementById('lCam').textContent  = camTarget==='light' ? 'カメラを止める' : 'カメラを使う';
+}
+function camStop(){
+  cancelAnimationFrame(camRaf);
+  if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  if(camTarget){ camNote(camTarget,''); }
+  if(camTarget==='split'){ spSrc=null; }
+  if(camTarget==='light'){ lSrc=null; }
+  camTarget=null; camButtons();
+}
+async function camStart(target){
+  camStop();
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    const e=new Error('unavailable'); e.name='NotAllowedError';
+    camNote(target,camErrorMessage(e),true); return;
+  }
+  camNote(target,'カメラの許可を待っています…');
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480}},audio:false});
+  }catch(err){ camNote(target,camErrorMessage(err),true); return; }
+  if(!camVideo){ camVideo=document.createElement('video'); camVideo.playsInline=true; camVideo.muted=true; }
+  camVideo.srcObject=camStream;
+  try{ await camVideo.play(); }catch(e){}
+  if(!camFrame) camFrame=document.createElement('canvas');
+  camTarget=target; camButtons();
+  camNote(target,'カメラの映像を、その場で処理しています。映像はどこにも送信されません。');
+  const loop=(t)=>{
+    if(!camTarget) return;
+    if(t-camLast>66 && camVideo.videoWidth){      // 1秒に約15回
+      camLast=t;
+      const W=320, H=Math.round(320*camVideo.videoHeight/camVideo.videoWidth);
+      camFrame.width=W; camFrame.height=H;
+      camFrame.getContext('2d').drawImage(camVideo,0,0,W,H);
+      if(camTarget==='split'){ spSrc=camFrame; drawSplit(); }
+      else { lSrc=camFrame; drawLight(); }
+    }
+    camRaf=requestAnimationFrame(loop);
+  };
+  camRaf=requestAnimationFrame(loop);
+}
+document.getElementById('spCam').addEventListener('click',()=>{
+  if(camTarget==='split'){ camStop(); drawSplit(); return; }
+  document.querySelectorAll('[data-fig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  camStart('split');
+});
+document.getElementById('lCam').addEventListener('click',()=>{
+  if(camTarget==='light'){ camStop(); drawLight(); return; }
+  document.querySelectorAll('[data-lfig]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  camStart('light');
+});
 
 /* ===== 初期化 ===== */
 syncAll(null);
 drawMix();
 buildFBtns(); drawFilter();
-buildZBtns(); drawZoom(); drawSplit();
+buildZBtns(); drawZoom(); drawSplit(); drawLight();
 </script>
 </body>
 </html>
