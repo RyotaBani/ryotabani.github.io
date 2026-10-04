@@ -58,6 +58,14 @@
   .card p{margin:0; font-size:14px; color:var(--muted); flex:1;}
   .card .go{margin-top:14px; font-size:14px; color:var(--navy); font-weight:700;}
 
+  .news{margin-top:10px; margin-bottom:16px; border:1px solid var(--line); border-radius:12px; padding:20px 28px; background:#fff;}
+  .news h2{margin:0 0 8px; font-size:17px; color:var(--ink);}
+  .news ul{list-style:none; margin:0; padding:0;}
+  .news li{display:flex; gap:14px; padding:7px 0; font-size:14.5px; border-top:1px dashed #E1E6EF;}
+  .news li:first-child{border-top:none;}
+  .news time{flex:0 0 4.6em; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .news a{color:var(--navy);}
+  .news .all{display:inline-block; margin-top:8px; font-size:14px; font-weight:700; color:var(--navy);}
   .about{margin-top:10px; background:var(--panel); border:1px solid var(--line);
     border-radius:12px; padding:26px 28px;}
   .about h2{margin:0 0 12px; font-size:19px; color:var(--ink);}
@@ -341,6 +349,16 @@
     </div>
   </section>
 
+  <div class="news">
+    <h2>最近の更新</h2>
+    <ul>
+      <li><time datetime="2026-10-04">10月4日</time><span><a href="/updates/">更新履歴</a>のページを公開しました</span></li>
+      <li><time datetime="2026-09-24">9月24日</time><span><a href="/compress/">データ圧縮</a>を公開し、音・色・論理回路の教材にタブを追加しました</span></li>
+      <li><time datetime="2026-09-18">9月18日</time><span><a href="/bits/">データはすべて0と1</a>の「画像を音で聴く」の波形表示を直しました</span></li>
+    </ul>
+    <a class="all" href="/updates/">すべての更新履歴を見る</a>
+  </div>
+
   <div class="about">
     <h2>このサイトについて</h2>
     <p>情報ラボは、高校の「情報Ⅰ」で学ぶ内容を中心に、コンピュータやネットワークの仕組みを体験しながら理解するための教材を公開しているサイトです。</p>
@@ -352,7 +370,7 @@
       <li>入力したデータは、すべてお使いの機器の中だけで処理されます</li>
     </ul>
     <p>掲載している数値や規格は、公的機関や標準化団体の資料をもとにしています。</p>
-    <p>運営者やお問い合わせ先は「<a href="/about/">運営者情報・お問い合わせ</a>」、広告とデータの取り扱いは「<a href="/privacy/">プライバシーポリシー</a>」をご覧ください。</p>
+    <p>運営者やお問い合わせ先は「<a href="/about/">運営者情報・お問い合わせ</a>」、広告とデータの取り扱いは「<a href="/privacy/">プライバシーポリシー</a>」、これまでの変更は「<a href="/updates/">更新履歴</a>」をご覧ください。</p>
   </div>
 
   <footer>
@@ -387,6 +405,7 @@
       <a href="/compress/">データ圧縮</a>
       <a href="/about/">運営者情報・お問い合わせ</a>
       <a href="/privacy/">プライバシーポリシー</a>
+      <a href="/updates/">更新履歴</a>
     </div>
     <div>&copy; 2026 情報ラボ</div>
   </footer>
