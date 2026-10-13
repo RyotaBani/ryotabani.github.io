@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPEGをくり返し保存すると画像はどうなる？（世代劣化を目で見る）｜情報ラボ</title>
+<meta name="description" content="画像をJPEGで何回も保存しなおすと、どのように傷んでいくのかを確かめられる無料ツール。回数・画質・保存のしかたを選んで、1回ごとの変化を拡大や差分、グラフで見比べられます。高校の情報Iの非可逆圧縮に対応。">
+<link rel="canonical" href="https://joholab.net/jpeg/">
+<meta property="og:title" content="JPEGをくり返し保存すると画像はどうなる？｜情報ラボ">
+<meta property="og:description" content="JPEGで保存しなおすたびに画像がどう変わるかを、回数を決めて目で確かめる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/jpeg/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --s1:#2F5496; --s2:#C8661E; --s3:#9B4FB0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){ .two{grid-template-columns:1fr;} }
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  label.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer;}
+  label.chip:hover{background:var(--panel2);}
+
+  .sl{margin-top:14px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .go{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:16px;}
+  button.run{border:none; background:var(--navy); color:#fff; font-family:inherit; font-size:16px; font-weight:700;
+    padding:12px 26px; border-radius:10px; cursor:pointer;}
+  button.run:hover{background:#26467f;}
+  button.run.stop{background:#8E2B22;}
+  .prog{flex:1 1 220px; min-width:200px;}
+  .prog .track{height:10px; background:var(--panel2); border-radius:999px; overflow:hidden;}
+  .prog .fill{height:100%; width:0; background:var(--gold); border-radius:999px;}
+  .prog .t{font-size:13px; color:var(--muted); margin-top:4px; font-family:ui-monospace,Consolas,monospace;}
+
+  /* 見る */
+  .view{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:640px){ .view{grid-template-columns:1fr;} }
+  .pic{text-align:center;}
+  .pic .cap{font-size:13px; color:var(--muted); margin:0 0 6px; font-weight:700;}
+  .pic .cap b{color:var(--ink); font-family:ui-monospace,Consolas,monospace;}
+  .pic canvas{width:100%; height:auto; border:1px solid var(--line); border-radius:10px; background:#fff;
+    touch-action:none; cursor:crosshair; display:block;}
+  .zoomrow{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
+  .zoomrow canvas{width:100%; max-width:300px; height:auto; image-rendering:pixelated; border:1px solid var(--line);
+    border-radius:10px; background:#fff; display:block; margin:0 auto;}
+  .scrub{display:flex; gap:12px; align-items:center; margin-top:14px;}
+  .scrub input[type=range]{flex:1; accent-color:var(--gold); height:30px;}
+  button.play{border:1px solid var(--line); background:#fff; color:var(--ink); width:44px; height:44px; border-radius:50%;
+    font-size:16px; cursor:pointer; flex:0 0 auto;}
+  button.play:hover{background:var(--panel2);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px;
+    padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+
+  .strip{display:flex; gap:10px; overflow-x:auto; padding:4px 2px 8px;}
+  .thumb{flex:0 0 auto; border:2px solid transparent; border-radius:8px; background:none; padding:0; cursor:pointer;
+    font-family:inherit; text-align:center;}
+  .thumb canvas{display:block; width:132px; height:auto; border-radius:6px; border:1px solid var(--line);}
+  .thumb span{display:block; font-size:12px; color:var(--muted); margin-top:3px;}
+  .thumb[aria-current=true]{border-color:var(--gold);}
+  .thumb[aria-current=true] span{color:var(--ink); font-weight:700;}
+
+  /* グラフ */
+  .legend{display:flex; gap:8px 18px; flex-wrap:wrap; font-size:13px; color:#1c2430; margin-bottom:8px;}
+  .legend .sw{display:inline-block; width:18px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px;}
+  .chartbox{position:relative; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px 4px 2px;}
+  .chartbox svg{display:block; width:100%; height:auto;}
+  .chartbox h3{font-size:13.5px; color:var(--ink); margin:4px 10px 0;}
+  .tip{position:absolute; pointer-events:none; background:#141c2e; color:#fff; font-size:12.5px; line-height:1.5;
+    padding:7px 10px; border-radius:8px; white-space:nowrap; display:none; z-index:2;}
+  .tip .sw{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; vertical-align:-1px;}
+  details.tbl{margin-top:10px; font-size:13.5px;}
+  details.tbl summary{cursor:pointer; color:var(--navy); font-weight:700;}
+  details.tbl table{border-collapse:collapse; margin-top:8px; background:#fff; font-size:13px;}
+  details.tbl th, details.tbl td{border:1px solid var(--line); padding:5px 10px; text-align:right;
+    font-family:ui-monospace,Consolas,monospace;}
+  details.tbl th{background:var(--panel); color:var(--ink); font-family:inherit;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article .src{font-size:13px; color:var(--muted);}
+  .formula{background:var(--panel); border-left:4px solid var(--navy);
+    padding:12px 16px; margin:0 0 14px; font-size:15px;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ <a href="/compress/">データ圧縮</a> ＞ JPEGのくり返し保存</p>
+    <h1>JPEGをくり返し保存すると、どうなる？</h1>
+    <p class="lead">JPEGで保存しなおすたびに、画像は少しずつ傷んでいきます。回数を決めて、その変わり方を目で確かめましょう。</p>
+  </header>
+
+  <div class="two">
+    <div class="panel">
+      <h2>1. 画像を選ぶ</h2>
+      <div class="row">
+        <button class="chip" data-src="text" aria-pressed="true">文字と図</button>
+        <button class="chip" data-src="photo" aria-pressed="false">風景</button>
+        <button class="chip" data-src="ring" aria-pressed="false">細かい模様</button>
+        <label class="chip">自分の画像<input id="pick" type="file" accept="image/*" hidden></label>
+      </div>
+      <p class="hint">画像はこの画面の中だけで処理され、どこにも送信されません。大きい画像は、長い辺を640画素に縮めて使います。</p>
+    </div>
+
+    <div class="panel">
+      <h2>2. 保存のしかたを選ぶ</h2>
+      <div class="row">
+        <button class="chip" data-mode="same" aria-pressed="false">そのまま保存しなおす</button>
+        <button class="chip" data-mode="crop" aria-pressed="true">区切りをずらして保存</button>
+        <button class="chip" data-mode="vary" aria-pressed="false">毎回ちがう画質で保存</button>
+      </div>
+      <p class="hint" id="modeHint"></p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3. 画質と回数を決めて、保存をくり返す</h2>
+    <div class="two" style="gap:6px 24px;">
+      <div class="sl">
+        <div class="top"><label for="q">JPEGの画質</label><span class="val" id="qv">75</span></div>
+        <input type="range" id="q" min="1" max="100" step="1" value="75">
+      </div>
+      <div class="sl">
+        <div class="top"><label for="n">保存する回数</label><span class="val" id="nv">100 回</span></div>
+        <input type="range" id="n" min="1" max="200" step="1" value="100">
+      </div>
+    </div>
+    <div class="go">
+      <button class="run" id="runBtn">保存をくり返す</button>
+      <div class="prog"><div class="track"><div class="fill" id="progFill"></div></div><div class="t" id="progT">待機中</div></div>
+    </div>
+    <p class="hint">保存には、このブラウザのJPEGの機能を使っています。ブラウザによって、結果が少しちがうことがあります。</p>
+  </div>
+
+  <div class="panel">
+    <h2>4. 何回目かを選んで見比べる</h2>
+    <div class="row" style="margin-bottom:12px;">
+      <button class="chip" data-show="img" aria-pressed="true">画像</button>
+      <button class="chip" data-show="diff" aria-pressed="false">元とのちがい（8倍に強調）</button>
+    </div>
+    <div class="view">
+      <div class="pic"><p class="cap">元の画像</p><canvas id="vOrig" width="480" height="320" aria-label="元の画像"></canvas></div>
+      <div class="pic"><p class="cap" id="vCap"><b>0</b> 回目</p><canvas id="vGen" width="480" height="320" aria-label="保存しなおした画像"></canvas></div>
+    </div>
+    <div class="scrub">
+      <button class="play" id="playBtn" aria-label="1回目から順に見る">▶</button>
+      <input type="range" id="k" min="0" max="0" value="0" aria-label="何回目を見るか">
+    </div>
+    <div class="zoomrow">
+      <div class="pic"><p class="cap">元の画像（拡大）</p><canvas id="zOrig" width="240" height="240"></canvas></div>
+      <div class="pic"><p class="cap" id="zCap">0 回目（拡大）</p><canvas id="zGen" width="240" height="240"></canvas></div>
+    </div>
+    <p class="hint">画像をクリックまたはタッチすると、四角の場所を6倍に拡大して見られます。</p>
+    <div class="stats">
+      <div class="stt"><div class="k" id="sKk">見ている回</div><div class="v" id="sK">–</div></div>
+      <div class="stt"><div class="k">元とのちがい（平均）</div><div class="v" id="sD">–</div></div>
+      <div class="stt"><div class="k">前の回からの変化</div><div class="v" id="sC">–</div></div>
+      <div class="stt"><div class="k">ファイルの大きさ</div><div class="v" id="sS">–</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>途中の様子</h2>
+    <div class="strip" id="strip"></div>
+  </div>
+
+  <div class="panel">
+    <h2>回数とちがいのグラフ（直近3回の実験を重ねて表示）</h2>
+    <div class="legend" id="legend"></div>
+    <div class="two">
+      <div class="chartbox"><h3>元の画像とのちがい（平均）</h3><svg id="chD" viewBox="0 0 520 260" role="img" aria-label="保存した回数と元の画像とのちがいのグラフ"></svg><div class="tip" id="tipD"></div></div>
+      <div class="chartbox"><h3>ファイルの大きさ（KB）</h3><svg id="chS" viewBox="0 0 520 260" role="img" aria-label="保存した回数とファイルの大きさのグラフ"></svg><div class="tip" id="tipS"></div></div>
+    </div>
+    <p class="hint">グラフをクリックすると、その回の画像を上で見られます。条件を変えて何回か試すと、線を重ねて比べられます。</p>
+    <details class="tbl"><summary>数値を表で見る</summary><div style="overflow-x:auto;"><table id="tbl"></table></div></details>
+  </div>
+
+  <div class="msg" id="msg"><div class="t">準備しています…</div></div>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>JPEGをくり返し保存すると傷むのはなぜ？</h2>
+    <p>スマートフォンで撮った写真や、Webページの画像の多くはJPEGという形式で保存されています。JPEGは、人の目に目立ちにくい細かい情報を捨てることでデータ量を大きく減らす、<strong>非可逆圧縮</strong>の形式です。一度捨てた情報は、もう元には戻せません。</p>
+    <p>では、JPEGの画像を開いて、もう一度JPEGで保存したらどうなるでしょうか。保存するたびに、また少しずつ情報が捨てられていきます。このように、保存や変換をくり返すたびに品質が下がっていくことを<strong>世代劣化</strong>といいます。コピーのコピーを取るたびに文字がかすれていくのと似ています。</p>
+    <p>このページでは、同じ画像をJPEGで何回も保存しなおし、1回ごとの画像を見比べられます。ただし実際にやってみると、「保存のしかた」によって傷み方が大きくちがうことに気づくはずです。</p>
+
+    <h2>JPEGが画像を小さくするしくみ</h2>
+    <p>JPEGの圧縮は、おおまかに次の順で進みます。</p>
+    <ol>
+      <li>画像を<strong>8×8画素の小さなブロック</strong>に区切る</li>
+      <li>ブロックごとに、明るさの変化を「なだらかな変化」から「細かい変化」まで64個の成分に分ける（離散コサイン変換、DCT）</li>
+      <li>それぞれの成分を決まった数で割り、<strong>整数に丸める</strong>（量子化）。割る数を大きくするほど、細かい成分は0になって消える</li>
+      <li>0が多く並んだデータを、ハフマン符号化などでさらに短くする</li>
+    </ol>
+    <p>情報が捨てられるのは、3の「丸める」ところです。保存するときに選ぶ「画質」は、この割る数の大きさを決めています。画質を下げるほど大きな数で割るので、たくさんの成分が0になり、ファイルは小さくなりますが、ブロックの境目が見えたり、文字のまわりにもやもやしたノイズが出たりします。</p>
+    <p class="src">出典：CCITT Recommendation T.81（ISO/IEC 10918-1）"Digital Compression and Coding of Continuous-tone Still Images"（1992年）</p>
+
+    <h2>そのまま保存しなおすと、やがて変わらなくなる</h2>
+    <p>「そのまま保存しなおす」を選んで試すと、1回目の保存で画像は少し変わりますが、2回目からの変化はとても小さく、何回か保存するうちに、ほとんど変わらなくなることが多いはずです。グラフの線が、途中から横にまっすぐになります。</p>
+    <p>これは、四捨五入を2回しても結果が変わらないのと同じ理由です。1回目の保存で、ブロックの成分はすでに整数に丸められています。同じ区切り方で、同じ数で割って丸めなおしても、ほぼ同じ値に戻ってしまうのです。完全に同じにならないのは、画像を開くときにも画素の値を整数に丸めるため、そこで小さな誤差が生まれるからです。その誤差も、回数を重ねるうちに落ち着いていきます。</p>
+
+    <h2>区切りがずれると、傷みが積み重なる</h2>
+    <p>次に「区切りをずらして保存」を選んでみましょう。今度は、回数を重ねるほど元の画像とのちがいが大きくなり続けます。文字や輪郭のまわりのもやもやがだんだん広がり、色もにじんでいきます。</p>
+    <p>画像の端を少し切り抜いたり、回転させたりしてから保存すると、8×8のブロックの区切りの位置が変わります。すると、前の保存できれいに丸められていた成分が、別の区切り方で計算しなおされ、新しい丸めの誤差が加わります。それが毎回くり返されるので、傷みが積み重なっていくのです。このツールでは、保存するたびに区切りの位置を数画素ずつずらして、その様子を再現しています。</p>
+    <p>「毎回ちがう画質で保存」でも、割る数が毎回変わるため、変化が止まりません。ちがうアプリで開いて保存しなおすと、画質の設定が変わることがあります。</p>
+
+    <h3>傷むほど、ファイルが大きくなることもある</h3>
+    <p>「区切りをずらして保存」のファイルの大きさのグラフにも注目してください。画像の条件によっては、傷んでいくのに、ファイルがかえって大きくなっていくことがあります。もやもやしたノイズは「細かい変化」の成分なので、それが増えるほど、0にならずに残る成分が増えるからです。画質が悪いことと、ファイルが小さいことは、いつも一致するわけではありません。</p>
+
+    <h2>ツールで使っている「元とのちがい」</h2>
+    <p>グラフの「元とのちがい」は、すべての画素の赤・緑・青それぞれの値（0〜255）について、元の画像との差の大きさを求め、平均したものです。</p>
+    <div class="formula">元とのちがい ＝（各画素の赤・緑・青について｜保存後の値 − 元の値｜の合計）÷（画素の数 × 3）</div>
+    <p>0なら元の画像とまったく同じで、数が大きいほど元から離れていることを表します。「元とのちがい（8倍に強調）」の表示では、この差を8倍にして、黒いほど元とちがう場所として表しています。人の目では気づきにくい小さな差も、どこで起きているかが分かります。</p>
+
+    <h2>画像を傷めないためにできること</h2>
+    <ul>
+      <li><strong>元のデータを残しておく</strong>。編集するときは、元のファイルを上書きせず、コピーを作業に使う</li>
+      <li>編集の途中で何度も保存するときは、PNGのような<strong>可逆圧縮</strong>の形式を使い、JPEGにするのは最後の1回だけにする</li>
+      <li>画像を受け取って使うときは、できるだけ元の画像に近いものを探す。何度も保存や転載がくり返された画像は、文字が読みにくくなっていたり、細部が失われていたりすることがある</li>
+    </ul>
+    <p>可逆圧縮と非可逆圧縮のちがいや、画質とファイルの大きさの関係は、「<a href="/compress/">データ圧縮を体験しよう</a>」でも確かめられます。</p>
+
+    <h2>使い方</h2>
+    <ol>
+      <li><strong>画像を選ぶ</strong>：文字と図、風景、細かい模様の3つから選べます。自分の画像でも試せます。</li>
+      <li><strong>保存のしかたを選ぶ</strong>：「そのまま保存しなおす」「区切りをずらして保存」「毎回ちがう画質で保存」の3通りです。</li>
+      <li><strong>画質と回数を決める</strong>：画質は1〜100、回数は1〜200回です。「保存をくり返す」を押すと、1回ずつ保存しなおして記録します。</li>
+      <li><strong>見比べる</strong>：つまみを動かすか ▶ を押すと、何回目の画像かを切りかえられます。画像をタッチすると、その場所を拡大して元の画像と並べて見られます。</li>
+      <li><strong>グラフで比べる</strong>：条件を変えて何回か試すと、直近3回の結果が重ねて表示されます。保存のしかたによる傷み方のちがいを比べてみましょう。</li>
+    </ol>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+/* ===== 見本の画像 ===== */
+function rndGen(seed){ return ()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }; }
+function makePhoto(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  const sky=x.createLinearGradient(0,0,0,H*0.6);
+  sky.addColorStop(0,'#3F76C8'); sky.addColorStop(1,'#CFE3F6');
+  x.fillStyle=sky; x.fillRect(0,0,W,H);
+  const sun=x.createRadialGradient(W*0.78,H*0.2,4,W*0.78,H*0.2,H*0.18);
+  sun.addColorStop(0,'rgba(255,245,200,1)'); sun.addColorStop(1,'rgba(255,245,200,0)');
+  x.fillStyle=sun; x.fillRect(0,0,W,H);
+  x.fillStyle='#6E8FA8';
+  x.beginPath(); x.moveTo(0,H*0.62); x.lineTo(W*0.22,H*0.34); x.lineTo(W*0.4,H*0.55); x.lineTo(W*0.6,H*0.3);
+  x.lineTo(W*0.85,H*0.58); x.lineTo(W,H*0.45); x.lineTo(W,H); x.lineTo(0,H); x.fill();
+  x.fillStyle='#F4F7FB';
+  x.beginPath(); x.moveTo(W*0.6,H*0.3); x.lineTo(W*0.55,H*0.37); x.lineTo(W*0.6,H*0.35); x.lineTo(W*0.65,H*0.38); x.fill();
+  const g=x.createLinearGradient(0,H*0.55,0,H);
+  g.addColorStop(0,'#5E9A4C'); g.addColorStop(1,'#2F5E2A');
+  x.fillStyle=g; x.fillRect(0,H*0.62,W,H*0.38);
+  for(let i=0;i<7;i++){
+    const tx=W*(0.08+i*0.13), ty=H*(0.7+((i*37)%10)/60);
+    x.fillStyle='#5A3A1E'; x.fillRect(tx-3,ty,6,H*0.08);
+    x.fillStyle=i%2?'#23572A':'#2E6B34';
+    x.beginPath(); x.arc(tx,ty,H*0.06,0,Math.PI*2); x.fill();
+  }
+  x.fillStyle='#C0392B'; x.fillRect(W*0.46,H*0.66,W*0.1,H*0.08);
+  x.fillStyle='#FFFFFF'; x.font=`bold ${Math.round(H*0.05)}px sans-serif`; x.textAlign='center';
+  x.fillText('STOP',W*0.51,H*0.718);
+  const img=x.getImageData(0,0,W,H), d=img.data, r=rndGen(12345);
+  for(let i=0;i<d.length;i+=4){ const n=(r()-0.5)*18; d[i]+=n; d[i+1]+=n; d[i+2]+=n; }
+  x.putImageData(img,0,0);
+  return c;
+}
+function makeText(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d');
+  x.fillStyle='#FFFFFF'; x.fillRect(0,0,W,H);
+  x.fillStyle='#1F3864'; x.font=`bold ${Math.round(H*0.15)}px sans-serif`; x.textAlign='left';
+  x.fillText('情報ラボ',W*0.06,H*0.22);
+  x.fillStyle='#C00000'; x.font=`bold ${Math.round(H*0.1)}px sans-serif`;
+  x.fillText('JPEG 0101',W*0.06,H*0.38);
+  x.fillStyle='#333333'; x.font=`${Math.round(H*0.05)}px sans-serif`;
+  x.fillText('小さな文字は、保存をくり返すと読みにくくなる。',W*0.06,H*0.5);
+  x.fillText('The quick brown fox jumps over the lazy dog.',W*0.06,H*0.58);
+  x.fillStyle='#2F5496'; x.fillRect(W*0.06,H*0.66,W*0.22,H*0.26);
+  x.fillStyle='#F6D55C'; x.beginPath(); x.arc(W*0.45,H*0.79,H*0.13,0,Math.PI*2); x.fill();
+  x.strokeStyle='#1F3864'; x.lineWidth=2;
+  for(let i=0;i<6;i++){ x.beginPath(); x.moveTo(W*0.64,H*(0.67+i*0.05)); x.lineTo(W*0.94,H*(0.67+i*0.05)); x.stroke(); }
+  return c;
+}
+function makeRing(W,H){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d'), img=x.createImageData(W,H), d=img.data;
+  for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){
+    const dx=xx-W*0.3, dy=y-H*0.5, r=Math.hypot(dx,dy);
+    let v;
+    if(xx<W*0.6) v=128+127*Math.cos(r*r/900);
+    else v=((Math.floor(y/(2+Math.floor((xx-W*0.6)/48))))%2)?235:25;
+    const i=(y*W+xx)*4;
+    d[i]=v; d[i+1]=xx<W*0.6? v*0.85+30 : v; d[i+2]=xx<W*0.6? 255-v*0.6 : v; d[i+3]=255;
+  }
+  x.putImageData(img,0,0);
+  return c;
+}
+
+/* ===== 状態 ===== */
+const COLORS=['#2F5496','#C8661E','#9B4FB0'];
+const MODE_LABEL={same:'そのまま', crop:'区切りをずらす', vary:'画質を変える'};
+const MODE_HINT={
+  same:'画像を開いて、何も変えずに、同じ画質でJPEGに保存しなおします。',
+  crop:'保存するたびに、8×8画素のブロックの区切りの位置を数画素ずらします。画像の端を少し切り抜いたり、回転させたりしてから保存したときに起こることです。',
+  vary:'画質を「選んだ画質 → −5 → −10」の順にくり返し変えながら保存します。ちがうアプリで保存しなおしたときに起こることです。'
+};
+let srcKind='text', userCanvas=null;
+let SRC=null, SRCD=null, W=480, H=320;
+let mode='crop';
+let runs=[];          // {color,label,mode,q,n,diffs,chgs,sizes,blobs,offs,done}
+let runToken=0, running=false, follow=true;
+let showMode='img', K=0;
+let lens={x:0.5,y:0.5};
+const LENS=40;
+const cache=new Map();
+
+const $=id=>document.getElementById(id);
+const fmt1=v=>v==null?'–':v.toFixed(2);
+const kb=b=>(b/1024).toFixed(1)+' KB';
+
+function setSource(){
+  if(srcKind==='user' && userCanvas) SRC=userCanvas;
+  else SRC = srcKind==='text'? makeText(480,320) : srcKind==='ring'? makeRing(480,320) : makePhoto(480,320);
+  W=SRC.width; H=SRC.height;
+  SRCD=SRC.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data;
+  lens = srcKind==='text'? {x:0.2,y:0.18} : srcKind==='ring'? {x:0.62,y:0.5} : srcKind==='photo'? {x:0.51,y:0.69} : {x:0.5,y:0.5};
+  ['vOrig','vGen'].forEach(id=>{ $(id).width=W; $(id).height=H; });
+  runs=[]; cache.clear(); K=0;
+}
+
+/* ===== JPEG で保存しなおす ===== */
+function toBlobP(c,q){ return new Promise(r=>c.toBlob(r,'image/jpeg',q)); }
+async function decode(blob){
+  if(window.createImageBitmap){ try{ return await createImageBitmap(blob); }catch(e){} }
+  return await new Promise((res,rej)=>{
+    const im=new Image(); const u=URL.createObjectURL(blob);
+    im.onload=()=>{ URL.revokeObjectURL(u); res(im); }; im.onerror=rej; im.src=u;
+  });
+}
+function qOf(run,g){ return run.mode==='vary' ? Math.max(1, run.q - ((g-1)%3)*5) : run.q; }
+function offOf(run,g){ return run.mode==="crop" ? g%8 : 0; }
+
+async function runAll(){
+  const my=++runToken; running=true; stopPlay();
+  const q=+$('q').value, n=+$('n').value;
+  const run={color:null,label:'',mode,q,n,diffs:[0],chgs:[0],sizes:[null],blobs:[null],offs:[0],done:0};
+  // 色は実験ごとに固定。古いものを外したら、その色を新しい実験に回す
+  if(runs.length>=3){ const old=runs.shift(); run.color=old.color; }
+  else { const used=runs.map(r=>r.color); run.color=COLORS.find(c=>!used.includes(c)); }
+  runs.forEach(r=>{ r.blobs=null; });
+  run.label=`${MODE_LABEL[mode]}・画質${q}`;
+  runs.push(run); cache.clear();
+  $('runBtn').textContent='止める'; $('runBtn').classList.add('stop');
+  follow=true;
+  $('progFill').style.width='0'; $('progT').textContent='保存しています…';
+  $('k').max=0; setK(0);
+
+  const cur=document.createElement('canvas'); cur.width=W; cur.height=H;
+  const cx=cur.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(SRC,0,0);
+  const enc=document.createElement('canvas'); enc.width=W+8; enc.height=H+8;
+  const ex=enc.getContext('2d');
+  let prev=SRCD;
+  const N3=W*H*3;
+  let lastUi=0;
+  for(let g=1; g<=n; g++){
+    if(my!==runToken) return;
+    const o=offOf(run,g);
+    let target=cur;
+    if(run.mode==='crop'){
+      ex.drawImage(cur,0,0,W,H,0,0,W+8,H+8);   // はみ出す部分は近い色でうめる
+      ex.drawImage(cur,o,o);
+      target=enc;
+    }
+    const blob=await toBlobP(target,qOf(run,g)/100);
+    if(!blob){ $('progT').textContent='このブラウザではJPEGで保存できませんでした'; break; }
+    const bm=await decode(blob);
+    cx.clearRect(0,0,W,H); cx.drawImage(bm,-o,-o);
+    if(bm.close) bm.close();
+    const d=cx.getImageData(0,0,W,H).data;
+    let s=0,sp=0;
+    for(let i=0;i<d.length;i+=4){
+      s+=Math.abs(d[i]-SRCD[i])+Math.abs(d[i+1]-SRCD[i+1])+Math.abs(d[i+2]-SRCD[i+2]);
+      sp+=Math.abs(d[i]-prev[i])+Math.abs(d[i+1]-prev[i+1])+Math.abs(d[i+2]-prev[i+2]);
+    }
+    run.diffs.push(s/N3); run.chgs.push(sp/N3); run.sizes.push(blob.size);
+    run.blobs.push(blob); run.offs.push(o); run.done=g;
+    prev=d;
+    $('progFill').style.width=(g/n*100)+'%';
+    $('progT').textContent=`${g} / ${n} 回目を保存`;
+    const now=performance.now();
+    if(now-lastUi>250 || g===n){
+      lastUi=now;
+      $('k').max=g;
+      if(follow) setK(g); else updateStats();
+      drawCharts();
+      await new Promise(r=>setTimeout(r,0));
+    }
+  }
+  if(my!==runToken) return;
+  running=false;
+  $('runBtn').textContent='保存をくり返す'; $('runBtn').classList.remove('stop');
+  $('progT').textContent=`${run.done} 回の保存が終わりました`;
+  setK(run.done);
+  drawStrip(); drawCharts(); drawTable(); explain();
+}
+function stopRun(){
+  runToken++; running=false;
+  const run=runs[runs.length-1];
+  $('runBtn').textContent='保存をくり返す'; $('runBtn').classList.remove('stop');
+  if(run){ run.n=run.done; $('progT').textContent=`${run.done} 回目で止めました`; drawStrip(); drawCharts(); drawTable(); explain(); }
+}
+
+/* ===== 何回目の画像を取り出す ===== */
+async function genCanvas(k){
+  const run=runs[runs.length-1];
+  if(k===0 || !run || !run.blobs || !run.blobs[k]) return SRC;
+  if(cache.has(k)){ const c=cache.get(k); cache.delete(k); cache.set(k,c); return c; }
+  const bm=await decode(run.blobs[k]);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  c.getContext('2d',{willReadFrequently:true}).drawImage(bm,-run.offs[k],-run.offs[k]);
+  if(bm.close) bm.close();
+  cache.set(k,c);
+  if(cache.size>10) cache.delete(cache.keys().next().value);
+  return c;
+}
+function diffCanvas(gc){
+  const d=gc.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H);
+  const p=d.data;
+  for(let i=0;i<p.length;i+=4){
+    const m=(Math.abs(p[i]-SRCD[i])+Math.abs(p[i+1]-SRCD[i+1])+Math.abs(p[i+2]-SRCD[i+2]))/3*8;
+    const v=255-Math.min(255,m);
+    p[i]=p[i+1]=p[i+2]=v; p[i+3]=255;
+  }
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  c.getContext('2d').putImageData(d,0,0);
+  return c;
+}
+function lensRect(){
+  const L=Math.min(LENS,W,H);
+  let x=Math.round(lens.x*W-L/2), y=Math.round(lens.y*H-L/2);
+  x=Math.max(0,Math.min(W-L,x)); y=Math.max(0,Math.min(H-L,y));
+  return {x,y,L};
+}
+function paint(canvas,img){
+  const c=canvas.getContext('2d');
+  c.clearRect(0,0,W,H); c.drawImage(img,0,0);
+  const r=lensRect(), lw=Math.max(2,Math.round(W/240));
+  c.lineWidth=lw; c.strokeStyle='#ffffff'; c.strokeRect(r.x-lw,r.y-lw,r.L+lw*2,r.L+lw*2);
+  c.strokeStyle='#C8661E'; c.strokeRect(r.x,r.y,r.L,r.L);
+}
+function zoom(canvas,img){
+  const c=canvas.getContext('2d'), r=lensRect();
+  c.imageSmoothingEnabled=false;
+  c.clearRect(0,0,canvas.width,canvas.height);
+  c.drawImage(img,r.x,r.y,r.L,r.L,0,0,canvas.width,canvas.height);
+}
+let drawSeq=0;
+async function drawView(){
+  const my=++drawSeq;
+  const gc=await genCanvas(K);
+  if(my!==drawSeq) return;
+  const shown = showMode==='diff' ? diffCanvas(gc) : gc;
+  const origShown = SRC;
+  paint($('vOrig'),origShown); paint($('vGen'),shown);
+  zoom($('zOrig'),origShown); zoom($('zGen'),shown);
+  $('vCap').innerHTML=`<b>${K}</b> 回目${showMode==='diff'?'（元とのちがい）':''}`;
+  $('zCap').textContent=`${K} 回目（拡大）`;
+}
+function updateStats(){
+  const run=runs[runs.length-1];
+  $('sK').textContent = run ? `${K} 回目` : '–';
+  $('sKk').textContent = run ? `見ている回（全${run.done}回）` : '見ている回';
+  $('sD').textContent = run ? fmt1(run.diffs[K]) : '–';
+  $('sC').textContent = run && K>0 ? fmt1(run.chgs[K]) : '–';
+  $('sS').textContent = run && K>0 ? kb(run.sizes[K]) : 'もとの画像';
+  document.querySelectorAll('.thumb').forEach(t=>t.setAttribute('aria-current',String(+t.dataset.k===K)));
+}
+function setK(k){
+  K=k; $('k').value=k; updateStats(); drawView(); drawMarkers();
+}
+
+/* ===== 途中の様子 ===== */
+let stripSeq=0;
+async function drawStrip(){
+  const my=++stripSeq;
+  const run=runs[runs.length-1], box=$('strip');
+  box.innerHTML='';
+  if(!run) return;
+  const list=[...new Set([0,1,2,3,5,10,20,50,100,150,200,run.done].filter(k=>k<=run.done))];
+  for(const k of list){
+    const b=document.createElement('button');
+    b.className='thumb'; b.dataset.k=k; b.setAttribute('aria-current',String(k===K));
+    b.setAttribute('aria-label',`${k}回目を見る`);
+    const c=document.createElement('canvas'); c.width=264; c.height=Math.round(264*H/W);
+    b.appendChild(c);
+    const s=document.createElement('span'); s.textContent=k===0?'元の画像':`${k}回目`; b.appendChild(s);
+    b.addEventListener('click',()=>{ follow=false; stopPlay(); setK(k); });
+    box.appendChild(b);
+    const gc=await genCanvas(k);
+    if(my!==stripSeq) return;
+    c.getContext('2d').drawImage(gc,0,0,c.width,c.height);
+  }
+}
+
+/* ===== グラフ ===== */
+const CH={l:52,r:16,t:14,b:34,w:520,h:260};
+function nice(max){
+  if(max<=0) return {top:1,step:0.25};
+  const raw=max/4, p=Math.pow(10,Math.floor(Math.log10(raw)));
+  const m=raw/p, step=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+  return {top:step*Math.ceil(max/step), step};
+}
+function chartGeom(key){
+  const maxN=Math.max(1,...runs.map(r=>r.done));
+  const vals=runs.flatMap(r=>(key==='diffs'?r.diffs:r.sizes.map(s=>s==null?null:s/1024)).slice(0,r.done+1)).filter(v=>v!=null);
+  const ny=nice(Math.max(...vals,0.0001));
+  const X=g=>CH.l+(g/maxN)*(CH.w-CH.l-CH.r);
+  const Y=v=>CH.h-CH.b-(v/ny.top)*(CH.h-CH.t-CH.b);
+  return {maxN,ny,X,Y};
+}
+function series(r,key){ return key==='diffs'? r.diffs : r.sizes.map(s=>s==null?null:s/1024); }
+function drawChart(id,key){
+  const svg=$(id);
+  if(!runs.length){ svg.innerHTML=''; return; }
+  const {maxN,ny,X,Y}=chartGeom(key);
+  let h='';
+  for(let v=0; v<=ny.top+1e-9; v+=ny.step){
+    const y=Y(v);
+    h+=`<line x1="${CH.l}" y1="${y}" x2="${CH.w-CH.r}" y2="${y}" stroke="${v===0?'#9AA6BC':'#E3E8F0'}" stroke-width="1"/>`;
+    h+=`<text x="${CH.l-8}" y="${y+4}" font-size="12" fill="#5B6472" text-anchor="end">${+v.toFixed(2)}</text>`;
+  }
+  const xs=[0]; const st=Math.max(1,Math.round(nice(maxN).step)); for(let g=st; g<=maxN; g+=st) xs.push(g);
+  xs.forEach(g=>{ h+=`<text x="${X(g)}" y="${CH.h-CH.b+18}" font-size="12" fill="#5B6472" text-anchor="middle">${g}</text>`; });
+  h+=`<text x="${(CH.l+CH.w-CH.r)/2}" y="${CH.h-4}" font-size="12" fill="#5B6472" text-anchor="middle">保存した回数</text>`;
+  h+=`<line id="${id}K" x1="0" y1="${CH.t}" x2="0" y2="${CH.h-CH.b}" stroke="#C49A2B" stroke-width="2" stroke-dasharray="4 3"/>`;
+  runs.forEach(r=>{
+    const v=series(r,key); let d='';
+    for(let g=0; g<=r.done; g++){ if(v[g]==null) continue; d+=(d?'L':'M')+X(g).toFixed(1)+' '+Y(v[g]).toFixed(1); }
+    h+=`<path d="${d}" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    h+=`<path d="${d}" fill="none" stroke="${r.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  h+=`<g id="${id}H" style="display:none"><line y1="${CH.t}" y2="${CH.h-CH.b}" stroke="#5B6472" stroke-width="1"/></g>`;
+  h+=`<rect id="${id}R" x="${CH.l}" y="${CH.t}" width="${CH.w-CH.l-CH.r}" height="${CH.h-CH.t-CH.b}" fill="transparent" style="cursor:pointer"/>`;
+  svg.innerHTML=h;
+  const rect=$(id+'R'), tip=$(id==='chD'?'tipD':'tipS');
+  const gAt=e=>{
+    const b=svg.getBoundingClientRect(), sx=(e.clientX-b.left)/b.width*CH.w;
+    return Math.max(0,Math.min(maxN,Math.round((sx-CH.l)/(CH.w-CH.l-CH.r)*maxN)));
+  };
+  const hover=e=>{
+    const g=gAt(e), hg=$(id+'H');
+    hg.style.display=''; hg.firstChild.setAttribute('x1',X(g)); hg.firstChild.setAttribute('x2',X(g));
+    hg.querySelectorAll('circle').forEach(c=>c.remove());
+    let lines=`<b>${g} 回目</b>`;
+    runs.forEach(r=>{
+      const v=series(r,key)[g];
+      if(v==null || g>r.done) return;
+      const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',X(g)); c.setAttribute('cy',Y(v)); c.setAttribute('r',5);
+      c.setAttribute('fill',r.color); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width',2);
+      hg.appendChild(c);
+      lines+=`<br><span class="sw" style="background:${r.color}"></span>${r.label}：${key==='diffs'?v.toFixed(2):v.toFixed(1)+' KB'}`;
+    });
+    tip.innerHTML=lines; tip.style.display='block';
+    const box=svg.parentNode.getBoundingClientRect(), b=svg.getBoundingClientRect();
+    let left=(X(g)/CH.w)*b.width + (b.left-box.left) + 12;
+    if(left+tip.offsetWidth>box.width-4) left=left-tip.offsetWidth-24;
+    tip.style.left=Math.max(4,left)+'px'; tip.style.top=(b.top-box.top+16)+'px';
+  };
+  rect.addEventListener('pointermove',hover);
+  rect.addEventListener('pointerdown',hover);
+  rect.addEventListener('pointerleave',()=>{ $(id+'H').style.display='none'; tip.style.display='none'; });
+  rect.addEventListener('click',e=>{
+    const run=runs[runs.length-1]; if(!run) return;
+    follow=false; stopPlay(); setK(Math.min(gAt(e),run.done));
+  });
+}
+function drawMarkers(){
+  ['chD','chS'].forEach(id=>{
+    const l=$(id+'K'); if(!l || !runs.length) return;
+    const {X}=chartGeom(id==='chD'?'diffs':'sizes');
+    l.setAttribute('x1',X(K)); l.setAttribute('x2',X(K));
+  });
+}
+function drawCharts(){
+  $('legend').innerHTML=runs.map((r,i)=>`<span><span class="sw" style="background:${r.color}"></span>${r.label}${i===runs.length-1?'（いま見ている結果）':''}</span>`).join('');
+  drawChart('chD','diffs'); drawChart('chS','sizes'); drawMarkers();
+}
+function drawTable(){
+  if(!runs.length){ $('tbl').innerHTML=''; return; }
+  const maxN=Math.max(...runs.map(r=>r.done));
+  const ks=[...new Set([1,2,3,5,10,20,30,50,75,100,150,200,maxN].filter(k=>k<=maxN))];
+  let h='<tr><th>回数</th>'+runs.map(r=>`<th>${r.label}<br>ちがい</th><th>大きさ</th>`).join('')+'</tr>';
+  ks.forEach(k=>{
+    h+=`<tr><td>${k}</td>`+runs.map(r=>k<=r.done?`<td>${r.diffs[k].toFixed(2)}</td><td>${kb(r.sizes[k])}</td>`:'<td>–</td><td>–</td>').join('')+'</tr>';
+  });
+  $('tbl').innerHTML=h;
+}
+
+/* ===== ふり返り ===== */
+function explain(){
+  const run=runs[runs.length-1], m=$('msg');
+  if(!run || run.done<1){ m.innerHTML='<div class="t">「保存をくり返す」を押してください</div>'; return; }
+  const n=run.done, d1=run.diffs[1], dn=run.diffs[n];
+  // 変化がほぼ止まった回
+  let stop=null;
+  for(let g=2; g<=n; g++){
+    let ok=true; for(let h=g; h<=n; h++) if(run.chgs[h]>=0.02){ ok=false; break; }
+    if(ok){ stop=g; break; }
+  }
+  const s1=run.sizes[1], sn=run.sizes[n];
+  let t='', b='';
+  if(n===1){
+    t=`1回保存して、元とのちがいは ${d1.toFixed(2)} になりました`;
+    b='回数を増やして、2回目からどう変わるかを確かめてみましょう。';
+  }else if(run.mode==='same'){
+    if(stop){
+      t=`${stop}回目からは、ほとんど変わらなくなりました`;
+      b=`1回目で元とのちがいは <b>${d1.toFixed(2)}</b> になりましたが、その後はわずかしか増えず、${n}回目でも <b>${dn.toFixed(2)}</b> です。`+
+        `同じ区切りで同じ数で割って丸めなおしても、ほぼ同じ値に戻るからです。`+
+        `次は「区切りをずらして保存」を選んで、グラフの線を比べてみましょう。`;
+    }else{
+      t=`変化はだんだん小さくなっています`;
+      b=`1回目で <b>${d1.toFixed(2)}</b>、${n}回目で <b>${dn.toFixed(2)}</b> です。回数を増やすと、変化が止まるところが見えてきます。`;
+    }
+  }else if(run.mode==='crop'){
+    t=`保存するたびに、ちがいが積み重なりました`;
+    b=`元とのちがいは、1回目の <b>${d1.toFixed(2)}</b> から、${n}回目には <b>${dn.toFixed(2)}</b> まで大きくなりました（${(dn/d1).toFixed(1)}倍）。`+
+      `区切りの位置が毎回変わるので、そのたびに新しい丸めの誤差が加わるからです。拡大した画像で、輪郭や文字のまわりを見比べてみましょう。`;
+    if(sn>s1*1.05) b+=`ファイルの大きさも <b>${kb(s1)} → ${kb(sn)}</b> と、傷んでいるのに大きくなっています。ノイズが細かい変化として記録されるからです。`;
+  }else{
+    t=`画質が変わるたびに、少しずつ変わり続けます`;
+    b=`元とのちがいは、1回目の <b>${d1.toFixed(2)}</b> から、${n}回目には <b>${dn.toFixed(2)}</b> になりました。`+
+      `割る数が毎回変わるので、丸め方が変わり、変化が止まりません。「そのまま保存しなおす」と比べてみましょう。`;
+  }
+  m.innerHTML=`<div class="t">${t}</div>${b}`;
+}
+
+/* ===== 再生 ===== */
+let playTimer=0;
+function stopPlay(){ clearInterval(playTimer); playTimer=0; $('playBtn').textContent='▶'; $('playBtn').setAttribute('aria-label','1回目から順に見る'); }
+$('playBtn').addEventListener('click',()=>{
+  const run=runs[runs.length-1]; if(!run || !run.done) return;
+  if(playTimer){ stopPlay(); return; }
+  follow=false;
+  if(K>=run.done) setK(0);
+  $('playBtn').textContent='❚❚'; $('playBtn').setAttribute('aria-label','止める');
+  const step=Math.max(1,Math.round(run.done/60));
+  playTimer=setInterval(()=>{
+    if(K>=run.done){ stopPlay(); return; }
+    setK(Math.min(run.done,K+step));
+  },90);
+});
+
+/* ===== 操作 ===== */
+$('k').addEventListener('input',e=>{ follow=false; stopPlay(); setK(+e.target.value); });
+$('q').addEventListener('input',e=>{ $('qv').textContent=e.target.value; });
+$('n').addEventListener('input',e=>{ $('nv').textContent=e.target.value+' 回'; });
+$('runBtn').addEventListener('click',()=>{ if(running) stopRun(); else runAll(); });
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===m)));
+  $('modeHint').textContent=MODE_HINT[m];
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('[data-show]').forEach(b=>b.addEventListener('click',()=>{
+  showMode=b.dataset.show;
+  document.querySelectorAll('[data-show]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  drawView();
+}));
+function newSource(){
+  runToken++; running=false; stopPlay();
+  $('runBtn').textContent='保存をくり返す'; $('runBtn').classList.remove('stop');
+  setSource();
+  $('k').max=0; setK(0); drawStrip(); drawCharts(); drawTable();
+  $('progFill').style.width='0'; $('progT').textContent='待機中';
+  runAll();
+}
+document.querySelectorAll('[data-src]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-src]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  srcKind=b.dataset.src; newSource();
+}));
+$('pick').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const im=new Image(), u=URL.createObjectURL(f);
+  im.onload=()=>{
+    const r=Math.min(1,640/Math.max(im.width,im.height));
+    const c=document.createElement('canvas');
+    c.width=Math.max(16,Math.round(im.width*r)); c.height=Math.max(16,Math.round(im.height*r));
+    const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+    x.drawImage(im,0,0,c.width,c.height);
+    userCanvas=c; srcKind='user';
+    document.querySelectorAll('[data-src]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    URL.revokeObjectURL(u); newSource();
+  };
+  im.onerror=()=>{ URL.revokeObjectURL(u); $('msg').innerHTML='<div class="t">この画像は読みこめませんでした</div>JPEGやPNGの画像を選んでください。'; };
+  im.src=u;
+  e.target.value='';
+});
+['vOrig','vGen'].forEach(id=>{
+  const c=$(id); let down=false;
+  const move=e=>{
+    const b=c.getBoundingClientRect();
+    lens={x:Math.max(0,Math.min(1,(e.clientX-b.left)/b.width)), y:Math.max(0,Math.min(1,(e.clientY-b.top)/b.height))};
+    drawView();
+  };
+  c.addEventListener('pointerdown',e=>{ down=true; c.setPointerCapture(e.pointerId); move(e); });
+  c.addEventListener('pointermove',e=>{ if(down) move(e); });
+  c.addEventListener('pointerup',()=>{ down=false; });
+  c.addEventListener('pointercancel',()=>{ down=false; });
+});
+
+/* ===== 初期化 ===== */
+setMode('crop');
+setSource();
+setK(0);
+runAll();
+</script>
+</body>
+</html>
