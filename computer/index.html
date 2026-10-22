@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>コンピュータのしくみを知ろう（5大装置・記憶装置・CPU）｜情報ラボ</title>
-<meta name="description" content="コンピュータの5大装置、主記憶と補助記憶の違い、キャッシュの階層を動かして確かめられる無料ツール。速さと容量の関係が体感できます。高校の情報Iに対応。">
+<title>コンピュータのしくみを知ろう（5大装置・記憶装置・CPUシミュレータ）｜情報ラボ</title>
+<meta name="description" content="コンピュータの5大装置、記憶の階層、CPUの動きを確かめられる無料ツール。CPUシミュレータでは、主記憶のプログラムをプログラムカウンタやレジスタの変化とともに1命令ずつ実行できます。高校の情報Iに対応。">
 <link rel="canonical" href="https://joholab.net/computer/">
 <meta property="og:title" content="コンピュータのしくみを知ろう｜情報ラボ">
-<meta property="og:description" content="5大装置、記憶の階層、CPUの動きを体験する無料教材。">
+<meta property="og:description" content="5大装置、記憶の階層、CPUの動き、CPUシミュレータを体験する無料教材。">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://joholab.net/computer/">
 <style>
@@ -105,7 +105,54 @@
   .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
     font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
   .sitefoot a{color:var(--muted);}
-  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+
+  /* CPUシミュレータ */
+  .simwrap{position:relative; display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:18px; align-items:start;}
+  @media (max-width:760px){ .simwrap{grid-template-columns:1fr;} #simCpu{order:-1;} }
+  @media (max-width:560px){ table.memt th:nth-child(3), table.memt td.mean{display:none;} table.memt td{padding:3px 6px;} }
+  .simbox{background:#fff; border:2px solid var(--line); border-radius:12px; padding:12px 14px; position:relative; z-index:1;}
+  .simbox h3{margin:0 0 8px; font-size:14.5px; color:var(--ink);}
+  .simbox h3 small{font-weight:400; color:var(--muted); font-size:12px; margin-left:6px;}
+  table.memt{border-collapse:collapse; width:100%; font-size:13.5px;}
+  table.memt th{font-size:12px; color:var(--muted); font-weight:700; text-align:left; padding:4px 6px; border-bottom:1px solid var(--line);}
+  table.memt td{padding:4px 6px; border-bottom:1px solid #EEF1F6; vertical-align:middle;}
+  table.memt tr{cursor:pointer;}
+  table.memt tr:hover td{background:#F7F9FC;}
+  table.memt td.ad{font-family:ui-monospace,Consolas,monospace; color:var(--muted); width:3.2em; text-align:right;}
+  table.memt td.op{font-family:ui-monospace,Consolas,monospace; font-weight:700; color:var(--ink); white-space:nowrap; width:8.6em;}
+  table.memt td.op.num{color:#7A5A12;}
+  table.memt td.mean{font-size:12.5px; color:var(--muted);}
+  table.memt tr.pc td.ad{color:#fff; background:var(--navy); border-radius:6px 0 0 6px; font-weight:700;}
+  table.memt tr.hot td{background:#FFF3D6 !important;}
+  table.memt tr.sel td{box-shadow:inset 0 0 0 2px var(--navy);}
+  table.memt tr.chg td.op{animation:flash 0.9s;}
+  @keyframes flash{0%{background:#FFD97A;}100%{background:transparent;}}
+  .cpu{display:flex; flex-direction:column; gap:12px;}
+  .unit{border:1px dashed var(--line); border-radius:10px; padding:10px 12px;}
+  .unit .lbl{font-size:12px; color:var(--muted); font-weight:700; margin-bottom:6px;}
+  .regs{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .reg{border:2px solid var(--line); border-radius:9px; padding:6px 8px; text-align:center; background:#fff; transition:background .2s, border-color .2s;}
+  .reg .k{font-size:11.5px; color:var(--muted);}
+  .reg .v{font-family:ui-monospace,Consolas,monospace; font-size:20px; font-weight:700; color:var(--ink); min-height:1.4em;}
+  .reg.wide{grid-column:span 3;}
+  .reg.hot{border-color:var(--gold); background:#FFF3D6;}
+  .reg.ir .v{font-size:16px;}
+  .alu{border:2px solid var(--line); border-radius:9px; padding:8px; text-align:center; background:#fff; transition:background .2s, border-color .2s;}
+  .alu .v{font-family:ui-monospace,Consolas,monospace; font-size:18px; font-weight:700; color:var(--ink); min-height:1.4em;}
+  .alu.hot{border-color:var(--gold); background:#FFF3D6;}
+  svg.flow{position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:2; overflow:visible;}
+  .stages{display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;}
+  .stg{flex:1 1 120px; text-align:center; font-size:13px; padding:7px 6px; border-radius:8px; background:#fff; border:1px solid var(--line); color:var(--muted);}
+  .stg.on{background:var(--navy); color:#fff; border-color:var(--navy); font-weight:700;}
+  .editor{margin-top:12px; background:#fff; border:2px solid var(--navy); border-radius:12px; padding:12px 14px; display:none;}
+  .editor.show{display:block;}
+  .editor .row{gap:8px;}
+  .editor select, .editor input{font-family:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:7px; background:#fff;}
+  .editor input{width:6em;}
+  .simlog{margin:8px 0 0; padding-left:1.4em; font-size:13px; color:var(--muted); max-height:9.5em; overflow:auto;}
+  .simlog li{margin:1px 0;}
+  .simlog code{font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
 </head>
@@ -121,6 +168,7 @@
     <button class="tab" role="tab" id="tab5" aria-selected="true" aria-controls="tool5">5つの装置</button>
     <button class="tab" role="tab" id="tabMem" aria-selected="false" aria-controls="toolMem">記憶の階層</button>
     <button class="tab" role="tab" id="tabCpu" aria-selected="false" aria-controls="toolCpu">CPUの動き</button>
+    <button class="tab" role="tab" id="tabSim" aria-selected="false" aria-controls="toolSim">CPUシミュレータ</button>
   </div>
 
   <!-- ===== 5大装置 ===== -->
@@ -200,6 +248,71 @@
     </div>
   </section>
 
+  <!-- ===== CPUシミュレータ ===== -->
+  <section class="tool" id="toolSim" role="tabpanel" aria-labelledby="tabSim">
+    <div class="panel">
+      <h2>主記憶に置いたプログラムを、CPUが1命令ずつ実行する様子を追いかけます</h2>
+      <div class="row">
+        <button class="chip" data-prog="add" aria-pressed="true">足し算（3＋2）</button>
+        <button class="chip" data-prog="sub" aria-pressed="false">引き算（8−3）</button>
+        <button class="chip" data-prog="mul" aria-pressed="false">かけ算（3×4をくり返しで）</button>
+        <button class="chip" data-prog="blank" aria-pressed="false">白紙から作る</button>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="smStep">1段階すすむ</button>
+        <button class="chip" id="smInst">1命令すすむ</button>
+        <button class="chip" id="smAuto">自動で動かす</button>
+        <button class="chip" id="smReset">最初から</button>
+      </div>
+      <p class="hint">主記憶の行をクリックすると、その番地の命令や数値を書きかえられます。</p>
+    </div>
+
+    <div class="simwrap" id="simWrap">
+      <div class="simbox" id="simMem">
+        <h3>主記憶装置<small>番地ごとに命令とデータが入っている</small></h3>
+        <table class="memt"><thead><tr><th style="text-align:right;">番地</th><th>内容</th><th>意味</th></tr></thead><tbody id="memBody"></tbody></table>
+      </div>
+      <div class="simbox cpu" id="simCpu">
+        <h3>CPU（中央処理装置）</h3>
+        <div class="unit">
+          <div class="lbl">制御装置</div>
+          <div class="regs">
+            <div class="reg ir" id="rIR" style="grid-column:span 2;"><div class="k">命令レジスタ</div><div class="v" id="vIR">―</div></div>
+            <div class="reg" id="rPC"><div class="k">プログラムカウンタ</div><div class="v" id="vPC">0</div></div>
+          </div>
+        </div>
+        <div class="unit">
+          <div class="lbl">演算装置</div>
+          <div class="alu" id="rALU"><div class="v" id="vALU">―</div></div>
+          <div class="regs" style="margin-top:8px;">
+            <div class="reg" id="rA"><div class="k">レジスタA</div><div class="v" id="vA">0</div></div>
+            <div class="reg" id="rB"><div class="k">レジスタB</div><div class="v" id="vB">0</div></div>
+            <div class="reg" id="rC"><div class="k">レジスタC</div><div class="v" id="vC">0</div></div>
+          </div>
+        </div>
+      </div>
+      <svg class="flow" id="simFlow" aria-hidden="true"></svg>
+    </div>
+
+    <div class="editor" id="simEd">
+      <div class="row" style="justify-content:space-between;">
+        <b id="edTitle" style="color:var(--ink);"></b>
+        <button class="chip" id="edClose">閉じる</button>
+      </div>
+      <div class="row" style="margin-top:10px;" id="edRow"></div>
+      <p class="hint" id="edHint"></p>
+    </div>
+
+    <div class="stages" id="simStages">
+      <div class="stg">① 命令の取り出し</div><div class="stg">② 命令の解読</div><div class="stg">③ 実行</div><div class="stg">④ 結果の格納</div>
+    </div>
+    <div class="msg" id="simMsg"></div>
+    <div class="panel" style="margin-top:16px;">
+      <h2>実行の記録<span style="font-weight:400;color:var(--muted);font-size:13px;margin-left:8px;" id="simCount"></span></h2>
+      <ol class="simlog" id="simLog"></ol>
+    </div>
+  </section>
+
   <!-- ===== 解説 ===== -->
   <section class="article">
     <h2>コンピュータの5大装置</h2>
@@ -262,6 +375,42 @@
     <p><strong>クロック周波数</strong>は、1秒間に何回の周期で動作するかを表します。3GHzなら1秒間に30億回です。ただし、周波数だけで性能は決まりません。1回の周期でどれだけの処理ができるかは、設計によって違うからです。</p>
     <p><strong>コア数</strong>は、計算する部分がいくつあるかを示します。8コアなら、8つの処理を同時に進められます。ただし、プログラムが並行処理に対応していなければ、コアが増えても速くなりません。</p>
 
+    <h2>CPUシミュレータで命令を追う</h2>
+    <p>「CPUシミュレータ」のタブでは、主記憶に置いたプログラムを、CPUが1命令ずつ実行する様子を追いかけられます。実際のCPUはもっと複雑ですが、基本の動きは同じです。</p>
+
+    <h3>番地とプログラムカウンタ</h3>
+    <p>主記憶は、小さな箱がたくさん並んだものと考えられます。箱には0から順に<strong>番地</strong>（アドレス）が付いていて、命令もデータも、どれかの番地に入っています。プログラム内蔵方式では、プログラムとデータが同じ主記憶に置かれることを、ここで確かめられます。</p>
+    <p>CPUの中には、次に実行する命令の番地を覚えておく<strong>プログラムカウンタ</strong>があります。命令を1つ取り出すたびに、プログラムカウンタは1つ増えます。だから、命令は基本的に番地の順に実行されます。</p>
+    <p>取り出した命令は<strong>命令レジスタ</strong>に入り、制御装置が解読します。計算に使う値は、CPUの中の小さな記憶である<strong>レジスタ</strong>（このツールではA・B・C）に入れてから、演算装置で計算します。</p>
+
+    <h3>このツールの命令</h3>
+    <table>
+      <tr><th>命令</th><th>意味</th></tr>
+      <tr><td class="mono">READ A,(10)</td><td>10番地の値をレジスタAに読み込む</td></tr>
+      <tr><td class="mono">WRITE (12),A</td><td>レジスタAの値を12番地に書き込む</td></tr>
+      <tr><td class="mono">ADD A,B</td><td>A＋Bを計算し、結果をAに入れる</td></tr>
+      <tr><td class="mono">SUB A,B</td><td>A−Bを計算し、結果をAに入れる</td></tr>
+      <tr><td class="mono">JUMP 2</td><td>次は2番地の命令へ進む（プログラムカウンタを2にする）</td></tr>
+      <tr><td class="mono">JZ C,8</td><td>レジスタCが0なら8番地へ進む。0でなければそのまま次の番地へ</td></tr>
+      <tr><td class="mono">STOP</td><td>プログラムを終える</td></tr>
+    </table>
+    <p>実際のCPUの命令は、0と1の並び（機械語）で表されています。このツールでは読みやすいように、英語の短い単語で表しています。このような書き方をアセンブリ言語といいます。命令の名前や書き方はCPUの種類によって異なり、教科書とも少し違う場合があります。</p>
+
+    <h3>足し算のプログラムを追う</h3>
+    <p>「足し算」では、10番地の3と11番地の2を足して、12番地に書き込みます。CPUは、0番地の READ A,(10) から順に、次のように動きます。</p>
+    <ol>
+      <li>READ A,(10)：10番地の3をレジスタAに読み込む</li>
+      <li>READ B,(11)：11番地の2をレジスタBに読み込む</li>
+      <li>ADD A,B：演算装置で3＋2＝5を計算し、Aに入れる</li>
+      <li>WRITE (12),A：Aの5を12番地に書き込む</li>
+      <li>STOP：終わる</li>
+    </ol>
+    <p>1つの命令ごとに「取り出し → 解読 → 実行 → 結果の格納」の4段階をくり返しています。「1段階すすむ」で、それぞれの段階でどの装置が動き、値がどこからどこへ移るのかを、矢印で確かめてください。</p>
+
+    <h3>くり返しは「番地を戻る」ことで作る</h3>
+    <p>「かけ算」では、3×4を「3を4回足す」ことで計算します。7番地の JUMP 2 でプログラムカウンタを2に戻すと、同じ命令が何度も実行されます。これがくり返しの正体です。2番地の JZ C,8 は、残りの回数（レジスタC）が0になったら、くり返しを抜けて8番地へ進むための命令です。</p>
+    <p>プログラミングで書く「もし〜なら」や「〜を繰り返す」も、CPUの中では、このように条件によってプログラムカウンタを書きかえることで実現されています。</p>
+
     <h2>入出力と周辺機器</h2>
     <p>入力装置と出力装置は、コンピュータと外の世界をつなぐ窓口です。近年、その種類が急速に増えました。</p>
     <p>スマートフォンには、タッチパネル、カメラ、マイクに加えて、加速度センサー、ジャイロセンサー、GPS、明るさセンサーなど、多数の入力装置が入っています。画面の向きが自動で変わるのも、暗い場所で画面が暗くなるのも、こうしたセンサーの働きです。</p>
@@ -281,6 +430,7 @@
       <li><strong>5つの装置</strong>：図の装置をクリックすると、役割と具体例が表示されます。データと命令の流れも色分けしています。</li>
       <li><strong>記憶の階層</strong>：ピラミッドの各段をクリックすると、容量・速さ・値段を比べられます。人の感覚に置きかえた表示もあります。</li>
       <li><strong>CPUの動き</strong>：命令の読み出しから実行までを、1段階ずつ追えます。</li>
+      <li><strong>CPUシミュレータ</strong>：主記憶に置いたプログラムを、1段階ずつ、または1命令ずつ実行できます。プログラムカウンタやレジスタの値と、データの流れを矢印で確かめられます。主記憶の行をクリックすると、命令や数値を書きかえて自分のプログラムを作れます。</li>
     </ul>
   </section>
 
@@ -325,7 +475,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tab5','tool5'],['tabMem','toolMem'],['tabCpu','toolCpu']];
+  const tabs=[['tab5','tool5'],['tabMem','toolMem'],['tabCpu','toolCpu'],['tabSim','toolSim']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -335,6 +485,7 @@
       });
       if(tid==='tabMem') drawMem();
       if(tid==='tabCpu') drawCpu();
+      if(tid==='tabSim') smDraw();
     });
   });
 })();
@@ -567,8 +718,269 @@ document.getElementById('cpAuto').addEventListener('click',e=>{
     cpTimer=setInterval(()=>{ cpStep=(cpStep+1)%4; drawCpu(); },1100); }
 });
 
+
+/* ===== CPUシミュレータ ===== */
+const SM_N=16, SM_REGS=['A','B','C'];
+const SM_OPS={
+  READ: {f:['r','n'], txt:x=>`READ ${x.r},(${x.n})`,  mean:x=>`${x.n}番地の値をレジスタ${x.r}に読み込む`},
+  WRITE:{f:['n','r'], txt:x=>`WRITE (${x.n}),${x.r}`, mean:x=>`レジスタ${x.r}の値を${x.n}番地に書き込む`},
+  ADD:  {f:['r','s'], txt:x=>`ADD ${x.r},${x.s}`,     mean:x=>`${x.r}＋${x.s}の結果をレジスタ${x.r}に入れる`},
+  SUB:  {f:['r','s'], txt:x=>`SUB ${x.r},${x.s}`,     mean:x=>`${x.r}−${x.s}の結果をレジスタ${x.r}に入れる`},
+  JUMP: {f:['n'],     txt:x=>`JUMP ${x.n}`,           mean:x=>`次は${x.n}番地の命令へ進む`},
+  JZ:   {f:['r','n'], txt:x=>`JZ ${x.r},${x.n}`,      mean:x=>`レジスタ${x.r}が0なら${x.n}番地へ進む`},
+  STOP: {f:[],        txt:()=>'STOP',                mean:()=>'プログラムを終える'}
+};
+const I=(op,a={})=>Object.assign({op},a), D=n=>({num:n});
+const SM_PROGS={
+  add:{name:'足し算', mem:[I('READ',{r:'A',n:10}),I('READ',{r:'B',n:11}),I('ADD',{r:'A',s:'B'}),I('WRITE',{n:12,r:'A'}),I('STOP')],
+       data:{10:3,11:2,12:0}, out:12},
+  sub:{name:'引き算', mem:[I('READ',{r:'A',n:10}),I('READ',{r:'B',n:11}),I('SUB',{r:'A',s:'B'}),I('WRITE',{n:12,r:'A'}),I('STOP')],
+       data:{10:8,11:3,12:0}, out:12},
+  mul:{name:'かけ算', mem:[I('READ',{r:'A',n:13}),I('READ',{r:'C',n:12}),I('JZ',{r:'C',n:8}),I('READ',{r:'B',n:10}),
+        I('ADD',{r:'A',s:'B'}),I('READ',{r:'B',n:11}),I('SUB',{r:'C',s:'B'}),I('JUMP',{n:2}),I('WRITE',{n:14,r:'A'}),I('STOP')],
+       data:{10:3,11:1,12:4,13:0,14:0}, out:14},
+  blank:{name:'白紙', mem:[I('STOP')], data:{}, out:null}
+};
+let smProg=[], smMem=[], smOut=null;
+let sm={pc:0, ir:null, irAt:null, reg:{A:0,B:0,C:0}, stage:0, halted:false, count:0, alu:'―', tmp:null, err:false};
+let smHot=[], smFlows=[], smTimer=null, smSel=null, smChanged=null;
+
+const cellText=c=>c.op? SM_OPS[c.op].txt(c) : String(c.num);
+const cellMean=c=>c.op? SM_OPS[c.op].mean(c) : 'データ';
+const clone=a=>a.map(c=>Object.assign({},c));
+
+function smLoad(key){
+  const p=SM_PROGS[key];
+  smProg=[]; for(let i=0;i<SM_N;i++) smProg.push(p.mem[i]? Object.assign({},p.mem[i]) : D(p.data[i]??0));
+  smOut=p.out; smSel=null; smReset();
+}
+function smReset(){
+  smStop();
+  smMem=clone(smProg);
+  sm={pc:0, ir:null, irAt:null, reg:{A:0,B:0,C:0}, stage:0, halted:false, count:0, alu:'―', tmp:null, err:false};
+  smHot=[]; smFlows=[]; smChanged=null;
+  document.getElementById('simLog').innerHTML='';
+  smMsg('最初の状態です','プログラムカウンタは <b>0</b> です。「1段階すすむ」を押すと、CPUは0番地から命令を取り出します。');
+  smDraw();
+}
+function smMsg(t,d,cls){ const m=document.getElementById('simMsg'); m.className='msg'+(cls?' '+cls:''); m.innerHTML=`<div class="t">${t}</div>${d}`; }
+function regEl(r){ return document.getElementById('r'+r); }
+function rowEl(i){ return document.querySelector(`#memBody tr[data-i="${i}"]`); }
+
+function smDraw(){
+  const tb=document.getElementById('memBody');
+  tb.innerHTML=smMem.map((c,i)=>{
+    const cls=[];
+    if(!sm.halted && i===sm.pc && sm.stage===0) cls.push('pc');
+    if(smHot.includes('m'+i)) cls.push('hot');
+    if(smSel===i) cls.push('sel');
+    if(smChanged===i) cls.push('chg');
+    return `<tr data-i="${i}" class="${cls.join(' ')}"><td class="ad">${i}</td>`+
+      `<td class="op${c.op?'':' num'}">${cellText(c)}</td><td class="mean">${cellMean(c)}</td></tr>`;
+  }).join('');
+  tb.querySelectorAll('tr').forEach(tr=>tr.addEventListener('click',()=>smEdit(+tr.dataset.i)));
+  document.getElementById('vPC').textContent=sm.pc;
+  document.getElementById('vIR').textContent=sm.ir? cellText(sm.ir) : '―';
+  SM_REGS.forEach(r=>document.getElementById('v'+r).textContent=sm.reg[r]);
+  document.getElementById('vALU').textContent=sm.alu;
+  ['PC','IR','A','B','C','ALU'].forEach(k=>document.getElementById('r'+k).classList.toggle('hot',smHot.includes(k)));
+  document.querySelectorAll('#simStages .stg').forEach((s,i)=>s.classList.toggle('on', smHot.length>0 && i===smShownStage));
+  document.getElementById('simCount').textContent=`（実行した命令：${sm.count}個）`;
+  document.getElementById('smStep').disabled=sm.halted;
+  document.getElementById('smInst').disabled=sm.halted;
+  requestAnimationFrame(smDrawFlows);
+}
+let smShownStage=-1;
+
+/* 矢印 */
+function anchor(el, toward){
+  const w=document.getElementById('simWrap').getBoundingClientRect();
+  const r=el.getBoundingClientRect();
+  return {l:r.left-w.left, r:r.right-w.left, t:r.top-w.top, b:r.bottom-w.top, cx:(r.left+r.right)/2-w.left, cy:(r.top+r.bottom)/2-w.top};
+}
+function smDrawFlows(){
+  const svg=document.getElementById('simFlow');
+  let h=`<defs><marker id="smArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#C49A2B"/></marker></defs>`;
+  const wrap=document.getElementById('simWrap');
+  if(getComputedStyle(wrap).gridTemplateColumns.split(' ').length<2){ svg.innerHTML=''; return; }  // 1列表示（スマホ）では色だけで示す
+  const res=k=>k.startsWith('m')? rowEl(+k.slice(1)) : document.getElementById('r'+k);
+  smFlows.forEach(([fk,tk])=>{
+    const fe=res(fk), te=res(tk);
+    if(!fe||!te) return;
+    const a=anchor(fe), b=anchor(te);
+    let x1,y1,x2,y2,d;
+    const dx=b.cx-a.cx, dy=b.cy-a.cy;
+    if(Math.abs(dx)>Math.abs(dy)*0.8 && (a.r<b.l || b.r<a.l)){
+      if(dx>0){ x1=a.r; x2=b.l; } else { x1=a.l; x2=b.r; }
+      y1=a.cy; y2=b.cy;
+      const mx=(x1+x2)/2;
+      d=`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    }else{
+      if(dy>0){ y1=a.b; y2=b.t; } else { y1=a.t; y2=b.b; }
+      x1=a.cx; x2=b.cx;
+      const my=(y1+y2)/2;
+      d=`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    }
+    h+=`<path d="${d}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>`+
+       `<path d="${d}" fill="none" stroke="#C49A2B" stroke-width="3" marker-end="url(#smArr)"/>`;
+  });
+  svg.innerHTML=h;
+}
+window.addEventListener('resize',()=>requestAnimationFrame(smDrawFlows));
+
+/* 1段階 */
+function smHalt(t,d,cls){ sm.halted=true; smStop(); smMsg(t,d,cls); }
+function smStepOnce(){
+  if(sm.halted) return;
+  smChanged=null; smFlows=[]; smHot=[];
+  const st=sm.stage; smShownStage=st;
+  if(st===0){
+    if(sm.pc<0 || sm.pc>=SM_N){ smHalt('止まりました',`プログラムカウンタが ${sm.pc} になりました。主記憶は0〜15番地までなので、命令を取り出せません。`); smDraw(); return; }
+    const c=smMem[sm.pc];
+    if(!c.op){ smHot=['m'+sm.pc,'PC']; smHalt('止まりました',`${sm.pc}番地には数値（<b>${c.num}</b>）が入っていて、命令ではありません。最後に STOP 命令を置くのを忘れていないか確かめましょう。`); smDraw(); return; }
+    sm.ir=Object.assign({},c); sm.irAt=sm.pc; sm.alu='―';
+    smHot=['m'+sm.pc,'IR','PC']; smFlows=[['m'+sm.pc,'IR']];
+    const from=sm.pc; sm.pc=sm.pc+1;
+    smMsg('① 命令の取り出し（フェッチ）',`プログラムカウンタが指す <b>${from}番地</b> から命令「<b>${cellText(sm.ir)}</b>」を取り出し、命令レジスタに入れました。プログラムカウンタは次の番地 <b>${sm.pc}</b> に進みます。`);
+    sm.stage=1;
+  }else if(st===1){
+    smHot=['IR'];
+    const x=sm.ir;
+    smMsg('② 命令の解読（デコード）',`制御装置が命令「<b>${cellText(x)}</b>」を解読しました。意味は「<b>${SM_OPS[x.op].mean(x)}</b>」です。`);
+    sm.stage=2;
+  }else if(st===2){
+    const x=sm.ir;
+    if(x.op==='READ'){
+      const c=smMem[x.n]; const v=c.op? 0 : c.num;
+      sm.tmp=v; smHot=['m'+x.n]; smFlows=[['m'+x.n,x.r]];
+      smMsg('③ 実行',`主記憶の <b>${x.n}番地</b> から値 <b>${v}</b> を読み出します。`+(c.op?'（命令が入っている番地なので、値は0として扱います）':''));
+    }else if(x.op==='WRITE'){
+      sm.tmp=sm.reg[x.r]; smHot=[x.r];
+      smMsg('③ 実行',`レジスタ${x.r}の値 <b>${sm.tmp}</b> を取り出します。`);
+    }else if(x.op==='ADD'||x.op==='SUB'){
+      const a=sm.reg[x.r], b=sm.reg[x.s], v=x.op==='ADD'? a+b : a-b;
+      sm.tmp=v; sm.alu=`${a} ${x.op==='ADD'?'＋':'−'} ${b} ＝ ${v}`;
+      smHot=[x.r,x.s,'ALU']; smFlows=[[x.r,'ALU'],[x.s,'ALU']];
+      smMsg('③ 実行',`演算装置が <b>${sm.alu}</b> を計算しました。`);
+    }else if(x.op==='JUMP'){
+      smHot=['IR']; sm.tmp=x.n;
+      smMsg('③ 実行',`行き先は <b>${x.n}番地</b> です。`);
+    }else if(x.op==='JZ'){
+      const v=sm.reg[x.r]; sm.tmp=(v===0);
+      sm.alu=`${x.r}（${v}）は0か？ → ${sm.tmp?'はい':'いいえ'}`;
+      smHot=[x.r,'ALU']; smFlows=[[x.r,'ALU']];
+      smMsg('③ 実行',`演算装置がレジスタ${x.r}の値 <b>${v}</b> が0かどうかを調べました。答えは <b>${sm.tmp?'はい':'いいえ'}</b> です。`);
+    }else if(x.op==='STOP'){
+      sm.count++; smLog(x);
+      smShownStage=2; smHot=['IR'];
+      const out=smOut!=null? `結果の <b>${smOut}番地</b> には <b>${cellText(smMem[smOut])}</b> が入っています。` : '';
+      smHalt('③ 実行：プログラムが終わりました',`STOP 命令を実行したので、CPUは止まりました。${out}実行した命令は全部で <b>${sm.count}個</b> です。`,'ok');
+      smDraw(); return;
+    }
+    sm.stage=3;
+  }else{
+    const x=sm.ir;
+    if(x.op==='READ'){
+      sm.reg[x.r]=sm.tmp; smHot=[x.r];
+      smMsg('④ 結果の格納',`読み出した値 <b>${sm.tmp}</b> をレジスタ${x.r}に入れました。`);
+    }else if(x.op==='WRITE'){
+      smMem[x.n]=D(sm.tmp); smChanged=x.n; smHot=['m'+x.n]; smFlows=[[x.r,'m'+x.n]];
+      smMsg('④ 結果の格納',`値 <b>${sm.tmp}</b> を主記憶の <b>${x.n}番地</b> に書き込みました。`);
+    }else if(x.op==='ADD'||x.op==='SUB'){
+      sm.reg[x.r]=sm.tmp; smHot=['ALU',x.r]; smFlows=[['ALU',x.r]];
+      smMsg('④ 結果の格納',`計算結果 <b>${sm.tmp}</b> をレジスタ${x.r}に入れました。`);
+    }else if(x.op==='JUMP'){
+      sm.pc=x.n; smHot=['PC']; smFlows=[['IR','PC']];
+      smMsg('④ 結果の格納',`プログラムカウンタを <b>${x.n}</b> に書きかえました。次は${x.n}番地の命令を取り出します。`);
+    }else if(x.op==='JZ'){
+      if(sm.tmp){ sm.pc=x.n; smHot=['PC']; smFlows=[['ALU','PC']];
+        smMsg('④ 結果の格納',`0だったので、プログラムカウンタを <b>${x.n}</b> に書きかえました。次は${x.n}番地へ進みます。`); }
+      else { smHot=['PC'];
+        smMsg('④ 結果の格納',`0ではなかったので、プログラムカウンタは <b>${sm.pc}</b> のまま、次の番地へ進みます。`); }
+    }
+    sm.count++; smLog(x);
+    sm.stage=0;
+    if(sm.count>=300){ smHalt('止まりました','300個の命令を実行したので、いったん止めました。終わりのないくり返しになっていないか確かめましょう。'); }
+  }
+  smDraw();
+}
+function smLog(x){
+  const li=document.createElement('li');
+  let r='';
+  if(x.op==='READ'||x.op==='ADD'||x.op==='SUB') r=` → ${x.r}＝${sm.reg[x.r]}`;
+  if(x.op==='WRITE') r=` → ${x.n}番地＝${smMem[x.n].num}`;
+  if(x.op==='JUMP') r=` → ${x.n}番地へ`;
+  if(x.op==='JZ') r= sm.tmp? ` → ${x.n}番地へ` : ' → そのまま次へ';
+  li.innerHTML=`${sm.irAt}番地 <code>${cellText(x)}</code>${r}`;
+  const ol=document.getElementById('simLog'); ol.appendChild(li); ol.scrollTop=ol.scrollHeight;
+}
+function smInstOnce(){
+  if(sm.halted) return;
+  do{ smStepOnce(); }while(!sm.halted && sm.stage!==0);
+}
+function smStop(){ if(smTimer){ clearInterval(smTimer); smTimer=null; } document.getElementById('smAuto').textContent='自動で動かす'; }
+
+/* 書きかえ */
+function smEdit(i){
+  smSel=i; smDraw();
+  const ed=document.getElementById('simEd'); ed.classList.add('show');
+  document.getElementById('edTitle').textContent=`${i}番地を書きかえる`;
+  const c=smProg[i];
+  const addrOpts=sel=>Array.from({length:SM_N},(_,k)=>`<option value="${k}"${k===sel?' selected':''}>${k}番地</option>`).join('');
+  const regOpts=sel=>SM_REGS.map(r=>`<option value="${r}"${r===sel?' selected':''}>レジスタ${r}</option>`).join('');
+  let h=`<select id="edKind"><option value="op"${c.op?' selected':''}>命令</option><option value="num"${c.op?'':' selected'}>数値</option></select>`;
+  if(c.op){
+    h+=`<select id="edOp">${Object.keys(SM_OPS).map(o=>`<option${o===c.op?' selected':''}>${o}</option>`).join('')}</select>`;
+    SM_OPS[c.op].f.forEach(f=>{
+      if(f==='n') h+=`<select data-f="n">${addrOpts(c.n??0)}</select>`;
+      else h+=`<select data-f="${f}">${regOpts(c[f]??'A')}</select>`;
+    });
+  }else{
+    h+=`<input id="edNum" type="number" min="-999" max="999" value="${c.num}">`;
+  }
+  document.getElementById('edRow').innerHTML=h;
+  document.getElementById('edHint').textContent= c.op? `意味：${cellMean(c)}` : '数値は −999〜999 の整数です。';
+  const apply=()=>{
+    const kind=document.getElementById('edKind').value;
+    let nc;
+    if(kind==='num'){
+      const el=document.getElementById('edNum');
+      const v=el? Math.max(-999,Math.min(999,Math.round(+el.value||0))) : 0; nc=D(v);
+    }else{
+      const opEl=document.getElementById('edOp'); const op=opEl? opEl.value : 'STOP';
+      nc={op};
+      SM_OPS[op].f.forEach(f=>{
+        const el=document.querySelector(`#edRow [data-f="${f}"]`);
+        nc[f]= el? (f==='n'? +el.value : el.value) : (f==='n'? 0 : (f==='s'?'B':'A'));
+      });
+    }
+    smProg[i]=nc; smMem[i]=Object.assign({},nc);
+    document.querySelectorAll('[data-prog]').forEach(b=>b.setAttribute('aria-pressed','false'));
+    smEdit(i);
+  };
+  document.querySelectorAll('#edRow select, #edRow input').forEach(el=>el.addEventListener('change',apply));
+}
+document.getElementById('edClose').addEventListener('click',()=>{ smSel=null; document.getElementById('simEd').classList.remove('show'); smDraw(); });
+
+/* 操作 */
+document.getElementById('smStep').addEventListener('click',()=>{ smStop(); smStepOnce(); });
+document.getElementById('smInst').addEventListener('click',()=>{ smStop(); smInstOnce(); });
+document.getElementById('smReset').addEventListener('click',smReset);
+document.getElementById('smAuto').addEventListener('click',e=>{
+  if(smTimer){ smStop(); return; }
+  if(sm.halted) smReset();
+  e.target.textContent='とめる';
+  smTimer=setInterval(()=>{ smStepOnce(); if(sm.halted) smStop(); },750);
+});
+document.querySelectorAll('[data-prog]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-prog]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  document.getElementById('simEd').classList.remove('show');
+  smLoad(b.dataset.prog);
+}));
+
 /* ===== 初期化 ===== */
-drawDv(); drawMem(); drawCpu();
+drawDv(); drawMem(); drawCpu(); smLoad('add');
 </script>
 </body>
 </html>
