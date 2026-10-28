@@ -22,7 +22,8 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── image/index.html    画像のデジタル化（標本化・量子化・符号化＋どっと絵）
 ├── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
 ├── bits/index.html     データはすべて0と1（ファイルの中身／画像を音に／音を画像に）
-└── jpeg/index.html     JPEGをくり返し保存すると（世代劣化。保存のしかた3通り×回数・画質）
+├── jpeg/index.html     JPEGをくり返し保存すると（世代劣化。保存のしかた3通り×回数・画質）
+└── rfid/index.html     RFID（電子タグ）（バーコードとくらべる／読み分けのしくみ／電波が届く距離）
 ```
 
 `CLAUDE.md` は Claude Code が起動時に読み込むため、リポジトリ直下から動かさない。
