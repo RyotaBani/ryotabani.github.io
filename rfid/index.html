@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFID（電子タグ）のしくみを体験しよう（一括読み取り・衝突防止・通信距離）｜情報ラボ</title>
+<meta name="description" content="RFID（電子タグ）のしくみを動かして確かめられる無料ツール。バーコードとの読み取りの違い、複数のタグを読み分ける衝突防止の手順、電波が届く距離の計算を体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/rfid/">
+<meta property="og:title" content="RFID（電子タグ）のしくみを体験しよう｜情報ラボ">
+<meta property="og:description" content="一括読み取り、衝突防止、通信距離。RFIDのしくみを動かして学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/rfid/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){ .two{grid-template-columns:1fr;} }
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .sl{margin-top:12px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:ui-monospace,Consolas,monospace; font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink);}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  /* レジ */
+  .lane{background:#fff; border:2px solid var(--line); border-radius:12px; padding:14px;}
+  .lane h3{margin:0 0 4px; font-size:15px; color:var(--ink);}
+  .lane .sub{font-size:12.5px; color:var(--muted); margin:0 0 10px;}
+  .items{display:grid; grid-template-columns:repeat(auto-fill,minmax(74px,1fr)); gap:8px;}
+  .item{border:2px solid var(--line); border-radius:10px; padding:6px 4px; text-align:center; background:#fff; position:relative; transition:border-color .2s, background .2s;}
+  .item .e{font-size:26px; line-height:1.2;}
+  .item .n{font-size:11.5px; color:var(--muted);}
+  .item .s{font-size:12px; font-weight:700; min-height:1.3em;}
+  .item.now{border-color:var(--gold); background:#FFF3D6;}
+  .item.done{border-color:var(--ok); background:#EAF5EE;}
+  .item.done .s{color:var(--ok);}
+  .item.fail{border-color:var(--ng); background:#FBEDEC;}
+  .item.fail .s{color:var(--ng);}
+  .clock{font-family:ui-monospace,Consolas,monospace; font-size:24px; font-weight:700; color:var(--ink); margin-top:10px;}
+  .clock small{font-size:12px; color:var(--muted); font-weight:400; margin-left:6px;}
+  .wave{height:8px; border-radius:999px; margin-top:10px; background:var(--panel2); overflow:hidden;}
+  .wave i{display:block; height:100%; width:0; background:var(--gold); transition:width .15s linear;}
+
+  /* 衝突防止 */
+  .tags{display:flex; flex-wrap:wrap; gap:6px;}
+  .tg{font-family:ui-monospace,Consolas,monospace; font-size:12px; font-weight:700; padding:4px 7px; border-radius:7px;
+    border:2px solid var(--line); background:#fff; color:var(--muted); min-width:3.6em; text-align:center;}
+  .tg.read{border-color:var(--ok); background:#EAF5EE; color:var(--ok);}
+  .tg.talk{border-color:var(--gold); background:#FFF3D6; color:#7A5A12;}
+  .tg.clash{border-color:var(--ng); background:#FBEDEC; color:var(--ng);}
+  .slots{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .slot{width:44px; border:2px solid var(--line); border-radius:8px; background:#fff; text-align:center; padding:3px 0;}
+  .slot .i{font-size:10.5px; color:var(--muted); font-family:ui-monospace,Consolas,monospace;}
+  .slot .c{font-size:14px; font-weight:700; font-family:ui-monospace,Consolas,monospace; color:var(--ink); min-height:1.3em;}
+  .slot.cur{box-shadow:0 0 0 3px var(--gold);}
+  .slot.empty{background:#F1F3F6; border-color:#D5DAE3;}
+  .slot.empty .c{color:#9AA3B0;}
+  .slot.ok{background:#EAF5EE; border-color:var(--ok);}
+  .slot.ok .c{color:var(--ok);}
+  .slot.clash{background:#FBEDEC; border-color:var(--ng);}
+  .slot.clash .c{color:var(--ng);}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:8px;}
+  .legend span::before{content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; border:2px solid var(--line);}
+  .legend .lo::before{background:#EAF5EE; border-color:var(--ok);}
+  .legend .lc::before{background:#FBEDEC; border-color:var(--ng);}
+  .legend .le::before{background:#F1F3F6; border-color:#D5DAE3;}
+  .chartbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 6px 4px; margin-top:12px;}
+  .chartbox svg{display:block; width:100%; height:auto;}
+  .chartbox h3{font-size:13.5px; color:var(--ink); margin:2px 8px 0;}
+  label.ck{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--ink); cursor:pointer;}
+  label.ck input{width:18px; height:18px; accent-color:var(--navy);}
+
+  /* 距離 */
+  .meter{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:12px;}
+  .tagicon{width:64px; height:64px; border-radius:14px; border:3px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-size:30px; background:#fff; transition:all .2s;}
+  .tagicon.on{border-color:var(--ok); background:#EAF5EE; box-shadow:0 0 0 6px rgba(46,125,79,.15);}
+  .tagicon.off{border-color:var(--ng); background:#FBEDEC; opacity:.75;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ RFID（電子タグ）</p>
+    <h1>RFID（電子タグ）のしくみを体験しよう</h1>
+    <p class="lead">電波でタグを読む技術です。見えなくても、まとめて読めるしくみを動かして確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabReg" aria-selected="true" aria-controls="toolReg">バーコードとくらべる</button>
+    <button class="tab" role="tab" id="tabAc" aria-selected="false" aria-controls="toolAc">読み分けのしくみ</button>
+    <button class="tab" role="tab" id="tabDist" aria-selected="false" aria-controls="toolDist">電波が届く距離</button>
+  </div>
+
+  <!-- ===== バーコードとくらべる ===== -->
+  <section class="tool show" id="toolReg" role="tabpanel" aria-labelledby="tabReg">
+    <div class="panel">
+      <h2>かごの商品を、バーコードとRFIDで読み取ります</h2>
+      <div class="row">
+        <button class="chip" id="opBag" aria-pressed="false">袋に入れたまま</button>
+        <button class="chip" id="opWater" aria-pressed="false">飲み物（水）を入れる</button>
+        <button class="chip" id="opMetal" aria-pressed="false">金属の缶を入れる</button>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="regN">商品の数</label><span class="val" id="regNv">8 点</span></div>
+        <input type="range" id="regN" min="2" max="20" step="1" value="8">
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="regRun">レジに通す</button>
+        <button class="chip" id="regAgain" disabled>RFIDでもう一度読む</button>
+      </div>
+      <p class="hint">時間はモデルの仮定です。バーコードは1点ごとに向きを合わせて読むので1点 約2秒、袋から出す場合は さらに3秒。RFIDは1回の読み取りを約1秒としています。4倍速で再生します。</p>
+    </div>
+
+    <div class="two">
+      <div class="lane">
+        <h3>バーコード</h3>
+        <p class="sub">光で読む。見える向きにして、1点ずつ</p>
+        <div class="items" id="bcItems"></div>
+        <div class="clock" id="bcClock">0.0 秒</div>
+      </div>
+      <div class="lane">
+        <h3>RFID</h3>
+        <p class="sub">電波で読む。かごごと、まとめて</p>
+        <div class="items" id="rfItems"></div>
+        <div class="wave"><i id="rfWave"></i></div>
+        <div class="clock" id="rfClock">0.0 秒</div>
+      </div>
+    </div>
+    <div class="msg" id="regMsg"><div class="t">「レジに通す」を押してください</div>同じ商品を、左はバーコード、右はRFIDで同時に読み取ります。</div>
+  </section>
+
+  <!-- ===== 読み分けのしくみ ===== -->
+  <section class="tool" id="toolAc" role="tabpanel" aria-labelledby="tabAc">
+    <div class="panel">
+      <h2>たくさんのタグが同時に返事をすると、電波が重なって読めません（衝突）。返事をする順番を乱数でずらして読み分けます</h2>
+      <div class="two" style="gap:4px 24px;">
+        <div class="sl">
+          <div class="top"><label for="acN">タグの数 N</label><span class="val" id="acNv">12 個</span></div>
+          <input type="range" id="acN" min="1" max="64" step="1" value="12">
+        </div>
+        <div class="sl">
+          <div class="top"><label for="acQ">Q（スロットの数 ＝ 2<sup>Q</sup>）</label><span class="val" id="acQv">Q＝3（8スロット）</span></div>
+          <input type="range" id="acQ" min="0" max="7" step="1" value="3">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label class="ck"><input type="checkbox" id="acAuto">ラウンドごとに、残りのタグの数に合わせて Q を決める</label>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="acStep">1スロットすすむ</button>
+        <button class="chip" id="acRound">このラウンドを最後まで</button>
+        <button class="chip" id="acAll">全部読むまで</button>
+        <button class="chip" id="acReset">最初から</button>
+      </div>
+    </div>
+
+    <div class="panel" style="background:#fff;">
+      <h2 id="acRoundT">ラウンド 1：各タグがスロットを選びました</h2>
+      <div class="slots" id="acSlots"></div>
+      <div class="legend"><span class="lo">1個だけ → 読める</span><span class="lc">2個以上 → 衝突</span><span class="le">0個 → 空き</span></div>
+      <h2 style="margin-top:16px;">タグ（数字は選んだスロット）</h2>
+      <div class="tags" id="acTags"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">ラウンド</div><div class="v" id="sRound">1</div></div>
+      <div class="stt"><div class="k">使ったスロット</div><div class="v" id="sSlots">0</div></div>
+      <div class="stt"><div class="k">読めたタグ</div><div class="v ok" id="sRead">0</div></div>
+      <div class="stt"><div class="k">衝突</div><div class="v ng" id="sClash">0</div></div>
+      <div class="stt"><div class="k">空き</div><div class="v" id="sEmpty">0</div></div>
+      <div class="stt"><div class="k">効率（読めた÷スロット）</div><div class="v" id="sEff">–</div></div>
+    </div>
+    <div class="msg" id="acMsg"></div>
+
+    <div class="chartbox">
+      <h3 id="acChartT">1ラウンドの効率（理論値）とQの関係</h3>
+      <svg id="acChart" viewBox="0 0 640 230" role="img" aria-label="Qの値ごとの読み取り効率のグラフ"></svg>
+    </div>
+    <p class="hint" style="font-size:13px;color:var(--muted);margin:8px 0 0;">理論値は、N個のタグがL個のスロットから1つずつ選んだとき、1つのスロットに ちょうど1個だけ入る割合です。スロットの数がタグの数に近いときに最も高くなります。</p>
+  </section>
+
+  <!-- ===== 電波が届く距離 ===== -->
+  <section class="tool" id="toolDist" role="tabpanel" aria-labelledby="tabDist">
+    <div class="panel">
+      <h2>電池のないタグは、リーダの電波から電力をもらって動きます。どこまで離れても動くでしょうか</h2>
+      <div class="row">
+        <button class="chip" data-eirp="36" aria-pressed="true">構内無線局（36 dBm ≒ 4 W）</button>
+        <button class="chip" data-eirp="27" aria-pressed="false">特定小電力無線局（27 dBm ≒ 0.5 W）</button>
+      </div>
+      <div class="two" style="gap:4px 24px;">
+        <div class="sl">
+          <div class="top"><label for="dSens">タグが動くのに必要な電力（読み取り感度）</label><span class="val" id="dSensv">−24 dBm</span></div>
+          <input type="range" id="dSens" min="-26" max="-14" step="0.5" value="-24">
+        </div>
+        <div class="sl">
+          <div class="top"><label for="dDist">リーダとタグの距離</label><span class="val" id="dDistv">5.0 m</span></div>
+          <input type="range" id="dDist" min="0.5" max="40" step="0.5" value="5">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label class="ck"><input type="checkbox" id="dPol">リーダが円偏波アンテナ（偏波の不一致で 約3 dB 損をする）</label>
+      </div>
+    </div>
+
+    <div class="panel" style="background:#fff;">
+      <div class="meter">
+        <div class="tagicon" id="dTag" aria-hidden="true">🏷️</div>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:13px;color:var(--muted);">タグが受け取る電力</div>
+          <div style="font-family:ui-monospace,Consolas,monospace;font-size:24px;font-weight:700;color:var(--ink);" id="dRecv">–</div>
+          <div style="font-size:14px;" id="dJudge"></div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">計算した読み取り距離の上限</div><div class="v" id="dMax">–</div></div>
+        <div class="stt"><div class="k">波長（920.5 MHz）</div><div class="v">0.326 m</div></div>
+        <div class="stt"><div class="k">実際の目安（総務省資料）</div><div class="v">約 10 m</div></div>
+      </div>
+      <div class="chartbox">
+        <h3>距離とタグが受け取る電力（dBm）</h3>
+        <svg id="dChart" viewBox="0 0 640 270" role="img" aria-label="距離とタグが受け取る電力のグラフ"></svg>
+      </div>
+      <p class="hint" style="font-size:13px;color:var(--muted);">計算は、障害物や反射がない空間で、タグのアンテナ利得を 2.15 dBi（半波長ダイポール）、ICチップとアンテナの整合を完全（τ＝1）とした理論上の値です。実際には、タグの向き、周りの金属・水・人体、反射波の重なりで短くなります。</p>
+    </div>
+    <div class="msg" id="dMsg"></div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>RFIDとは</h2>
+    <p>RFID（Radio Frequency Identification）は、電波を使って、ICチップに記録されたデータを触れずに読み書きする<strong>自動認識技術</strong>です。日本では電子タグ、ICタグ、RFタグとも呼ばれます。ICチップと小さなアンテナからなる<strong>タグ</strong>と、電波を送受信する<strong>リーダ（リーダライタ）</strong>でできています。</p>
+    <p>タグが返すのは、主に1枚ずつ違う<strong>識別番号（ID）</strong>です。商品名や値段などの詳しい情報は、そのIDをもとに、店や倉庫のデータベースから取り出します。洋服の値札、図書館の本、物流の箱や台車など、身の回りで使われる場面が増えています。</p>
+
+    <h3>バーコードやQRコードとのちがい</h3>
+    <table>
+      <tr><th></th><th>バーコード・QRコード</th><th>RFID</th></tr>
+      <tr><td>読み取りに使うもの</td><td>光（見えないと読めない）</td><td>電波（箱や袋の中でも読める）</td></tr>
+      <tr><td>一度に読める数</td><td>1つずつ</td><td>まとめて読める</td></tr>
+      <tr><td>汚れ</td><td>汚れると読みにくい</td><td>表面の汚れに強い</td></tr>
+      <tr><td>書きかえ</td><td>できない</td><td>できる</td></tr>
+      <tr><td>1枚あたりの費用</td><td>印刷するだけ</td><td>タグの代金がかかる</td></tr>
+    </table>
+    <p>RFIDにも苦手なものがあります。金属はどの周波数帯でも影響が大きく、よく使われるUHF帯では水の影響も大きく受けます。「バーコードとくらべる」で、飲み物や金属の缶を入れて確かめてください。</p>
+
+    <h2>電池がなくても動くしくみ</h2>
+    <p>商品や本に貼るタグの多くは、電池を持たない<strong>パッシブタグ</strong>です。リーダが出す電波（搬送波）をアンテナで受け取り、その電力でICチップを動かします。電池を持ち、自分で電波を出す<strong>アクティブタグ</strong>もありますが、高価で大きくなります。</p>
+    <p>電力の受け取り方は、使う周波数によって2通りあります。</p>
+    <table>
+      <tr><th>周波数帯</th><th>方式</th><th>最大通信距離の目安</th></tr>
+      <tr><td>LF（135 kHz帯）</td><td>電磁誘導方式</td><td>約30 cm</td></tr>
+      <tr><td>HF（13.56 MHz）</td><td>電磁誘導方式</td><td>約60 cm</td></tr>
+      <tr><td>UHF（日本では920 MHz帯）</td><td>電波方式</td><td>約10 m（パッシブ）</td></tr>
+      <tr><td>マイクロ波（2.45 GHz）</td><td>電波方式</td><td>約1 m</td></tr>
+    </table>
+    <p><strong>電磁誘導方式</strong>では、リーダのコイルに流した電流が磁界をつくり、近づけたタグのコイルに電流が生まれます。磁界は距離が離れると急に弱くなるので、かざして使う用途に向いています。<strong>電波方式</strong>では、タグのアンテナが電波を受け取って電力に変えます。数メートル離れていても読めるので、商品の一括読み取りや倉庫の管理に使われます。</p>
+
+    <h3>タグは「反射のしかた」で返事をする</h3>
+    <p>パッシブタグは自分で電波を出せません。そこで、リーダが送り続けている電波の<strong>はね返し方</strong>を変えて返事をします。ICチップの中の電気の通りやすさ（インピーダンス）を2つの状態で切りかえると、反射する電波の強さが変わります。リーダはその変化を0と1として読み取ります。これを<strong>バックスキャッタ（後方散乱）</strong>といいます。</p>
+
+    <h2>電波が届く距離を計算する</h2>
+    <p>タグが受け取る電力は、距離の2乗に反比例して小さくなります。タグが動くのに必要な電力（読み取り感度）と等しくなる距離が、読み取り距離の上限です。</p>
+    <div class="formula">読み取り距離 r ＝（λ ÷ 4π）× √（リーダの放射電力 × タグのアンテナ利得 × τ ÷ タグが動くのに必要な電力）</div>
+    <p>λは波長、τはICチップとアンテナの整合の度合い（0〜1）です。日本のUHF帯では、構内無線局はリーダの放射電力（EIRP）が最大36 dBm（約4 W）、特定小電力無線局は27 dBm（約0.5 W）と決められています。最近のICチップは、−24 dBm（約4 μW、100万分の4ワット）ほどの電力で動きます。</p>
+    <p>この式で計算すると、構内無線局では約33 m、特定小電力では約12 mになります。ただしこれは、障害物も反射もない理想的な場合の上限です。実際には、タグの向き、周りの金属・水・人体、壁や床からの反射波の重なりで短くなり、総務省の資料では最大通信距離の目安を約10 mとしています。「電波が届く距離」で、条件を変えながら確かめてください。</p>
+
+    <h2>たくさんのタグを読み分けるしくみ</h2>
+    <p>かごの中の10個のタグが、リーダの呼びかけに一斉に返事をすると、電波が重なって1つも読めません。これを<strong>衝突</strong>といいます。UHF帯のRFIDの国際的な規格（EPC Gen2）では、次のような手順で読み分けます。</p>
+    <ol>
+      <li>リーダが「Q」という数を送る</li>
+      <li>各タグは、0〜2<sup>Q</sup>−1 の中から乱数で自分の番（スロット）を選ぶ</li>
+      <li>リーダが番号を1つずつ進め、自分の番になったタグだけが返事をする</li>
+      <li>1つのスロットにタグが1個だけなら読める。2個以上なら衝突して読めないので、次のラウンドで選び直す</li>
+    </ol>
+    <p>スロットが少なすぎると衝突ばかりになり、多すぎると空きばかりになります。N個のタグがL個のスロットから選ぶとき、1つのスロットにちょうど1個だけ入る割合は、次の式で表されます。</p>
+    <div class="formula">効率 S ＝（N ÷ L）×（1 − 1 ÷ L）<sup>N−1</sup></div>
+    <p>この効率は、スロットの数をタグの数とほぼ同じにしたときに最も高くなり、タグが多いときには約37％（1/e）に近づきます。規格では、リーダが空きや衝突の数を見ながら Q を調整できるようになっています。「読み分けのしくみ」で、Q を変えて確かめてください。</p>
+
+    <h2>どこで使われているか</h2>
+    <ul>
+      <li><strong>衣料品店</strong>：ユニクロやジーユーを運営するファーストリテイリングは、グループの全商品にRFIDタグを付けています。国内のユニクロでは2019年秋に全店舗にセルフレジを導入し、かごを置くだけで会計できるようにしました。欠品の把握や棚卸しが簡単になったと報告しています。</li>
+      <li><strong>図書館</strong>：本にタグを付けると、棚の前でリーダをかざすだけで所在を確認できます。大日本印刷の報告では、約14万冊の蔵書点検が「10人で16時間」から「3人で8時間」になった例があります。</li>
+      <li><strong>物流・在庫管理</strong>：アメリカの百貨店での実験では、約1,500点の棚卸しが、バーコードで2時間18.5分、RFIDで5.5分でした。</li>
+    </ul>
+    <p>一方で、タグ1枚ごとに費用がかかります。2017年に経済産業省とコンビニ大手5社がまとめた「コンビニ電子タグ1000億枚宣言」では、全商品にタグを付ける条件の1つを「タグの単価が1円以下になること」としていました。便利さと費用の両方を考えて、バーコードとRFIDは使い分けられています。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>バーコードとくらべる</strong>：商品の数や、袋・飲み物・金属の缶の有無を選んで「レジに通す」を押すと、2つの方法で読み取る時間と結果を比べられます。</li>
+      <li><strong>読み分けのしくみ</strong>：タグの数とQを決め、「1スロットすすむ」で、どのタグが返事をし、どこで衝突するかを1つずつ追えます。グラフでは、Qごとの効率の理論値を確かめられます。</li>
+      <li><strong>電波が届く距離</strong>：リーダの種類、タグの読み取り感度、距離を変えて、タグに必要な電力が届くかどうかを確かめられます。</li>
+    </ul>
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>GS1 Japan「EPC/RFID（電子タグ）」https://www.gs1jp.org/standard/epc/</li>
+      <li>GS1, EPC Radio-Frequency Identity Protocols Generation-2 UHF RFID Standard, Release 3.0.1（2026）</li>
+      <li>総務省 情報通信審議会 移動通信システム委員会 報告（案）（2011）、陸上無線通信委員会報告 概要（2017）</li>
+      <li>山添孝徳「ICタグ」映像情報メディア学会誌 Vol.60 No.3（2006）</li>
+      <li>K. V. S. Rao, P. V. Nikitin, S. F. Lam, "Antenna design for UHF RFID tags: a review and a practical application," IEEE Trans. Antennas Propag., 53(12), 2005</li>
+      <li>P. V. Nikitin, K. V. S. Rao, "Theory and measurement of backscattering from RFID tags," IEEE Antennas Propag. Mag., 48(6), 2006</li>
+      <li>D. K. Klair, K.-W. Chin, R. Raad, "A Survey and Tutorial of RFID Anti-Collision Protocols," IEEE Commun. Surveys Tuts., 12(3), 2010</li>
+      <li>NXP, UCODE 9 (SL3S1206) Data sheet（読み取り感度 −24 dBm）</li>
+      <li>ファーストリテイリング「統合報告書2019」</li>
+      <li>大日本印刷 ニュースリリース「蔵書点検の作業時間を8割以上削減」（2023）</li>
+      <li>B. C. Hardgrave et al., "Item-Level RFID for Apparel: The Dillard's RFID Initiative"（Auburn University RFID Lab 掲載）</li>
+      <li>ファミリーマート ニュースリリース「コンビニ電子タグ1000億枚宣言」（2017年4月18日）</li>
+    </ul>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabReg','toolReg'],['tabAc','toolAc'],['tabDist','toolDist']];
+  tabs.forEach(([tid,pid])=>{
+    $(tid).addEventListener('click',()=>{
+      tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+      if(tid==='tabAc') acDraw();
+      if(tid==='tabDist') dDraw();
+    });
+  });
+})();
+
+/* ===== バーコードとくらべる ===== */
+const BASE=[['🧥','上着'],['👕','Tシャツ'],['👖','ズボン'],['🧦','くつした'],['🧢','ぼうし'],['📕','本'],['🍪','お菓子'],['🧣','マフラー'],['🧤','手ぶくろ'],['👟','くつ']];
+const BC_T=2, BAG_T=3, RF_T=1, SPEED=4;
+let reg={items:[], bcDone:0, bcT:0, rfT:0, rfPass:0, running:false, raf:0};
+function regOpt(id){ return $(id).getAttribute('aria-pressed')==='true'; }
+function regBuild(){
+  const n=+$('regN').value; const list=[];
+  let k=0;
+  if(regOpt('opWater')) list.push({e:'🥤',n:'飲み物',kind:'water'});
+  if(regOpt('opMetal')) list.push({e:'🥫',n:'缶詰',kind:'metal'});
+  while(list.length<n){ const b=BASE[k%BASE.length]; list.push({e:b[0],n:b[1],kind:'cloth'}); k++; }
+  // 飲み物・缶詰は、かごの中ほどに入れる
+  const sp=list.filter(x=>x.kind!=='cloth'); const cl=list.filter(x=>x.kind==='cloth');
+  const mid=Math.floor(cl.length/2); const items=[...cl.slice(0,mid),...sp,...cl.slice(mid)];
+  reg.items=items.map(x=>Object.assign({},x,{bc:'wait',rf:'wait'}));
+  reg.bcDone=0; reg.bcT=0; reg.rfT=0; reg.rfPass=0;
+  $('regAgain').disabled=true;
+  regDraw();
+}
+function regDraw(){
+  const lab={wait:'',now:'読み取り中',done:'✓ 読めた',fail:'✗ 読めない'};
+  $('bcItems').innerHTML=reg.items.map(x=>`<div class="item ${x.bc==='wait'?'':x.bc}"><div class="e">${x.e}</div><div class="n">${x.n}</div><div class="s">${lab[x.bc]}</div></div>`).join('');
+  $('rfItems').innerHTML=reg.items.map(x=>`<div class="item ${x.rf==='wait'?'':x.rf}"><div class="e">${x.e}</div><div class="n">${x.n}</div><div class="s">${x.rf==='fail'&&x.kind==='water'?'△ 読めず':lab[x.rf]}</div></div>`).join('');
+  $('bcClock').innerHTML=`${reg.bcT.toFixed(1)} 秒<small>（${reg.bcDone} / ${reg.items.length} 点）</small>`;
+  const rfOk=reg.items.filter(x=>x.rf==='done').length;
+  $('rfClock').innerHTML=`${reg.rfT.toFixed(1)} 秒<small>（${rfOk} / ${reg.items.length} 点）</small>`;
+}
+function bcCost(){ return BC_T+(regOpt('opBag')?BAG_T:0); }
+function regRun(){
+  if(reg.running) return;
+  regBuild(); reg.running=true; $('regRun').disabled=true;
+  const total=reg.items.length*bcCost();
+  let last=performance.now(), sim=0;
+  const step=now=>{
+    sim+=(now-last)/1000*SPEED; last=now;
+    // バーコード
+    const per=bcCost();
+    const done=Math.min(reg.items.length, Math.floor(sim/per));
+    reg.items.forEach((x,i)=>{ x.bc= i<done?'done' : (i===done && sim<total?'now':'wait'); });
+    reg.bcDone=done; reg.bcT=Math.min(sim,total);
+    // RFID（1回目）
+    if(reg.rfPass===0){
+      if(sim<RF_T){ reg.items.forEach(x=>x.rf='now'); $('rfWave').style.width=(sim/RF_T*100)+'%'; reg.rfT=sim; }
+      else { rfResolve(); reg.rfT=RF_T; reg.rfPass=1; $('rfWave').style.width='100%'; }
+    }
+    regDraw();
+    if(sim<total){ reg.raf=requestAnimationFrame(step); }
+    else { reg.running=false; $('regRun').disabled=false; regExplain(); }
+  };
+  reg.raf=requestAnimationFrame(step);
+}
+function rfResolve(){
+  reg.items.forEach(x=>{
+    if(x.rf==='done') return;
+    if(x.kind==='metal') x.rf='fail';
+    else if(x.kind==='water') x.rf= Math.random()<0.5? 'done' : 'fail';
+    else x.rf='done';
+  });
+  $('regAgain').disabled=!reg.items.some(x=>x.rf==='fail');
+}
+function regExplain(){
+  const n=reg.items.length, bc=reg.bcT, rf=reg.rfT;
+  const fails=reg.items.filter(x=>x.rf==='fail');
+  const m=$('regMsg');
+  let t=`バーコード ${bc.toFixed(1)} 秒、RFID ${rf.toFixed(1)} 秒`, b='';
+  b=`バーコードは光で読むので、${n}点を1点ずつ、見える向きにして読みました。`+(regOpt('opBag')?'袋に入ったままだとバーコードが見えないので、1点ずつ取り出す時間もかかっています。':'')+
+    `RFIDは電波で読むので、${regOpt('opBag')?'袋に入ったままでも、':''}かごの中をまとめて読めます。`;
+  if(fails.some(x=>x.kind==='metal')) b+='<br>ただし<b>金属の缶</b>は読めませんでした。金属は電波をはね返してしまうので、タグに電力が届きにくくなります。金属に貼るための専用のタグや、貼る位置の工夫で対策します。';
+  if(fails.some(x=>x.kind==='water')) b+='<br><b>飲み物</b>は読めませんでした。水は電波を吸収するので、UHF帯のタグは読みにくくなります。「RFIDでもう一度読む」で、置き方を変えて読み直してみましょう。';
+  else if(reg.items.some(x=>x.kind==='water')) b+='<br>今回は飲み物も読めましたが、水は電波を吸収するので、向きや置き方によっては読めないことがあります。';
+  m.className='msg'+(fails.length?' ng':' ok');
+  m.innerHTML=`<div class="t">${t}</div>${b}`;
+}
+$('regRun').addEventListener('click',regRun);
+$('regAgain').addEventListener('click',()=>{
+  if(reg.running) return;
+  reg.items.forEach(x=>{ if(x.rf==='fail') x.rf='wait'; });
+  rfResolve(); reg.rfT+=RF_T; reg.rfPass++; regDraw(); regExplain();
+  if(reg.items.some(x=>x.rf==='fail' && x.kind==='metal') && !reg.items.some(x=>x.rf==='fail' && x.kind==='water')) $('regAgain').disabled=true;
+});
+['opBag','opWater','opMetal'].forEach(id=>$(id).addEventListener('click',e=>{
+  if(reg.running) return;
+  const b=e.currentTarget; b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true')); regBuild();
+}));
+$('regN').addEventListener('input',e=>{ $('regNv').textContent=e.target.value+' 点'; if(!reg.running) regBuild(); });
+
+/* ===== 読み分けのしくみ ===== */
+let ac;
+function acNew(){
+  const N=+$('acN').value;
+  ac={N, tags:Array.from({length:N},(_,i)=>({id:'T'+String(i+1).padStart(2,'0'), read:false, slot:null})),
+      round:0, Q:+$('acQ').value, slots:[], cur:0, used:0, ok:0, clash:0, empty:0, firstS:null, done:false};
+  acNewRound();
+}
+function acNewRound(){
+  const left=ac.tags.filter(t=>!t.read);
+  if(!left.length){ ac.done=true; return; }
+  ac.round++;
+  if($('acAuto').checked){ ac.Q=Math.max(0,Math.min(7,Math.round(Math.log2(left.length)))); $('acQ').value=ac.Q; acQLabel(); }
+  else ac.Q=+$('acQ').value;
+  const L=2**ac.Q;
+  ac.slots=Array.from({length:L},()=>({ids:[],st:null}));
+  ac.tags.forEach(t=>{ t.slot=null; t.clash=false; });
+  left.forEach(t=>{ const s=Math.floor(Math.random()*L); t.slot=s; ac.slots[s].ids.push(t); });
+  ac.cur=0;
+  if(ac.round===1){ const N=left.length; ac.firstS=(N/L)*Math.pow(1-1/L,N-1); }
+}
+function acQLabel(){ const q=+$('acQ').value; $('acQv').textContent=`Q＝${q}（${2**q}スロット）`; }
+function acStepOnce(){
+  if(ac.done) return null;
+  if(ac.cur>=ac.slots.length){ acNewRound(); return {newRound:true}; }
+  const s=ac.slots[ac.cur]; ac.used++;
+  let r;
+  if(s.ids.length===0){ s.st='empty'; ac.empty++; r={kind:'empty',slot:ac.cur}; }
+  else if(s.ids.length===1){ s.st='ok'; ac.ok++; s.ids[0].read=true; r={kind:'ok',slot:ac.cur,tag:s.ids[0].id}; }
+  else { s.st='clash'; ac.clash++; s.ids.forEach(t=>t.clash=true); r={kind:'clash',slot:ac.cur,tags:s.ids.map(t=>t.id)}; }
+  ac.cur++;
+  if(ac.cur>=ac.slots.length && !ac.tags.some(t=>!t.read)) ac.done=true;
+  return r;
+}
+function acMsg(r){
+  const m=$('acMsg');
+  if(ac.done){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">${ac.N}個のタグを、すべて読み取りました</div>`+
+      `${ac.round}ラウンド、合計 <b>${ac.used}スロット</b> を使いました。そのうち読めたのは <b>${ac.ok}</b>、衝突は <b>${ac.clash}</b>、空きは <b>${ac.empty}</b> です。効率は <b>${(ac.ok/ac.used*100).toFixed(0)}％</b> でした。`+
+      `Q を変えて、使うスロットの数がどう変わるか比べてみましょう。`;
+    return;
+  }
+  m.className='msg';
+  if(!r){ m.innerHTML=`<div class="t">ラウンド ${ac.round}：リーダが Q＝${ac.Q} を送りました</div>各タグは 0〜${2**ac.Q-1} の中から乱数で自分の番（スロット）を選びました。「1スロットすすむ」で、0番から順に呼びかけます。`; return; }
+  if(r.newRound){ m.innerHTML=`<div class="t">ラウンド ${ac.round}：読めなかったタグが選び直しました</div>まだ読めていないタグ ${ac.tags.filter(t=>!t.read).length}個が、Q＝${ac.Q}（${2**ac.Q}スロット）で、もう一度乱数を引きました。`; return; }
+  if(r.kind==='empty') m.innerHTML=`<div class="t">スロット ${r.slot}：空き</div>この番号を選んだタグはありませんでした。時間だけが過ぎます。`;
+  if(r.kind==='ok'){ m.className='msg ok'; m.innerHTML=`<div class="t">スロット ${r.slot}：${r.tag} を読み取りました</div>このスロットを選んだのは ${r.tag} だけだったので、返事が重ならずに届きました。リーダは確認の合図を返し、タグは識別番号（ID）を送ります。`; }
+  if(r.kind==='clash'){ m.className='msg ng'; m.innerHTML=`<div class="t">スロット ${r.slot}：衝突</div>${r.tags.join('、')} の ${r.tags.length}個が同時に返事をしたので、電波が重なって読めませんでした。次のラウンドで選び直します。`; }
+}
+function acDraw(){
+  $('acRoundT').textContent=`ラウンド ${ac.round}：Q＝${ac.Q}（${2**ac.Q}スロット）`;
+  $('acSlots').innerHTML=ac.slots.map((s,i)=>{
+    const cls=['slot']; if(s.st) cls.push(s.st); if(!ac.done && i===ac.cur) cls.push('cur');
+    return `<div class="${cls.join(' ')}"><div class="i">${i}</div><div class="c">${s.st? s.ids.length : ''}</div></div>`;
+  }).join('');
+  $('acTags').innerHTML=ac.tags.map(t=>{
+    const c= t.read?'read' : t.clash?'clash' : (t.slot!=null && t.slot===ac.cur-1 ? 'talk':'');
+    const lab= t.read? `${t.id} ✓` : `${t.id}→${t.slot}`;
+    return `<span class="tg ${c}">${lab}</span>`;
+  }).join('');
+  $('sRound').textContent=ac.round; $('sSlots').textContent=ac.used; $('sRead').textContent=`${ac.ok} / ${ac.N}`;
+  $('sClash').textContent=ac.clash; $('sEmpty').textContent=ac.empty;
+  $('sEff').textContent= ac.used? (ac.ok/ac.used*100).toFixed(0)+'％' : '–';
+  $('acStep').disabled=$('acRound').disabled=$('acAll').disabled=ac.done;
+  acChart();
+}
+function acChart(){
+  const svg=$('acChart'); const N=ac.N;
+  const W=640,H=230,l=48,r=12,t=16,b=40;
+  const qs=[0,1,2,3,4,5,6,7];
+  const v=qs.map(q=>{ const L=2**q; return (N/L)*Math.pow(1-1/L,N-1)*100; });
+  const bw=(W-l-r)/qs.length;
+  let h='';
+  [0,10,20,30,40].forEach(y=>{ const yy=H-b-(y/40)*(H-t-b);
+    h+=`<line x1="${l}" x2="${W-r}" y1="${yy}" y2="${yy}" stroke="${y?'#E3E8F0':'#9AA6BC'}"/>`+
+       `<text x="${l-8}" y="${yy+4}" font-size="12" fill="#5B6472" text-anchor="end">${y}%</text>`; });
+  const curQ=ac.Q;
+  qs.forEach((q,i)=>{
+    const val=Math.min(v[i],40), bh=(val/40)*(H-t-b), x=l+i*bw+bw*0.18, w=bw*0.64, y=H-b-bh;
+    const on=q===curQ;
+    h+=`<rect x="${x}" y="${y}" width="${w}" height="${Math.max(bh,1)}" rx="4" fill="${on?'#C49A2B':'#2F5496'}" opacity="${on?1:0.75}"/>`;
+    h+=`<text x="${x+w/2}" y="${y-5}" font-size="12" fill="#1c2430" text-anchor="middle">${v[i].toFixed(0)}%</text>`;
+    h+=`<text x="${x+w/2}" y="${H-b+16}" font-size="12" fill="${on?'#1F3864':'#5B6472'}" font-weight="${on?700:400}" text-anchor="middle">Q=${q}</text>`;
+    h+=`<text x="${x+w/2}" y="${H-b+31}" font-size="11" fill="#5B6472" text-anchor="middle">${2**q}</text>`;
+  });
+  h+=`<text x="4" y="${H-b+31}" font-size="11" fill="#5B6472" text-anchor="start">スロット</text>`;
+  svg.innerHTML=h;
+  $('acChartT').textContent=`1ラウンドの効率（理論値）とQの関係（タグ${N}個のとき。いまの Q は金色）`;
+}
+$('acStep').addEventListener('click',()=>{ const r=acStepOnce(); acMsg(r); acDraw(); });
+$('acRound').addEventListener('click',()=>{
+  if(ac.cur>=ac.slots.length) acStepOnce();
+  let r=null; while(!ac.done && ac.cur<ac.slots.length) r=acStepOnce();
+  acMsg(ac.done? r : {kind:'round'} ); if(!ac.done){ const m=$('acMsg'); m.className='msg'; m.innerHTML=`<div class="t">ラウンド ${ac.round} が終わりました</div>このラウンドで、まだ読めていないタグは <b>${ac.tags.filter(t=>!t.read).length}個</b> です。「1スロットすすむ」で、残りのタグが選び直します。`; }
+  acDraw();
+});
+$('acAll').addEventListener('click',()=>{ let n=0; while(!ac.done && n<20000){ acStepOnce(); n++; } acMsg(null); acDraw(); });
+$('acReset').addEventListener('click',()=>{ acNew(); acMsg(null); acDraw(); });
+$('acN').addEventListener('input',e=>{ $('acNv').textContent=e.target.value+' 個'; acNew(); acMsg(null); acDraw(); });
+$('acQ').addEventListener('input',()=>{ acQLabel(); $('acAuto').checked=false; acNew(); acMsg(null); acDraw(); });
+$('acAuto').addEventListener('change',()=>{ acNew(); acMsg(null); acDraw(); });
+
+/* ===== 電波が届く距離 ===== */
+const LAMBDA=299792458/920.5e6, GR_DBI=2.15;
+let dEirp=36;
+function recvDbm(d){
+  const pol=$('dPol').checked?3:0;
+  return dEirp + GR_DBI - pol + 20*Math.log10(LAMBDA/(4*Math.PI*d));
+}
+function rMax(){
+  const pol=$('dPol').checked?3:0, sens=+$('dSens').value;
+  return LAMBDA/(4*Math.PI)*Math.pow(10,(dEirp+GR_DBI-pol-sens)/20);
+}
+function fmtW(dbm){
+  const w=Math.pow(10,dbm/10)/1000;
+  if(w>=1e-3) return (w*1e3).toFixed(2)+' mW';
+  if(w>=1e-6) return (w*1e6).toFixed(1)+' μW';
+  return (w*1e9).toFixed(0)+' nW';
+}
+function dDraw(){
+  const d=+$('dDist').value, sens=+$('dSens').value;
+  $('dDistv').textContent=d.toFixed(1)+' m';
+  $('dSensv').textContent=(sens<0?'−':'')+Math.abs(sens)+' dBm';
+  const p=recvDbm(d), on=p>=sens, rm=rMax();
+  $('dRecv').textContent=`${p.toFixed(1).replace('-','−')} dBm（${fmtW(p)}）`;
+  $('dTag').className='tagicon '+(on?'on':'off');
+  $('dJudge').innerHTML= on? `<span style="color:var(--ok);font-weight:700;">必要な電力（${fmtW(sens)}）を超えているので、タグは動きます</span>`
+                          : `<span style="color:var(--ng);font-weight:700;">必要な電力（${fmtW(sens)}）に足りないので、タグは動きません</span>`;
+  $('dMax').textContent='約 '+rm.toFixed(1)+' m';
+  const m=$('dMsg');
+  m.className='msg'+(on?' ok':' ng');
+  m.innerHTML= `<div class="t">${d.toFixed(1)} m 離れると、タグが受け取る電力は ${fmtW(p)}</div>`+
+    `リーダが出す電力（${dEirp} dBm ≒ ${fmtW(dEirp)}）のうち、タグに届くのはほんのわずかです。距離が2倍になると、届く電力は4分の1（−6 dB）になります。`+
+    `この条件での理論上の上限は <b>約${rm.toFixed(1)} m</b> です。`+(rm>10?' ただし実際には、反射や吸収などで、これよりずっと短くなります。':'');
+  dChart(d,sens);
+}
+function dChart(d,sens){
+  const svg=$('dChart'); const W=640,H=270,l=52,r=14,t=26,b=38;
+  const xmax=40, ymin=-40, ymax=20;
+  const X=v=>l+(v/xmax)*(W-l-r), Y=v=>t+(ymax-v)/(ymax-ymin)*(H-t-b);
+  let h='';
+  for(let y=ymin;y<=ymax;y+=10){ h+=`<line x1="${l}" x2="${W-r}" y1="${Y(y)}" y2="${Y(y)}" stroke="${y===ymin?'#9AA6BC':'#E3E8F0'}"/>`+
+    `<text x="${l-8}" y="${Y(y)+4}" font-size="12" fill="#5B6472" text-anchor="end">${String(y).replace('-','−')}</text>`; }
+  for(let x=0;x<=xmax;x+=10){ h+=`<text x="${X(x)}" y="${H-b+16}" font-size="12" fill="#5B6472" text-anchor="middle">${x}</text>`; }
+  h+=`<text x="${(l+W-r)/2}" y="${H-4}" font-size="12" fill="#5B6472" text-anchor="middle">距離（m）</text>`;
+  h+=`<text x="${l-8}" y="${t-12}" font-size="11" fill="#5B6472" text-anchor="end">dBm</text>`;
+  // 必要な電力の線
+  h+=`<line x1="${l}" x2="${W-r}" y1="${Y(sens)}" y2="${Y(sens)}" stroke="#C00000" stroke-width="2" stroke-dasharray="6 4"/>`+
+     `<text x="${W-r-4}" y="${Y(sens)-6}" font-size="12" fill="#C00000" text-anchor="end">タグが動くのに必要な電力</text>`;
+  // 受け取る電力
+  let pth='';
+  for(let x=0.5;x<=xmax+1e-9;x+=0.25){ const y=Math.max(ymin,Math.min(ymax,recvDbm(x))); pth+=(pth?'L':'M')+X(x).toFixed(1)+' '+Y(y).toFixed(1); }
+  h+=`<path d="${pth}" fill="none" stroke="#2F5496" stroke-width="2.5"/>`;
+  // 上限
+  const rm=rMax();
+  if(rm<=xmax){ h+=`<line x1="${X(rm)}" x2="${X(rm)}" y1="${t}" y2="${H-b}" stroke="#5B6472" stroke-dasharray="3 3"/>`+
+    `<text x="${X(rm)+4}" y="${t+12}" font-size="12" fill="#5B6472">上限 ${rm.toFixed(1)} m</text>`; }
+  // いまの距離
+  const p=recvDbm(d); const on=p>=sens;
+  h+=`<circle cx="${X(d)}" cy="${Y(Math.max(ymin,Math.min(ymax,p)))}" r="7" fill="${on?'#2E7D4F':'#C00000'}" stroke="#fff" stroke-width="2"/>`;
+  svg.innerHTML=h;
+}
+document.querySelectorAll('[data-eirp]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-eirp]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  dEirp=+b.dataset.eirp; dDraw();
+}));
+['dDist','dSens'].forEach(id=>$(id).addEventListener('input',dDraw));
+$('dPol').addEventListener('change',dDraw);
+
+/* ===== 初期化 ===== */
+regBuild(); acNew(); acMsg(null); acDraw(); dDraw();
+</script>
+</body>
+</html>
