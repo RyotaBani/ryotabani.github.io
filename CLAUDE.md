@@ -23,7 +23,12 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
 ├── bits/index.html     データはすべて0と1（ファイルの中身／画像を音に／音を画像に）
 ├── jpeg/index.html     JPEGをくり返し保存すると（世代劣化。保存のしかた3通り×回数・画質）
-└── rfid/index.html     RFID（電子タグ）（バーコードとくらべる／読み分けのしくみ／電波が届く距離）
+├── rfid/index.html     RFID（電子タグ）（バーコードとくらべる／読み分けのしくみ／電波が届く距離）
+├── program/index.html  共通テスト用プログラム表記（プログラムを動かす／フローチャート／Pythonと見比べる／書き方の一覧）
+├── web/index.html      Webページが表示されるまで（表示までの流れ／DNSで名前を調べる／URLとHTTP）
+├── sql/index.html      データベースとSQL（SQLで検索する／選択・射影・結合／正規化）
+├── copyright/index.html 著作権と知的財産（この使い方はOK？／保護期間を計算／CCライセンス／知的財産権の種類）
+└── numerr/index.html   数の表し方と計算の誤差（負の数（2の補数）／小数の表し方／誤差を体験する）
 ```
 
 `CLAUDE.md` は Claude Code が起動時に読み込むため、リポジトリ直下から動かさない。
