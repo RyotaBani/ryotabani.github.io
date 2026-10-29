@@ -76,8 +76,8 @@
   .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
 
   /* 母集団の格子 */
-  .pop{display:grid; gap:2px; justify-content:center; margin:0 auto;}
-  .pp{width:9px; height:9px; border-radius:2px; background:#D8DEE8;}
+  .pop{display:grid; gap:2px; justify-content:center; margin:0 auto; max-width:100%;}
+  .pp{width:100%; max-width:9px; aspect-ratio:1/1; border-radius:2px; background:#D8DEE8;}
   .pp.yes{background:#2F5496;}
   .pp.no{background:#C9D2E0;}
   .pp.pick{outline:2px solid var(--gold); outline-offset:0;}
@@ -307,21 +307,26 @@
     <a href="/bitop/">画像のビット演算</a>
     <a href="/color/">色の表し方</a>
     <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
     <a href="/charcode/">文字コード</a>
     <a href="/bits/">データはすべて0と1</a>
     <a href="/parity/">パリティマジック</a>
     <a href="/computer/">コンピュータのしくみ</a>
     <a href="/logic/">論理回路</a>
     <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
     <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
     <a href="/mail/">電子メールのしくみ</a>
     <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
     <a href="/simulation/">シミュレーション</a>
     <a href="/dataviz/">データの分析</a>
     <a href="/ml/">機械学習</a>
     <a href="/regression/">回帰と予測</a>
     <a href="/cluster/">クラスタリング</a>
     <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
     <a href="/password/">パスワードの強さ</a>
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
@@ -386,7 +391,7 @@ function drawSPop(){
     if(picked.has(idx)) cls+=' pick';
     h+=`<div class="${cls}"></div>`;
   }
-  box.style.gridTemplateColumns=`repeat(50,9px)`;
+  box.style.gridTemplateColumns=`repeat(50,minmax(0,9px))`;
   box.innerHTML=h;
 }
 function doSample(n){

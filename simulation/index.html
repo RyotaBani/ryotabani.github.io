@@ -105,6 +105,17 @@
   .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
   .article th{background:var(--panel); color:var(--ink);}
   .article td.mono{font-family:ui-monospace,Consolas,monospace;}
+  .detsl{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:4px 22px; margin-top:8px;}
+  .detsl .sl{margin-top:10px;}
+  .detformula{background:#fff; border:2px solid var(--gold); border-radius:12px; padding:12px 16px; margin-bottom:12px; font-size:15px;}
+  .detformula code{font-family:ui-monospace,Consolas,monospace; font-size:15px; background:#FFF8E7; padding:2px 6px; border-radius:4px;}
+  .detchart{background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px;}
+  .detchart svg{display:block; width:100%; height:auto;}
+  .dettable{max-height:300px; overflow:auto; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  .dettable table{border-collapse:collapse; width:100%; font-size:13.5px; font-family:ui-monospace,Consolas,monospace;}
+  .dettable th{position:sticky; top:0; background:var(--panel2); color:var(--ink); padding:6px 10px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap;}
+  .dettable td{padding:4px 10px; text-align:right; border-bottom:1px solid #EEF1F6; white-space:nowrap;}
+  .dettable th:first-child,.dettable td:first-child{text-align:center; color:var(--muted);}
   .formula{background:var(--panel); border-left:4px solid var(--navy);
     padding:12px 16px; margin:0 0 14px; font-size:15px;}
 
@@ -131,6 +142,7 @@
     <button class="tab" role="tab" id="tabDice" aria-selected="true" aria-controls="toolDice">乱数とサイコロ</button>
     <button class="tab" role="tab" id="tabPi" aria-selected="false" aria-controls="toolPi">円周率を求める</button>
     <button class="tab" role="tab" id="tabQ" aria-selected="false" aria-controls="toolQ">レジの待ち行列</button>
+    <button class="tab" role="tab" id="tabDet" aria-selected="false" aria-controls="toolDet">確定的モデル</button>
   </div>
 
   <!-- ===== サイコロ ===== -->
@@ -228,6 +240,25 @@
     <div class="msg" id="qMsg"></div>
   </section>
 
+  <section class="tool" id="toolDet" role="tabpanel" aria-labelledby="tabDet">
+    <div class="panel">
+      <h2>「今の値」から「次の値」を決まった式で計算し、くり返して変化を追います</h2>
+      <div class="row" id="detModels">
+        <button class="chip" data-m="bank" aria-pressed="true">💴 預金（複利）</button>
+        <button class="chip" data-m="pop" aria-pressed="false">🐟 生き物の数</button>
+        <button class="chip" data-m="fall" aria-pressed="false">🍎 物の落下</button>
+      </div>
+      <div class="detsl" id="detSl"></div>
+    </div>
+    <div class="detformula" id="detFormula"></div>
+    <div class="detchart"><svg id="detChart" viewBox="0 0 640 280" role="img" aria-label="計算した値の変化のグラフ"></svg></div>
+    <div class="stats" id="detStats"></div>
+    <div class="msg" id="detMsg"></div>
+    <h3 style="font-size:15px;color:var(--ink);margin:20px 0 6px;">計算の表（表計算ソフトで作るときの形）</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 8px;" id="detSheet"></p>
+    <div class="dettable"><table id="detTable"></table></div>
+  </section>
+
   <!-- ===== 解説 ===== -->
   <section class="article">
     <h2>シミュレーションとは</h2>
@@ -243,6 +274,10 @@
       <tr><td>確率的モデル</td><td>偶然の要素を含み、毎回結果が変わる</td><td>レジの行列、感染症の広がり</td></tr>
     </table>
     <p>確率的モデルでは、乱数を使って偶然を再現します。何度も繰り返して平均をとることで、傾向をつかみます。</p>
+    <h3>確定的モデルを計算する</h3>
+    <p>確定的モデルの多くは、「今の値から次の値を求める式」で表せます。たとえば預金なら「来年の残高 ＝ 今年の残高 ×（1＋利率）」、生き物の数なら「次の年の数 ＝ 今の数 ＋ 増える数」です。この式をくり返し計算すると、時間とともに値がどう変わるかが分かります。表計算ソフトで、1行下のセルに上のセルを使った式を書き、下へコピーしていくのと同じ考え方です。</p>
+    <p>増え方の決め方で、変化の形は大きく変わります。毎年同じ数だけ増えれば直線（一次関数）、毎年同じ割合で増えれば、あとになるほど急に増える曲線（指数関数）になります。ただし、現実の生き物は、えさやすみかに限りがあるので、いつまでも増え続けることはできません。数が上限に近づくほど増え方がゆるやかになるように式を変えたものを、ロジスティックモデルといいます。「確定的モデル」のタブで、上限があるときとないときを比べられます。</p>
+    <p>物の落下のように、本来は時間が切れ目なく流れる現象を計算するときは、時間を小さな刻み（Δt）に区切って、少しずつ進めます。刻みが大きいと、公式で求めた正確な値とのずれ（誤差）が大きくなります。モデルの答えは、式だけでなく、計算のしかたによっても変わるのです。</p>
 
     <h2>乱数</h2>
     <p>でたらめな数を乱数といいます。サイコロの目やコインの裏表は、身近な乱数です。</p>
@@ -291,6 +326,7 @@
       <li><strong>乱数とサイコロ</strong>：回数を増やすと、割合が理論値に近づく様子を確認できます。</li>
       <li><strong>円周率を求める</strong>：点を打つほど、推定値が3.14に近づきます。</li>
       <li><strong>レジの待ち行列</strong>：台数と混み具合を変えて、待ち時間がどう変わるか試せます。</li>
+      <li><strong>確定的モデル</strong>：預金・生き物の数・物の落下を、決まった式のくり返しで計算します。条件を変えるとグラフと表がすぐに変わります。</li>
     </ul>
   </section>
 
@@ -305,21 +341,26 @@
     <a href="/bitop/">画像のビット演算</a>
     <a href="/color/">色の表し方</a>
     <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
     <a href="/charcode/">文字コード</a>
     <a href="/bits/">データはすべて0と1</a>
     <a href="/parity/">パリティマジック</a>
     <a href="/computer/">コンピュータのしくみ</a>
     <a href="/logic/">論理回路</a>
     <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
     <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
     <a href="/mail/">電子メールのしくみ</a>
     <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
     <a href="/simulation/">シミュレーション</a>
     <a href="/dataviz/">データの分析</a>
     <a href="/ml/">機械学習</a>
     <a href="/regression/">回帰と予測</a>
     <a href="/cluster/">クラスタリング</a>
     <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
     <a href="/password/">パスワードの強さ</a>
     <a href="/crypto/">暗号のしくみ</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
@@ -336,7 +377,7 @@
 <script>
 /* ===== タブ ===== */
 (() => {
-  const tabs=[['tabDice','toolDice'],['tabPi','toolPi'],['tabQ','toolQ']];
+  const tabs=[['tabDice','toolDice'],['tabPi','toolPi'],['tabQ','toolQ'],['tabDet','toolDet']];
   tabs.forEach(([tid,pid])=>{
     document.getElementById(tid).addEventListener('click',()=>{
       tabs.forEach(([t,p])=>{
@@ -346,6 +387,7 @@
       });
       if(tid==='tabPi') drawPi();
       if(tid==='tabQ') drawQ();
+      if(tid==='tabDet') detDraw();
     });
   });
 })();
@@ -564,6 +606,104 @@ document.getElementById('qReset').addEventListener('click',()=>{
 /* ===== 初期化 ===== */
 drawDice(); drawPi();
 document.getElementById('qReset').click();
+/* ===== 確定的モデル ===== */
+const DET={
+  bank:{sl:[['P','元金',1,100,1,10,v=>v+' 万円'],['r','年利率',0.1,10,0.1,3,v=>v.toFixed(1)+' ％'],['n','年数',1,50,1,30,v=>v+' 年'],['a','毎年の積立',0,12,1,0,v=>v+' 万円']]},
+  pop:{sl:[['N0','はじめの数',10,500,10,20,v=>v+' 匹'],['r','1年で増える割合',5,100,5,40,v=>v+' ％'],['K','すめる数の上限',100,2000,100,1000,v=>v+' 匹'],['n','年数',5,40,1,25,v=>v+' 年']],ck:['lim','上限を考える（ロジスティックモデル）',true]},
+  fall:{sl:[['h','落とす高さ',5,100,5,45,v=>v+' m'],['dt','時間の刻み Δt',0.05,1,0.05,0.5,v=>v.toFixed(2)+' 秒']]},
+};
+let detM='bank'; const detV={};
+function detBuild(){
+  const m=DET[detM]; let h='';
+  m.sl.forEach(([k,lab,mn,mx,st,df,f])=>{ if(detV[detM+k]===undefined) detV[detM+k]=df;
+    h+=`<div class="sl"><div class="top"><label for="det_${k}">${lab}</label><span class="val" id="det_${k}v">${f(detV[detM+k])}</span></div><input type="range" id="det_${k}" min="${mn}" max="${mx}" step="${st}" value="${detV[detM+k]}"></div>`; });
+  if(m.ck){ const [k,lab,df]=m.ck; if(detV[detM+k]===undefined) detV[detM+k]=df;
+    h+=`<div class="sl" style="display:flex;align-items:center;"><label style="display:inline-flex;gap:8px;align-items:center;cursor:pointer;"><input type="checkbox" id="det_${k}" ${detV[detM+k]?'checked':''} style="width:18px;height:18px;accent-color:var(--navy);">${lab}</label></div>`; }
+  document.getElementById('detSl').innerHTML=h;
+  m.sl.forEach(([k,,,,,,f])=>{ const el=document.getElementById('det_'+k); el.addEventListener('input',()=>{ detV[detM+k]=+el.value; document.getElementById('det_'+k+'v').textContent=f(+el.value); detDraw(); }); });
+  if(m.ck){ const k=m.ck[0]; document.getElementById('det_'+k).addEventListener('change',e=>{ detV[detM+k]=e.target.checked; detDraw(); }); }
+}
+const detG=k=>detV[detM+k];
+function detFmt(v,d=0){ return v.toLocaleString('ja-JP',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function detCompute(){
+  if(detM==='bank'){
+    const P=detG('P')*10000, r=detG('r')/100, n=detG('n'), a=detG('a')*10000;
+    const rows=[]; let b=P, s=P;
+    for(let y=0;y<=n;y++){ rows.push([y,b,s]); b=b*(1+r)+a; s=s+P*r+a; }
+    return {rows, x:'年', cols:['残高（複利）','残高（単利）'], series:[{i:1,name:'複利',c:'#2F5496'},{i:2,name:'単利',c:'#9AA6BC',dash:1}],
+      fmt:[v=>v, v=>detFmt(Math.round(v))+' 円', v=>detFmt(Math.round(v))+' 円'],
+      formula:`来年の残高 ＝ 今年の残高 ×（1 ＋ ${(r*100).toFixed(1)}％）${a?' ＋ '+detFmt(a)+' 円':''}`,
+      sheet:`表計算ソフトなら、A列に年、B2に元金を入れ、B3に「=B2*(1+利率のセル)${a?'+積立のセル':''}」と書いて、下の行へコピーします。`,
+      stats:[['はじめの元金',detFmt(P)+' 円'],[n+'年後（複利）',detFmt(Math.round(rows[n][1]))+' 円'],[n+'年後（単利）',detFmt(Math.round(rows[n][2]))+' 円']],
+      msg:`<div class="t">${n}年後の残高は 約${detFmt(Math.round(rows[n][1]/10000))}万円</div>複利では、増えた利息にもまた利息がつくので、年がたつほど増え方が大きくなります（指数関数的な増え方）。単利は元金にだけ利息がつくので、毎年同じ額ずつ増えます（直線）。利率 ${(r*100).toFixed(1)}％ で元金が2倍になるのは、約${rows.findIndex(x=>x[1]>=P*2)>=0? rows.findIndex(x=>x[1]>=P*2)+'年後' : n+'年より先'}です${a?'（積立を含む）':''}。`};
+  }
+  if(detM==='pop'){
+    const N0=detG('N0'), r=detG('r')/100, K=detG('K'), n=detG('n'), lim=detG('lim');
+    const rows=[]; let L=N0, X=N0;
+    for(let y=0;y<=n;y++){ rows.push([y,L,X]); L=L+r*L*(1-L/K); X=X+r*X; }
+    const series=[{i:1,name: lim?'上限あり':'上限なし',c:'#2E7D4F'}]; if(lim) series.push({i:2,name:'上限なし',c:'#C00000',dash:1});
+    if(!lim){ rows.forEach(rw=>rw[1]=rw[2]); }
+    return {rows, x:'年', cols: lim? ['上限あり（ロジスティック）','上限なし（指数）'] : ['数（指数）','数（指数）'], series, cap: lim? K:null,
+      fmt:[v=>v, v=>detFmt(v,1), v=>detFmt(v,1)], hideCol2: !lim,
+      formula: lim? `次の年の数 ＝ 今の数 ＋ ${(r*100)|0}％ × 今の数 ×（1 − 今の数 ÷ ${K}）` : `次の年の数 ＝ 今の数 ＋ ${(r*100)|0}％ × 今の数`,
+      sheet: lim? `表計算ソフトなら、B3に「=B2+増える割合*B2*(1-B2/上限)」と書いて、下の行へコピーします。` : `表計算ソフトなら、B3に「=B2+増える割合*B2」と書いて、下の行へコピーします。`,
+      stats:[['はじめの数',detFmt(N0)+' 匹'],[n+'年後',detFmt(Math.round(rows[n][1]))+' 匹'],['上限なしなら',detFmt(Math.round(rows[n][2]))+' 匹']],
+      msg: lim? `<div class="t">${n}年後は 約${detFmt(Math.round(rows[n][1]))}匹（上限 ${K}匹）</div>はじめは指数関数のように増えますが、上限に近づくと「1 − 今の数 ÷ 上限」が0に近づくので、増え方がゆるやかになり、S字の曲線になります。上限を考えない赤い点線は、どこまでも増え続けます。現実に合うのはどちらでしょうか。`
+        : `<div class="t">上限を考えないと、${n}年後には 約${detFmt(Math.round(rows[n][1]))}匹</div>毎年同じ割合で増えると、数が多くなるほど増える数も多くなり、急激に増えます。えさやすみかに限りがある現実の生き物には、このままでは合いません。`};
+  }
+  if(detM==='fall'){
+    const h=detG('h'), dt=detG('dt'), G=9.8;
+    const rows=[]; let t=0, v=0, y=h;
+    while(true){ const ex=Math.max(0,h-0.5*G*t*t); rows.push([t,v,y,ex]); if(y<=0||rows.length>400) break; const ny=y-v*dt; v=v+G*dt; y=Math.max(0,ny); t=Math.round((t+dt)*1000)/1000; }
+    const tExact=Math.sqrt(2*h/G), tCalc=rows[rows.length-1][0];
+    return {rows, x:'秒', cols:['速さ（m/秒）','高さ（計算）','高さ（公式）'], series:[{i:2,name:'計算（刻み）',c:'#2F5496',step:1},{i:3,name:'公式',c:'#C49A2B',dash:1}],
+      fmt:[v=>v.toFixed(2), v=>v.toFixed(2), v=>v.toFixed(2), v=>v.toFixed(2)], three:1,
+      formula:`次の高さ ＝ 今の高さ − 今の速さ × ${dt.toFixed(2)}秒　／　次の速さ ＝ 今の速さ ＋ 9.8 × ${dt.toFixed(2)}秒`,
+      sheet:`表計算ソフトなら、B列に速さ、C列に高さを置き、B3に「=B2+9.8*Δt」、C3に「=C2-B2*Δt」と書いて、下の行へコピーします。`,
+      stats:[['地面に着く時刻（計算）',tCalc.toFixed(2)+' 秒'],['地面に着く時刻（公式）',tExact.toFixed(2)+' 秒'],['ずれ',(tCalc-tExact).toFixed(2)+' 秒']],
+      msg:`<div class="t">刻み ${dt.toFixed(2)} 秒で計算すると、ずれは ${Math.abs(tCalc-tExact).toFixed(2)} 秒</div>実際の落下では、速さは切れ目なく変わります。この計算では、Δt 秒の間は速さが変わらないとみなして進めているので、公式（高さ ＝ ${h} − ½ × 9.8 × 時間²）とのずれが生まれます。刻みを小さくすると、ずれは小さくなりますが、計算の回数は増えます。`};
+  }
+}
+function detDraw(){
+  const d=detCompute();
+  document.getElementById('detFormula').innerHTML=`くり返す式：<code>${d.formula}</code>`;
+  document.getElementById('detSheet').textContent=d.sheet;
+  document.getElementById('detStats').innerHTML=d.stats.map(([k,v])=>`<div class="stt"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  document.getElementById('detMsg').innerHTML=d.msg;
+  // 表
+  const cols=d.hideCol2? [d.cols[0]] : d.cols;
+  let h=`<tr><th>${d.x}</th>`+cols.map(c=>`<th>${c}</th>`).join('')+'</tr>';
+  d.rows.forEach(r=>{ h+=`<tr><td>${d.fmt[0](r[0])}</td>`+cols.map((c,i)=>`<td>${d.fmt[i+1](r[i+1])}</td>`).join('')+'</tr>'; });
+  document.getElementById('detTable').innerHTML=h;
+  // グラフ
+  const W=640,H=280,l=70,r=14,t=26,b=36;
+  const xs=d.rows.map(r=>r[0]); const xmax=Math.max(...xs)||1;
+  let ymax=0; d.series.forEach(s=>d.rows.forEach(r=>{ if(r[s.i]>ymax) ymax=r[s.i]; }));
+  if(d.cap) ymax=Math.max(ymax,d.cap);
+  if(detM==='pop' && d.series.length>1){ const capY=d.cap*2.2; ymax=Math.min(ymax,capY); }
+  const nice=v=>{ const p=Math.pow(10,Math.floor(Math.log10(v||1))); const m=v/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p; };
+  ymax=nice(ymax*1.05);
+  const X=v=>l+(v/xmax)*(W-l-r), Y=v=>t+(1-Math.min(v,ymax)/ymax)*(H-t-b);
+  let s='';
+  for(let k=0;k<=4;k++){ const v=ymax*k/4; s+=`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${k?'#E3E8F0':'#9AA6BC'}"/><text x="${l-6}" y="${Y(v)+4}" font-size="11.5" fill="#5B6472" text-anchor="end">${v>=10000? detFmt(v/10000,v>=100000?0:1)+'万' : (Number.isInteger(v)? v : v.toFixed(1))}</text>`; }
+  const step=xmax<=10?1:xmax<=30?5:10;
+  for(let x=0;x<=xmax+1e-9;x+=step){ s+=`<text x="${X(x)}" y="${H-b+16}" font-size="11.5" fill="#5B6472" text-anchor="middle">${+x.toFixed(2)}</text>`; }
+  s+=`<text x="${(l+W-r)/2}" y="${H-3}" font-size="12" fill="#5B6472" text-anchor="middle">${d.x==='年'?'年数':'時間（秒）'}</text>`;
+  if(d.cap && detM==='pop' && detG('lim')){ s+=`<line x1="${l}" x2="${W-r}" y1="${Y(d.cap)}" y2="${Y(d.cap)}" stroke="#2E7D4F" stroke-dasharray="2 4"/><text x="${W-r-4}" y="${Y(d.cap)-5}" font-size="11.5" fill="#2E7D4F" text-anchor="end">上限 ${d.cap}</text>`; }
+  d.series.forEach((se,si)=>{
+    let p='', out=false; for(let k=0;k<d.rows.length;k++){ const r=d.rows[k]; p+=(k?'L':'M')+X(r[0]).toFixed(1)+' '+Y(r[se.i]).toFixed(1); if(r[se.i]>ymax){ out=true; s+=`<text x="${X(r[0])+6}" y="${t+14}" font-size="11.5" fill="${se.c}">↑ この先は枠の外</text>`; break; } }
+    s+=`<path d="${p}" fill="none" stroke="${se.c}" stroke-width="2.5" ${se.dash?'stroke-dasharray="6 4"':''}/>`;
+    if(se.step) d.rows.forEach(r=>{ s+=`<circle cx="${X(r[0])}" cy="${Y(r[se.i])}" r="3" fill="${se.c}"/>`; });
+    s+=`<rect x="${l+10+si*130}" y="6" width="14" height="4" fill="${se.c}"/><text x="${l+30+si*130}" y="12" font-size="12" fill="#1c2430">${se.name}</text>`;
+  });
+  document.getElementById('detChart').innerHTML=s;
+}
+document.querySelectorAll('#detModels [data-m]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#detModels [data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  detM=b.dataset.m; detBuild(); detDraw();
+}));
+detBuild(); detDraw();
+
 </script>
 </body>
 </html>

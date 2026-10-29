@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>コンピュータの数の表し方と計算の誤差（2の補数・浮動小数点・桁あふれ）｜情報ラボ</title>
+<meta name="description" content="コンピュータが負の数や小数をどう表しているかを、ビットを動かして確かめられる無料ツール。2の補数、浮動小数点数（IEEE 754）のしくみと、0.1を足し続けたときの誤差、桁あふれ、情報落ち、桁落ちを体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/numerr/">
+<meta property="og:title" content="コンピュータの数の表し方と計算の誤差｜情報ラボ">
+<meta property="og:description" content="2の補数、浮動小数点数、0.1の誤差、桁あふれ。コンピュータの計算のしくみを体験できる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/numerr/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+    --sign:#C00000; --exp:#2F5496; --man:#2E7D4F;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  input.num{font-family:var(--mono); font-size:16px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:12em; max-width:100%; background:#fff;}
+  .sl{margin-top:10px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  /* ビット */
+  .bits{display:flex; gap:4px; flex-wrap:wrap;}
+  .bit{width:40px; height:48px; border:2px solid var(--line); border-radius:8px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:20px; font-weight:700; cursor:pointer; user-select:none; color:#1c2430; padding:0;}
+  .bit small{font-size:10px; color:var(--muted); font-weight:400; line-height:1;}
+  .bit.on{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .bit.on small{color:#cfd9ee;}
+  .bit.sign{border-color:var(--sign);}
+  .bit.sign.on{background:var(--sign); border-color:var(--sign);}
+  .wheel{background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px;}
+  .wheel svg{display:block; width:100%; max-width:420px; margin:0 auto; height:auto;}
+
+  .addgrid{font-family:var(--mono); font-size:18px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px; overflow-x:auto;}
+  .addgrid table{border-collapse:collapse; margin:0 auto;}
+  .addgrid td{padding:2px 6px; text-align:center;}
+  .addgrid td.lab{text-align:right; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:13px; color:var(--muted); padding-right:12px; white-space:nowrap;}
+  .addgrid tr.carry td{font-size:12px; color:var(--gold);}
+  .addgrid tr.sum td{border-top:2px solid #1c2430; font-weight:700;}
+  .addgrid td.out{color:var(--ng); text-decoration:line-through;}
+
+  /* 浮動小数点 */
+  .fbits{display:flex; flex-wrap:wrap; gap:2px; font-family:var(--mono);}
+  .fb{width:22px; height:32px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:#fff; border-radius:3px;}
+  .fb.s{background:var(--sign);} .fb.e{background:var(--exp);} .fb.m{background:var(--man);}
+  .fb.z{opacity:.55;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-top:8px;}
+  .legend span::before{content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  .legend .ls::before{background:var(--sign);} .legend .le::before{background:var(--exp);} .legend .lm::before{background:var(--man);}
+  pre.exact{font-family:var(--mono); font-size:14px; background:#0f1a2e; color:#E6EDF7; border-radius:8px; padding:10px 14px; margin:8px 0 0; white-space:pre-wrap; overflow-wrap:anywhere;}
+  pre.exact .d{color:#FFB4A9;}
+  .calc{font-size:14.5px; line-height:1.9; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-top:12px; overflow-x:auto;}
+  .calc code{font-family:var(--mono);}
+
+  .exps{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px;}
+  .exp{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px 14px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430;}
+  .exp b{display:block; color:var(--ink); font-size:15px;}
+  .exp span{font-size:13px; color:var(--muted);}
+  .exp[aria-pressed=true]{border-color:var(--gold); background:#FFF8E7;}
+  .chartbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px; margin-top:12px;}
+  .chartbox svg{display:block; width:100%; height:auto;}
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 10px; text-align:left;}
+  table.tb th{background:var(--panel); color:var(--ink);}
+  table.tb td.m{font-family:var(--mono); overflow-wrap:anywhere;}
+  .scroll{overflow-x:auto; max-width:100%;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px; overflow-x:auto;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 数の表し方と計算の誤差</p>
+    <h1>コンピュータの数の表し方と計算の誤差</h1>
+    <p class="lead">コンピュータは、決まった数のビットで数を表します。だから、表せない数や、ずれてしまう計算があります。ビットを動かして確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabNeg" aria-selected="true" aria-controls="toolNeg">負の数（2の補数）</button>
+    <button class="tab" role="tab" id="tabFp" aria-selected="false" aria-controls="toolFp">小数の表し方</button>
+    <button class="tab" role="tab" id="tabErr" aria-selected="false" aria-controls="toolErr">誤差を体験する</button>
+  </div>
+
+  <!-- ===== 2の補数 ===== -->
+  <section class="tool show" id="toolNeg" role="tabpanel" aria-labelledby="tabNeg">
+    <div class="panel">
+      <h2>ビットを押して、同じ並びが「0以上の数」と「負の数もふくむ数」でどう読めるかを比べます</h2>
+      <div class="row">
+        <button class="chip" data-w="4" aria-pressed="false">4ビット</button>
+        <button class="chip" data-w="8" aria-pressed="true">8ビット</button>
+        <button class="chip" id="nNeg">符号を反転する（−をつける）</button>
+        <button class="chip" id="nZero">0にする</button>
+      </div>
+      <div class="bits" id="nBits" style="margin-top:12px;"></div>
+      <p class="hint">左はしのビット（赤い枠）は、2の補数では「符号ビット」になります。1なら負の数です。</p>
+    </div>
+    <div class="two">
+      <div>
+        <div class="stats" style="margin-top:0;">
+          <div class="stt"><div class="k">0以上の数として読む</div><div class="v" id="nU">0</div></div>
+          <div class="stt"><div class="k">2の補数として読む</div><div class="v" id="nS">0</div></div>
+        </div>
+        <div class="calc" id="nCalc"></div>
+      </div>
+      <div class="wheel"><svg id="nWheel" viewBox="0 0 420 420" role="img" aria-label="4ビットの数の輪"></svg></div>
+    </div>
+    <div class="panel" style="margin-top:16px;">
+      <h2>2の補数で足し算する（8ビット、−128〜127）</h2>
+      <div class="row">
+        <label>A <input class="num" type="number" id="aA" value="100" min="-128" max="127" style="width:7em"></label>
+        <span style="font-size:20px;">＋</span>
+        <label>B <input class="num" type="number" id="aB" value="-30" min="-128" max="127" style="width:7em"></label>
+        <button class="chip" data-ab="100,-30">100＋(−30)</button>
+        <button class="chip" data-ab="-5,-7">(−5)＋(−7)</button>
+        <button class="chip" data-ab="100,50">100＋50</button>
+        <button class="chip" data-ab="-100,-50">(−100)＋(−50)</button>
+      </div>
+      <div class="addgrid" id="aGrid" style="margin-top:12px;"></div>
+      <div class="msg" id="aMsg"></div>
+    </div>
+  </section>
+
+  <!-- ===== 浮動小数点 ===== -->
+  <section class="tool" id="toolFp" role="tabpanel" aria-labelledby="tabFp">
+    <div class="panel">
+      <h2>10進数の小数を入れると、コンピュータの中での形（浮動小数点数）と、実際に記録される値を表示します</h2>
+      <div class="row">
+        <input class="num" id="fIn" value="0.1" inputmode="decimal" aria-label="10進数">
+        <button class="chip" data-f="0.1">0.1</button><button class="chip" data-f="0.5">0.5</button><button class="chip" data-f="0.75">0.75</button>
+        <button class="chip" data-f="3.14">3.14</button><button class="chip" data-f="-6.25">−6.25</button><button class="chip" data-f="16777217">16777217</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="chip" data-p="32" aria-pressed="true">単精度（32ビット）</button>
+        <button class="chip" data-p="64" aria-pressed="false">倍精度（64ビット）</button>
+      </div>
+    </div>
+    <div class="fbits" id="fBits"></div>
+    <div class="legend"><span class="ls">符号部</span><span class="le" id="fLe">指数部（8ビット）</span><span class="lm" id="fLm">仮数部（23ビット）</span></div>
+    <div class="calc" id="fCalc"></div>
+    <div style="margin-top:12px;font-size:14px;font-weight:700;color:var(--ink);">実際に記録される値（10進数で、すべての桁）</div>
+    <pre class="exact" id="fExact"></pre>
+    <div class="stats">
+      <div class="stt"><div class="k">入れた数</div><div class="v" id="fV">–</div></div>
+      <div class="stt"><div class="k">記録された値との差（誤差）</div><div class="v" id="fE">–</div></div>
+      <div class="stt"><div class="k">2進数で表すと</div><div class="v" id="fB" style="font-size:15px;">–</div></div>
+    </div>
+    <div class="msg" id="fMsg"></div>
+  </section>
+
+  <!-- ===== 誤差 ===== -->
+  <section class="tool" id="toolErr" role="tabpanel" aria-labelledby="tabErr">
+    <div class="exps" id="eList">
+      <button class="exp" data-e="sum" aria-pressed="true"><b>0.1 を足し続ける</b><span>丸め誤差がたまっていく</span></button>
+      <button class="exp" data-e="over" aria-pressed="false"><b>桁あふれ</b><span>表せる範囲をこえる</span></button>
+      <button class="exp" data-e="loss" aria-pressed="false"><b>情報落ち</b><span>大きな数に小さな数を足す</span></button>
+      <button class="exp" data-e="cancel" aria-pressed="false"><b>桁落ち</b><span>近い数どうしを引く</span></button>
+    </div>
+    <div class="panel" style="margin-top:14px;" id="eBody"></div>
+  </section>
+
+  <section class="article">
+    <h2>コンピュータは決まった桁数で数を表す</h2>
+    <p>コンピュータの中では、数はすべて0と1の並び（ビット）で表されます。紙に書く計算なら、桁が足りなくなれば書き足せますが、コンピュータは<strong>あらかじめ決めたビット数</strong>で数を記録します。8ビットなら 2<sup>8</sup> ＝ 256 通り、32ビットなら約43億通りの並びしかありません。そのため、表せる数には範囲があり、また小数の多くは正確には表せません。これが、コンピュータの計算に<strong>誤差</strong>が生まれる理由です。</p>
+
+    <h2>負の数の表し方（2の補数）</h2>
+    <p>負の数を表す方法として、多くのコンピュータで使われているのが<strong>2の補数</strong>です。8ビットの場合、左はしのビットを「−128 の位」とみなして読みます。たとえば 11111010 は、−128＋64＋32＋16＋8＋2 ＝ −6 です。左はしのビットが1なら負の数、0なら0以上の数になるので、このビットを<strong>符号ビット</strong>といいます。8ビットの2の補数で表せるのは −128 から 127 までです。</p>
+    <p>ある数の符号を反転する（−をつける）には、「すべてのビットの0と1を入れかえて、1を足す」という手順を使います。6（00000110）なら、入れかえて 11111001、1を足して 11111010（−6）です。</p>
+    <h3>2の補数が使われる理由</h3>
+    <p>2の補数のよいところは、<strong>引き算を足し算で計算できる</strong>ことです。100 − 30 は、100 ＋（−30）として、ふつうの2進数の足し算の回路でそのまま計算できます。左はしからあふれたくり上がりを捨てれば、正しい答えになります。足し算の回路だけで引き算もできるので、回路を単純にできます。<a href="/logic/">論理回路</a>で、足し算をする回路のしくみも確かめてみましょう。</p>
+
+    <h2>小数の表し方（浮動小数点数）</h2>
+    <p>小数は、10進数の「6.02 × 10<sup>23</sup>」のような指数を使った書き方を、2進数で行って表します。この表し方を<strong>浮動小数点数</strong>といいます。多くのコンピュータは、IEEE 754 という国際的な規格に従っています。</p>
+    <table>
+      <tr><th>形式</th><th>全体</th><th>符号部</th><th>指数部</th><th>仮数部</th></tr>
+      <tr><td>単精度</td><td>32ビット</td><td>1ビット</td><td>8ビット</td><td>23ビット</td></tr>
+      <tr><td>倍精度</td><td>64ビット</td><td>1ビット</td><td>11ビット</td><td>52ビット</td></tr>
+    </table>
+    <div class="formula">値 ＝ (−1)<sup>符号部</sup> × 1.仮数部<sub>(2)</sub> × 2<sup>指数部 − 127</sup>（単精度の場合。倍精度は 127 のかわりに 1023）</div>
+    <p>たとえば −6.25 は、2進数で −110.01、これを「−1.1001 × 2<sup>2</sup>」と書き直して記録します。仮数部の先頭の「1.」はいつも同じなので記録せず、そのぶん1ビット多く精度を持たせています。</p>
+    <h3>0.1 は正確に表せない</h3>
+    <p>10進数の 0.1 を2進数にすると、0.000110011001100…と「0011」が永遠にくり返す小数になります。仮数部のビット数は決まっているので、どこかで丸めるしかなく、記録される値は 0.1 からわずかにずれます。単精度では 0.100000001490116…、倍精度でも 0.1000000000000000055511…になります。一方、0.5 や 0.75 のように、2のべき乗の分数（1/2、1/4、1/8…）の和で表せる数は、ぴったり記録できます。</p>
+
+    <h2>計算で生まれる誤差</h2>
+    <h3>丸め誤差</h3>
+    <p>決まった桁数に入りきらない部分を、四捨五入などで丸めるときに生まれる誤差です。1回ごとのずれは小さくても、計算をくり返すとたまっていきます。単精度で 0.1 を1000回足すと、100 にはならず、99.99905 になります。</p>
+    <h3>桁あふれ（オーバーフロー）</h3>
+    <p>計算の結果が、表せる範囲をこえてしまうことです。8ビットの0以上の数では 255 ＋ 1 が 0 に、8ビットの2の補数では 127 ＋ 1 が −128 になってしまいます。ゲームの得点や、日付・時刻の計算などで問題になることがあります。</p>
+    <h3>情報落ち</h3>
+    <p>大きな数に、とても小さな数を足したとき、小さな数が結果に反映されずに消えてしまうことです。単精度の有効な桁はおよそ7けたなので、1億に1を足しても1億のままになります。たくさんの数を足すときは、小さい数から順に足すと、情報落ちを減らせます。</p>
+    <h3>桁落ち</h3>
+    <p>ほとんど同じ大きさの数どうしを引き算したとき、上の同じ桁が打ち消し合って、信頼できる桁が少なくなってしまうことです。√(x＋1) − √x のような計算では、式を 1 ÷ (√(x＋1) ＋ √x) に変形すると、引き算をせずに計算できるので、桁落ちを防げます。</p>
+
+    <h2>誤差が大きな事故につながった例</h2>
+    <p>1991年2月25日、サウジアラビアのダーランで、迎撃ミサイルのシステムが飛来したミサイルの迎撃に失敗し、兵舎にいた28人のアメリカ兵が亡くなりました。アメリカ会計検査院（GAO）の報告によると、システムは時刻を24ビットのレジスタで実数に変換する際に精度を失っており、100時間以上連続で動かしたことで、そのずれがたまって約0.34秒になっていました。このずれのため、レーダーが目標を探す範囲が約687メートルずれていたとされています。小さな誤差でも、くり返しによって大きな影響を生むことがあるのです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>負の数（2の補数）</strong>：ビットを押して0と1を切りかえます。「符号を反転する」で、入れかえて1を足す手順を確かめられます。下の足し算では、桁あふれが起きる例も試せます。</li>
+      <li><strong>小数の表し方</strong>：10進数を入れると、符号部・指数部・仮数部のビットと、実際に記録される値をすべての桁で表示します。入れた数とちがう桁は赤く表示されます。</li>
+      <li><strong>誤差を体験する</strong>：丸め誤差・桁あふれ・情報落ち・桁落ちの4つを、実際に計算して確かめられます。単精度の計算は、JavaScript の Math.fround で32ビットに丸めて再現しています。</li>
+    </ul>
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>IEEE, "IEEE Standard for Floating-Point Arithmetic," IEEE Std 754-2019 https://standards.ieee.org/ieee/754/6210/</li>
+      <li>Python ドキュメント「浮動小数点演算、その問題と制限」https://docs.python.org/ja/3/tutorial/floatingpoint.html</li>
+      <li>U.S. General Accounting Office, "Patriot Missile Defense: Software Problem Led to System Failure at Dhahran, Saudi Arabia," GAO/IMTEC-92-26（1992）https://www.gao.gov/assets/imtec-92-26.pdf</li>
+      <li>文部科学省「高等学校情報科『情報Ⅰ』教員研修用教材」https://www.mext.go.jp/a_menu/shotou/zyouhou/detail/1416756.htm</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const minus=s=>String(s).replace(/^-/,'−').replace(/e-/,'e−');
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabNeg','toolNeg'],['tabFp','toolFp'],['tabErr','toolErr']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+
+/* ===================== 2の補数 ===================== */
+let W=8, bits=new Array(8).fill(0);
+function uval(b){ return b.reduce((a,x)=>a*2+x,0); }
+function sval(b){ const u=uval(b), n=b.length; return b[0]? u-2**n : u; }
+function toBits(v,n){ const u=((v%2**n)+2**n)%2**n; return [...u.toString(2).padStart(n,'0')].map(Number); }
+function drawNeg(extra){
+  const n=W;
+  $('nBits').innerHTML=bits.map((x,i)=>{ const k=n-1-i; const w= i===0? '−'+2**k : 2**k;
+    return `<button class="bit${x?' on':''}${i===0?' sign':''}" data-i="${i}" aria-label="${k}桁目のビット">${x}<small>${w}</small></button>`; }).join('');
+  $('nU').textContent=uval(bits); $('nS').textContent=minus(sval(bits));
+  const terms=bits.map((x,i)=>{ const k=n-1-i; return x? (i===0? `(−${2**k})` : String(2**k)) : null; }).filter(Boolean);
+  let c=`<b>2の補数として読む</b>：左はしのビットの重みだけを負（−${2**(n-1)}）にして足します。<br><code>${terms.length? terms.join(' + ') : '0'} = ${minus(sval(bits))}</code>`;
+  if(extra) c+=`<hr style="border:none;border-top:1px dashed var(--line);margin:10px 0;">`+extra;
+  $('nCalc').innerHTML=c;
+  drawWheel();
+  $('nBits').querySelectorAll('.bit').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.i; bits[i]^=1; drawNeg(); }));
+}
+function drawWheel(){
+  const cx=210, cy=210, R=160; let s='';
+  const cur= W===4 ? uval(bits) : -1;
+  s+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#E3E8F0" stroke-width="30"/>`;
+  for(let u=0;u<16;u++){
+    const a=-Math.PI/2+u*2*Math.PI/16, x=cx+R*Math.cos(a), y=cy+R*Math.sin(a);
+    const sv= u>=8? u-16 : u; const on=u===cur;
+    const xi=cx+(R-62)*Math.cos(a), yi=cy+(R-62)*Math.sin(a);
+    s+=`<circle cx="${x}" cy="${y}" r="${on?22:18}" fill="${on?'#C49A2B':(u>=8?'#FBEDEC':'#EAF1FB')}" stroke="${u>=8?'#C00000':'#2F5496'}" stroke-width="${on?3:1.5}"/>`;
+    s+=`<text x="${x}" y="${y+5}" text-anchor="middle" font-size="14" font-weight="700" fill="${on?'#fff':'#1c2430'}" font-family="ui-monospace,Consolas,monospace">${minus(sv)}</text>`;
+    s+=`<text x="${xi}" y="${yi+4}" text-anchor="middle" font-size="11.5" fill="#5B6472" font-family="ui-monospace,Consolas,monospace">${u.toString(2).padStart(4,'0')}</text>`;
+  }
+  s+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" font-size="14" fill="#1F3864" font-weight="700">4ビットの数の輪</text>`;
+  s+=`<text x="${cx}" y="${cy+16}" text-anchor="middle" font-size="12" fill="#5B6472">${W===4?'1 足すと時計回りに1つ進む':'（4ビットを選ぶと位置が光ります）'}</text>`;
+  s+=`<text x="${cx}" y="${cy+36}" text-anchor="middle" font-size="12" fill="#C00000">7 の次は −8 になる</text>`;
+  $('nWheel').innerHTML=s;
+}
+document.querySelectorAll('[data-w]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  const v=sval(bits); W=+b.dataset.w; const lo=-(2**(W-1)), hi=2**(W-1)-1;
+  bits=toBits(Math.max(lo,Math.min(hi,v)),W); drawNeg();
+}));
+$('nZero').addEventListener('click',()=>{ bits=new Array(W).fill(0); drawNeg(); });
+$('nNeg').addEventListener('click',()=>{
+  const before=bits.join(''), v=sval(bits);
+  const inv=bits.map(x=>1-x); const after=toBits(uval(inv)+1,W);
+  bits=after;
+  let extra=`<b>符号を反転する手順</b>（${minus(v)} → ${minus(-v)}）<br><code>${before}</code>　もとの並び<br><code>${inv.join('')}</code>　① 0 と 1 を入れかえる<br><code>${after.join('')}</code>　② 1 を足す → <b>${minus(sval(after))}</b>`;
+  if(v===-(2**(W-1))) extra+=`<br><span style="color:var(--ng);">${minus(v)} を反転した ${2**(W-1)} は${W}ビットの2の補数では表せないので、もとの値にもどってしまいます（桁あふれ）。</span>`;
+  drawNeg(extra);
+});
+
+/* 足し算 */
+function drawAdd(){
+  let a=Math.round(+$('aA').value), b=Math.round(+$('aB').value);
+  a=Math.max(-128,Math.min(127,isNaN(a)?0:a)); b=Math.max(-128,Math.min(127,isNaN(b)?0:b));
+  const A=toBits(a,8), B=toBits(b,8);
+  const carry=new Array(9).fill(0), S=new Array(8).fill(0);
+  for(let i=7;i>=0;i--){ const t=A[i]+B[i]+carry[i+1]; S[i]=t%2; carry[i]=t>1?1:0; }
+  const r=sval(S), ov=(a>=0)===(b>=0) && (r>=0)!==(a>=0);
+  const cells=(arr,cls='')=>arr.map(x=>`<td class="${cls}">${x}</td>`).join('');
+  $('aGrid').innerHTML=`<table>
+    <tr class="carry"><td class="lab">くり上がり</td><td class="${carry[0]?'out':''}">${carry[0]||''}</td>${carry.slice(1).map((x,i)=>i<7?`<td>${carry[i+1]?'1':''}</td>`:'').join('')}<td></td></tr>
+    <tr><td class="lab">A（${minus(a)}）</td><td></td>${cells(A)}</tr>
+    <tr><td class="lab">B（${minus(b)}）</td><td>+</td>${cells(B)}</tr>
+    <tr class="sum"><td class="lab">結果</td><td class="${carry[0]?'out':''}">${carry[0]?'1':''}</td>${cells(S)}</tr></table>`;
+  const m=$('aMsg');
+  if(ov){ m.className='msg ng'; m.innerHTML=`<div class="t">結果は ${minus(r)}（正しくは ${minus(a+b)}）：桁あふれ（オーバーフロー）</div>${minus(a+b)} は、8ビットの2の補数で表せる範囲（−128〜127）をこえています。${a>=0?'正の数どうしを足したのに負の数':'負の数どうしを足したのに正の数'}になってしまいました。`; }
+  else { m.className='msg ok'; m.innerHTML=`<div class="t">結果は ${minus(r)}</div>2の補数では、負の数も同じ足し算の回路で計算できます。`+(carry[0]?'左はしからあふれたくり上がり（取り消し線の1）は捨てます。それでも正しい答えになるのが、2の補数の便利なところです。':'')+(b<0&&a>=0?` 引き算 ${a} − ${-b} を、${a} ＋ (${minus(b)}) という足し算で計算しています。`:''); }
+}
+['aA','aB'].forEach(id=>$(id).addEventListener('input',drawAdd));
+document.querySelectorAll('[data-ab]').forEach(b=>b.addEventListener('click',()=>{ const [x,y]=b.dataset.ab.split(','); $('aA').value=x; $('aB').value=y; drawAdd(); }));
+
+/* ===================== 浮動小数点 ===================== */
+let P=32;
+function parseDec(str){ // 10進数の文字列 → {neg, num:BigInt, scale:k}  値 = num / 10^k
+  const s=str.trim().replace(/[０-９．－]/g,c=>({'．':'.','－':'-'}[c]||String.fromCharCode(c.charCodeAt(0)-0xFEE0))).replace(/^−/,'-');
+  const m=s.match(/^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/); if(!m || (!m[2]&&!m[3])) return null;
+  let digits=(m[2]||'')+(m[3]||''), k=(m[3]||'').length; const e=+(m[4]||0);
+  k-=e; let num=BigInt(digits||'0');
+  if(k<0){ num*=10n**BigInt(-k); k=0; }
+  return {neg:m[1]==='-', num, k};
+}
+function bigDec(num,k){ // num / 10^k を10進の文字列に
+  let s=num.toString(); if(k<=0) return s+'0'.repeat(-k);
+  s=s.padStart(k+1,'0'); let r=s.slice(0,s.length-k)+'.'+s.slice(s.length-k); r=r.replace(/0+$/,'').replace(/\.$/,''); return r;
+}
+function floatParts(x,p){
+  const dv=new DataView(new ArrayBuffer(8));
+  let bitsStr, sign, e, frac, M, E, eb, fb, bias;
+  if(p===32){ dv.setFloat32(0,x); const u=dv.getUint32(0); bitsStr=u.toString(2).padStart(32,'0'); eb=8; fb=23; bias=127; }
+  else { dv.setFloat64(0,x); const hi=dv.getUint32(0), lo=dv.getUint32(4); bitsStr=hi.toString(2).padStart(32,'0')+lo.toString(2).padStart(32,'0'); eb=11; fb=52; bias=1023; }
+  sign=+bitsStr[0]; e=parseInt(bitsStr.slice(1,1+eb),2); frac=BigInt('0b'+bitsStr.slice(1+eb));
+  if(e===0){ M=frac; E=1-bias-fb; } else { M=frac+(1n<<BigInt(fb)); E=e-bias-fb; }
+  return {bitsStr,sign,e,frac,M,E,eb,fb,bias};
+}
+function exactOf(M,E){ // M*2^E → {num,k}
+  if(E>=0) return {num:M<<BigInt(E),k:0};
+  return {num:M*(5n**BigInt(-E)), k:-E};
+}
+function binExpand(num,k){ // num/10^k（0以上）を2進数の文字列に（小数は最大40桁）
+  const den=10n**BigInt(k); const ip=num/den; let rem=num%den;
+  let s=ip.toString(2); if(rem===0n) return {s,exact:true};
+  s+='.'; const seen=new Map(); let out='';
+  for(let i=0;i<40;i++){ if(rem===0n) return {s:s+out,exact:true}; if(seen.has(rem)){ const j=seen.get(rem); return {s:s+out.slice(0,j)+'('+out.slice(j)+')',exact:false,rep:true}; } seen.set(rem,i); rem*=2n; out+= rem>=den?'1':'0'; if(rem>=den) rem-=den; }
+  return {s:s+out+'…',exact:false};
+}
+function drawFp(){
+  const raw=$('fIn').value; const d=parseDec(raw);
+  if(!d){ $('fMsg').className='msg ng'; $('fMsg').innerHTML='<div class="t">数として読めません</div>0.1 や -6.25 のように入力してください。'; return; }
+  const x=Number(raw.replace(/[０-９．－−]/g,c=>({'．':'.','－':'-','−':'-'}[c]||String.fromCharCode(c.charCodeAt(0)-0xFEE0))));
+  const v= P===32? Math.fround(x) : x;
+  const f=floatParts(v,P);
+  $('fLe').textContent=`指数部（${f.eb}ビット）`; $('fLm').textContent=`仮数部（${f.fb}ビット）`;
+  $('fBits').innerHTML=[...f.bitsStr].map((c,i)=>`<span class="fb ${i===0?'s':i<=f.eb?'e':'m'}${c==='0'?' z':''}">${c}</span>`).join('');
+  const msg=$('fMsg');
+  if(!isFinite(v)){ $('fExact').textContent='（表せない）'; $('fCalc').innerHTML=''; $('fV').textContent=raw; $('fE').textContent='–'; $('fB').textContent='–';
+    msg.className='msg ng'; msg.innerHTML=`<div class="t">大きすぎて表せません（無限大）</div>${P===32?'単精度で表せる最大の数は、約 3.4×10<sup>38</sup> です。':'倍精度で表せる最大の数は、約 1.8×10<sup>308</sup> です。'}`; return; }
+  const ex=exactOf(f.M,f.E); const exStr=(f.sign?'-':'')+bigDec(ex.num,ex.k);
+  // 誤差（記録値 − 入れた値）
+  const K=Math.max(ex.k,d.k); const a=(f.sign?-1n:1n)*ex.num*10n**BigInt(K-ex.k), bq=(d.neg?-1n:1n)*d.num*10n**BigInt(K-d.k);
+  const diff=a-bq; const dStr=(diff<0n?'-':'')+bigDec(diff<0n?-diff:diff,K);
+  // 表示
+  const inStr=(d.neg?'-':'')+bigDec(d.num,d.k);
+  let shown=exStr, common=0; while(common<shown.length && shown[common]===inStr[common]) common++;
+  $('fExact').innerHTML=esc(minus(shown.slice(0,common)))+'<span class="d">'+esc(shown.slice(common))+'</span>';
+  $('fV').textContent=minus(inStr);
+  const dn=Number(dStr);
+  if(diff===0n) $('fE').textContent='0（ぴったり）';
+  else if(Math.abs(dn)>=0.001) $('fE').textContent=minus(String(+dn.toPrecision(6)));
+  else { const [m,e]=dn.toExponential(3).split('e'); $('fE').innerHTML=esc(minus(m))+' × 10<sup>'+esc(minus(String(+e)))+'</sup>'; }
+  const be=binExpand(d.num,d.k); $('fB').textContent=(d.neg?'−':'')+be.s;
+  const expv=f.e-f.bias;
+  $('fCalc').innerHTML= f.e===0? `指数部がすべて0なので、とても小さな数（非正規化数）として扱われます。`
+    : `<code>(−1)<sup>${f.sign}</sup> × 1.${f.bitsStr.slice(1+f.eb).replace(/0+$/,'')||'0'}<sub>(2)</sub> × 2<sup>${f.e} − ${f.bias}</sup></code> ＝ <code>${f.sign?'−':''}1.${f.bitsStr.slice(1+f.eb).replace(/0+$/,'')||'0'}<sub>(2)</sub> × 2<sup>${minus(expv)}</sup></code><br>
+      符号部 ${f.sign}（${f.sign?'負':'正'}）、指数部 ${f.bitsStr.slice(1,1+f.eb)}<sub>(2)</sub> ＝ ${f.e}（${f.bias} を引いて ${minus(expv)}）、仮数部は「1.」の後ろの ${f.fb} 桁です。`;
+  if(diff===0n){ msg.className='msg ok'; msg.innerHTML=`<div class="t">${minus(inStr)} は、ぴったり記録できました</div>${be.exact?'2進数で表すと有限の桁で終わるので、誤差なく記録できます。0.5（＝1/2）や 0.75（＝1/2＋1/4）のように、2のべき乗の分数の和で書ける数は、ぴったり表せます。':''}`; }
+  else { msg.className='msg'; msg.innerHTML=`<div class="t">${minus(inStr)} は、ぴったりには記録できません</div>`+(be.exact? `2進数では有限の桁ですが、仮数部の ${f.fb} ビットに入りきらないため、途中で丸められました。` : `${minus(inStr)} を2進数にすると、${be.rep?'（　）の部分が永遠にくり返す':'終わらない'}小数になります。仮数部の ${f.fb} ビットに入りきらない部分は丸められるので、記録される値はわずかにずれます。これを<b>丸め誤差</b>といいます。`)+` 赤い部分が、入れた数とちがうところです。`; }
+}
+$('fIn').addEventListener('input',drawFp);
+document.querySelectorAll('[data-f]').forEach(b=>b.addEventListener('click',()=>{ $('fIn').value=b.dataset.f; drawFp(); }));
+document.querySelectorAll('[data-p]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-p]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); P=+b.dataset.p; drawFp(); }));
+
+/* ===================== 誤差を体験する ===================== */
+let eCur='sum';
+const fr=Math.fround;
+const EXP={
+  sum(){
+    return `<h2>0.1 を何回も足すと、どうなるでしょう（単精度と倍精度で比べる）</h2>
+      <div class="row"><button class="chip" data-n="10">10回</button><button class="chip" data-n="100">100回</button><button class="chip" data-n="1000" aria-pressed="true">1000回</button><button class="chip" data-n="10000">1万回</button><button class="chip" data-n="100000">10万回</button></div>
+      <div class="stats" id="sStats"></div>
+      <div class="chartbox"><svg id="sChart" viewBox="0 0 640 240" role="img" aria-label="足した回数と誤差のグラフ"></svg></div>
+      <div class="msg" id="sMsg"></div>`;
+  },
+  over(){
+    return `<h2>決まったビット数では、表せる数に上限があります。1 ずつ足していくと…</h2>
+      <div class="two">
+        <div><div style="font-weight:700;color:var(--ink);margin-bottom:6px;">8ビット（0以上の数）：0〜255</div><div class="bits" id="oU"></div><div class="stats"><div class="stt"><div class="k">値</div><div class="v" id="oUv"></div></div></div><button class="primary" id="oUp" style="margin-top:10px;">＋1 する</button></div>
+        <div><div style="font-weight:700;color:var(--ink);margin-bottom:6px;">8ビット（2の補数）：−128〜127</div><div class="bits" id="oS"></div><div class="stats"><div class="stt"><div class="k">値</div><div class="v" id="oSv"></div></div></div><button class="primary" id="oSp" style="margin-top:10px;">＋1 する</button></div>
+      </div>
+      <div class="msg" id="oMsg"></div>`;
+  },
+  loss(){
+    return `<h2>大きな数に、小さな数を何回か足します（単精度で計算）</h2>
+      <div class="row"><button class="chip" data-big="10000000">1000万</button><button class="chip" data-big="100000000" aria-pressed="true">1億</button><button class="chip" data-big="1000000000">10億</button>
+      <span style="font-size:14px;">に 1 を</span><button class="chip" data-k="1">1回</button><button class="chip" data-k="10" aria-pressed="true">10回</button><button class="chip" data-k="100">100回</button><span style="font-size:14px;">足す</span></div>
+      <div class="stats" id="lStats"></div><div class="msg" id="lMsg"></div>`;
+  },
+  cancel(){
+    return `<h2>√(x＋1) − √x を計算します。x が大きいと、ほとんど同じ数どうしの引き算になります（単精度で計算）</h2>
+      <div class="row"><button class="chip" data-x="100">x = 100</button><button class="chip" data-x="10000">x = 1万</button><button class="chip" data-x="1000000" aria-pressed="true">x = 100万</button><button class="chip" data-x="100000000">x = 1億</button></div>
+      <div class="scroll" style="margin-top:12px;"><table class="tb" id="cTable"></table></div><div class="msg" id="cMsg"></div>`;
+  },
+};
+function sumRun(n){
+  let s32=0, s64=0; const pts=[]; const step=Math.max(1,Math.floor(n/200));
+  for(let i=1;i<=n;i++){ s32=fr(s32+fr(0.1)); s64+=0.1; if(i%step===0||i===n) pts.push([i,Math.abs(s32-i/10),Math.abs(s64-i/10)]); }
+  const exact=n/10;
+  $('sStats').innerHTML=`<div class="stt"><div class="k">正しい答え</div><div class="v ok">${exact.toLocaleString('ja-JP')}</div></div>
+    <div class="stt"><div class="k">単精度で足した結果</div><div class="v ng">${s32.toPrecision(10).replace(/\.?0+$/,'')}</div></div>
+    <div class="stt"><div class="k">倍精度で足した結果</div><div class="v">${s64.toPrecision(17).replace(/\.?0+$/,'')}</div></div>`;
+  // グラフ（単精度の誤差）
+  const Wd=640,H=240,l=60,r=14,t=16,b=34; const ymax=Math.max(...pts.map(p=>p[1]))||1e-9;
+  const X=v=>l+(v/n)*(Wd-l-r), Y=v=>t+(1-v/ymax)*(H-t-b);
+  let s='';
+  for(let k=0;k<=4;k++){ const v=ymax*k/4; s+=`<line x1="${l}" x2="${Wd-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${k?'#E3E8F0':'#9AA6BC'}"/><text x="${l-6}" y="${Y(v)+4}" font-size="11" fill="#5B6472" text-anchor="end">${+v.toPrecision(2)}</text>`; }
+  s+=`<text x="${Wd-r}" y="${H-4}" font-size="11.5" fill="#5B6472" text-anchor="end">足した回数（最大 ${n.toLocaleString('ja-JP')}）</text><text x="${l}" y="11" font-size="11.5" fill="#C00000">単精度の誤差（正しい答えとの差）</text>`;
+  s+=`<path d="${pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('')}" fill="none" stroke="#C00000" stroke-width="2.2"/>`;
+  $('sChart').innerHTML=s;
+  $('sMsg').innerHTML=`<div class="t">${n.toLocaleString('ja-JP')} 回足すと、単精度では ${Math.abs(s32-exact).toPrecision(3)} ずれました</div>0.1 は2進数ではくり返しの小数になるので、記録した時点でわずかにずれています（「小数の表し方」で 0.1 を確かめてみましょう）。足すたびに、その小さなずれと、足した結果の丸めがたまっていきます。倍精度は仮数部が 52 ビットあるので、ずれはずっと小さくなりますが、0 にはなりません。`;
+}
+function overDraw(){
+  const u=EXP._u, s=EXP._s;
+  $('oU').innerHTML=toBits(u,8).map(x=>`<span class="bit${x?' on':''}" style="cursor:default">${x}</span>`).join('');
+  $('oS').innerHTML=toBits(s,8).map((x,i)=>`<span class="bit${x?' on':''}${i===0?' sign':''}" style="cursor:default">${x}</span>`).join('');
+  $('oUv').textContent=u; $('oSv').textContent=minus(s);
+}
+function lossRun(){
+  const big=EXP._big, k=EXP._k; let v=fr(big); for(let i=0;i<k;i++) v=fr(v+1);
+  const spacing=(()=>{ const f=floatParts(fr(big),32); return 2**(f.e-127-23); })();
+  $('lStats').innerHTML=`<div class="stt"><div class="k">正しい答え</div><div class="v ok">${(big+k).toLocaleString('ja-JP')}</div></div><div class="stt"><div class="k">単精度で計算した結果</div><div class="v ${v===big+k?'ok':'ng'}">${v.toLocaleString('ja-JP')}</div></div><div class="stt"><div class="k">この大きさで表せる数の間隔</div><div class="v">${spacing.toLocaleString('ja-JP')}</div></div>`;
+  $('lMsg').innerHTML= v===big+k? `<div class="t">正しく計算できました</div>この大きさなら、単精度でも 1 の差を表せます。`
+    : `<div class="t">1 を ${k} 回足したのに、${(v-big).toLocaleString('ja-JP')} しか増えませんでした：情報落ち</div>単精度の仮数部は 23 ビット（はじめの 1 を入れて 24 ビット）なので、有効な桁はおよそ 7 けたです。${big.toLocaleString('ja-JP')} くらいの大きさでは、表せる数の間隔が ${spacing.toLocaleString('ja-JP')} あるので、小さな 1 を足しても丸められて消えてしまいます。たくさんの数を足すときは、小さい数から順に足すと、情報落ちを減らせます。`;
+}
+function cancelRun(){
+  const x=EXP._x;
+  const naive=fr(fr(Math.sqrt(fr(x+1)))-fr(Math.sqrt(fr(x))));
+  const better=fr(1/fr(fr(Math.sqrt(fr(x+1)))+fr(Math.sqrt(fr(x)))));
+  const truth=1/(Math.sqrt(x+1)+Math.sqrt(x));
+  const rel=v=>Math.abs(v-truth)/truth*100;
+  $('cTable').innerHTML=`<tr><th>計算のしかた</th><th>結果（単精度）</th><th>正しい値とのずれ</th></tr>
+    <tr><td>√(x＋1) − √x　をそのまま</td><td class="m">${naive.toPrecision(7)}</td><td class="m" style="color:${rel(naive)>1?'var(--ng)':'inherit'}">${rel(naive).toPrecision(3)} ％</td></tr>
+    <tr><td>1 ÷ (√(x＋1) ＋ √x)　に式を変形</td><td class="m">${better.toPrecision(7)}</td><td class="m">${rel(better).toPrecision(3)} ％</td></tr>
+    <tr><td>（参考）倍精度で計算した値</td><td class="m">${truth.toPrecision(10)}</td><td class="m">–</td></tr>`;
+  $('cMsg').innerHTML=`<div class="t">そのまま引き算すると ${rel(naive).toPrecision(3)} ％ ずれる</div>√(x＋1) と √x は、上の何けたかが同じ数です。引き算をすると、その同じ部分が打ち消し合って、信頼できる桁がほとんど残りません。これを<b>桁落ち</b>といいます。式を変形して、近い数どうしの引き算をしないようにすると、ずれを小さくできます。`;
+}
+function eDraw(){
+  $('eBody').innerHTML=EXP[eCur]();
+  const body=$('eBody');
+  const pick=(attr,cb)=>body.querySelectorAll(`[${attr}]`).forEach(b=>b.addEventListener('click',()=>{ body.querySelectorAll(`[${attr}]`).forEach(x=>x.setAttribute('aria-pressed',String(x===b))); cb(b.getAttribute(attr)); }));
+  if(eCur==='sum'){ pick('data-n',v=>sumRun(+v)); sumRun(1000); }
+  if(eCur==='over'){
+    EXP._u=250; EXP._s=123; overDraw();
+    $('oMsg').innerHTML='<div class="t">「＋1 する」を何回か押してみましょう</div>上限をこえると、何が起きるでしょうか。';
+    $('oUp').addEventListener('click',()=>{ const was=EXP._u; EXP._u=(EXP._u+1)%256; overDraw(); $('oMsg').className='msg'+(was===255?' ng':''); $('oMsg').innerHTML= was===255? '<div class="t">255 ＋ 1 が 0 になった：桁あふれ</div>11111111 に 1 を足すと 100000000 になりますが、9けためのビットを入れる場所がないので捨てられ、0 にもどってしまいます。':`<div class="t">${was} ＋ 1 ＝ ${EXP._u}</div>`; });
+    $('oSp').addEventListener('click',()=>{ const was=EXP._s; EXP._s= was===127? -128 : was+1; overDraw(); $('oMsg').className='msg'+(was===127?' ng':''); $('oMsg').innerHTML= was===127? '<div class="t">127 ＋ 1 が −128 になった：桁あふれ</div>01111111 に 1 を足すと 10000000 になり、符号ビットが 1 になるので、2の補数では −128 と読まれます。正の数を足したのに、負の数になってしまいました。':`<div class="t">${minus(was)} ＋ 1 ＝ ${minus(EXP._s)}</div>`; });
+  }
+  if(eCur==='loss'){ EXP._big=100000000; EXP._k=10; pick('data-big',v=>{ EXP._big=+v; lossRun(); }); pick('data-k',v=>{ EXP._k=+v; lossRun(); }); lossRun(); }
+  if(eCur==='cancel'){ EXP._x=1000000; pick('data-x',v=>{ EXP._x=+v; cancelRun(); }); cancelRun(); }
+}
+document.querySelectorAll('[data-e]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-e]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); eCur=b.dataset.e; eDraw(); }));
+
+/* ===== 初期化 ===== */
+bits=toBits(-6,8); drawNeg(); drawAdd(); drawFp(); eDraw();
+
+</script>
+</body>
+</html>

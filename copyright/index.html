@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>著作権と知的財産を学ぼう（この使い方はOK？・保護期間の計算・CCライセンス）｜情報ラボ</title>
+<meta name="description" content="著作権と知的財産権を、身近な場面の判定クイズ、保護期間の計算、クリエイティブ・コモンズ・ライセンスの組み立て、産業財産権との比較で学べる無料教材。著作権法の条文と文化庁の資料にもとづいて解説します。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/copyright/">
+<meta property="og:title" content="著作権と知的財産を学ぼう｜情報ラボ">
+<meta property="og:description" content="この使い方はOK？保護期間はいつまで？CCライセンスの意味は？著作権と知的財産権を体験しながら学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/copyright/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg .law{display:block; margin-top:8px; font-size:13px; color:#d6e0f0;}
+
+  /* クイズ */
+  .qhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .qno{font-size:13px; color:var(--muted); font-weight:700;}
+  .score{font-size:13.5px; color:var(--ink);}
+  .score b{font-family:ui-monospace,Consolas,monospace; font-size:16px;}
+  .scene{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start;}
+  .scene .ic{font-size:34px; line-height:1;}
+  .scene .tx{font-size:16.5px; line-height:1.8; color:#1c2430;}
+  .choices{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:14px;}
+  @media (max-width:640px){ .choices{grid-template-columns:1fr;} }
+  .choice{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px 10px; cursor:pointer; font-family:inherit;
+    font-size:15px; font-weight:700; color:var(--ink); text-align:center; transition:all .15s;}
+  .choice small{display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:2px;}
+  .choice:hover{border-color:var(--navy);}
+  .choice.right{border-color:var(--ok); background:#EAF5EE; color:var(--ok);}
+  .choice.wrong{border-color:var(--ng); background:#FBEDEC; color:var(--ng);}
+  .choice:disabled{cursor:default;}
+  .dots{display:flex; gap:5px; flex-wrap:wrap; margin-top:12px;}
+  .dot{width:26px; height:26px; border-radius:50%; border:2px solid var(--line); background:#fff; font-size:11.5px; font-weight:700; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; font-family:inherit;}
+  .dot.cur{border-color:var(--navy); color:var(--navy);}
+  .dot.r{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .dot.w{background:var(--ng); border-color:var(--ng); color:#fff;}
+
+  /* 保護期間 */
+  .form{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:640px){ .form{grid-template-columns:1fr;} }
+  .form label{display:block; font-weight:700; font-size:14px; color:var(--ink); margin-bottom:6px;}
+  .form input[type=number]{width:100%; max-width:220px; font-size:18px; font-family:ui-monospace,Consolas,monospace; padding:8px 12px; border:1px solid var(--line); border-radius:8px;}
+  .types{display:flex; flex-direction:column; gap:6px;}
+  .types label{font-weight:400; display:flex; gap:8px; align-items:flex-start; cursor:pointer; margin:0; font-size:14.5px;}
+  .types input{margin-top:5px; accent-color:var(--navy);}
+  .timeline{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 6px 4px; margin-top:14px;}
+  .timeline svg{display:block; width:100%; max-width:760px; height:auto; margin:0 auto;}
+  .calc{font-family:ui-monospace,Consolas,monospace; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-top:12px; line-height:1.9;}
+  .examples{margin-top:10px;}
+
+  /* CC */
+  .ccopts{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  @media (max-width:760px){ .ccopts{grid-template-columns:1fr 1fr;} }
+  .cco{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
+  .cco .k{font-family:ui-monospace,Consolas,monospace; font-weight:700; font-size:15px;}
+  .cco .n{font-weight:700; font-size:14.5px;}
+  .cco .d{font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.5;}
+  .cco[aria-pressed=true]{border-color:var(--navy); background:#EAF1FB;}
+  .cco:disabled{opacity:.4; cursor:not-allowed;}
+  .cco.must{cursor:default;}
+  .lic{background:#fff; border:2px solid var(--navy); border-radius:12px; padding:16px 18px; margin-top:14px;}
+  .lic .code{font-family:ui-monospace,Consolas,monospace; font-size:22px; font-weight:700; color:var(--navy);}
+  .lic .jp{font-size:16px; font-weight:700; color:var(--ink); margin:2px 0 10px;}
+  .badges{display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px;}
+  .badge{font-family:ui-monospace,Consolas,monospace; font-size:12.5px; font-weight:700; padding:3px 9px; border-radius:6px; background:var(--ink); color:#fff;}
+  .canlist{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media (max-width:640px){ .canlist{grid-template-columns:1fr;} }
+  .canlist div{border-radius:10px; padding:10px 12px; font-size:14px;}
+  .canlist .yes{background:#EAF5EE;} .canlist .no{background:#FBEDEC;}
+  .canlist h4{margin:0 0 4px; font-size:13.5px;}
+  .canlist .yes h4{color:var(--ok);} .canlist .no h4{color:var(--ng);}
+  .canlist ul{margin:0; padding-left:1.2em;}
+  .spectrum{display:flex; margin-top:14px; border-radius:10px; overflow:hidden; border:1px solid var(--line); font-size:12px; text-align:center;}
+  .spectrum div{flex:1; padding:8px 4px; background:#fff; color:var(--muted); border-right:1px solid var(--line);}
+  .spectrum div:last-child{border-right:none;}
+  .spectrum div.on{background:var(--navy); color:#fff; font-weight:700;}
+
+  /* 知的財産 */
+  .ipwrap{display:grid; grid-template-columns:300px 1fr; gap:18px; align-items:start;}
+  @media (max-width:760px){ .ipwrap{grid-template-columns:1fr;} }
+  .phone{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px;}
+  .phone svg{display:block; width:100%; max-width:280px; height:auto; margin:0 auto;}
+  .hot{cursor:pointer;}
+  .hot .ring{fill:var(--gold); opacity:.0;}
+  .hot:hover .ring,.hot.on .ring{opacity:.35;}
+  .hot .num{fill:#fff; font-size:13px; font-weight:700; font-family:ui-monospace,Consolas,monospace;}
+  .hot circle.pin{fill:var(--navy);}
+  .hot.on circle.pin{fill:var(--gold);}
+  .ipcards{display:grid; grid-template-columns:1fr; gap:8px;}
+  .ipcard{background:#fff; border:2px solid var(--line); border-radius:12px; padding:12px 14px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430; font-size:14px;}
+  .ipcard.on{border-color:var(--gold); background:#FFF8E7;}
+  .ipcard b{color:var(--ink); font-size:15px;}
+  .ipcard .r{display:inline-block; font-size:12px; font-weight:700; color:#fff; background:var(--navy); border-radius:6px; padding:1px 8px; margin-left:6px;}
+  .tbl{overflow-x:auto; max-width:100%;}
+  .tbl table{border-collapse:collapse; width:100%; min-width:560px; background:#fff; font-size:14px;}
+  .tbl th,.tbl td{border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top;}
+  .tbl th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article .tbl{margin:0 0 16px;}
+  .article .tbl table{min-width:480px;}
+  .note{background:#FFF8E7; border:1px solid #E8D3A0; border-radius:10px; padding:12px 16px; font-size:14px; margin:0 0 16px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 著作権と知的財産</p>
+    <h1>著作権と知的財産を学ぼう</h1>
+    <p class="lead">身近な場面で「この使い方はOK？」を考え、保護期間やライセンスのしくみを確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabQ" aria-selected="true" aria-controls="toolQ">この使い方はOK？</button>
+    <button class="tab" role="tab" id="tabT" aria-selected="false" aria-controls="toolT">保護期間を計算</button>
+    <button class="tab" role="tab" id="tabC" aria-selected="false" aria-controls="toolC">CCライセンスを組み立てる</button>
+    <button class="tab" role="tab" id="tabI" aria-selected="false" aria-controls="toolI">知的財産権の種類</button>
+  </div>
+
+  <!-- ===== クイズ ===== -->
+  <section class="tool show" id="toolQ" role="tabpanel" aria-labelledby="tabQ">
+    <div class="panel">
+      <div class="qhead">
+        <span class="qno" id="qNo">第1問</span>
+        <span class="score">正解 <b id="qScore">0</b> / <span id="qDone">0</span> 問（全 <span id="qAll"></span> 問）</span>
+      </div>
+      <div class="scene"><div class="ic" id="qIc" aria-hidden="true"></div><div class="tx" id="qTx"></div></div>
+      <div class="choices" id="qCh">
+        <button class="choice" data-a="free">許諾なしでOK<small>そのまま使ってよい</small></button>
+        <button class="choice" data-a="cond">条件を守ればOK<small>例外のルールを守れば使える</small></button>
+        <button class="choice" data-a="no">無断ではできない<small>許諾が必要・違法になる</small></button>
+      </div>
+      <div class="msg" id="qMsg" hidden></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="chip" id="qPrev">◀ 前の問題</button>
+        <button class="primary" id="qNext">次の問題 ▶</button>
+        <button class="chip" id="qReset">最初から</button>
+      </div>
+      <div class="dots" id="qDots" aria-label="問題の一覧"></div>
+    </div>
+    <p class="hint">答えは、日本の著作権法と文化庁の資料にもとづく一般的な考え方です。実際の場面では、細かい事情で結論が変わることがあります。</p>
+  </section>
+
+  <!-- ===== 保護期間 ===== -->
+  <section class="tool" id="toolT" role="tabpanel" aria-labelledby="tabT">
+    <div class="panel">
+      <h2>著作物の種類と年を入れると、著作権がいつまで続くかを計算します</h2>
+      <div class="form">
+        <div>
+          <label>著作物の種類</label>
+          <div class="types" id="tType">
+            <label><input type="radio" name="ty" value="real" checked>実名（またはよく知られたペンネーム）の個人の著作物 <span style="color:var(--muted);font-size:13px;">→ 亡くなった年</span></label>
+            <label><input type="radio" name="ty" value="anon">無名・変名（だれの作品か分からない名前）の著作物 <span style="color:var(--muted);font-size:13px;">→ 公表した年</span></label>
+            <label><input type="radio" name="ty" value="corp">団体名義（会社などの名前で公表）の著作物 <span style="color:var(--muted);font-size:13px;">→ 公表した年</span></label>
+            <label><input type="radio" name="ty" value="film">映画の著作物 <span style="color:var(--muted);font-size:13px;">→ 公表した年</span></label>
+          </div>
+        </div>
+        <div>
+          <label for="tYear" id="tYearL">著作者が亡くなった年（西暦）</label>
+          <input type="number" id="tYear" min="1900" max="2100" step="1" value="1968" inputmode="numeric">
+          <div class="row examples">
+            <span style="font-size:13px;color:var(--muted);">例：</span>
+            <button class="chip" data-ex="1967">1967年</button>
+            <button class="chip" data-ex="1968">1968年</button>
+            <button class="chip" data-ex="1989">1989年</button>
+            <button class="chip" data-ex="2000">2000年</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="msg" id="tMsg"></div>
+    <div class="calc" id="tCalc"></div>
+    <div class="timeline"><svg id="tSvg" viewBox="0 0 640 150" role="img" aria-label="保護期間の年表"></svg></div>
+    <p class="hint">計算は日本の著作権法（第51条〜第54条、第57条）によります。外国の著作物の一部には「戦時加算」という例外があり、もっと長く保護されることがあります。また、旧著作権法の時代（1970年以前）の作品は、旧法の期間も調べる必要があります。このツールの結果は目安です。</p>
+  </section>
+
+  <!-- ===== CC ===== -->
+  <section class="tool" id="toolC" role="tabpanel" aria-labelledby="tabC">
+    <div class="panel">
+      <h2>作者が「この条件を守れば使ってよい」と示すのが、クリエイティブ・コモンズ（CC）ライセンスです。条件を選んでみましょう</h2>
+      <div class="ccopts">
+        <button class="cco must" id="ccBY" aria-pressed="true"><div class="k">BY</div><div class="n">表示</div><div class="d">作者の名前や作品名などのクレジットを表示する（どのライセンスにも必ず付く）</div></button>
+        <button class="cco" id="ccNC" aria-pressed="false"><div class="k">NC</div><div class="n">非営利</div><div class="d">営利目的では使わない</div></button>
+        <button class="cco" id="ccND" aria-pressed="false"><div class="k">ND</div><div class="n">改変禁止</div><div class="d">元の作品を改変しない</div></button>
+        <button class="cco" id="ccSA" aria-pressed="false"><div class="k">SA</div><div class="n">継承</div><div class="d">改変したら、元と同じライセンスで公開する</div></button>
+      </div>
+      <p class="hint">「改変禁止（ND）」と「継承（SA）」は同時には選べません。改変を認めないなら、改変した作品のライセンスを決める必要がないからです。</p>
+    </div>
+    <div class="lic" id="ccOut"></div>
+    <div class="spectrum" id="ccSpec" aria-label="自由度の目安"></div>
+    <p class="hint">左ほど使う人の自由が大きく、右ほど作者が多くの権利を残します。CC0 は作者が権利を手放してパブリック・ドメインに近い状態にするしくみで、CCライセンス（6種類）とは別の道具です。</p>
+  </section>
+
+  <!-- ===== 知的財産 ===== -->
+  <section class="tool" id="toolI" role="tabpanel" aria-labelledby="tabI">
+    <div class="panel">
+      <h2>スマートフォン1台も、いくつもの知的財産権で守られています。番号か右のカードを押してみましょう</h2>
+      <div class="ipwrap">
+        <div class="phone">
+          <svg viewBox="0 0 260 470" role="img" aria-label="スマートフォンの図">
+            <rect x="30" y="10" width="200" height="440" rx="28" fill="#1F3864"/>
+            <rect x="42" y="40" width="176" height="370" rx="8" fill="#EAF1FB"/>
+            <circle cx="130" cy="25" r="5" fill="#4E6A9E"/>
+            <rect x="58" y="60" width="144" height="80" rx="8" fill="#C9D2E0"/>
+            <path d="M58 132 L100 92 L130 118 L150 100 L202 140 L58 140 Z" fill="#7FA3E0"/>
+            <circle cx="180" cy="80" r="10" fill="#FFD97A"/>
+            <g fill="#2F5496">
+              <rect x="58" y="160" width="36" height="36" rx="9"/><rect x="112" y="160" width="36" height="36" rx="9"/><rect x="166" y="160" width="36" height="36" rx="9"/>
+              <rect x="58" y="214" width="36" height="36" rx="9"/><rect x="112" y="214" width="36" height="36" rx="9" fill="#C49A2B"/><rect x="166" y="214" width="36" height="36" rx="9"/>
+            </g>
+            <text x="130" y="300" text-anchor="middle" font-size="12" fill="#5B6472">♪ 着信音</text>
+            <text x="130" y="436" text-anchor="middle" font-size="14" font-weight="700" fill="#fff" font-family="ui-monospace,Consolas,monospace">JOHOFON</text>
+            <rect x="226" y="120" width="8" height="46" rx="3" fill="#4E6A9E"/>
+          </svg>
+        </div>
+        <div class="ipcards" id="ipCards"></div>
+      </div>
+    </div>
+    <div class="tbl">
+      <table>
+        <tr><th>権利</th><th>守るもの</th><th>手続き</th><th>保護期間</th></tr>
+        <tr><td>著作権</td><td>著作物（思想・感情の創作的な表現）</td><td>不要（創作した時点で自動的に生まれる＝無方式主義）</td><td>原則として著作者の死後70年</td></tr>
+        <tr><td>特許権</td><td>発明（高度な技術的アイデア）</td><td>特許庁に出願し、審査を経て登録</td><td>出願から20年</td></tr>
+        <tr><td>実用新案権</td><td>物品の形状・構造などの考案</td><td>特許庁に出願して登録</td><td>出願から10年</td></tr>
+        <tr><td>意匠権</td><td>物品・建築物・画像のデザイン</td><td>特許庁に出願し、審査を経て登録</td><td>出願から25年</td></tr>
+        <tr><td>商標権</td><td>商品・サービスに使うマーク（名前・ロゴなど）</td><td>特許庁に出願し、審査を経て登録</td><td>登録から10年（更新できる）</td></tr>
+      </table>
+    </div>
+    <p class="hint">保護期間は文化庁「令和8年度著作権テキスト」の「知的財産権について」の図による。特許・実用新案・意匠・商標をまとめて「産業財産権」といいます。</p>
+  </section>
+
+  <section class="article">
+    <h2>知的財産権とは</h2>
+    <p>知的な創作活動によって何かを生み出した人に与えられる、「他人に無断で利用されない権利」を<strong>知的財産権</strong>といいます。小説や音楽、写真などを守る<strong>著作権</strong>と、発明やデザイン、商品のマークなどを守る<strong>産業財産権</strong>（特許権・実用新案権・意匠権・商標権）が代表的です。</p>
+    <p>大きなちがいは、権利の生まれ方です。産業財産権は、特許庁に出願して登録されてはじめて権利になります。一方、著作権は、作品を創作した時点で自動的に生まれ、登録などの手続きは一切いりません。これを<strong>無方式主義</strong>といい、国際的なルールになっています。だから、高校生が書いた作文や描いた絵、撮った写真にも、書き上げた瞬間から著作権があります。</p>
+    <div class="note">このページは、著作権のしくみを学ぶための教材です。個別の事例について法的な判断をするものではありません。実際に迷ったときは、権利者に問い合わせたり、専門家に相談したりしてください。</div>
+
+    <h2>著作物とは</h2>
+    <p>著作権法では、著作物を「思想又は感情を創作的に表現したものであつて、文芸、学術、美術又は音楽の範囲に属するもの」と定めています（第2条第1項第1号）。例として、小説・論文などの言語、音楽、舞踊、絵画などの美術、建築、地図や図表、映画、写真、プログラムが挙げられています（第10条）。</p>
+    <p>反対に、次のようなものは著作物になりません。</p>
+    <ul>
+      <li>単なる事実やデータ（例：気温の記録、東京タワーの高さ）</li>
+      <li>他人の作品をまねただけのもの、だれが表現しても同じようになるありふれたもの</li>
+      <li>表現されていないアイデア（アイデアを守るのは特許権の役割）</li>
+      <li>工業製品そのもの</li>
+    </ul>
+    <p>また、憲法や法律、国や地方公共団体の告示・通達、裁判所の判決などは、著作物であっても権利の対象になりません（第13条）。だれもが自由に使えるようにするためです。</p>
+
+    <h2>著作者の権利</h2>
+    <p>著作者には、心を守る<strong>著作者人格権</strong>と、財産を守る<strong>著作権（財産権）</strong>の2つが与えられます（第17条）。</p>
+    <div class="tbl"><table>
+      <tr><th>種類</th><th>権利</th><th>内容</th></tr>
+      <tr><td rowspan="3">著作者人格権</td><td>公表権（第18条）</td><td>まだ公表していない作品を、公表するかどうか、いつどのように公表するかを決める</td></tr>
+      <tr><td>氏名表示権（第19条）</td><td>名前を出すか、どんな名前で出すかを決める</td></tr>
+      <tr><td>同一性保持権（第20条）</td><td>意に反して作品や題名を変えられない</td></tr>
+      <tr><td rowspan="6">著作権（財産権）</td><td>複製権（第21条）</td><td>コピー（印刷・録音・録画・保存など）する</td></tr>
+      <tr><td>上演権・演奏権（第22条）、上映権（第22条の2）</td><td>人前で演じる・演奏する・上映する</td></tr>
+      <tr><td>公衆送信権（第23条）</td><td>放送したり、インターネットで公開したりする</td></tr>
+      <tr><td>口述権・展示権（第24条・第25条）</td><td>朗読する、美術作品などの原作品を展示する</td></tr>
+      <tr><td>頒布権・譲渡権・貸与権（第26条〜第26条の3）</td><td>コピーを売ったり、配ったり、貸したりする</td></tr>
+      <tr><td>翻訳権・翻案権など（第27条・第28条）</td><td>翻訳・編曲・映画化などの改変をする、改変してできた作品を利用する</td></tr>
+    </table></div>
+    <p>他人の著作物をこれらの方法で使うときは、原則として著作権者の<strong>許諾</strong>が必要です。無断で使うと著作権の侵害になり、使用の差し止めや損害賠償を求められることがあるほか、刑事罰（10年以下の拘禁刑または1000万円以下の罰金、またはその両方）の対象にもなります（第119条第1項）。</p>
+
+    <h2>保護期間</h2>
+    <p>著作権は、作品を創作した時に始まり、原則として<strong>著作者の死後70年</strong>まで続きます（第51条）。無名・変名の著作物と団体名義の著作物、映画の著作物は、公表後70年までです（第52条〜第54条）。計算を簡単にするため、期間は死亡や公表をした年の<strong>翌年の1月1日</strong>から数えます（第57条）。たとえば1989年に亡くなった人の作品は、1990年1月1日から数えて70年後の2059年12月31日まで保護されます。</p>
+    <p>日本の保護期間は、以前は原則として死後50年でしたが、2018年12月30日に70年へ延びました。ただし、一度切れた保護を後から復活させることはしないので、延びたのは、その時点でまだ保護期間が残っていた作品だけです。そのため、1967年までに亡くなった人の作品は、原則として2017年末で保護期間が終わっています。1968年に亡くなった人の作品は、2018年末で切れるはずでしたが、改正で2038年末まで延びました。「保護期間を計算」で確かめてみましょう。</p>
+    <p>保護期間が終わった作品は、だれでも自由に使えるようになります（パブリック・ドメイン）。ただし、著作者が亡くなった後でも、生きていれば人格権の侵害になるような改変などをしてはいけません（第60条）。</p>
+
+    <h2>許諾なしで使える場合（権利の制限）</h2>
+    <p>著作権が強すぎると、文化の発展や教育の妨げになります。そこで著作権法は、一定の条件を満たせば許諾なしで使える場合を定めています。主なものは次のとおりです。条件を1つでも満たさなければ、例外は使えません。</p>
+    <ul>
+      <li><strong>私的使用のための複製（第30条）</strong>：家庭内など限られた範囲で使うために、使う本人がコピーする。テレビ番組の録画や、自分の学習のためのコピーなど。ただし、コピーガードを外してのコピーや、違法にアップロードされたものと知りながらのダウンロードは除かれる。</li>
+      <li><strong>写り込み（第30条の2）</strong>：写真や動画を撮影したときに、背景などに他人の著作物が小さく写り込んでしまう場合。</li>
+      <li><strong>引用（第32条）</strong>：報道、批評、研究などのために、他人の著作物の一部を自分の作品の中で使う場合。</li>
+      <li><strong>学校その他の教育機関における複製等（第35条）</strong>：非営利の教育機関で、授業のために必要な範囲でコピーしたり、インターネットで送信したりする場合。</li>
+      <li><strong>試験問題としての複製（第36条）</strong>：入学試験などの問題として使う場合。</li>
+      <li><strong>営利を目的としない上演等（第38条第1項）</strong>：営利目的でなく、観客から料金を取らず、出演者に報酬を払わない場合の上演・演奏・上映・口述。文化祭の演奏など。</li>
+    </ul>
+
+    <h3>引用の条件</h3>
+    <p>レポートや発表資料で他人の文章や図を使うときに、いちばん関係するのが引用です。文化庁の資料では、主に次の条件が示されています。</p>
+    <ol>
+      <li>すでに公表されている著作物であること</li>
+      <li>公正な慣行に合致すること（引用する必然性があり、かぎ括弧などで引用部分がはっきり分かること）</li>
+      <li>目的上正当な範囲内であること（自分の文章が主で引用が従という主従関係があり、引用する分量が必要最小限であること）</li>
+      <li>出所を明示すること（著者名、書名や記事名、発行元など）</li>
+    </ol>
+    <p>自分の文章がほとんどなく、他人の文章を大部分そのまま載せたものは、引用とはいえません。</p>
+
+    <h3>学校での利用と授業目的公衆送信補償金</h3>
+    <p>第35条により、先生や生徒は、授業のために必要な範囲で、公表された著作物をコピーして配ることができます。2018年の法改正により、オンライン授業や予習・復習用の資料の送信など、インターネットを通じた送信（公衆送信）も、許諾なしで行えるようになりました。その代わりに、学校の設置者は、文化庁長官が指定した団体（授業目的公衆送信補償金等管理協会、SARTRAS）に補償金を支払います。この制度は2020年4月に始まりました。ただし、ドリルのように生徒が買うことを想定して売られているものをコピーするなど、著作権者の利益を不当に害する使い方は認められません。</p>
+
+    <h2>違法ダウンロード</h2>
+    <p>著作権を侵害してインターネットにアップロードされた音楽や映像を、違法なものだと知りながらダウンロードすることは、自分で楽しむためでも違法です（第30条第1項第3号）。2021年1月1日からは、漫画・書籍・論文・プログラムなど、すべての著作物に対象が広がりました（第30条第1項第4号）。</p>
+    <p>ただし、正当な情報収集までためらわれることがないように、違法だと知らずにダウンロードした場合は対象外とされ、スクリーンショットへの写り込み、漫画の1コマ〜数コマなどの軽微なもの、二次創作・パロディなども除かれています。正規版が有償で提供されているものを、違法と知りながらダウンロードした場合は、刑事罰（2年以下の拘禁刑または200万円以下の罰金、またはその両方）の対象になります。音楽・映像以外の著作物では、継続的に、または繰り返し行った場合に限られます（第119条第3項）。</p>
+
+    <h2>肖像権・パブリシティ権</h2>
+    <p>写真や動画を扱うときは、著作権だけでなく、写っている人の権利にも気をつける必要があります。自分の顔や姿をみだりに撮影・公開されない権利を<strong>肖像権</strong>、有名人の氏名や肖像が持つお客を引きつける力（顧客吸引力）を守る権利を<strong>パブリシティ権</strong>といいます。日本では、これらの権利を定めた法律はなく、裁判の判例によって認められてきた権利です。友だちの写る写真をSNSに載せるときは、本人の了解を得るようにしましょう。</p>
+
+    <h2>産業財産権</h2>
+    <p>産業財産権は、産業の発展のために、新しい技術やデザイン、ブランドを守る権利です。特許庁に出願して登録すると、一定の期間、独占して使えます。</p>
+    <ul>
+      <li><strong>特許権</strong>：発明を守る。出願から20年</li>
+      <li><strong>実用新案権</strong>：物品の形状・構造などの考案を守る。出願から10年</li>
+      <li><strong>意匠権</strong>：物品・建築物・画像のデザインを守る。出願から25年</li>
+      <li><strong>商標権</strong>：商品やサービスに使うマークを守る。登録から10年で、更新できる</li>
+    </ul>
+    <p>著作権が「表現」を守るのに対して、特許権は「アイデア」を守ります。たとえば薬の作り方に特許があるとき、その方法で薬を作って売るのは特許権の問題で、作り方を書いた論文をコピーするのは著作権の問題です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>この使い方はOK？</strong>：身近な14の場面について、「許諾なしでOK」「条件を守ればOK」「無断ではできない」から選びます。答えと理由、根拠の条文が表示されます。</li>
+      <li><strong>保護期間を計算</strong>：著作物の種類と、亡くなった年または公表した年を入れると、保護期間が終わる日と、今日の時点で保護されているかが分かります。</li>
+      <li><strong>CCライセンスを組み立てる</strong>：条件を選ぶと、6種類のクリエイティブ・コモンズ・ライセンスのどれになるかと、使う人ができること・守る条件が分かります。</li>
+      <li><strong>知的財産権の種類</strong>：スマートフォンの図の番号を押すと、その部分を守る権利が分かります。</li>
+    </ul>
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>著作権法（昭和45年法律第48号）e-Gov法令検索 https://laws.e-gov.go.jp/law/345AC0000000048</li>
+      <li>文化庁「令和8年度著作権テキスト」https://www.bunka.go.jp/seisaku/chosakuken/seidokaisetsu/pdf/94436101_01.pdf</li>
+      <li>文化庁「著作物等の保護期間の延長に関するQ&amp;A」（平成30年12月）https://www.bunka.go.jp/seisaku/chosakuken/hokaisei/kantaiheiyo_hokaisei/pdf/r1408266_05.pdf</li>
+      <li>文化庁「令和2年通常国会 著作権法改正について」https://www.bunka.go.jp/seisaku/chosakuken/hokaisei/r02_hokaisei/</li>
+      <li>文化庁「侵害コンテンツのダウンロード違法化について」https://www.bunka.go.jp/seisaku/chosakuken/hokaisei/92735201.html</li>
+      <li>一般社団法人 授業目的公衆送信補償金等管理協会（SARTRAS）https://sartras.or.jp/</li>
+      <li>クリエイティブ・コモンズ・ジャパン「クリエイティブ・コモンズ・ライセンスとは」https://creativecommons.jp/licenses/</li>
+      <li>クリエイティブ・コモンズ・ジャパン「CC0について」https://creativecommons.jp/sciencecommons/aboutcc0/</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabQ','toolQ'],['tabT','toolT'],['tabC','toolC'],['tabI','toolI']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+
+/* ===== この使い方はOK？ ===== */
+const LABEL={free:'許諾なしでOK',cond:'条件を守ればOK',no:'無断ではできない'};
+const QUIZ=[
+ {ic:'📰', q:'先生が授業で使うために、新聞記事をコピーしてクラスの生徒に配る。', a:'cond',
+  why:'学校などの教育機関（営利目的のものを除く）で、授業を担当する先生や授業を受ける生徒は、授業のために必要な限度で、公表された著作物をコピーできます。ただし、著作権者の利益を不当に害する場合は認められません。',
+  law:'著作権法 第35条第1項'},
+ {ic:'📒', q:'先生が、市販の問題集（ドリル）を1冊買い、クラス全員分コピーして配る。', a:'no',
+  why:'第35条の例外にも「著作権者の利益を不当に害しないこと」という条件があります。文化庁の資料では、ドリルのように児童・生徒が買うことを想定して売られているものを複製する場合は対象外とされています。',
+  law:'著作権法 第35条第1項ただし書／文化庁「令和8年度著作権テキスト」'},
+ {ic:'🎸', q:'文化祭のステージで、入場無料、出演する生徒にも報酬なしで、人気のバンドの曲を演奏する。', a:'cond',
+  why:'営利を目的とせず、聴衆から料金を取らず、演奏する人に報酬が支払われない場合は、公表された著作物を演奏できます。ただし、この例外が使えるのは上演・演奏・上映・口述だけで、コピーやインターネットでの公開は含まれません。',
+  law:'著作権法 第38条第1項'},
+ {ic:'📝', q:'レポートで、自分の意見の根拠として、本の一節をかぎ括弧で囲んで示し、書名と著者名を書いた。', a:'cond',
+  why:'公表された著作物は「引用」して使えます。引用部分がはっきり分かれていること、自分の文章が主で引用は従であること、必要な分量にとどめること、出所を示すことなどが条件です。',
+  law:'著作権法 第32条第1項、第48条'},
+ {ic:'📺', q:'テレビ番組を録画して、あとで家族と一緒に見る。', a:'free',
+  why:'個人的に、または家庭内など限られた範囲で使うために、使う本人がコピーすることは認められています（私的使用のための複製）。ただし、コピーガードを外してのコピーなどは対象外です。',
+  law:'著作権法 第30条第1項'},
+ {ic:'📱', q:'録画したテレビ番組の一場面を切り出して、動画をSNSに投稿する。', a:'no',
+  why:'私的使用のための例外が認めるのはコピーだけで、インターネットで公開すること（公衆送信）は含まれません。番組の著作権者や放送事業者の許諾が必要です。',
+  law:'著作権法 第23条、第30条第1項'},
+ {ic:'🎵', q:'違法にアップロードされた音楽だと知りながら、自分で聴くためにダウンロードする。', a:'no',
+  why:'著作権を侵害して送信されている音楽や映像を、そうと知りながら録音・録画（ダウンロード）することは、私的使用の目的でも認められません。売られている作品なら、刑事罰の対象にもなります。',
+  law:'著作権法 第30条第1項第3号、第119条第3項第1号'},
+ {ic:'📚', q:'違法にアップロードされた漫画だと知りながら、1冊分をまとめてダウンロードする。', a:'no',
+  why:'2021年1月1日から、音楽・映像以外の著作物（漫画・書籍・論文・プログラムなど）にも、違法と知りながらのダウンロードの規制が広がりました。ただし、漫画の1コマ〜数コマなどの軽微なもの、スクリーンショットへの写り込み、二次創作・パロディなどは対象から除かれています。',
+  law:'著作権法 第30条第1項第4号／文化庁「侵害コンテンツのダウンロード違法化について」'},
+ {ic:'📷', q:'友だちを写真に撮ったら、後ろの壁に飾ってあった絵が小さく写り込んだ。その写真をSNSに載せる。', a:'cond',
+  why:'写真の撮影などで、本来ねらったもの以外の著作物が小さく写り込んでしまう場合は、写り込んだ部分が軽微であるなどの条件を満たせば、そのまま利用できます。ただし、写っている友だちの肖像権には配慮が必要です。',
+  law:'著作権法 第30条の2'},
+ {ic:'🌡️', q:'気象庁が発表した毎日の最高気温の記録を、表にまとめてレポートに載せる。', a:'free',
+  why:'著作物は「思想又は感情を創作的に表現したもの」です。気温の記録のような単なる事実やデータは、著作物にあたりません。ただし、データをまとめた文章や、選び方・並べ方に工夫のある表などは、著作物になることがあります。出典は書いておきましょう。',
+  law:'著作権法 第2条第1項第1号'},
+ {ic:'💻', q:'ネットのニュースサイトの記事を、全文そのまま自分のブログに貼り付けて公開する。', a:'no',
+  why:'記事の文章は著作物です。全文を貼り付けて自分の文章がほとんどない場合は、主従関係などの引用の条件を満たさず、無断でのコピーとインターネットでの公開になります。',
+  law:'著作権法 第21条、第23条、第32条'},
+ {ic:'🎨', q:'人気アニメのキャラクターをそっくりに描いたイラストを、SNSで公開する。', a:'no',
+  why:'キャラクターの絵をまねて描くことは、元の絵のコピーや改変にあたります。自分の部屋に飾るなど私的に使うだけなら私的使用の範囲ですが、インターネットでの公開には権利者の許諾が必要です。公式に二次創作のルールを公開している作品もあるので、まずルールを確かめましょう。',
+  law:'著作権法 第21条、第23条、第27条、第30条'},
+ {ic:'🖼️', q:'「CC BY-NC」のライセンスが付いた写真を、入場無料の文化祭のポスターに、作者名とライセンスを書いて使う。', a:'cond',
+  why:'CC BY-NC は「クレジットを表示すること」「営利目的で使わないこと」を条件に、コピー・再配布・改変を認めるライセンスです。営利目的でない文化祭のポスターで、クレジットとライセンスを示せば使えます。',
+  law:'クリエイティブ・コモンズ「表示-非営利 4.0 国際」コモンズ証'},
+ {ic:'✏️', q:'高校が入試問題を作るとき、小説の一部を問題文として使う（事前に許諾は取らない）。', a:'cond',
+  why:'入学試験や検定の問題として必要な限度で、公表された著作物をコピーできます。試験問題は事前に知られてはいけないので、前もって許諾を取ることができないためです。営利目的で行う場合は、補償金を支払う必要があります。',
+  law:'著作権法 第36条'},
+];
+let qi=0; const qAns=QUIZ.map(()=>null);
+function qDraw(){
+  const q=QUIZ[qi];
+  $('qNo').textContent=`第${qi+1}問`;
+  $('qIc').textContent=q.ic; $('qTx').textContent=q.q;
+  const done=qAns.filter(x=>x!==null).length, right=qAns.filter((x,i)=>x!==null&&x===QUIZ[i].a).length;
+  $('qScore').textContent=right; $('qDone').textContent=done; $('qAll').textContent=QUIZ.length;
+  const my=qAns[qi];
+  document.querySelectorAll('#qCh .choice').forEach(b=>{
+    b.classList.remove('right','wrong'); b.disabled= my!==null;
+    if(my!==null){ if(b.dataset.a===q.a) b.classList.add('right'); else if(b.dataset.a===my) b.classList.add('wrong'); }
+  });
+  const m=$('qMsg');
+  if(my===null){ m.hidden=true; }
+  else{
+    const ok=my===q.a;
+    m.hidden=false; m.className='msg '+(ok?'ok':'ng');
+    m.innerHTML=`<div class="t">${ok?'正解！':'ざんねん'}　答えは「${LABEL[q.a]}」</div>${esc(q.why)}<span class="law">根拠：${esc(q.law)}</span>`+
+      (done===QUIZ.length? `<span class="law" style="color:#ffd97a;font-size:14px;margin-top:10px;">全${QUIZ.length}問中 ${right}問 正解でした。「最初から」でもう一度挑戦できます。</span>`:'');
+  }
+  $('qPrev').disabled=qi===0; $('qNext').disabled=qi===QUIZ.length-1;
+  $('qDots').innerHTML=QUIZ.map((_,i)=>{ const a=qAns[i]; const c=['dot']; if(i===qi)c.push('cur'); if(a!==null) c.push(a===QUIZ[i].a?'r':'w');
+    return `<button class="${c.join(' ')}" data-i="${i}" aria-label="第${i+1}問">${i+1}</button>`; }).join('');
+  $('qDots').querySelectorAll('.dot').forEach(d=>d.addEventListener('click',()=>{ qi=+d.dataset.i; qDraw(); }));
+}
+document.querySelectorAll('#qCh .choice').forEach(b=>b.addEventListener('click',()=>{ if(qAns[qi]!==null) return; qAns[qi]=b.dataset.a; qDraw(); }));
+$('qPrev').addEventListener('click',()=>{ if(qi>0){ qi--; qDraw(); } });
+$('qNext').addEventListener('click',()=>{ if(qi<QUIZ.length-1){ qi++; qDraw(); } });
+$('qReset').addEventListener('click',()=>{ qAns.fill(null); qi=0; qDraw(); });
+qDraw();
+
+/* ===== 保護期間 ===== */
+const AMEND=2018; // 平成30年12月30日施行（50年→70年）
+/* type: real=死亡年, anon/corp/film=公表年。戻り値 {ok, end, note, steps} */
+function calcTerm(type,y){
+  const r={steps:[], notes:[]};
+  if(!Number.isInteger(y)||y<1800||y>2100){ r.err='1800〜2100 の西暦を入れてください'; return r; }
+  const base= type==='real' ? '死亡' : '公表';
+  r.start=y+1;
+  if(type==='film'){
+    if(y<1971){ r.err='1970年以前に公表された映画は、旧著作権法の保護期間や、2004年の改正（公表後50年→70年）の経過措置も調べる必要があるため、このツールでは判定しません。'; return r; }
+    r.end=y+70;
+    r.steps.push(`映画の著作物：公表後70年（第54条第1項）`);
+    r.steps.push(`${y}年に公表 → 翌年 ${y+1}年1月1日から数えて70年（第57条）`);
+    r.steps.push(`→ ${r.end}年12月31日まで保護`);
+    return r;
+  }
+  const old=y+50;
+  const label= type==='real' ? `著作者の死後70年（第51条第2項）` : type==='anon' ? `公表後70年（第52条第1項）` : `公表後70年（第53条第1項）`;
+  r.steps.push(label);
+  if(old<AMEND){
+    // 2018年12月29日の時点で、改正前の50年がすでに満了している
+    r.end=old; r.expiredBefore=true;
+    r.steps.push(`改正前の期間（50年）で計算すると ${y}年${base} → ${old}年12月31日で満了`);
+    r.steps.push(`2018年12月30日の改正（50年→70年）の前に切れていたので、延長されない（TPP整備法附則第7条）`);
+    r.steps.push(`→ ${old}年12月31日で保護期間は満了`);
+  } else {
+    r.end=y+70;
+    r.steps.push(`${y}年に${base} → 翌年 ${y+1}年1月1日から数えて70年（第57条）`);
+    if(y<=AMEND) r.steps.push(`改正前（50年）なら ${old}年末までだったが、2018年12月30日の改正の時点でまだ保護中なので、70年に延長`);
+    r.steps.push(`→ ${r.end}年12月31日まで保護`);
+  }
+  if(type==='real' && y<1971) r.notes.push('1970年以前に亡くなった人の作品は、旧著作権法の期間も関係することがあります。');
+  if(type==='corp') r.notes.push('創作後70年以内に公表されなかったときは、創作後70年までです（第53条第1項）。');
+  if(type==='anon') r.notes.push('ペンネームがだれのものかよく知られている場合などは、実名の著作物と同じく死後70年です（第52条第2項）。');
+  return r;
+}
+function tDraw(){
+  const type=document.querySelector('input[name=ty]:checked').value;
+  $('tYearL').textContent= type==='real' ? '著作者が亡くなった年（西暦）' : '公表した年（西暦）';
+  const y=parseInt($('tYear').value,10);
+  const r=calcTerm(type,y);
+  const m=$('tMsg'), c=$('tCalc'), svg=$('tSvg');
+  if(r.err){ m.className='msg'; m.innerHTML=`<div class="t">計算できません</div>${esc(r.err)}`; c.innerHTML=''; svg.innerHTML=''; return; }
+  const now=new Date(); const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const endDate=new Date(r.end,11,31);
+  const alive= today<=endDate;
+  const ds=`${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  m.className='msg '+(alive?'ng':'ok');
+  m.innerHTML= alive
+    ? `<div class="t">${r.end}年12月31日まで保護されます</div>今日（${ds}）は、まだ保護期間の中です。使うには原則として権利者の許諾が必要です（例外にあたる場合を除く）。<b>${r.end+1}年1月1日</b>から自由に使えるようになります。`
+    : `<div class="t">${r.end}年12月31日で保護期間が終わっています</div>今日（${ds}）は、著作権（財産権）が消滅しているので、許諾なしで利用できます。ただし、著作者の人格的な利益を傷つけるような改変などは、著作者の死後もしてはいけません（第60条）。`;
+  c.innerHTML=r.steps.map(s=>esc(s)).join('<br>')+(r.notes.length? '<br><span style="color:var(--muted);">※ '+r.notes.map(esc).join('<br>※ ')+'</span>':'');
+  // 年表
+  const W=640,H=150,l=70,rr=70;
+  const y0=r.start-1, y1=Math.max(r.end+1, today.getFullYear()+1);
+  const X=v=>l+(v-y0)/(y1-y0)*(W-l-rr);
+  let h=`<line x1="${l}" x2="${W-rr}" y1="80" y2="80" stroke="#9AA6BC" stroke-width="2"/>`;
+  h+=`<rect x="${X(r.start)}" y="66" width="${Math.max(2,X(r.end+1)-X(r.start))}" height="28" rx="5" fill="${alive?'#2F5496':'#9AA6BC'}"/>`;
+  h+=`<text x="${(X(r.start)+X(r.end+1))/2}" y="84" font-size="13" fill="#fff" text-anchor="middle" font-weight="700">保護期間</text>`;
+  const mark=(v,lab,yy,col)=>`<line x1="${X(v)}" x2="${X(v)}" y1="60" y2="100" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="${yy}" font-size="12" fill="${col}" text-anchor="middle">${lab}</text>`;
+  h+=mark(y0, `${y0}年 ${type==='real'?'死亡':'公表'}`, 50, '#1F3864');
+  h+=mark(r.end+1, `${r.end}年末で終了`, 120, alive?'#C00000':'#2E7D4F');
+  const ty=today.getFullYear()+(today.getMonth()+1)/12;
+  h+=`<line x1="${X(ty)}" x2="${X(ty)}" y1="40" y2="108" stroke="#C49A2B" stroke-width="2" stroke-dasharray="4 3"/><text x="${X(ty)}" y="140" font-size="12" fill="#7A5A12" text-anchor="middle">今日</text>`;
+  if(r.expiredBefore){ h+=mark(2018.99,'2018年12月30日 改正',30,'#5B6472'); }
+  svg.innerHTML=h;
+}
+document.querySelectorAll('input[name=ty]').forEach(i=>i.addEventListener('change',tDraw));
+$('tYear').addEventListener('input',tDraw);
+document.querySelectorAll('[data-ex]').forEach(b=>b.addEventListener('click',()=>{ $('tYear').value=b.dataset.ex; tDraw(); }));
+tDraw();
+
+/* ===== CC ===== */
+const CC={
+  'BY':{jp:'表示',can:['コピー・再配布','改変（リミックスや翻案）','営利目的での利用'],must:['クレジット（作者名・作品名など）とライセンスを示す','改変したらそのことを示す']},
+  'BY-SA':{jp:'表示—継承',can:['コピー・再配布','改変','営利目的での利用'],must:['クレジットとライセンスを示す','改変した作品は、元と同じライセンス（BY-SA）で公開する']},
+  'BY-ND':{jp:'表示—改変禁止',can:['コピー・再配布','営利目的での利用'],must:['クレジットとライセンスを示す','改変した作品は公開しない']},
+  'BY-NC':{jp:'表示—非営利',can:['コピー・再配布','改変'],must:['クレジットとライセンスを示す','営利目的では使わない']},
+  'BY-NC-SA':{jp:'表示—非営利—継承',can:['コピー・再配布','改変'],must:['クレジットとライセンスを示す','営利目的では使わない','改変した作品は、元と同じライセンス（BY-NC-SA）で公開する']},
+  'BY-NC-ND':{jp:'表示—非営利—改変禁止',can:['コピー・再配布'],must:['クレジットとライセンスを示す','営利目的では使わない','改変した作品は公開しない']},
+};
+const ORDER=['BY','BY-SA','BY-ND','BY-NC','BY-NC-SA','BY-NC-ND'];
+const cc={NC:false,ND:false,SA:false};
+function ccDraw(){
+  ['NC','ND','SA'].forEach(k=>$('cc'+k).setAttribute('aria-pressed',String(cc[k])));
+  $('ccND').disabled=cc.SA; $('ccSA').disabled=cc.ND;
+  const code='BY'+(cc.NC?'-NC':'')+(cc.ND?'-ND':'')+(cc.SA?'-SA':'');
+  const L=CC[code];
+  $('ccOut').innerHTML=`<div class="code">CC ${code} 4.0</div><div class="jp">${L.jp} 4.0 国際</div>
+    <div class="badges">${code.split('-').map(k=>`<span class="badge">${k}</span>`).join('')}</div>
+    <div class="canlist"><div class="yes"><h4>使う人ができること</h4><ul>${L.can.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+    <div class="no"><h4>守る条件</h4><ul>${L.must.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>
+    <p class="hint" style="margin-top:10px;">例：「〇〇（作者名）『作品名』CC ${code} 4.0」のように、作者名・作品名・ライセンス名（とライセンスへのリンク）を書きます。</p>`;
+  $('ccSpec').innerHTML=['CC0',...ORDER.map(x=>'CC '+x),'すべての権利を保有'].map(x=>`<div class="${x==='CC '+code?'on':''}">${x}</div>`).join('');
+}
+['NC','ND','SA'].forEach(k=>$('cc'+k).addEventListener('click',()=>{ if($('cc'+k).disabled) return; cc[k]=!cc[k]; ccDraw(); }));
+ccDraw();
+
+/* ===== 知的財産 ===== */
+const IP=[
+  {x:130,y:100,r:'著作権',t:'壁紙の写真・アプリのプログラム',d:'写真やプログラムは著作物の例です（第10条第1項）。作った時点で自動的に著作権が生まれ、手続きはいりません。'},
+  {x:186,y:296,r:'著作権',t:'着信音の音楽',d:'メロディや歌詞は音楽の著作物です。'},
+  {x:184,y:178,r:'意匠権',t:'アイコンや画面のデザイン',d:'物品の形だけでなく、画面に表示される画像のデザインも意匠権の対象になります。特許庁に出願して登録すると守られます。'},
+  {x:196,y:430,r:'商標権',t:'メーカーや商品の名前・ロゴ',d:'商品やサービスに使うマークを守るのが商標権です。登録から10年で、更新すれば続けて守られます。'},
+  {x:130,y:350,r:'特許権',t:'タッチパネルや電池などの技術',d:'新しい技術的なアイデア（発明）を守るのが特許権です。出願から20年で切れ、その後はだれでも使えるようになります。'},
+  {x:230,y:143,r:'実用新案権',t:'ボタンや部品の形・構造の工夫',d:'物品の形状・構造・組み合わせについての考案を守るのが実用新案権です。出願から10年です。'},
+];
+let ipOn=0;
+function ipDraw(){
+  const svg=document.querySelector('.phone svg');
+  svg.querySelectorAll('.hot').forEach(n=>n.remove());
+  IP.forEach((p,i)=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','hot'+(i===ipOn?' on':'')); g.setAttribute('data-i',i);
+    g.innerHTML=`<circle class="ring" cx="${p.x}" cy="${p.y}" r="20"/><circle class="pin" cx="${p.x}" cy="${p.y}" r="11"/><text class="num" x="${p.x}" y="${p.y+4.5}" text-anchor="middle">${i+1}</text>`;
+    g.addEventListener('click',()=>{ ipOn=i; ipDraw(); });
+    svg.appendChild(g);
+  });
+  $('ipCards').innerHTML=IP.map((p,i)=>`<button class="ipcard${i===ipOn?' on':''}" data-i="${i}"><b>${i+1}. ${esc(p.t)}</b><span class="r">${esc(p.r)}</span>${i===ipOn?`<div style="margin-top:6px;">${esc(p.d)}</div>`:''}</button>`).join('');
+  $('ipCards').querySelectorAll('.ipcard').forEach(b=>b.addEventListener('click',()=>{ ipOn=+b.dataset.i; ipDraw(); }));
+}
+ipDraw();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Webページが表示されるまで（URL・DNS・TCP・HTTPのしくみ）｜情報ラボ</title>
+<meta name="description" content="URLを入力してからWebページが表示されるまでに、ブラウザ・DNSサーバ・Webサーバの間でどんなやり取りが行われるかを1つずつ追える無料ツール。DNSの名前解決、TCPの接続、HTTPのリクエストとレスポンス、ステータスコードを体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/web/">
+<meta property="og:title" content="Webページが表示されるまで｜情報ラボ">
+<meta property="og:description" content="URL・DNS・TCP・HTTP。Webページが表示されるまでのやり取りを1つずつ追える無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/web/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  label.ck{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--ink); cursor:pointer;}
+  label.ck input{width:18px; height:18px; accent-color:var(--navy);}
+  input.txt,select{font-family:var(--mono); font-size:14px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; color:#1c2430; max-width:100%;}
+  input.txt{width:100%;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  .stage{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; margin-bottom:12px;}
+  .stage svg{display:block; width:100%; height:auto;}
+  .node rect{fill:#fff; stroke:#9AA6BC; stroke-width:2; rx:12;}
+  .node text{font-size:13px; fill:#1c2430; text-anchor:middle;}
+  .node .sub{font-size:11px; fill:#5B6472; font-family:var(--mono);}
+  .node .ic{font-size:24px;}
+  .node.on rect{stroke:var(--gold); stroke-width:3; fill:#FFF8E7;}
+  .node.dim{opacity:.4;}
+  .edge{stroke:#D5DBE5; stroke-width:2; fill:none;}
+  .flowline{stroke:var(--gold); stroke-width:3.5; fill:none; marker-end:url(#arrG);}
+  .flowline.back{stroke:var(--ok); marker-end:url(#arrO);}
+  .pkt{fill:var(--gold);}
+  .pkt.back{fill:var(--ok);}
+  .stepbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .stepno{font-family:var(--mono); font-size:14px; color:var(--muted);}
+  .now{background:#fff; border:2px solid var(--gold); border-radius:12px; padding:14px 16px; margin-top:12px;}
+  .now .h{font-size:16px; font-weight:700; color:var(--ink); margin-bottom:4px;}
+  .now .h small{font-weight:400; color:var(--muted); font-size:13px; margin-left:6px;}
+  .now p{margin:4px 0 8px; font-size:14.5px;}
+  pre.wire{font-family:var(--mono); font-size:13.5px; line-height:1.6; background:#0f1a2e; color:#E6EDF7; border-radius:8px; padding:10px 14px; margin:6px 0 0; overflow:auto; white-space:pre;}
+  pre.wire .c{color:#9fb3d1;}
+  .loglist{list-style:none; margin:12px 0 0; padding:0; counter-reset:n;}
+  .loglist li{display:grid; grid-template-columns:2.2em 1fr; gap:6px; padding:6px 4px; border-top:1px dashed #E1E6EF; font-size:14px; cursor:pointer;}
+  .loglist li:first-child{border-top:none;}
+  .loglist li .n{font-family:var(--mono); color:var(--muted); text-align:right;}
+  .loglist li .ph{display:inline-block; font-size:11.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-right:6px; color:#fff;}
+  .ph.url{background:#5B6472;} .ph.dns{background:#2F5496;} .ph.tcp{background:#7A5A12;} .ph.tls{background:#6B3FA0;} .ph.http{background:#2E7D4F;} .ph.view{background:#C00000;}
+  .loglist li.cur{background:#FFF8E7;}
+  .loglist li.fut{opacity:.45;}
+
+  /* DNS */
+  .tree{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px;}
+  .tree svg{display:block; width:100%; height:auto;}
+  .tnode rect{fill:#fff; stroke:#9AA6BC; stroke-width:2;}
+  .tnode text{font-size:13px; text-anchor:middle; fill:#1c2430; font-family:var(--mono);}
+  .tnode.ask rect{stroke:var(--gold); stroke-width:3; fill:#FFF8E7;}
+  .tnode.cache rect{stroke:var(--ok); stroke-width:3; fill:#EAF5EE;}
+  .tedge{stroke:#C9D2E0; stroke-width:2;}
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top;}
+  table.tb th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+  table.tb td.m{font-family:var(--mono);}
+  .scroll{overflow-x:auto; max-width:100%;}
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  /* URL */
+  .urlparts{display:flex; flex-wrap:wrap; gap:2px; margin-top:12px; font-family:var(--mono); font-size:15px;}
+  .up{display:flex; flex-direction:column; align-items:stretch; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#fff; max-width:100%;}
+  .up b{font-weight:600; padding:4px 8px; word-break:break-all;}
+  .up i{font-style:normal; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:11.5px; padding:2px 8px; color:#fff;}
+  .up.s i{background:#5B6472;} .up.h i{background:#2F5496;} .up.p i{background:#7A5A12;} .up.pa i{background:#2E7D4F;} .up.q i{background:#6B3FA0;} .up.f i{background:#C00000;}
+
+  .status-cls{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px;}
+  @media (max-width:640px){ .status-cls{grid-template-columns:1fr 1fr;} }
+  .sc{border:1px solid var(--line); border-radius:9px; background:#fff; padding:8px 10px; font-size:13px;}
+  .sc b{display:block; font-family:var(--mono); font-size:16px; color:var(--ink);}
+  .sc.on{border-color:var(--gold); background:#FFF8E7; box-shadow:0 0 0 2px var(--gold) inset;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ Webページが表示されるまで</p>
+    <h1>Webページが表示されるまで</h1>
+    <p class="lead">URLを入力してから、ページが表示されるまでの一瞬に、いくつものコンピュータがやり取りをしています。1つずつ追ってみましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabFlow" aria-selected="true" aria-controls="toolFlow">表示までの流れ</button>
+    <button class="tab" role="tab" id="tabDns" aria-selected="false" aria-controls="toolDns">DNSで名前を調べる</button>
+    <button class="tab" role="tab" id="tabHttp" aria-selected="false" aria-controls="toolHttp">URLとHTTP</button>
+  </div>
+
+  <!-- ===== 表示までの流れ ===== -->
+  <section class="tool show" id="toolFlow" role="tabpanel" aria-labelledby="tabFlow">
+    <div class="panel">
+      <h2>ブラウザに https://www.example.com/news/ と入力したときのやり取り</h2>
+      <div class="row">
+        <label class="ck"><input type="checkbox" id="optCache">DNSのキャッシュがある（少し前に同じサイトを見た）</label>
+        <label class="ck"><input type="checkbox" id="optHttp">暗号化しない http:// で接続する</label>
+      </div>
+      <div class="stepbar" style="margin-top:12px;">
+        <button class="chip" id="fFirst">⏮ 最初へ</button>
+        <button class="chip" id="fPrev">◀ 戻る</button>
+        <button class="primary" id="fNext">次へ ▶</button>
+        <button class="chip" id="fAuto">▶ 自動で進める</button>
+        <span class="stepno" id="fNo"></span>
+      </div>
+    </div>
+    <div class="stage">
+      <svg id="fSvg" viewBox="0 0 680 330" role="img" aria-label="ブラウザ、DNSサーバ、Webサーバの間のやり取りの図"></svg>
+    </div>
+    <div class="now" id="fNow"></div>
+    <div class="stats">
+      <div class="stt"><div class="k">ここまでのやり取り（片道の回数）</div><div class="v" id="fCnt">0</div></div>
+      <div class="stt"><div class="k">そのうちDNS</div><div class="v" id="fDns">0</div></div>
+      <div class="stt"><div class="k">そのうちWebサーバ</div><div class="v" id="fWeb">0</div></div>
+    </div>
+    <ol class="loglist" id="fLog"></ol>
+    <p class="hint">やり取りの一覧の行を押すと、その場面に移動します。IPアドレス 203.0.113.10 などは、説明用に予約されている例のアドレスです。</p>
+  </section>
+
+  <!-- ===== DNS ===== -->
+  <section class="tool" id="toolDns" role="tabpanel" aria-labelledby="tabDns">
+    <div class="panel">
+      <h2>名前（ドメイン名）からIPアドレスなどを調べます。DNSサーバは、階層の上から順に問い合わせていきます</h2>
+      <div class="row">
+        <select id="dName" aria-label="調べるドメイン名"></select>
+        <select id="dType" aria-label="レコードの種類">
+          <option value="A">A（IPv4アドレス）</option>
+          <option value="AAAA">AAAA（IPv6アドレス）</option>
+          <option value="MX">MX（メールの届け先）</option>
+          <option value="CNAME">CNAME（別名）</option>
+        </select>
+        <button class="primary" id="dAsk">問い合わせる</button>
+        <button class="chip" id="dClear">キャッシュを消す</button>
+      </div>
+      <p class="hint">同じ名前をもう一度問い合わせると、キャッシュ（一時的に覚えた答え）が使われるので、問い合わせの回数が減ります。</p>
+    </div>
+    <div class="two">
+      <div class="tree"><svg id="dSvg" viewBox="0 0 460 300" role="img" aria-label="DNSの階層の図"></svg></div>
+      <div>
+        <pre class="wire" id="dOut" aria-live="polite"></pre>
+        <div class="stats">
+          <div class="stt"><div class="k">今回の問い合わせ</div><div class="v" id="dQ">–</div></div>
+          <div class="stt"><div class="k">キャッシュの数</div><div class="v" id="dC">0</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="msg" id="dMsg"><div class="t">名前と種類を選んで「問い合わせる」を押してください</div>フルサービスリゾルバ（学校や家庭が使うDNSサーバ）が、ルート → 次の階層 → … と順にたずねて答えを見つけます。</div>
+    <h3 style="color:var(--ink);font-size:15px;margin:20px 0 8px;">リゾルバが覚えているキャッシュ</h3>
+    <div class="scroll"><table class="tb" id="dCache"></table></div>
+  </section>
+
+  <!-- ===== URLとHTTP ===== -->
+  <section class="tool" id="toolHttp" role="tabpanel" aria-labelledby="tabHttp">
+    <div class="panel">
+      <h2>URLを部分に分けます</h2>
+      <input class="txt" id="uIn" value="https://www.example.com:443/news/list.html?year=2026&amp;page=2#top" spellcheck="false" aria-label="URL">
+      <div class="urlparts" id="uParts"></div>
+      <p class="hint" id="uNote"></p>
+    </div>
+    <div class="panel">
+      <h2>HTTPのリクエストを送って、レスポンスを見ます</h2>
+      <div class="row">
+        <select id="hMethod" aria-label="メソッド"><option>GET</option><option>POST</option></select>
+        <select id="hPath" aria-label="パス">
+          <option value="/news/">/news/（ある）</option>
+          <option value="/old/">/old/（引っ越した）</option>
+          <option value="/nothing/">/nothing/（ない）</option>
+          <option value="/members/">/members/（会員だけ）</option>
+          <option value="/broken/">/broken/（サーバの不具合）</option>
+          <option value="/form/">/form/（送信フォーム）</option>
+        </select>
+        <button class="primary" id="hSend">送る</button>
+      </div>
+      <div class="two" style="margin-top:12px;">
+        <div><div style="font-size:13px;font-weight:700;color:var(--ink);">リクエスト（ブラウザ → サーバ）</div><pre class="wire" id="hReq"></pre></div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--ink);">レスポンス（サーバ → ブラウザ）</div><pre class="wire" id="hRes"></pre></div>
+      </div>
+      <div class="status-cls" id="hCls">
+        <div class="sc" data-c="1"><b>1xx</b>情報（処理を続けている）</div>
+        <div class="sc" data-c="2"><b>2xx</b>成功</div>
+        <div class="sc" data-c="3"><b>3xx</b>リダイレクト（別の場所へ）</div>
+        <div class="sc" data-c="4"><b>4xx</b>クライアントのエラー</div>
+        <div class="sc" data-c="5"><b>5xx</b>サーバのエラー</div>
+      </div>
+      <div class="msg" id="hMsg"></div>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>Webページが表示されるまでの流れ</h2>
+    <p>ブラウザにURLを入力してからページが表示されるまでには、大きく分けて4つの段階があります。</p>
+    <ol>
+      <li><strong>URLを読み取る</strong>：どの方法で、どのコンピュータの、どのファイルを取りに行くかを決める</li>
+      <li><strong>DNSで名前を調べる</strong>：ホスト名（www.example.com など）を、IPアドレスに変換する</li>
+      <li><strong>接続する</strong>：TCPで相手と接続し、https なら TLS で暗号化の準備をする</li>
+      <li><strong>HTTPでやり取りする</strong>：ページを要求し（リクエスト）、HTMLや画像を受け取る（レスポンス）</li>
+    </ol>
+    <p>これらはふつう1秒もかからずに終わるので、利用者が気づくことはありません。「表示までの流れ」では、この一瞬のやり取りを1つずつ止めて見られるようにしています。</p>
+
+    <h2>URLのしくみ</h2>
+    <p>URL（Uniform Resource Locator）は、インターネット上の情報の場所を表す書き方です。<code>https://www.example.com/news/index.html</code> なら、<code>https</code> がスキーム（やり取りの方法）、<code>www.example.com</code> がホスト名（相手のコンピュータの名前）、<code>/news/index.html</code> がパス（サーバの中の場所）です。</p>
+    <p>ポート番号は、1台のコンピュータの中で、どのサービスと通信するかを表す番号です。省略したときは、http なら 80 番、https なら 443 番が使われます。<code>?</code> の後ろのクエリはサーバに渡す追加の情報、<code>#</code> の後ろのフラグメントはページの中の位置を表します。フラグメントはサーバには送られず、ブラウザの中だけで使われます。</p>
+
+    <h2>DNS：名前からIPアドレスを調べる</h2>
+    <p>インターネットで相手にデータを届けるには、<strong>IPアドレス</strong>が必要です。しかし、数字の並びは人間には覚えにくいので、www.example.com のような<strong>ドメイン名</strong>が使われます。ドメイン名とIPアドレスを対応させるしくみが <strong>DNS</strong>（Domain Name System）です。</p>
+    <p>DNSの情報は、1か所にまとめて置かれているのではありません。ドメイン名は右から順に「ルート（.）→ com → example.com → www」という木のような<strong>階層</strong>になっていて、それぞれの階層を担当するDNSサーバが、自分の範囲だけを管理しています。これを<strong>分散データベース</strong>といいます。</p>
+    <p>名前を調べるとき、パソコンやスマートフォンは、まず決められた<strong>フルサービスリゾルバ</strong>（キャッシュDNSサーバ）にたずねます。リゾルバは、階層のいちばん上の<strong>ルートサーバ</strong>からたずね始め、「com のサーバに聞いて」「example.com のサーバに聞いて」と教えてもらいながら、最後にその名前を管理している<strong>権威DNSサーバ</strong>から答えを得ます。ルートサーバは13系列あり、そのうちの1つ（M ルート）は、日本の WIDE プロジェクトと JPRS が共同で運用しています。</p>
+    <h3>キャッシュとTTL</h3>
+    <p>毎回ルートサーバからたずねていては、時間がかかり、ルートサーバにも負担が集中します。そこでリゾルバは、一度調べた答えを<strong>キャッシュ</strong>として一定時間覚えておきます。覚えておいてよい時間は、答えに付いている <strong>TTL</strong>（Time To Live）で決まります。「DNSで名前を調べる」で同じ名前を2回たずねると、2回目は問い合わせが0回になることを確かめられます。</p>
+    <h3>レコードの種類</h3>
+    <table>
+      <tr><th>種類</th><th>表す内容</th></tr>
+      <tr><td>A</td><td>IPv4アドレス</td></tr>
+      <tr><td>AAAA</td><td>IPv6アドレス</td></tr>
+      <tr><td>MX</td><td>そのドメインあてのメールを受け取るサーバ</td></tr>
+      <tr><td>CNAME</td><td>別名（ほかの名前を指す）</td></tr>
+      <tr><td>NS</td><td>そのドメインを管理するDNSサーバ</td></tr>
+    </table>
+    <p>電子メールを送るときも、DNSが使われます。送信側のメールサーバは、あて先のドメインの MX レコードを調べて、どのサーバに届ければよいかを知ります。<a href="/mail/">電子メールのしくみ</a>もあわせて確かめてみましょう。</p>
+
+    <h2>TCP：確実に届けるための接続</h2>
+    <p>IPアドレスが分かると、ブラウザはWebサーバと <strong>TCP</strong> の接続を作ります。TCP は、データが届いたかを確認し、届かなければ送り直し、順番を並べ直して、データを確実に届けるためのプロトコルです。接続を始めるときは、SYN → SYN＋ACK → ACK の3回のやり取りを行います。これを<strong>3ウェイハンドシェイク</strong>といいます。</p>
+    <p>https の場合は、続いて <strong>TLS</strong> の手順に入ります。ブラウザとサーバが暗号化の方式と鍵を決め、サーバは<strong>サーバ証明書</strong>を送ります。ブラウザは、信頼できる認証局の電子署名が付いているかを調べて、通信相手が本物かどうかを確かめます。ここから先の通信は暗号化されるので、途中で盗み見られても内容は読めません。暗号化のしくみは<a href="/crypto/">暗号のしくみ</a>で体験できます。</p>
+
+    <h2>HTTP：リクエストとレスポンス</h2>
+    <p><strong>HTTP</strong>（HyperText Transfer Protocol）は、ブラウザとWebサーバがやり取りするための決まりです。ブラウザは「GET /news/ HTTP/1.1」のような<strong>リクエスト</strong>を送り、サーバは「HTTP/1.1 200 OK」のような<strong>レスポンス</strong>を返します。レスポンスの本文には、ページの中身である HTML が入っています。</p>
+    <p>HTMLの中には、見た目を決める CSS や画像のファイルの場所が書かれています。ブラウザは HTML を読みながら、必要なファイルを次々に要求します。1つのページを表示するために、何十回ものリクエストが送られることもめずらしくありません。</p>
+    <h3>主なメソッドとステータスコード</h3>
+    <p>メソッドは、サーバに何をしてほしいかを表します。<code>GET</code> は情報を取得し、<code>POST</code> はフォームの入力内容などを送ります。ステータスコードは結果を表す3けたの数で、最初の数字で分類されます。</p>
+    <table>
+      <tr><th>分類</th><th>意味</th><th>例</th></tr>
+      <tr><td>1xx</td><td>情報（処理の途中）</td><td>100 Continue</td></tr>
+      <tr><td>2xx</td><td>成功</td><td>200 OK</td></tr>
+      <tr><td>3xx</td><td>リダイレクト</td><td>301 Moved Permanently</td></tr>
+      <tr><td>4xx</td><td>クライアント側のエラー</td><td>403 Forbidden、404 Not Found</td></tr>
+      <tr><td>5xx</td><td>サーバ側のエラー</td><td>500 Internal Server Error</td></tr>
+    </table>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>表示までの流れ</strong>：「次へ」で1つずつ進みます。「DNSのキャッシュがある」「暗号化しない http」を切りかえて、やり取りの回数がどう変わるかを比べましょう。</li>
+      <li><strong>DNSで名前を調べる</strong>：名前とレコードの種類を選んで問い合わせます。図の番号は、たずねた順番です。shop.example.com の A レコードをたずねると、別名（CNAME）をたどるようすが分かります。</li>
+      <li><strong>URLとHTTP</strong>：URLを入力すると部分に分けて表示します。パスとメソッドを選んで送ると、リクエストとレスポンスの中身と、ステータスコードの意味を確かめられます。</li>
+    </ul>
+    <p>このページの www.example.com や 203.0.113.10 は、説明や例示のために予約されている名前とアドレスです。実際の通信は行っていません。</p>
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>RFC 9110 "HTTP Semantics"（2022）https://www.rfc-editor.org/rfc/rfc9110</li>
+      <li>RFC 9112 "HTTP/1.1"（2022）https://www.rfc-editor.org/rfc/rfc9112</li>
+      <li>RFC 1034 "Domain Names - Concepts and Facilities"、RFC 1035 "Domain Names - Implementation and Specification"（1987）https://www.rfc-editor.org/rfc/rfc1034</li>
+      <li>RFC 9293 "Transmission Control Protocol (TCP)"（2022）https://www.rfc-editor.org/rfc/rfc9293</li>
+      <li>RFC 8446 "The Transport Layer Security (TLS) Protocol Version 1.3"（2018）https://www.rfc-editor.org/rfc/rfc8446</li>
+      <li>RFC 2606 "Reserved Top Level DNS Names"、RFC 5737 "IPv4 Address Blocks Reserved for Documentation"、RFC 3849 "IPv6 Address Prefix Reserved for Documentation"</li>
+      <li>JPRS「インターネットの根幹を支える～ルートサーバーの現状とＭルートサーバー～」JPRSトピックス＆コラム No.006（2017）https://jprs.jp/related-info/guide/006.pdf</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const REDUCED=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabFlow','toolFlow'],['tabDns','toolDns'],['tabHttp','toolHttp']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+    if(tid!=='tabFlow') stopAuto();
+  }));
+})();
+
+/* ===================== 表示までの流れ ===================== */
+const N={
+  pc:{x:20,y:132,w:130,h:66,ic:'💻',t:'ブラウザ',s:'あなたのPC'},
+  res:{x:240,y:22,w:160,h:62,ic:'🗂️',t:'DNSサーバ',s:'リゾルバ'},
+  root:{x:490,y:8,w:170,h:54,ic:'🌐',t:'ルートサーバ',s:'.'},
+  tld:{x:490,y:70,w:170,h:54,ic:'🗄️',t:'comのDNSサーバ',s:'com'},
+  auth:{x:490,y:132,w:170,h:54,ic:'🗄️',t:'example.comの',s:'DNSサーバ'},
+  web:{x:490,y:252,w:170,h:66,ic:'🖥️',t:'Webサーバ',s:'203.0.113.10'},
+};
+const EDGES=[['pc','res'],['res','root'],['res','tld'],['res','auth'],['pc','web']];
+const HOST='www.example.com', IP='203.0.113.10';
+
+function buildSteps(){
+  const cache=$('optCache').checked, http=$('optHttp').checked;
+  const scheme=http?'http':'https', port=http?80:443;
+  const S=[];
+  S.push({ph:'url',from:'pc',title:'URLを読み取る',desc:`ブラウザは、入力されたURLを「どの方法で（${scheme}）」「どのコンピュータに（${HOST}）」「どのファイルを（/news/）」に分けます。でも、ネットワークで相手に届けるには、名前ではなく<b>IPアドレス</b>が必要です。`,
+    wire:`${scheme}://${HOST}/news/\n<span class="c">└ スキーム：${scheme}　ホスト名：${HOST}　パス：/news/</span>`});
+  S.push({ph:'dns',from:'pc',to:'res',title:'DNSサーバにたずねる',desc:`ブラウザ（OS）は、${HOST} のIPアドレスを、決められたDNSサーバ（フルサービスリゾルバ）にたずねます。DNSの問い合わせは、ふつう UDP の 53番ポートで送られます。`,
+    wire:`問い合わせ：${HOST} の A レコード（IPv4アドレス）は？`});
+  if(cache){
+    S.push({ph:'dns',from:'res',to:'pc',back:1,title:'キャッシュから答える',desc:`このDNSサーバは、少し前に同じ名前を調べていて、答えを<b>キャッシュ</b>（一時的な記憶）に残していました。だから、ほかのDNSサーバにたずねずに、すぐに答えられます。`,
+      wire:`回答：${HOST}.  A  ${IP}\n<span class="c">（キャッシュから。有効期限 TTL の残り時間だけ使える）</span>`});
+  } else {
+    S.push({ph:'dns',from:'res',to:'root',title:'ルートサーバにたずねる',desc:`リゾルバは答えを知らないので、DNSの階層のいちばん上にある<b>ルートサーバ</b>にたずねます。`,wire:`問い合わせ：${HOST} の A レコードは？`});
+    S.push({ph:'dns',from:'root',to:'res',back:1,title:'「com のサーバに聞いて」',desc:'ルートサーバは答えそのものは知りませんが、「com」を担当するDNSサーバの場所を教えます。',wire:`回答：答えは知らない。com を担当するDNSサーバはこちら\n<span class="c">com.  NS  （com を担当するサーバの名前とIPアドレス）</span>`});
+    S.push({ph:'dns',from:'res',to:'tld',title:'com のDNSサーバにたずねる',desc:'次に、教えてもらった com のDNSサーバにたずねます。',wire:`問い合わせ：${HOST} の A レコードは？`});
+    S.push({ph:'dns',from:'tld',to:'res',back:1,title:'「example.com のサーバに聞いて」',desc:'com のDNSサーバは、example.com を管理しているDNSサーバの場所を教えます。',wire:`回答：答えは知らない。example.com を担当するDNSサーバはこちら\n<span class="c">example.com.  NS  （担当サーバの名前とIPアドレス）</span>`});
+    S.push({ph:'dns',from:'res',to:'auth',title:'example.com のDNSサーバにたずねる',desc:'最後に、example.com の情報を管理している<b>権威DNSサーバ</b>にたずねます。',wire:`問い合わせ：${HOST} の A レコードは？`});
+    S.push({ph:'dns',from:'auth',to:'res',back:1,title:'IPアドレスが分かる',desc:'権威DNSサーバは、自分が管理する名前の答えを持っています。答えには、キャッシュしてよい時間（TTL）も付いています。',wire:`回答：${HOST}.  3600  IN  A  ${IP}\n<span class="c">（3600秒＝1時間はキャッシュしてよい）</span>`});
+    S.push({ph:'dns',from:'res',to:'pc',back:1,title:'ブラウザに答えを返す',desc:'リゾルバは答えをキャッシュに残してから、ブラウザに返します。次に同じ名前をたずねられたら、すぐに答えられます。',wire:`回答：${HOST}  A  ${IP}`});
+  }
+  S.push({ph:'tcp',from:'pc',to:'web',title:'接続を申し込む（SYN）',desc:`IPアドレスが分かったので、Webサーバ（${IP}）の ${port}番ポートに、TCPの接続を申し込みます。TCPは、届いたかどうかを確認しながら、データを順番どおりに確実に届けるためのプロトコルです。`,wire:`TCP  SYN\n送信先 ${IP}:${port}　送信元 192.168.1.20:52814`});
+  S.push({ph:'tcp',from:'web',to:'pc',back:1,title:'受け付けの返事（SYN＋ACK）',desc:'Webサーバは「受け付けました（ACK）。こちらからも接続します（SYN）」と返します。',wire:`TCP  SYN, ACK`});
+  S.push({ph:'tcp',from:'pc',to:'web',title:'確認（ACK）して接続完了',desc:'ブラウザが「確認しました（ACK）」と返して、接続ができあがります。この3回のやり取りを<b>3ウェイハンドシェイク</b>といいます。',wire:`TCP  ACK`});
+  if(!http){
+    S.push({ph:'tls',from:'pc',to:'web',title:'暗号化の準備（TLS）を始める',desc:'https では、やり取りを暗号化するために TLS という手順に入ります。ブラウザは、使える暗号の方式と、鍵を作るための材料を送ります。',wire:`TLS  ClientHello\n<span class="c">使える暗号の方式の一覧、鍵の材料</span>`});
+    S.push({ph:'tls',from:'web',to:'pc',back:1,title:'証明書と鍵の材料を返す',desc:`サーバは、選んだ暗号の方式、鍵の材料、そして<b>サーバ証明書</b>を返します。ブラウザは証明書を調べて、相手が本当に ${HOST} なのかを確かめます。`,wire:`TLS  ServerHello, Certificate, Finished\n<span class="c">証明書：${HOST}（認証局の電子署名つき）</span>`});
+    S.push({ph:'tls',from:'pc',to:'web',title:'暗号化の準備ができた',desc:'両方が同じ鍵を持てたので、ここから先のやり取りはすべて暗号化されます。途中で盗み見られても、内容は読めません。',wire:`TLS  Finished\n<span class="c">ここから先は暗号化される</span>`});
+  }
+  const enc=http?'':'\n<span class="c">（実際には暗号化されて送られる）</span>';
+  S.push({ph:'http',from:'pc',to:'web',title:'HTTPでページを要求する',desc:'いよいよ、ページを送ってほしいと頼みます。この頼みを<b>HTTPリクエスト</b>といいます。',web:1,
+    wire:`GET /news/ HTTP/1.1\nHost: ${HOST}\nUser-Agent: Mozilla/5.0 (…)\nAccept: text/html${enc}`});
+  S.push({ph:'http',from:'web',to:'pc',back:1,title:'HTMLが返ってくる',desc:'サーバは、結果を表す<b>ステータスコード</b>（200 は成功）と、ページの中身であるHTMLを返します。これを<b>HTTPレスポンス</b>といいます。',web:1,
+    wire:`HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nContent-Length: 5120\n\n&lt;!DOCTYPE html&gt;\n&lt;html lang="ja"&gt;\n&lt;head&gt;&lt;link rel="stylesheet" href="/style.css"&gt;&lt;/head&gt;\n&lt;body&gt;&lt;h1&gt;お知らせ&lt;/h1&gt;&lt;img src="/img/top.jpg"&gt; …${enc}`});
+  S.push({ph:'http',from:'pc',to:'web',title:'デザイン（CSS）も要求する',desc:'ブラウザはHTMLを読みながら、見た目を決めるファイル（CSS）や画像が必要だと気づき、それらも1つずつ要求します。',web:1,wire:`GET /style.css HTTP/1.1\nHost: ${HOST}`});
+  S.push({ph:'http',from:'web',to:'pc',back:1,title:'CSSが返ってくる',desc:'',web:1,wire:`HTTP/1.1 200 OK\nContent-Type: text/css\n\nh1 { color: #2F5496; } …`});
+  S.push({ph:'http',from:'pc',to:'web',title:'画像も要求する',desc:'',web:1,wire:`GET /img/top.jpg HTTP/1.1\nHost: ${HOST}`});
+  S.push({ph:'http',from:'web',to:'pc',back:1,title:'画像が返ってくる',desc:'',web:1,wire:`HTTP/1.1 200 OK\nContent-Type: image/jpeg\nContent-Length: 84213\n\n（画像のデータ）`});
+  S.push({ph:'view',from:'pc',title:'ページを表示する',desc:'HTML・CSS・画像がそろったので、ブラウザは文字の大きさや配置を計算して、画面に描きます。ここまでが、ふつうは1秒もかからないうちに行われています。',
+    wire:`<span class="c">表示：お知らせ（www.example.com/news/）</span>`});
+  // 補足の説明
+  S.forEach(s=>{ if(!s.desc && s.ph==='http') s.desc= s.back? 'ファイルごとに、リクエストとレスポンスが1組ずつ行われます。' : '1つのページを表示するのに、たくさんのファイルを順に要求しています。'; });
+  return S;
+}
+const PH={url:'URL',dns:'DNS',tcp:'TCP',tls:'TLS',http:'HTTP',view:'表示'};
+let steps=buildSteps(), cur=0, autoT=null;
+
+function center(n){ const o=N[n]; return {x:o.x+o.w/2,y:o.y+o.h/2}; }
+function edgePt(n,tx,ty){ // 四角形の縁の点
+  const o=N[n], c=center(n); const dx=tx-c.x, dy=ty-c.y; if(!dx&&!dy) return c;
+  const sx=(o.w/2)/Math.abs(dx||1e-9), sy=(o.h/2)/Math.abs(dy||1e-9), s=Math.min(sx,sy);
+  return {x:c.x+dx*s, y:c.y+dy*s};
+}
+function drawFlow(){
+  const s=steps[cur];
+  let h=`<defs>
+    <marker id="arrG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C49A2B"/></marker>
+    <marker id="arrO" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2E7D4F"/></marker></defs>`;
+  for(const [a,b] of EDGES){ const p=center(a), q=center(b); h+=`<line class="edge" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`; }
+  const used=new Set(); steps.forEach(x=>{ if(x.from) used.add(x.from); if(x.to) used.add(x.to); });
+  for(const k in N){
+    const o=N[k]; const on= s.from===k||s.to===k;
+    h+=`<g class="node${on?' on':''}${used.has(k)?'':' dim'}"><rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" rx="12"/>
+      <text class="ic" x="${o.x+24}" y="${o.y+o.h/2+8}">${o.ic}</text>
+      <text x="${o.x+o.w/2+14}" y="${o.y+o.h/2-3}">${esc(o.t)}</text>
+      <text class="sub" x="${o.x+o.w/2+14}" y="${o.y+o.h/2+15}">${esc(o.s)}</text></g>`;
+  }
+  if(s.to){
+    const c2=center(s.to), c1=center(s.from);
+    const off= s.back? 7 : -7; // 行きと帰りを少しずらす
+    const nx=-(c2.y-c1.y), ny=(c2.x-c1.x), L=Math.hypot(nx,ny)||1;
+    const p1=edgePt(s.from,c2.x,c2.y), p2=edgePt(s.to,c1.x,c1.y);
+    const ox=nx/L*off, oy=ny/L*off;
+    const d=`M${p1.x+ox},${p1.y+oy} L${p2.x+ox},${p2.y+oy}`;
+    h+=`<path class="flowline${s.back?' back':''}" d="${d}"/>`;
+    if(!REDUCED) h+=`<circle r="7" class="pkt${s.back?' back':''}"><animateMotion dur="0.9s" repeatCount="indefinite" path="${d}"/></circle>`;
+  }
+  $('fSvg').innerHTML=h;
+  $('fNow').innerHTML=`<div class="h"><span class="ph ${s.ph}" style="display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;color:#fff;margin-right:6px;">${PH[s.ph]}</span>${esc(s.title)}<small>${cur+1} / ${steps.length}</small></div><p>${s.desc}</p><pre class="wire">${s.wire}</pre>`;
+  $('fNo').textContent=`${cur+1} / ${steps.length}`;
+  let cnt=0,dns=0,web=0; for(let i=0;i<=cur;i++){ const x=steps[i]; if(x.to){ cnt++; if(x.ph==='dns') dns++; else web++; } }
+  $('fCnt').textContent=cnt; $('fDns').textContent=dns; $('fWeb').textContent=web;
+  $('fLog').innerHTML=steps.map((x,i)=>`<li data-i="${i}" class="${i===cur?'cur':''}${i>cur?' fut':''}"><span class="n">${i+1}</span><span><span class="ph ${x.ph}">${PH[x.ph]}</span>${esc(x.title)}${x.to?` <span style="color:var(--muted);font-size:12.5px;">（${esc(N[x.from].t)} → ${esc(N[x.to].t)}）</span>`:''}</span></li>`).join('');
+  $('fPrev').disabled=cur===0; $('fFirst').disabled=cur===0; $('fNext').disabled=cur===steps.length-1;
+}
+function go(i){ cur=Math.max(0,Math.min(steps.length-1,i)); drawFlow(); }
+$('fNext').addEventListener('click',()=>go(cur+1));
+$('fPrev').addEventListener('click',()=>{ stopAuto(); go(cur-1); });
+$('fFirst').addEventListener('click',()=>{ stopAuto(); go(0); });
+$('fLog').addEventListener('click',e=>{ const li=e.target.closest('li'); if(li){ stopAuto(); go(+li.dataset.i); } });
+function stopAuto(){ clearInterval(autoT); autoT=null; $('fAuto').textContent='▶ 自動で進める'; $('fAuto').setAttribute('aria-pressed','false'); }
+$('fAuto').addEventListener('click',()=>{
+  if(autoT){ stopAuto(); return; }
+  if(cur===steps.length-1) go(0);
+  $('fAuto').textContent='■ 止める'; $('fAuto').setAttribute('aria-pressed','true');
+  autoT=setInterval(()=>{ if(cur>=steps.length-1){ stopAuto(); return; } go(cur+1); },2200);
+});
+['optCache','optHttp'].forEach(id=>$(id).addEventListener('change',()=>{ stopAuto(); steps=buildSteps(); go(0); }));
+
+/* ===================== DNS ===================== */
+const ZONES={'.':{x:230,y:30,label:'.（ルート）'}, com:{x:120,y:110,label:'com'}, org:{x:340,y:110,label:'org'},
+  'example.com':{x:120,y:190,label:'example.com'}, 'example.org':{x:340,y:190,label:'example.org'}};
+const ZEDGE=[['.','com'],['.','org'],['com','example.com'],['org','example.org']];
+const REC={
+  'www.example.com':{A:'203.0.113.10',AAAA:'2001:db8::10'},
+  'shop.example.com':{CNAME:'www.example.com'},
+  'example.com':{MX:'10 mail.example.com',A:'203.0.113.5'},
+  'mail.example.com':{A:'203.0.113.25'},
+  'www.example.org':{A:'198.51.100.7',AAAA:'2001:db8:1::7'},
+  'example.org':{MX:'10 mail.example.org'},
+  'mail.example.org':{A:'198.51.100.25'},
+  'nothing.example.com':{},
+};
+Object.keys(REC).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; $('dName').appendChild(o); });
+let dcache={}; // key -> {val, exp}
+const TTL={NS:172800, A:3600, AAAA:3600, MX:3600, CNAME:3600, NX:900};
+let clock=0; // 経過秒（問い合わせ1回ごとに60秒進める）
+function zoneOf(name){ return name.endsWith('example.com')?'example.com':name.endsWith('example.org')?'example.org':null; }
+function tldOf(name){ return name.split('.').pop(); }
+function cget(k){ const c=dcache[k]; if(c && c.exp>clock) return c; if(c) delete dcache[k]; return null; }
+function cput(k,val,ttl){ dcache[k]={val,exp:clock+ttl,ttl}; }
+function resolve(name,type,log,asked){
+  // 答えのキャッシュ
+  const hit=cget(name+' '+type)||(type!=='CNAME'?cget(name+' CNAME'):null);
+  if(hit){ log.push(`<span class="c">キャッシュにあり：</span>${name}  ${hit.k||type}  ${hit.val}`); if(hit.cname && type!=='CNAME') return resolve(hit.val,type,log,asked); return {ok:true,val:hit.val,cached:true}; }
+  const tld=tldOf(name), zone=zoneOf(name);
+  // どこから聞くか
+  let start='.';
+  if(cget('NS '+zone)) start=zone; else if(cget('NS '+tld)) start=tld;
+  if(start!=='.') log.push(`<span class="c">キャッシュから、${start} を担当するサーバの場所が分かっている</span>`);
+  if(start==='.'){ asked.push('.'); log.push(`→ ルートサーバ：${name} の ${type} は？`); log.push(`← 「${tld} のサーバに聞いて」（NS）`); cput('NS '+tld,tld,TTL.NS); start=tld; }
+  if(start===tld){ asked.push(tld); log.push(`→ ${tld} のサーバ：${name} の ${type} は？`); log.push(`← 「${zone} のサーバに聞いて」（NS）`); cput('NS '+zone,zone,TTL.NS); start=zone; }
+  asked.push(zone); log.push(`→ ${zone} のサーバ（権威）：${name} の ${type} は？`);
+  const r=REC[name];
+  if(!r || (!Object.keys(r).length)){ log.push(`← その名前は存在しない（NXDOMAIN）`); return {ok:false,nx:true}; }
+  if(r[type]){ log.push(`← <b>${name}  ${TTL[type]}  IN  ${type}  ${r[type]}</b>`); if(type==='CNAME') dcache[name+' CNAME']={val:r[type],exp:clock+TTL.CNAME,ttl:TTL.CNAME,cname:true,k:'CNAME'}; else cput(name+' '+type,r[type],TTL[type]); return {ok:true,val:r[type]}; }
+  if(r.CNAME && type!=='CNAME'){ log.push(`← ${name} は ${r.CNAME} の別名（CNAME）`); dcache[name+' CNAME']={val:r.CNAME,exp:clock+TTL.CNAME,ttl:TTL.CNAME,cname:true,k:'CNAME'}; log.push(`<span class="c">別名の先 ${r.CNAME} を調べ直す</span>`); return resolve(r.CNAME,type,log,asked); }
+  log.push(`← その名前に ${type} レコードはない`); return {ok:false};
+}
+function drawTree(asked,cachedZones){
+  let h='';
+  for(const [a,b] of ZEDGE){ const p=ZONES[a], q=ZONES[b]; h+=`<line class="tedge" x1="${p.x}" y1="${p.y+16}" x2="${q.x}" y2="${q.y-16}"/>`; }
+  for(const k in ZONES){
+    const z=ZONES[k]; const idx=asked.indexOf(k);
+    const cls= idx>=0?'ask': (cachedZones.has(k)?'cache':'');
+    h+=`<g class="tnode ${cls}"><rect x="${z.x-75}" y="${z.y-17}" width="150" height="34" rx="8"/><text x="${z.x}" y="${z.y+5}">${esc(z.label)}</text>`;
+    if(idx>=0) h+=`<circle cx="${z.x+75}" cy="${z.y-17}" r="11" fill="#C49A2B"/><text x="${z.x+75}" y="${z.y-13}" style="fill:#fff;font-size:12px;font-weight:700;">${idx+1}</text>`;
+    h+=`</g>`;
+  }
+  // ホスト名
+  const hosts=[['www',70,262],['shop',150,262],['mail',230,262],['www',320,262],['mail',400,262]];
+  const par=['example.com','example.com','example.com','example.org','example.org'];
+  hosts.forEach(([n,x,y],i)=>{ const p=ZONES[par[i]]; h+=`<line class="tedge" x1="${p.x}" y1="${p.y+17}" x2="${x}" y2="${y-12}" stroke-dasharray="3 3"/><text x="${x}" y="${y+4}" text-anchor="middle" style="font-family:ui-monospace,Consolas,monospace;font-size:12px;fill:#5B6472;">${n}</text>`; });
+  $('dSvg').innerHTML=h;
+}
+function drawCache(){
+  const rows=Object.entries(dcache).filter(([k,c])=>c.exp>clock);
+  $('dC').textContent=rows.length;
+  $('dCache').innerHTML= rows.length? '<tr><th>覚えていること</th><th>内容</th><th>残り時間</th></tr>'+rows.map(([k,c])=>{
+    const [a,b]=k.split(' ');
+    const what= a==='NS' ? `${b} を担当するサーバの場所` : `${a} の ${b}`;
+    return `<tr><td>${esc(what)}</td><td class="m">${esc(a==='NS'?'NS':c.val)}</td><td class="m">${Math.round((c.exp-clock)/60)} 分</td></tr>`;
+  }).join('') : '<tr><td style="color:var(--muted)">まだ何も覚えていません</td></tr>';
+}
+$('dAsk').addEventListener('click',()=>{
+  const name=$('dName').value, type=$('dType').value;
+  clock+=60;
+  const cachedZones=new Set(['com','org','example.com','example.org'].filter(z=>cget('NS '+z)));
+  const log=[`問い合わせ：${name} の ${type} レコード`], asked=[];
+  const r=resolve(name,type,log,asked);
+  drawTree(asked,cachedZones); drawCache();
+  $('dOut').innerHTML=log.join('\n');
+  $('dQ').textContent=asked.length+' 回';
+  const m=$('dMsg');
+  if(asked.length===0){ m.className='msg ok'; m.innerHTML=`<div class="t">キャッシュから答えました（ほかのサーバへの問い合わせ 0 回）</div>少し前に同じ問い合わせをしていたので、DNSサーバが覚えていた答えをすぐに返しました。キャッシュの残り時間（TTL）が切れるまでは、この答えが使われます。`; }
+  else if(r.ok){ m.className='msg'; m.innerHTML=`<div class="t">答え：${esc(r.val)}（問い合わせ ${asked.length} 回）</div>番号の順に、上の階層から問い合わせました。上の階層のサーバは、答えそのものではなく「次にだれに聞けばよいか」を教えます。`+(asked[0]!=='.'?' 今回は、担当サーバの場所をキャッシュで覚えていたので、ルートサーバに聞かずに済みました。':''); }
+  else { m.className='msg ng'; m.innerHTML=`<div class="t">${r.nx?'その名前はありませんでした':'その種類の情報はありませんでした'}</div>`+(r.nx?'権威DNSサーバが「その名前は存在しない」と答えました。URLの打ちまちがいでは、このような答えが返ります。':'名前はありますが、たずねた種類のレコードは登録されていません。'); }
+});
+$('dClear').addEventListener('click',()=>{ dcache={}; drawCache(); drawTree([],new Set()); $('dOut').textContent=''; $('dQ').textContent='–'; });
+
+/* ===================== URLとHTTP ===================== */
+function drawUrl(){
+  const v=$('uIn').value.trim();
+  let u; try{ u=new URL(v); }catch(e){ $('uParts').innerHTML=''; $('uNote').textContent='URLとして読めません。https:// から始まる形で入力してください。'; return; }
+  const def={'https:':'443','http:':'80'}[u.protocol];
+  const parts=[['s','スキーム',u.protocol+'//'],['h','ホスト名',u.hostname]];
+  if(u.port) parts.push(['p','ポート番号',':'+u.port]);
+  parts.push(['pa','パス',u.pathname]);
+  if(u.search){ let q=u.search; try{ q=decodeURIComponent(q); }catch(e){} parts.push(['q','クエリ',q]); }
+  if(u.hash) parts.push(['f','フラグメント',u.hash]);
+  $('uParts').innerHTML=parts.map(([c,l,t])=>`<span class="up ${c}"><b>${esc(t)}</b><i>${l}</i></span>`).join('');
+  const notes=[];
+  notes.push(`ホスト名 ${u.hostname} は、DNSでIPアドレスに変換されます。`);
+  notes.push(u.port? `ポート番号 ${u.port} を指定しています。` : (def? `ポート番号は省略されているので、${u.protocol.replace(':','')} の決まりの ${def} 番が使われます。`:''));
+  if(u.search){ const ps=[...u.searchParams].map(([k,v])=>`${k}＝${v}`).join('、'); notes.push(`クエリはサーバに渡す追加の情報です（${ps}）。`); }
+  if(u.hash) notes.push('フラグメント（# の後ろ）はページの中の位置を表し、サーバには送られません。');
+  $('uNote').textContent=notes.filter(Boolean).join(' ');
+}
+$('uIn').addEventListener('input',drawUrl);
+const PAGES={
+  '/news/':{GET:[200,'OK',['Content-Type: text/html; charset=utf-8'],'&lt;!DOCTYPE html&gt;\n&lt;html lang="ja"&gt; … &lt;h1&gt;お知らせ&lt;/h1&gt; …'], POST:[405,'Method Not Allowed',['Allow: GET'],'']},
+  '/old/':{GET:[301,'Moved Permanently',['Location: https://www.example.com/news/'],''], POST:[301,'Moved Permanently',['Location: https://www.example.com/news/'],'']},
+  '/nothing/':{GET:[404,'Not Found',['Content-Type: text/html; charset=utf-8'],'&lt;h1&gt;ページが見つかりません&lt;/h1&gt;'], POST:[404,'Not Found',[],'']},
+  '/members/':{GET:[403,'Forbidden',['Content-Type: text/html; charset=utf-8'],'&lt;h1&gt;アクセスが許可されていません&lt;/h1&gt;'], POST:[403,'Forbidden',[],'']},
+  '/broken/':{GET:[500,'Internal Server Error',['Content-Type: text/html; charset=utf-8'],'&lt;h1&gt;サーバでエラーが起きました&lt;/h1&gt;'], POST:[500,'Internal Server Error',[],'']},
+  '/form/':{GET:[200,'OK',['Content-Type: text/html; charset=utf-8'],'&lt;form method="post" action="/form/"&gt;\n  &lt;input name="name"&gt; &lt;textarea name="message"&gt;&lt;/textarea&gt; …'], POST:[200,'OK',['Content-Type: text/html; charset=utf-8'],'&lt;p&gt;送信を受け付けました&lt;/p&gt;']},
+};
+const EXPLAIN={
+  200:'<b>200 OK</b>：うまくいきました。頼んだもの（ページ）が本文に入っています。',
+  301:'<b>301 Moved Permanently</b>：ページが別の場所へ引っ越しました。Location に書かれた新しいURLへ、ブラウザが自動でもう一度リクエストを送ります。',
+  403:'<b>403 Forbidden</b>：ページはありますが、見ることが許可されていません。',
+  404:'<b>404 Not Found</b>：そのパスのページが見つかりません。URLのまちがいや、ページが削除されたときに返ります。',
+  405:'<b>405 Method Not Allowed</b>：このページは POST（データを送る）を受け付けていません。Allow に使える方法が書かれています。',
+  500:'<b>500 Internal Server Error</b>：サーバの中で問題が起きて、処理できませんでした。ブラウザ側では直せないエラーです。',
+};
+function sendHttp(){
+  const m=$('hMethod').value, path=$('hPath').value;
+  const body= m==='POST'? 'name=joho&amp;message=hello' : '';
+  $('hReq').innerHTML=`${m} ${esc(path)} HTTP/1.1\nHost: www.example.com\nUser-Agent: Mozilla/5.0 (…)\nAccept: text/html`+(m==='POST'?`\nContent-Type: application/x-www-form-urlencoded\nContent-Length: 22\n\n${body}`:'');
+  const [code,reason,heads,html]=PAGES[path][m];
+  $('hRes').innerHTML=`HTTP/1.1 ${code} ${reason}\n${heads.join('\n')}${html?'\n\n'+html:''}`;
+  document.querySelectorAll('#hCls .sc').forEach(x=>x.classList.toggle('on',x.dataset.c===String(code)[0]));
+  const ok=code<400;
+  const mm=$('hMsg'); mm.className='msg'+(code>=400?' ng':(code===200?' ok':''));
+  mm.innerHTML=`<div class="t">ステータスコード ${code}</div>${EXPLAIN[code]}`+(m==='POST'&&code===200?' POST では、フォームに入力した内容がリクエストの本文（空行の下）に入って送られます。':'')+(m==='GET'&&path==='/form/'?' 送信ボタンを押すと、POST で入力内容が送られます。「POST」に切りかえて送ってみましょう。':'');
+}
+$('hSend').addEventListener('click',sendHttp);
+['hMethod','hPath'].forEach(id=>$(id).addEventListener('change',sendHttp));
+
+/* ===== 初期化 ===== */
+go(0); drawTree([],new Set()); drawCache(); drawUrl(); sendHttp();
+
+</script>
+</body>
+</html>

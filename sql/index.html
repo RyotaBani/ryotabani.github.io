@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>データベースとSQLを体験しよう（選択・射影・結合・正規化）｜情報ラボ</title>
+<meta name="description" content="リレーショナルデータベースのしくみを体験できる無料ツール。ブラウザでSQLのSELECT文を実行したり、選択・射影・結合をボタンで試したり、正規化で更新時の矛盾がなくなるようすを確かめたりできます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/sql/">
+<meta property="og:title" content="データベースとSQLを体験しよう｜情報ラボ">
+<meta property="og:description" content="SQLの実行、選択・射影・結合、正規化。リレーショナルデータベースのしくみを動かして学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/sql/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,"SFMono-Regular",Consolas,"Hiragino Kaku Gothic ProN","Yu Gothic",monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px;}
+  .panel h2{font-size:15px; margin:0 0 10px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:0 0 8px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:8px 0 0;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  select,button,input,textarea{font-family:inherit;}
+  select,input[type=text]{border:1px solid var(--line); border-radius:8px; padding:7px 10px; font-size:14px; background:#fff; color:var(--ink); max-width:100%;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:7px 13px; border-radius:999px; font-size:13.5px; cursor:pointer;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  button.sub{background:#fff; color:var(--navy); border:2px solid var(--navy); padding:7px 14px;
+    border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;}
+  button.sub:disabled{opacity:.45; cursor:not-allowed;}
+
+  .ex{display:flex; flex-wrap:wrap; gap:6px;}
+  .ex button{font-size:12.5px; padding:6px 11px;}
+  textarea#sql{width:100%; min-height:130px; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-family:var(--mono); font-size:15px; line-height:1.6; resize:vertical; background:#fff; color:#1c2430;}
+  textarea#sql:focus{outline:none; box-shadow:0 0 0 2px #7FA3E0;}
+  .keys{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .keys button{font-family:var(--mono); font-size:13px; padding:5px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; cursor:pointer; color:var(--ink);}
+  .keys button:hover{background:var(--panel2);}
+  .layout{display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:14px; align-items:start;}
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+  .schema{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13.5px;}
+  .schema h3{margin:0 0 6px; font-size:13.5px; color:var(--ink);}
+  .schema .t{margin:8px 0 2px;}
+  .schema .t button{font-weight:700; color:var(--navy); background:none; border:none; padding:0; cursor:pointer; font-size:14px; text-decoration:underline;}
+  .schema .c{font-family:var(--mono); font-size:12.5px; color:var(--muted); line-height:1.6;}
+  .schema .c b{color:var(--ink); font-weight:600;}
+
+  .msg{border-radius:12px; padding:14px 18px; margin-top:12px; font-size:14.5px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:16px; font-weight:700; margin-bottom:4px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg code{font-family:var(--mono); background:rgba(255,255,255,.15); padding:1px 5px; border-radius:4px;}
+  .msg .snip{font-family:var(--mono); font-size:13.5px; margin-top:6px; background:rgba(0,0,0,.2); padding:6px 10px; border-radius:6px; white-space:pre-wrap; word-break:break-all;}
+  .msg .snip mark{background:#ffd97a; color:#1c2430; border-radius:2px; padding:0 2px;}
+
+  .tw{overflow-x:auto; max-width:100%; margin-top:10px; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  .tw.tall{max-height:460px; overflow-y:auto;}
+  table.dt{border-collapse:collapse; width:100%; font-size:14px;}
+  table.dt th,table.dt td{border-bottom:1px solid #E6EAF1; padding:6px 12px; text-align:left; white-space:nowrap;}
+  table.dt th{background:var(--panel2); color:var(--ink); position:sticky; top:0; font-size:13.5px;}
+  table.dt td.n{text-align:right; font-family:var(--mono);}
+  table.dt td.null{color:#9AA3B0; font-style:italic;}
+  table.dt tr.hit td{background:#FFF3D6;}
+  table.dt tr.dim td{opacity:.35;}
+  table.dt th.hit,table.dt td.hit{background:#FFF3D6;}
+  table.dt th.dim,table.dt td.dim{opacity:.3;}
+  table.dt tr.del td{background:#FBEDEC; color:var(--ng); text-decoration:line-through;}
+  table.dt tr.ghost td{background:#FBEDEC; color:var(--ng); font-style:italic;}
+  table.dt tr.add td{background:#EAF5EE;}
+  table.dt td.chg{background:#FFF3D6; font-weight:700;}
+  table.dt td.bad{background:#FBEDEC; color:var(--ng); font-weight:700;}
+  table.dt th .key{color:var(--gold); margin-right:2px;}
+  .cnt{font-size:13.5px; color:var(--muted); margin-top:8px;}
+  .cnt b{color:var(--ink);}
+  .k0{background:#DCE8FA !important;} .k1{background:#E3F4E6 !important;} .k2{background:#FCE9D4 !important;}
+  .k3{background:#EFE3F7 !important;} .k4{background:#FBE3E8 !important;} .k5{background:#E0F3F4 !important;}
+
+  .ops{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;}
+  @media (max-width:900px){ .ops{grid-template-columns:1fr;} }
+  .op{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+  .op h3{margin:0 0 4px; font-size:14.5px; color:var(--navy);}
+  .op p{margin:0 0 8px; font-size:12.5px; color:var(--muted);}
+  .op .row{gap:6px;}
+  .op select,.op input[type=text]{font-size:13.5px; padding:6px 8px;}
+  .op input[type=text]{width:7em;}
+  .cols{display:flex; flex-wrap:wrap; gap:4px 12px; margin-bottom:8px; font-size:13.5px;}
+  .cols label{display:inline-flex; align-items:center; gap:4px; cursor:pointer;}
+  .cols input{accent-color:var(--navy); width:16px; height:16px;}
+  .sqlbox{font-family:var(--mono); font-size:14.5px; background:#0f1a2e; color:#E6EDF7; border-radius:10px; padding:12px 14px; white-space:pre-wrap; word-break:break-all; margin-top:12px;}
+  .sqlbox .c{color:#9fb3d1;}
+  .pair{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;}
+  @media (max-width:700px){ .pair{grid-template-columns:1fr;} }
+  .pair h3{font-size:13.5px; color:var(--ink); margin:10px 0 0;}
+  .steps{display:flex; flex-wrap:wrap; gap:6px; font-size:13px; color:var(--muted); margin-top:6px;}
+  .steps span{background:#fff; border:1px solid var(--line); border-radius:999px; padding:2px 10px;}
+
+  .stage{display:flex; flex-wrap:wrap; gap:6px;}
+  .nf{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); margin-top:10px;}
+  .nf .tblock h3{font-size:14px; color:var(--ink); margin:0 0 0;}
+  .nf .tblock .tw{margin-top:6px;}
+  .acts{display:flex; flex-direction:column; gap:6px;}
+  .acts button{text-align:left;}
+  .note{font-size:13px; color:var(--muted); margin:6px 0 0;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article .atw{overflow-x:auto; max-width:100%; margin:0 0 16px;}
+  .article table{border-collapse:collapse; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px; font-size:.95em; word-break:break-all;}
+  .article pre{font-family:var(--mono); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:14px; line-height:1.7; overflow-x:auto; margin:0 0 14px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ データベースとSQL</p>
+    <h1>データベースとSQLを体験しよう</h1>
+    <p class="lead">表の形でデータを管理するリレーショナルデータベースを、SQLやボタンで操作して確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabSql" aria-selected="true" aria-controls="toolSql">SQLで検索する</button>
+    <button class="tab" role="tab" id="tabOps" aria-selected="false" aria-controls="toolOps">選択・射影・結合</button>
+    <button class="tab" role="tab" id="tabNf" aria-selected="false" aria-controls="toolNf">正規化</button>
+  </div>
+
+  <!-- ===== SQLで検索する ===== -->
+  <section class="tool show" id="toolSql" role="tabpanel" aria-labelledby="tabSql">
+    <div class="panel">
+      <h2>見本を選ぶか、SELECT 文を書いて「実行」を押してください</h2>
+      <div class="ex" id="examples"></div>
+    </div>
+    <div class="layout">
+      <div>
+        <textarea id="sql" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SQL文"></textarea>
+        <div class="keys" aria-label="よく使う語の入力">
+          <button data-ins="SELECT ">SELECT</button><button data-ins="FROM ">FROM</button><button data-ins="WHERE ">WHERE</button>
+          <button data-ins="AND ">AND</button><button data-ins="OR ">OR</button><button data-ins="ORDER BY ">ORDER BY</button>
+          <button data-ins="DESC">DESC</button><button data-ins="JOIN ">JOIN</button><button data-ins="ON ">ON</button>
+          <button data-ins="GROUP BY ">GROUP BY</button><button data-ins="COUNT(*)">COUNT(*)</button><button data-ins="AVG()" data-back="1">AVG</button>
+          <button data-ins="''" data-back="1">' '</button><button data-ins=" = "> = </button><button data-ins=" >= "> &gt;= </button>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <button class="primary" id="btnRun">▶ 実行</button>
+          <button class="chip" id="btnClear">消す</button>
+          <span class="hint" style="margin:0;">Ctrl＋Enter（Macは ⌘＋Enter）でも実行できます</span>
+        </div>
+        <div id="sqlMsg"></div>
+        <div id="sqlRes"></div>
+      </div>
+      <aside class="schema" id="schema" aria-label="表の一覧"></aside>
+    </div>
+  </section>
+
+  <!-- ===== 選択・射影・結合 ===== -->
+  <section class="tool" id="toolOps" role="tabpanel" aria-labelledby="tabOps">
+    <div class="panel">
+      <h2>表を選んでから、選択・射影・結合をボタンで試します。下に、同じ操作をする SQL 文が表示されます</h2>
+      <div class="row">
+        <span style="font-weight:700;color:var(--ink);font-size:14px;">表</span>
+        <span class="stage" id="opsTables"></span>
+        <button class="chip" id="opsReset">最初から</button>
+      </div>
+      <div class="steps" id="opsSteps"></div>
+    </div>
+    <div class="ops">
+      <div class="op">
+        <h3>選択（行を選ぶ）</h3>
+        <p>条件に合う行（レコード）だけを取り出します。</p>
+        <div class="row"><select id="selCol" aria-label="列"></select>
+          <select id="selOp" aria-label="条件">
+            <option value="=">が次と等しい</option><option value="<>">が次と等しくない</option>
+            <option value=">=">が次以上</option><option value="<=">が次以下</option>
+            <option value=">">が次より大きい</option><option value="<">が次より小さい</option>
+            <option value="LIKE">が次を含む</option>
+          </select>
+          <input type="text" id="selVal" aria-label="値" placeholder="値">
+          <button class="sub" id="selGo">選択する</button></div>
+      </div>
+      <div class="op">
+        <h3>射影（列を選ぶ）</h3>
+        <p>残したい列（フィールド）だけを取り出します。</p>
+        <div class="cols" id="projCols"></div>
+        <button class="sub" id="projGo">射影する</button>
+      </div>
+      <div class="op">
+        <h3>結合（表をつなぐ）</h3>
+        <p>2つの表を、共通の列の値が等しい行どうしでつなぎます。</p>
+        <div class="row"><select id="joinTbl" aria-label="つなぐ表"></select>
+          <span style="font-size:13px;">を</span>
+          <select id="joinCol" aria-label="共通の列"></select>
+          <span style="font-size:13px;">で</span>
+          <button class="sub" id="joinGo">結合する</button></div>
+      </div>
+    </div>
+    <div class="msg" id="opsMsg"></div>
+    <div id="opsView"></div>
+    <div class="sqlbox" id="opsSql"></div>
+    <div class="row" style="margin-top:8px;"><button class="chip" id="opsToSql">この SQL を「SQLで検索する」で開く</button></div>
+  </section>
+
+  <!-- ===== 正規化 ===== -->
+  <section class="tool" id="toolNf" role="tabpanel" aria-labelledby="tabNf">
+    <div class="panel">
+      <h2>同じ内容を、表の分け方を変えて記録しています。表の形を選んでから、「操作してみる」のボタンを押しましょう</h2>
+      <div class="stage" id="nfStages"></div>
+      <p class="note" id="nfNote"></p>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="nf" id="nfTables"></div>
+      </div>
+      <aside class="schema">
+        <h3>操作してみる</h3>
+        <div class="acts">
+          <button class="chip" id="actPlace">吹奏楽部の活動場所を「多目的室」に変える（書きかえは1か所だけ）</button>
+          <button class="chip" id="actTeacher">1組の担任を「佐藤」に変える（書きかえは1か所だけ）</button>
+          <button class="chip" id="actDelete">青木が美術部をやめる（その行を消す）</button>
+          <button class="chip" id="actInsert">部員がまだいない「写真部」を登録する</button>
+          <button class="chip" id="actUndo">元に戻す</button>
+        </div>
+        <p class="note">🔑 は主キー（その行を1つに決める列）です。</p>
+      </aside>
+    </div>
+    <div class="msg" id="nfMsg"></div>
+  </section>
+
+  <section class="article">
+    <h2>データベースとは</h2>
+    <p>たくさんのデータを、あとから探したり、追加したり、書きかえたりしやすいように、決まった形で整理して蓄えたものを<strong>データベース</strong>といいます。学校の名簿や成績、図書館の蔵書、ネットショップの商品と注文、交通系ICカードの利用記録など、身の回りの情報システムの多くは、裏側でデータベースを使っています。</p>
+    <p>データベースを管理するソフトウェアを<strong>DBMS</strong>（データベース管理システム）といいます。DBMS は、データを決まった構造で蓄えるだけでなく、データの矛盾が起きないように保つこと（一貫性）、必要なデータを効率よく取り出すこと、たくさんの人が同時に使っても困らないようにすること、障害が起きたときに元に戻すことなどを受け持ちます。</p>
+
+    <h2>リレーショナルデータベース</h2>
+    <p>データベースにはいくつかの種類がありますが、最も広く使われているのが<strong>リレーショナルデータベース</strong>（関係データベース）です。データを、行と列からなる<strong>表</strong>（テーブル）で管理します。</p>
+    <ul>
+      <li><strong>列</strong>（フィールド）：「氏名」「組」のような項目。表の上に並ぶ見出しです</li>
+      <li><strong>行</strong>（レコード）：1件分のデータ。このページの「生徒」の表なら、生徒1人分が1行です</li>
+      <li><strong>主キー</strong>：その行を1つに決めるための列。「生徒」の表では学籍番号です。氏名は同じ人がいるかもしれないので、主キーには向きません</li>
+      <li><strong>外部キー</strong>：ほかの表の主キーを指す列。「生徒」の表の部活IDは、「部活」の表の部活IDを指しています</li>
+    </ul>
+    <p>外部キーを使うと、表どうしを関連づけられます。生徒の表に部活の名前や活動場所を書かなくても、部活IDを手がかりに部活の表から取り出せるのです。</p>
+
+    <h2>選択・射影・結合</h2>
+    <p>リレーショナルデータベースでは、表から必要なデータを取り出すために、次の3つの<strong>関係演算</strong>がよく使われます。</p>
+    <div class="atw"><table>
+      <tr><th>操作</th><th>内容</th><th>SQL での書き方</th></tr>
+      <tr><td>選択</td><td>条件に合う行だけを取り出す</td><td><code>WHERE 組 = 2</code></td></tr>
+      <tr><td>射影</td><td>必要な列だけを取り出す</td><td><code>SELECT 氏名, 組</code></td></tr>
+      <tr><td>結合</td><td>共通の列で2つの表をつなぐ</td><td><code>JOIN 部活 ON 生徒.部活ID = 部活.部活ID</code></td></tr>
+    </table></div>
+    <p>「選択・射影・結合」のタブでは、これらをボタンで1つずつ試せます。操作をするたびに、同じ結果を作る SQL 文が下に表示されます。たとえば、生徒の表と部活の表を結合すると、部活IDが空の生徒（斎藤）は、相手の表に同じ値がないので結果に入りません。</p>
+
+    <h2>SQL の基本</h2>
+    <p>リレーショナルデータベースを操作するための言語が <strong>SQL</strong> です。SQL は国際規格（ISO/IEC 9075）で定められていて、多くの DBMS で同じように使えます。データを取り出すときは <code>SELECT</code> 文を使い、次の順に書きます。</p>
+    <pre>SELECT 取り出す列
+FROM 表
+JOIN 別の表 ON つなぐ条件
+WHERE 行の条件
+GROUP BY まとめる列
+HAVING まとめた結果の条件
+ORDER BY 並べる列 DESC
+LIMIT 件数;</pre>
+    <ul>
+      <li><code>WHERE</code> では、<code>=</code>、<code>&lt;&gt;</code>（等しくない）、<code>&gt;=</code> などで比べ、<code>AND</code>・<code>OR</code>・<code>NOT</code> で組み合わせます。<code>LIKE '%木%'</code> は「木」をふくむ、という意味です</li>
+      <li><code>GROUP BY</code> を使うと、同じ値の行をまとめて、<code>COUNT</code>（件数）、<code>SUM</code>（合計）、<code>AVG</code>（平均）、<code>MAX</code>（最大）、<code>MIN</code>（最小）で集計できます</li>
+      <li><code>ORDER BY</code> は並べ替えです。<code>ASC</code> は小さい順（省略できます）、<code>DESC</code> は大きい順です</li>
+    </ul>
+    <p>SQL には、データを追加する <code>INSERT</code>、書きかえる <code>UPDATE</code>、削除する <code>DELETE</code> などもあります。このページでは、データを壊さずに試せるよう、検索の <code>SELECT</code> 文だけを実行できるようにしています。</p>
+
+    <h2>正規化と異常</h2>
+    <p>1枚の表にすべてを書きこむと、同じ情報が何度も出てきます。たとえば、部活の活動場所を生徒1人ずつの行に書くと、同じ部活の生徒の数だけ活動場所がくり返されます。このとき、次のような困りごと（<strong>異常</strong>）が起きます。</p>
+    <ul>
+      <li><strong>更新時異常</strong>：活動場所が変わったとき、全部の行を書きかえないと、古い場所と新しい場所が混ざって矛盾する</li>
+      <li><strong>削除時異常</strong>：ある部活の最後の部員の行を消すと、部活があったことまで消えてしまう</li>
+      <li><strong>挿入時異常</strong>：部員がまだいない部活を登録しようとしても、主キーの学籍番号が空になるので登録できない</li>
+    </ul>
+    <p>こうした問題が起きないように、表を適切に分けることを<strong>正規化</strong>といいます。くり返しをなくして1つのセルに1つの値だけにした形を第1正規形、主キーの一部だけで決まる列を別の表に分けた形を第2正規形、主キー以外の列で決まる列をさらに分けた形を第3正規形といいます。正規化を進めると、どの情報も1か所だけに書かれるようになり、書きかえは1回で済みます。「正規化」のタブで、表の形を変えながら同じ操作をして、結果を比べてください。</p>
+
+    <h2>たくさんの人が同時に使うとき</h2>
+    <p>銀行の口座や座席の予約のように、たくさんの人が同時に同じデータを書きかえる場面では、処理の順番によっては残高や空き席の数が合わなくなるおそれがあります。DBMS は、ひとまとまりの処理（<strong>トランザクション</strong>）を、すべて行うか、まったく行わないかのどちらかにしたり、だれかが書きかえている間はほかの人が同じデータを書きかえられないようにしたり（<strong>排他制御</strong>）して、データの整合性を保っています。</p>
+
+    <h3>表の形ではないデータベース</h3>
+    <p>データベースは表の形のものだけではありません。項目（キー）と値（バリュー）の組でデータを記録する<strong>キー・バリュー形式</strong>のデータベースなどもあり、こうした表以外の形式に対応したデータベースは、まとめて <strong>NoSQL</strong> と呼ばれます。大量のデータを扱う場面で使われています。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>SQLで検索する</strong>：見本のボタンを押すか、SELECT 文を書いて「実行」を押します。右の表の一覧で、表の名前を押すと中身が見られます。書き方がまちがっているときは、どこがおかしいかを表示します。</li>
+      <li><strong>選択・射影・結合</strong>：表を選び、条件や列を決めてボタンを押します。条件に合う行や残る列が黄色になってから、結果の表に変わります。</li>
+      <li><strong>正規化</strong>：非正規形から第3正規形までの表の形を切りかえて、活動場所の変更や部員の削除などを試します。</li>
+    </ul>
+    <p>このページの生徒や成績のデータは、すべて架空のものです。小数は小数第3位を四捨五入して表示しています。</p>
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>文部科学省「高等学校情報科『情報Ⅰ』教員研修用教材」第4章 学習21「さまざまな形式のデータとその表現形式」https://www.mext.go.jp/content/20200722-mxt_jogai02-100013300_006.pdf</li>
+      <li>情報処理推進機構（IPA）「基本情報技術者試験（レベル2）シラバス Ver.9.1」（データベース設計、データ操作、トランザクション処理）https://www.ipa.go.jp/shiken/syllabus/nl10bi0000007tf7-att/syllabus_fe_ver9_1.pdf</li>
+      <li>ISO/IEC 9075-1:2023 Information technology — Database languages SQL — Part 1: Framework（Standards Council of Canada の規格データベース）https://scc-ccn.ca/standardsdb/standards/8185302</li>
+    </ul>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+/* 小さな SQL 処理系（joholab）  SQLEngine.run(sql, db) -> {cols, rows} */
+(function(root){
+'use strict';
+class SErr extends Error{ constructor(msg,pos){ super(msg); this.pos=pos; } }
+
+const KW=new Set(['SELECT','DISTINCT','FROM','WHERE','AND','OR','NOT','JOIN','INNER','ON','AS','GROUP','BY','HAVING','ORDER','ASC','DESC','LIMIT','LIKE','IN','BETWEEN','IS','NULL','LEFT','RIGHT','OUTER','CROSS']);
+const AGG=new Set(['COUNT','SUM','AVG','MAX','MIN']);
+
+function normalize(s){
+  let out='', q=false;
+  for(const ch of s){
+    if(ch==="'" || ch==='’' || ch==='‘' || ch==='＇'){ q=!q; out+="'"; continue; }
+    if(q){ out+=ch; continue; }
+    const c=ch.codePointAt(0);
+    if(ch==='　'){ out+=' '; continue; }
+    if(c>=0xFF01 && c<=0xFF5E){ out+=String.fromCharCode(c-0xFEE0); continue; }
+    const m={'≦':'<=','≧':'>=','≠':'<>','、':',','，':',','“':'"','”':'"','－':'-','−':'-'};
+    out+= (ch in m)? m[ch] : ch;
+  }
+  return out;
+}
+
+function tokenize(src){
+  const s=normalize(src); const t=[]; let i=0;
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){ i++; continue; }
+    if(c==='-'&&s[i+1]==='-'){ while(i<s.length&&s[i]!=='\n') i++; continue; }
+    if(c==="'"){
+      let j=i+1, v='';
+      while(true){
+        if(j>=s.length) throw new SErr("文字列の終わりの「'」がありません",i);
+        if(s[j]==="'"){ if(s[j+1]==="'"){ v+="'"; j+=2; continue; } break; }
+        v+=s[j]; j++;
+      }
+      t.push({k:'str',v,pos:i}); i=j+1; continue;
+    }
+    if(c==='"'){
+      const j=s.indexOf('"',i+1); if(j<0) throw new SErr('「"」が閉じていません',i);
+      t.push({k:'id',v:s.slice(i+1,j),pos:i}); i=j+1; continue;
+    }
+    if(/[0-9]/.test(c)||(c==='.'&&/[0-9]/.test(s[i+1]||''))){
+      let j=i; while(j<s.length&&/[0-9.]/.test(s[j])) j++;
+      t.push({k:'num',v:Number(s.slice(i,j)),pos:i}); i=j; continue;
+    }
+    const two=s.slice(i,i+2);
+    if(['<>','!=','<=','>='].includes(two)){ t.push({k:'op',v:two==='!='?'<>':two,pos:i}); i+=2; continue; }
+    if('=<>(),*.;+-/%'.includes(c)){ t.push({k:'op',v:c,pos:i}); i++; continue; }
+    // 名前（英数字・日本語）
+    let j=i; while(j<s.length && !/[\s'"=<>!(),*.;+\-/%]/.test(s[j])) j++;
+    if(j===i) throw new SErr('読めない文字があります：「'+c+'」',i);
+    const w=s.slice(i,j); const up=w.toUpperCase();
+    if(KW.has(up)) t.push({k:'kw',v:up,pos:i,raw:w}); else t.push({k:'id',v:w,pos:i});
+    i=j;
+  }
+  t.push({k:'eof',v:'',pos:s.length});
+  return {toks:t, text:s};
+}
+
+/* ---------- 構文解析 ---------- */
+function parse(src){
+  const {toks,text}=tokenize(src); let p=0;
+  const peek=(o=0)=>toks[p+o];
+  const isKw=(v,o=0)=>peek(o).k==='kw'&&peek(o).v===v;
+  const isOp=(v,o=0)=>peek(o).k==='op'&&peek(o).v===v;
+  const desc=t=>t.k==='eof'?'文の終わり':'「'+(t.raw||t.v)+'」';
+  const fail=(msg)=>{ throw new SErr(msg,peek().pos); };
+  const eatKw=v=>{ if(isKw(v)){ p++; return true; } return false; };
+  const needKw=(v,msg)=>{ if(!eatKw(v)) fail(msg||(v+' が必要ですが、'+desc(peek())+' があります')); };
+  const eatOp=v=>{ if(isOp(v)){ p++; return true; } return false; };
+  const needOp=(v,msg)=>{ if(!eatOp(v)) fail(msg||('「'+v+'」が必要ですが、'+desc(peek())+' があります')); };
+  const ident=(what)=>{ const t=peek(); if(t.k!=='id') fail(what+'の名前が必要ですが、'+desc(t)+' があります'); p++; return t.v; };
+
+  function expr(){ return or(); }
+  function or(){ let l=and(); while(eatKw('OR')) l={t:'bin',op:'OR',l,r:and()}; return l; }
+  function and(){ let l=not(); while(eatKw('AND')) l={t:'bin',op:'AND',l,r:not()}; return l; }
+  function not(){ if(eatKw('NOT')) return {t:'not',e:not()}; return cmp(); }
+  function cmp(){
+    let l=add();
+    const t=peek();
+    if(t.k==='op'&&['=','<>','<','>','<=','>='].includes(t.v)){ p++; return {t:'bin',op:t.v,l,r:add()}; }
+    let neg=false;
+    if(isKw('NOT')&&(isKw('LIKE',1)||isKw('IN',1)||isKw('BETWEEN',1))){ p++; neg=true; }
+    if(eatKw('LIKE')){ const r=add(); return {t:'like',l,r,neg}; }
+    if(eatKw('IN')){
+      needOp('(','IN の後ろには ( 値, 値, … ) が必要です'); const items=[expr()]; while(eatOp(',')) items.push(expr());
+      needOp(')'); return {t:'in',l,items,neg};
+    }
+    if(eatKw('BETWEEN')){ const a=add(); needKw('AND','BETWEEN a AND b の AND が必要です'); const b=add(); return {t:'between',l,a,b,neg}; }
+    if(eatKw('IS')){ const n=eatKw('NOT'); needKw('NULL','IS の後ろには NULL が必要です'); return {t:'isnull',l,neg:n}; }
+    return l;
+  }
+  function add(){ let l=mul(); while(isOp('+')||isOp('-')){ const op=toks[p++].v; l={t:'bin',op,l,r:mul()}; } return l; }
+  function mul(){ let l=unary(); while(isOp('*')||isOp('/')||isOp('%')){ const op=toks[p++].v; l={t:'bin',op,l,r:unary()}; } return l; }
+  function unary(){ if(eatOp('-')) return {t:'neg',e:unary()}; return primary(); }
+  function primary(){
+    const t=peek();
+    if(t.k==='num'){ p++; return {t:'lit',v:t.v}; }
+    if(t.k==='str'){ p++; return {t:'lit',v:t.v}; }
+    if(t.k==='kw'&&t.v==='NULL'){ p++; return {t:'lit',v:null}; }
+    if(isOp('(')){ p++; const e=expr(); needOp(')','「)」が足りません'); return e; }
+    if(t.k==='id'){
+      p++;
+      const up=t.v.toUpperCase();
+      if(isOp('(')){
+        if(!AGG.has(up)) fail('「'+t.v+'」という関数は使えません（使えるのは COUNT・SUM・AVG・MAX・MIN）');
+        p++;
+        let distinct=false, arg;
+        if(eatKw('DISTINCT')) distinct=true;
+        if(isOp('*')){ if(up!=='COUNT') fail(up+'(*) とは書けません。* が使えるのは COUNT(*) だけです'); p++; arg=null; }
+        else arg=expr();
+        needOp(')','「)」が足りません');
+        return {t:'agg',f:up,arg,distinct,pos:t.pos};
+      }
+      if(isOp('.')){ p++;
+        if(isOp('*')){ p++; return {t:'star',table:t.v}; }
+        const c=ident('列'); return {t:'col',table:t.v,name:c,pos:t.pos}; }
+      return {t:'col',table:null,name:t.v,pos:t.pos};
+    }
+    if(t.k==='eof') fail('式が途中で終わっています（WHERE や比べる値のあとが空になっていませんか）');
+    if(t.k==='kw') fail(desc(t)+' はここには書けません');
+    fail(desc(t)+' はここには書けません');
+  }
+
+  needKw('SELECT','SQL文は SELECT から始めてください（このページで使えるのは検索の SELECT 文です）');
+  const q={distinct:false, items:[], from:null, joins:[], where:null, group:[], having:null, order:[], limit:null};
+  if(eatKw('DISTINCT')) q.distinct=true;
+  do{
+    const st=peek().pos;
+    if(isOp('*')){ p++; q.items.push({star:true}); continue; }
+    const e=expr(); let alias=null;
+    if(e.t==='star'){ q.items.push({star:true,table:e.table}); continue; }
+    if(eatKw('AS')) alias=ident('別名');
+    else if(peek().k==='id') alias=ident('別名');
+    q.items.push({e,alias,text:text.slice(st,peek().pos).replace(/\s+AS\s+.*$/i,'').trim()});
+  } while(eatOp(','));
+  needKw('FROM','FROM（どの表から取り出すか）が必要ですが、'+desc(peek())+' があります');
+  const tref=()=>{ const n=ident('表'); let a=null; if(eatKw('AS')) a=ident('別名'); else if(peek().k==='id') a=ident('別名'); return {name:n,alias:a||n,pos:toks[p-1].pos}; };
+  q.from=tref();
+  while(true){
+    if(isKw('LEFT')||isKw('RIGHT')||isKw('CROSS')) fail('このページで使える結合は INNER JOIN（JOIN）だけです');
+    if(eatOp(',')) fail('表をカンマで並べる書き方には対応していません。JOIN … ON … を使ってください');
+    if(eatKw('INNER')){ needKw('JOIN','INNER の後ろには JOIN が必要です'); }
+    else if(!eatKw('JOIN')) break;
+    const r=tref(); needKw('ON','JOIN の後ろには ON（どの列でつなぐか）が必要です');
+    q.joins.push({ref:r,on:expr()});
+  }
+  if(eatKw('WHERE')) q.where=expr();
+  if(eatKw('GROUP')){ needKw('BY','GROUP の後ろには BY が必要です'); do{ q.group.push(expr()); } while(eatOp(',')); }
+  if(eatKw('HAVING')) q.having=expr();
+  if(eatKw('ORDER')){ needKw('BY','ORDER の後ろには BY が必要です');
+    do{ const e=expr(); let dir=1; if(eatKw('DESC')) dir=-1; else eatKw('ASC'); q.order.push({e,dir}); } while(eatOp(','));
+  }
+  if(eatKw('LIMIT')){ const t=peek(); if(t.k!=='num'||!Number.isInteger(t.v)) fail('LIMIT の後ろには件数（整数）が必要です'); p++; q.limit=t.v; }
+  eatOp(';');
+  if(peek().k!=='eof') fail(desc(peek())+' の書き方が正しくありません（または文の順番がちがいます）');
+  return q;
+}
+
+/* ---------- 実行 ---------- */
+function isAgg(e){ if(!e||typeof e!=='object') return false; if(e.t==='agg') return true;
+  return ['l','r','e','a','b'].some(k=>isAgg(e[k])) || (e.items||[]).some(isAgg); }
+function cmpVal(a,b){
+  if(a===null&&b===null) return 0; if(a===null) return -1; if(b===null) return 1;
+  if(typeof a==='number'&&typeof b==='number') return a-b;
+  const na=Number(a), nb=Number(b);
+  if(typeof a!==typeof b && !isNaN(na) && !isNaN(nb)) return na-nb;
+  return String(a)<String(b)?-1:String(a)>String(b)?1:0;
+}
+function likeRe(p){ return new RegExp('^'+String(p).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%/g,'.*').replace(/_/g,'.')+'$','s'); }
+
+function run(sql,db){
+  const q=parse(sql);
+  // 表
+  const tables=[q.from].concat(q.joins.map(j=>j.ref));
+  const seen=new Set();
+  for(const t of tables){
+    if(!db[t.name]) throw new SErr('表「'+t.name+'」はありません（ある表：'+Object.keys(db).join('、')+'）',t.pos);
+    if(seen.has(t.alias)) throw new SErr('表「'+t.alias+'」が2回使われています。別名（AS）を付けてください',t.pos);
+    seen.add(t.alias);
+  }
+  const colsOf=a=>db[tables.find(t=>t.alias===a).name].cols;
+  function resolve(c){
+    if(c.table){
+      const t=tables.find(x=>x.alias===c.table||x.name===c.table);
+      if(!t) throw new SErr('表「'+c.table+'」は FROM や JOIN に書かれていません',c.pos);
+      if(!db[t.name].cols.includes(c.name)) throw new SErr('表「'+t.name+'」に列「'+c.name+'」はありません（ある列：'+db[t.name].cols.join('、')+'）',c.pos);
+      return t.alias+'.'+c.name;
+    }
+    const hits=tables.filter(t=>db[t.name].cols.includes(c.name));
+    if(!hits.length) throw new SErr('列「'+c.name+'」はありません（使える列：'+[...new Set(tables.flatMap(t=>db[t.name].cols))].join('、')+'）',c.pos);
+    if(hits.length>1) throw new SErr('列「'+c.name+'」は '+hits.map(t=>t.alias).join(' と ')+' の両方にあります。「'+hits[0].alias+'.'+c.name+'」のように表の名前を付けてください',c.pos);
+    return hits[0].alias+'.'+c.name;
+  }
+  // 行をつくる（FROM・JOIN）
+  const rowsOf=t=>db[t.name].rows.map(r=>{ const o={}; db[t.name].cols.forEach((c,i)=>o[t.alias+'.'+c]=r[i]); return o; });
+  let rows=rowsOf(q.from);
+  const ctx={};
+  function ev(e,row,group){
+    switch(e.t){
+      case 'lit': return e.v;
+      case 'col': { const k=resolve(e); if(group&&!row) row=group[0]||{}; return k in row? row[k] : null; }
+      case 'neg': { const v=ev(e.e,row,group); return v===null?null:-Number(v); }
+      case 'not': { const v=ev(e.e,row,group); return v===null?null:!v; }
+      case 'agg': {
+        if(!group) throw new SErr(e.f+'() は WHERE の中では使えません。集計した結果で絞り込むときは HAVING を使います',e.pos);
+        let vals= e.arg===null ? group.map(()=>1) : group.map(r=>ev(e.arg,r,null)).filter(v=>v!==null);
+        if(e.distinct) vals=[...new Set(vals)];
+        if(e.f==='COUNT') return vals.length;
+        if(!vals.length) return null;
+        if(e.f==='SUM') return vals.reduce((a,b)=>a+Number(b),0);
+        if(e.f==='AVG') return vals.reduce((a,b)=>a+Number(b),0)/vals.length;
+        if(e.f==='MAX') return vals.reduce((a,b)=>cmpVal(a,b)>=0?a:b);
+        if(e.f==='MIN') return vals.reduce((a,b)=>cmpVal(a,b)<=0?a:b);
+        break;
+      }
+      case 'bin': {
+        if(e.op==='AND'){ const a=ev(e.l,row,group); if(a===false) return false; const b=ev(e.r,row,group); if(a===null||b===null) return (b===false)?false:null; return !!(a&&b); }
+        if(e.op==='OR'){ const a=ev(e.l,row,group); if(a===true) return true; const b=ev(e.r,row,group); if(a===null||b===null) return b===true?true:null; return !!(a||b); }
+        const a=ev(e.l,row,group), b=ev(e.r,row,group);
+        if(a===null||b===null) return null;
+        switch(e.op){
+          case '=': return cmpVal(a,b)===0; case '<>': return cmpVal(a,b)!==0;
+          case '<': return cmpVal(a,b)<0; case '>': return cmpVal(a,b)>0;
+          case '<=': return cmpVal(a,b)<=0; case '>=': return cmpVal(a,b)>=0;
+          case '+': if(typeof a==='string'||typeof b==='string'){ if(isNaN(Number(a))||isNaN(Number(b))) throw new SErr('文字と数は足し算できません',null); } return Number(a)+Number(b);
+          case '-': return Number(a)-Number(b);
+          case '*': return Number(a)*Number(b);
+          case '/': if(Number(b)===0) return null; return Number(a)/Number(b);
+          case '%': if(Number(b)===0) return null; return Number(a)%Number(b);
+        }
+        break;
+      }
+      case 'like': { const a=ev(e.l,row,group), b=ev(e.r,row,group); if(a===null||b===null) return null; const r=likeRe(b).test(String(a)); return e.neg?!r:r; }
+      case 'in': { const a=ev(e.l,row,group); if(a===null) return null; const r=e.items.some(x=>cmpVal(a,ev(x,row,group))===0); return e.neg?!r:r; }
+      case 'between': { const a=ev(e.l,row,group), lo=ev(e.a,row,group), hi=ev(e.b,row,group); if(a===null) return null; const r=cmpVal(a,lo)>=0&&cmpVal(a,hi)<=0; return e.neg?!r:r; }
+      case 'isnull': { const a=ev(e.l,row,group); return e.neg? a!==null : a===null; }
+    }
+    throw new SErr('式を計算できません',null);
+  }
+  // 列名を先に確かめる
+  function check(e){ if(!e||typeof e!=='object') return; if(e.t==='col') resolve(e); ['l','r','e','a','b','arg'].forEach(k=>check(e[k])); (e.items||[]).forEach(check); }
+  for(const j of q.joins){
+    check(j.on);
+    const right=rowsOf(j.ref); const out=[];
+    for(const l of rows) for(const r of right){ const m=Object.assign({},l,r); if(ev(j.on,m,null)===true) out.push(m); }
+    rows=out;
+  }
+  if(q.where){ check(q.where); if(isAgg(q.where)) throw new SErr('COUNT や AVG などの集計は WHERE の中では使えません。HAVING を使います',null); rows=rows.filter(r=>ev(q.where,r,null)===true); }
+  // 出力する列
+  const items=[];
+  for(const it of q.items){
+    if(it.star){
+      const ts= it.table? tables.filter(t=>t.alias===it.table||t.name===it.table) : tables;
+      if(it.table&&!ts.length) throw new SErr('表「'+it.table+'」は FROM や JOIN に書かれていません',null);
+      for(const t of ts) for(const c of db[t.name].cols){
+        const dup=tables.length>1 && tables.filter(x=>db[x.name].cols.includes(c)).length>1;
+        items.push({e:{t:'col',table:t.alias,name:c},name: dup? t.alias+'.'+c : c});
+      }
+    } else { check(it.e); items.push({e:it.e,name:it.alias||it.text}); }
+  }
+  const grouping= q.group.length>0 || items.some(i=>isAgg(i.e)) || isAgg(q.having);
+  let out=[];
+  if(grouping){
+    q.group.forEach(check);
+    const gkeys=q.group.map(g=>g.t==='col'?resolve(g):null);
+    // 集計しない列は GROUP BY にあるものだけ
+    function bare(e,inAgg){ if(!e||typeof e!=='object') return; if(e.t==='agg') return; if(e.t==='col'){ const k=resolve(e); if(!gkeys.includes(k)) throw new SErr('列「'+e.name+'」は GROUP BY に書かれていないので、集計（COUNT や AVG など）といっしょには表示できません',e.pos); return; } ['l','r','e','a','b'].forEach(k=>bare(e[k])); (e.items||[]).forEach(x=>bare(x)); }
+    items.forEach(i=>bare(i.e)); if(q.having) { check(q.having); bare(q.having); }
+    const groups=new Map();
+    for(const r of rows){ const key=JSON.stringify(q.group.map(g=>ev(g,r,null))); if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(r); }
+    if(!q.group.length && !groups.size) groups.set('[]',[]);
+    for(const g of groups.values()){
+      if(q.having && ev(q.having,null,g)!==true) continue;
+      out.push({vals:items.map(i=>ev(i.e,null,g)), row:g[0]||{}, group:g});
+    }
+  } else {
+    if(q.having) throw new SErr('HAVING は GROUP BY といっしょに使います',null);
+    out=rows.map(r=>({vals:items.map(i=>ev(i.e,r,null)), row:r, group:null}));
+  }
+  if(q.distinct){ const s=new Set(); out=out.filter(o=>{ const k=JSON.stringify(o.vals); if(s.has(k)) return false; s.add(k); return true; }); }
+  if(q.order.length){
+    const keyOf=(o,e)=>{
+      if(e.t==='lit'&&typeof e.v==='number'){ const n=e.v; if(n<1||n>items.length) throw new SErr('ORDER BY の番号 '+n+' に当たる列がありません',null); return o.vals[n-1]; }
+      if(e.t==='col'&&!e.table){ const i=items.findIndex(x=>x.name===e.name); if(i>=0) return o.vals[i]; }
+      if(!grouping) check(e);
+      return grouping? ev(e,null,o.group) : ev(e,o.row,null);
+    };
+    const keyed=out.map(o=>({o,k:q.order.map(x=>keyOf(o,x.e))}));
+    keyed.sort((a,b)=>{ for(let i=0;i<q.order.length;i++){ const c=cmpVal(a.k[i],b.k[i]); if(c) return c*q.order[i].dir; } return 0; });
+    out=keyed.map(x=>x.o);
+  }
+  if(q.limit!==null) out=out.slice(0,q.limit);
+  return {cols:items.map(i=>i.name), rows:out.map(o=>o.vals), query:q};
+}
+root.SQLEngine={run,parse,SErr,normalize};
+})(typeof window!=='undefined'?window:globalThis);
+
+/* 架空のデータ */
+const DB0={
+  '生徒':{cols:['学籍番号','氏名','組','部活ID'], rows:[
+    [1101,'青木 葵',1,'B01'],
+    [1102,'石井 蓮',1,'B02'],
+    [1103,'上田 結衣',1,'B03'],
+    [1104,'遠藤 大和',1,'B01'],
+    [1105,'小川 陽菜',2,'B03'],
+    [1106,'加藤 湊',2,'B02'],
+    [1107,'木村 さくら',2,'B05'],
+    [1108,'斎藤 悠真',2,null],
+    [1109,'佐々木 凛',3,'B03'],
+    [1110,'鈴木 陽翔',3,'B01'],
+    [1111,'田中 芽依',3,'B05'],
+    [1112,'中村 蒼',3,'B02'],
+  ]},
+  '部活':{cols:['部活ID','部活名','活動場所'], rows:[
+    ['B01','バスケットボール','体育館'],
+    ['B02','サッカー','グラウンド'],
+    ['B03','吹奏楽','音楽室'],
+    ['B04','美術','美術室'],
+    ['B05','情報処理','コンピュータ室'],
+  ]},
+  '成績':{cols:['学籍番号','科目','点数'], rows:[]},
+};
+(function(){
+  const sc={ // 情報, 数学, 英語
+    1101:[82,64,71],1102:[58,77,66],1103:[91,85,88],1104:[67,52,74],1105:[74,90,69],1106:[45,61,57],
+    1107:[96,79,83],1108:[63,70,92],1109:[88,58,76],1110:[71,83,60],1111:[85,92,95],1112:[52,47,63]};
+  for(const id of Object.keys(sc)){ ['情報','数学','英語'].forEach((k,i)=>DB0['成績'].rows.push([+id,k,sc[id][i]])); }
+})();
+
+const EXAMPLES=[
+ {k:'表をすべて見る', sql:"SELECT * FROM 生徒;"},
+ {k:'射影：列をしぼる', sql:"SELECT 氏名, 組 FROM 生徒;"},
+ {k:'選択：行をしぼる', sql:"SELECT * FROM 生徒 WHERE 組 = 2;"},
+ {k:'条件を組み合わせる', sql:"SELECT * FROM 成績\nWHERE 科目 = '情報' AND 点数 >= 80;"},
+ {k:'文字の一部で探す（LIKE）', sql:"SELECT * FROM 生徒 WHERE 氏名 LIKE '%木%';"},
+ {k:'いくつかの値のどれか（IN）', sql:"SELECT * FROM 部活 WHERE 部活ID IN ('B01', 'B02');"},
+ {k:'並べ替え（ORDER BY）', sql:"SELECT 学籍番号, 点数 FROM 成績\nWHERE 科目 = '数学'\nORDER BY 点数 DESC;"},
+ {k:'上位3件（LIMIT）', sql:"SELECT 学籍番号, 点数 FROM 成績\nWHERE 科目 = '英語'\nORDER BY 点数 DESC\nLIMIT 3;"},
+ {k:'結合：生徒と部活', sql:"SELECT 生徒.氏名, 部活.部活名, 部活.活動場所\nFROM 生徒 JOIN 部活 ON 生徒.部活ID = 部活.部活ID;"},
+ {k:'結合して並べ替え', sql:"SELECT 生徒.氏名, 生徒.組, 成績.点数\nFROM 生徒 JOIN 成績 ON 生徒.学籍番号 = 成績.学籍番号\nWHERE 成績.科目 = '情報'\nORDER BY 成績.点数 DESC;"},
+ {k:'集計：科目ごとの平均', sql:"SELECT 科目, COUNT(*) AS 人数, AVG(点数) AS 平均, MAX(点数) AS 最高, MIN(点数) AS 最低\nFROM 成績\nGROUP BY 科目;"},
+ {k:'集計：部活ごとの人数', sql:"SELECT 部活.部活名, COUNT(*) AS 人数\nFROM 生徒 JOIN 部活 ON 生徒.部活ID = 部活.部活ID\nGROUP BY 部活.部活名\nORDER BY 人数 DESC, 部活.部活名;"},
+ {k:'集計の結果でしぼる（HAVING）', sql:"SELECT 生徒.組, AVG(成績.点数) AS 情報の平均\nFROM 生徒 JOIN 成績 ON 生徒.学籍番号 = 成績.学籍番号\nWHERE 成績.科目 = '情報'\nGROUP BY 生徒.組\nHAVING AVG(成績.点数) >= 70;"},
+];
+
+const $=id=>document.getElementById(id);
+const S=window.SQLEngine;
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtV(v){
+  if(v===null||v===undefined) return 'NULL';
+  if(typeof v==='boolean') return v?'真':'偽';
+  if(typeof v==='number' && !Number.isInteger(v)) return String(Math.round(v*100)/100);
+  return String(v);
+}
+/* 表を HTML に。opt.rowCls(i), opt.colCls(j), opt.cellCls(i,j), opt.keys(列名の配列) */
+function tableHTML(cols,rows,opt={}){
+  let h='<table class="dt"><thead><tr>'+cols.map((c,j)=>`<th class="${opt.colCls?opt.colCls(j):''}">${opt.keys&&opt.keys.includes(c)?'<span class="key" aria-label="主キー">🔑</span>':''}${esc(c)}</th>`).join('')+'</tr></thead><tbody>';
+  rows.forEach((r,i)=>{
+    h+=`<tr class="${opt.rowCls?opt.rowCls(i):''}">`+r.map((v,j)=>{
+      const cls=[]; if(v===null||v===undefined) cls.push('null'); else if(typeof v==='number') cls.push('n');
+      if(opt.colCls) cls.push(opt.colCls(j)); if(opt.cellCls) cls.push(opt.cellCls(i,j));
+      return `<td class="${cls.join(' ')}">${opt.raw? v : esc(fmtV(v))}</td>`;
+    }).join('')+'</tr>';
+  });
+  if(!rows.length) h+=`<tr><td colspan="${cols.length}" style="color:var(--muted);">（該当する行はありません）</td></tr>`;
+  return h+'</tbody></table>';
+}
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabSql','toolSql'],['tabOps','toolOps'],['tabNf','toolNf']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+
+/* ===== SQLで検索する ===== */
+const DB=DB0;
+(() => {
+  $('examples').innerHTML=EXAMPLES.map((x,i)=>`<button class="chip" data-i="${i}">${esc(x.k)}</button>`).join('');
+  $('examples').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    $('examples').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    $('sql').value=EXAMPLES[+b.dataset.i].sql; runSql();
+  }));
+  let h='<h3>表の一覧</h3><p class="note" style="margin:0 0 4px;">表の名前を押すと、中身を表示します。</p>';
+  for(const [name,t] of Object.entries(DB)){
+    h+=`<div class="t"><button data-t="${esc(name)}">${esc(name)}</button>（${t.rows.length}行）</div><div class="c">${t.cols.map(c=>`<b>${esc(c)}</b>`).join('、')}</div>`;
+  }
+  $('schema').innerHTML=h;
+  $('schema').querySelectorAll('button[data-t]').forEach(b=>b.addEventListener('click',()=>{ unpress(); $('sql').value=`SELECT * FROM ${b.dataset.t};`; runSql(); }));
+})();
+function unpress(){ $('examples').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); }
+function runSql(){
+  const src=$('sql').value;
+  if(!src.trim()){ $('sqlMsg').innerHTML=''; $('sqlRes').innerHTML=''; return; }
+  try{
+    const r=S.run(src,DB);
+    $('sqlMsg').innerHTML='';
+    $('sqlRes').innerHTML=`<div class="cnt"><b>${r.rows.length}</b> 件の行が見つかりました（${r.cols.length} 列）</div><div class="tw tall">${tableHTML(r.cols,r.rows)}</div>`;
+  }catch(e){
+    if(!(e instanceof S.SErr)) { console.warn(e); }
+    let snip='';
+    if(typeof e.pos==='number'){
+      const t=S.normalize(src); const a=Math.max(0,e.pos-30), b=Math.min(t.length,e.pos+12);
+      const tokEnd=(()=>{ let j=e.pos; while(j<t.length && !/[\s,()=<>;]/.test(t[j])) j++; return Math.max(j,e.pos+1); })();
+      snip=`<div class="snip">${a>0?'…':''}${esc(t.slice(a,e.pos))}<mark>${esc(t.slice(e.pos,Math.min(tokEnd,t.length))||'　')}</mark>${esc(t.slice(Math.min(tokEnd,t.length),b))}${b<t.length?'…':''}</div>`;
+    }
+    $('sqlMsg').innerHTML=`<div class="msg ng"><div class="t">実行できませんでした</div>${esc(e.message)}${snip}</div>`;
+    $('sqlRes').innerHTML='';
+  }
+}
+$('btnRun').addEventListener('click',runSql);
+$('btnClear').addEventListener('click',()=>{ $('sql').value=''; runSql(); $('sql').focus(); });
+$('sql').addEventListener('input',unpress);
+$('sql').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); runSql(); } });
+document.querySelectorAll('#toolSql .keys button').forEach(b=>b.addEventListener('click',()=>{
+  const ta=$('sql'); ta.focus(); const a=ta.selectionStart,bb=ta.selectionEnd, t=b.dataset.ins;
+  ta.setRangeText(t,a,bb,'end'); if(b.dataset.back){ ta.selectionStart=ta.selectionEnd=a+t.length-(+b.dataset.back); }
+}));
+
+/* ===== 選択・射影・結合 ===== */
+let ops;
+function opsNew(base){ ops={base, join:null, conds:[], proj:null, flash:null}; }
+function qcol(c){ return /^[^\s.]+\.[^\s.]+$/.test(c)? c : c; }
+function opsSQL(st=ops){
+  const sel= st.proj? st.proj.join(', ') : '*';
+  let s=`SELECT ${sel}\nFROM ${st.base}`;
+  if(st.join) s+=`\nJOIN ${st.join.table} ON ${st.base}.${st.join.col} = ${st.join.table}.${st.join.col}`;
+  if(st.conds.length) s+='\nWHERE '+st.conds.map(condSQL).join('\n  AND ');
+  return s+';';
+}
+function condSQL(c){
+  if(c.op==='LIKE') return `${c.col} LIKE '%${c.val.replace(/'/g,"''")}%'`;
+  const num= c.val!=='' && !isNaN(Number(c.val)) && c.numCol;
+  return `${c.col} ${c.op} ${num? Number(c.val) : "'"+c.val.replace(/'/g,"''")+"'"}`;
+}
+function opsRun(st=ops){ return S.run(opsSQL(st),DB); }
+function opsAllCols(){ return S.run(opsSQL(Object.assign({},ops,{proj:null,conds:[]})),DB).cols; }
+function opsRender(){
+  $('opsTables').innerHTML=Object.keys(DB).map(t=>`<button class="chip" data-t="${esc(t)}" aria-pressed="${ops.base===t}">${esc(t)}</button>`).join('');
+  $('opsTables').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ opsNew(b.dataset.t); opsMsg(`表「${b.dataset.t}」を選びました`,'選択・射影・結合を試してみましょう。'); opsRender(); }));
+  const steps=[`表：${ops.base}`]; if(ops.join) steps.push(`結合：${ops.join.table}（${ops.join.col}）`);
+  ops.conds.forEach(c=>steps.push('選択：'+condSQL(c))); if(ops.proj) steps.push('射影：'+ops.proj.join('、'));
+  $('opsSteps').innerHTML=steps.map(s=>`<span>${esc(s)}</span>`).join('');
+  // 選択の列
+  const cur=opsRun();
+  const allCols=opsAllCols();
+  const prevSel=$('selCol').value;
+  $('selCol').innerHTML=allCols.map(c=>`<option ${c===prevSel?'selected':''}>${esc(c)}</option>`).join('');
+  $('projCols').innerHTML=cur.cols.map(c=>`<label><input type="checkbox" value="${esc(c)}" checked>${esc(c)}</label>`).join('');
+  // 結合
+  const others=Object.keys(DB).filter(t=>t!==ops.base && (!ops.join));
+  $('joinTbl').innerHTML=others.map(t=>`<option>${esc(t)}</option>`).join('');
+  $('joinTbl').disabled=$('joinCol').disabled=$('joinGo').disabled=!others.length;
+  joinColsFill();
+  // 表示
+  if(!ops.flash){
+    $('opsView').innerHTML=`<div class="cnt"><b>${cur.rows.length}</b> 行 × <b>${cur.cols.length}</b> 列</div><div class="tw tall">${tableHTML(cur.cols,cur.rows,ops.keyColor?{cellCls:(i,j)=>ops.keyColor(cur,i,j)}:{})}</div>`;
+  }
+  $('opsSql').innerHTML=`<span class="c">-- いまの表を作る SQL 文</span>\n${esc(opsSQL())}`;
+}
+function joinColsFill(){
+  const t=$('joinTbl').value; if(!t){ $('joinCol').innerHTML=''; return; }
+  const common=DB[ops.base].cols.filter(c=>DB[t].cols.includes(c));
+  $('joinCol').innerHTML=common.length? common.map(c=>`<option>${esc(c)}</option>`).join('') : '<option value="">（共通の列がない）</option>';
+  $('joinGo').disabled=!common.length;
+}
+$('joinTbl').addEventListener('change',joinColsFill);
+function opsMsg(t,b,cls=''){ $('opsMsg').className='msg'+(cls?' '+cls:''); $('opsMsg').innerHTML=`<div class="t">${esc(t)}</div>${b}`; }
+let opsTimer=null;
+$('selGo').addEventListener('click',()=>{
+  const col=$('selCol').value, op=$('selOp').value, val=$('selVal').value.trim();
+  if(!val){ opsMsg('値を入れてください','たとえば、組 が次と等しい「2」のように入れます。','ng'); return; }
+  const before=opsRun(Object.assign({},ops,{proj:null}));
+  const ci=before.cols.indexOf(col);
+  const numCol=before.rows.length? before.rows.every(r=>r[ci]===null||typeof r[ci]==='number') : false;
+  const cond={col,op,val,numCol};
+  let after;
+  try{ after=opsRun(Object.assign({},ops,{proj:null,conds:ops.conds.concat([cond])})); }
+  catch(e){ opsMsg('選択できませんでした',esc(e.message),'ng'); return; }
+  const keyOf=r=>JSON.stringify(r); const hit=new Set(after.rows.map(keyOf));
+  clearTimeout(opsTimer); ops.flash=true;
+  const showCols=ops.proj||before.cols;
+  $('opsView').innerHTML=`<div class="cnt">条件 <b>${esc(condSQL(cond))}</b> に合う行を探しています…</div><div class="tw tall">${tableHTML(before.cols,before.rows,{rowCls:i=>hit.has(keyOf(before.rows[i]))?'hit':'dim', colCls:j=>showCols.includes(before.cols[j])?'':'dim'})}</div>`;
+  opsMsg(`${before.rows.length} 行のうち、${after.rows.length} 行が条件に合いました`,`黄色の行が残ります。これが<b>選択</b>です。SQL では <code>WHERE</code> で条件を書きます。`,'ok');
+  opsTimer=setTimeout(()=>{ ops.conds.push(cond); ops.flash=null; opsRender(); },1100);
+});
+$('projGo').addEventListener('click',()=>{
+  const cur=opsRun();
+  const keep=[...$('projCols').querySelectorAll('input:checked')].map(x=>x.value);
+  if(!keep.length){ opsMsg('列を1つ以上選んでください','射影では、残したい列にチェックを入れます。','ng'); return; }
+  clearTimeout(opsTimer); ops.flash=true;
+  $('opsView').innerHTML=`<div class="cnt">選んだ列を取り出しています…</div><div class="tw tall">${tableHTML(cur.cols,cur.rows,{colCls:j=>keep.includes(cur.cols[j])?'hit':'dim'})}</div>`;
+  opsMsg(`${cur.cols.length} 列のうち、${keep.length} 列を取り出します`,`黄色の列が残ります。これが<b>射影</b>です。SQL では <code>SELECT</code> の後ろに列の名前を書きます。`,'ok');
+  opsTimer=setTimeout(()=>{ ops.proj= keep.length===cur.cols.length && !ops.proj ? null : keep; ops.flash=null; opsRender(); },1100);
+});
+const PAL=['k0','k1','k2','k3','k4','k5'];
+$('joinGo').addEventListener('click',()=>{
+  const t=$('joinTbl').value, col=$('joinCol').value; if(!t||!col) return;
+  const left=opsRun(Object.assign({},ops,{proj:null}));
+  const right=S.run(`SELECT * FROM ${t};`,DB);
+  const li=left.cols.indexOf(col), ri=right.cols.indexOf(col);
+  const vals=[...new Set(left.rows.map(r=>r[li]).filter(v=>v!==null))];
+  const color=v=>{ const k=vals.indexOf(v); return k>=0 && right.rows.some(r=>r[ri]===v) ? PAL[k%PAL.length] : ''; };
+  clearTimeout(opsTimer); ops.flash=true;
+  $('opsView').innerHTML=`<div class="pair"><div><h3>いまの表（${esc(ops.base)}）</h3><div class="tw tall">${tableHTML(left.cols,left.rows,{cellCls:(i,j)=>j===li?color(left.rows[i][li]):'' ,rowCls:i=>color(left.rows[i][li])?'':'dim'})}</div></div>
+    <div><h3>つなぐ表（${esc(t)}）</h3><div class="tw tall">${tableHTML(right.cols,right.rows,{cellCls:(i,j)=>j===ri?color(right.rows[i][ri]):'',rowCls:i=>color(right.rows[i][ri])?'':'dim'})}</div></div></div>`;
+  const nl=left.rows.filter(r=>!color(r[li])).length, nr=right.rows.filter(r=>!color(r[ri])).length;
+  opsMsg(`「${col}」の値が同じ行どうしをつなぎます`,`同じ色の「${esc(col)}」どうしが1つの行になります。これが<b>結合</b>です。`+
+    (nl||nr? `<br>うすい行は、相手の表に同じ値がないので、結果に入りません（いまの表 ${nl} 行、つなぐ表 ${nr} 行）。` : ''),'ok');
+  opsTimer=setTimeout(()=>{
+    ops.conds.forEach(c=>{ if(!c.col.includes('.') && DB[t].cols.includes(c.col)) c.col=ops.base+'.'+c.col; });
+    ops.join={table:t,col}; ops.proj=null; ops.flash=null;
+    ops.keyColor=(cur,i,j)=>{ const nm=cur.cols[j]; if(nm===ops.base+'.'+col||nm===t+'.'+col) return color(cur.rows[i][j]); return ''; };
+    opsRender();
+    opsMsg(`${esc(ops.base)} と ${esc(t)} を結合しました`,`結合したあとの表には、両方の表の列が並びます。同じ名前の列は「表の名前.列の名前」で区別します。射影は、結合のあとでもう一度選べます。`,'ok');
+  },1500);
+});
+$('opsReset').addEventListener('click',()=>{ clearTimeout(opsTimer); opsNew(ops.base); ops.keyColor=null; opsRender(); opsMsg('最初に戻しました','表を選び直すこともできます。'); });
+$('opsToSql').addEventListener('click',()=>{ unpress(); $('sql').value=opsSQL(); $('tabSql').click(); runSql(); window.scrollTo({top:$('toolSql').getBoundingClientRect().top+window.scrollY-20,behavior:'smooth'}); });
+$('selVal').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing){ e.preventDefault(); $('selGo').click(); } });
+
+/* ===== 正規化 ===== */
+const NF_MEMBERS=[ // 学籍番号, 氏名, 組, 担任, 部活ID
+  [2101,'青木',1,'山本','C1'],[2101,'青木',1,'山本','C3'],[2102,'石井',1,'山本','C2'],
+  [2103,'上田',2,'森','C1'],[2104,'遠藤',2,'森','C2'],[2105,'小川',3,'林','C1'],[2106,'加藤',3,'林','C2']];
+const NF_CLUBS=[['C1','吹奏楽','音楽室'],['C2','バスケットボール','体育館'],['C3','美術','美術室']];
+const STAGES=[
+  {id:'nf0',name:'非正規形',note:'1人の生徒の行の中に、入っている部活が「くり返し」書かれています。表計算でよく見る形ですが、データベースではこのままでは扱えません。'},
+  {id:'nf1',name:'第1正規形',note:'くり返しをなくし、1つのセルに1つの値だけが入るようにしました。主キーは「学籍番号」と「部活ID」の組です。部活の名前や活動場所、担任が、何度も書かれています。'},
+  {id:'nf2',name:'第2正規形',note:'主キーの一部だけで決まる列を、別の表に分けました。「部活ID」だけで決まる部活名・活動場所は部活の表へ、「学籍番号」だけで決まる氏名・組・担任は生徒の表へ移しました。'},
+  {id:'nf3',name:'第3正規形',note:'主キー以外の列で決まる列を、さらに分けました。担任は「組」で決まるので、組の表へ移しました。どの情報も1か所だけに書かれています。'},
+];
+let nf;
+function nfBuild(stage){
+  const T={}; const m=NF_MEMBERS, c=NF_CLUBS; const club=id=>c.find(x=>x[0]===id);
+  if(stage==='nf0'){
+    const ids=[...new Set(m.map(r=>r[0]))];
+    T['生徒と部活']={cols:['学籍番号','氏名','組','担任','部活（部活ID・部活名・活動場所）'],keys:['学籍番号'],
+      rows:ids.map(id=>{ const rs=m.filter(r=>r[0]===id); const r=rs[0]; return [r[0],r[1],r[2],r[3],{multi:rs.map(x=>{ const k=club(x[4]); return [k[0],k[1],k[2]]; })}]; })};
+  } else if(stage==='nf1'){
+    T['生徒と部活']={cols:['学籍番号','氏名','組','担任','部活ID','部活名','活動場所'],keys:['学籍番号','部活ID'],
+      rows:m.map(r=>{ const k=club(r[4]); return [r[0],r[1],r[2],r[3],k[0],k[1],k[2]]; })};
+  } else {
+    const ids=[...new Set(m.map(r=>r[0]))];
+    if(stage==='nf2') T['生徒']={cols:['学籍番号','氏名','組','担任'],keys:['学籍番号'],rows:ids.map(id=>m.find(r=>r[0]===id).slice(0,4))};
+    else { T['生徒']={cols:['学籍番号','氏名','組'],keys:['学籍番号'],rows:ids.map(id=>m.find(r=>r[0]===id).slice(0,3))};
+      const ks=[...new Set(m.map(r=>r[2]))]; T['組']={cols:['組','担任'],keys:['組'],rows:ks.map(k=>[k,m.find(r=>r[2]===k)[3]])}; }
+    T['部活']={cols:['部活ID','部活名','活動場所'],keys:['部活ID'],rows:c.map(x=>x.slice())};
+    T['所属']={cols:['学籍番号','部活ID'],keys:['学籍番号','部活ID'],rows:m.map(r=>[r[0],r[4]])};
+  }
+  for(const t of Object.values(T)){ t.mark={}; t.rowMark={}; }
+  return T;
+}
+function nfSet(stage){ nf={stage, T:nfBuild(stage), ghost:null}; nfRender(); nfMsg(STAGES.find(s=>s.id===stage).name+' の表です','「操作してみる」のボタンを押して、困ったことが起きるか確かめましょう。'); }
+function nfMsg(t,b,cls=''){ $('nfMsg').className='msg'+(cls?' '+cls:''); $('nfMsg').innerHTML=`<div class="t">${esc(t)}</div>${b}`; }
+function cellHTML(v){
+  if(v&&v.multi) return v.multi.map(x=>esc(x.join('・'))).join('<br>');
+  return esc(fmtV(v));
+}
+function nfRender(){
+  $('nfStages').innerHTML=STAGES.map(s=>`<button class="chip" data-s="${s.id}" aria-pressed="${nf.stage===s.id}">${s.name}</button>`).join('');
+  $('nfStages').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>nfSet(b.dataset.s)));
+  $('nfNote').textContent=STAGES.find(s=>s.id===nf.stage).note;
+  let h='';
+  for(const [name,t] of Object.entries(nf.T)){
+    const rows=t.rows.map(r=>r.map(cellHTML));
+    const ghostRows= nf.ghost&&nf.ghost.table===name ? [nf.ghost.row.map(v=>v===''?'<i>（空）</i>':esc(v))] : [];
+    h+=`<div class="tblock"><h3>表：${esc(name)}（${t.rows.length}行）</h3><div class="tw">${tableHTML(t.cols,rows.concat(ghostRows),{raw:true,keys:t.keys,
+      rowCls:i=>i>=rows.length?'ghost':(t.rowMark[i]||''), cellCls:(i,j)=>i<rows.length?(t.mark[i+','+j]||''):''})}</div></div>`;
+  }
+  $('nfTables').innerHTML=h;
+}
+function nfClear(){ for(const t of Object.values(nf.T)){ t.mark={}; t.rowMark={}; } nf.ghost=null; }
+/* 「keyCol が同じなのに valCol がちがう」セルを赤にする。矛盾があれば true */
+function nfCheck(keyCol,valCol){
+  let bad=false;
+  for(const t of Object.values(nf.T)){
+    if(t.cols.includes(keyCol)&&t.cols.includes(valCol)){
+      const ki=t.cols.indexOf(keyCol), vi=t.cols.indexOf(valCol); const seen={};
+      t.rows.forEach(r=>{ (seen[r[ki]]=seen[r[ki]]||new Set()).add(r[vi]); });
+      t.rows.forEach((r,i)=>{ if(seen[r[ki]].size>1){ bad=true; if(!t.mark[i+','+vi]) t.mark[i+','+vi]='bad'; } });
+    }
+    // 非正規形：部活のくり返しの中
+    if(nf.stage==='nf0'&&keyCol==='部活ID'){
+      const seen={}; t.rows.forEach(r=>r.forEach(v=>{ if(v&&v.multi) v.multi.forEach(x=>{ (seen[x[0]]=seen[x[0]]||new Set()).add(x[2]); }); }));
+      t.rows.forEach((r,i)=>r.forEach((v,j)=>{ if(v&&v.multi&&v.multi.some(x=>seen[x[0]].size>1)){ bad=true; t.mark[i+','+j]='bad'; } }));
+    }
+  }
+  return bad;
+}
+function countPlaces(keyCol,key,valCol){
+  let n=0;
+  for(const t of Object.values(nf.T)){
+    if(t.cols.includes(keyCol)&&t.cols.includes(valCol)){ const ki=t.cols.indexOf(keyCol); n+=t.rows.filter(r=>r[ki]===key).length; }
+    t.rows.forEach(r=>r.forEach(v=>{ if(v&&v.multi) n+=v.multi.filter(x=>x[0]===key).length; }));
+  }
+  return n;
+}
+$('actPlace').addEventListener('click',()=>{
+  nfClear();
+  const places=countPlaces('部活ID','C1','活動場所');
+  // 最初の1か所だけ書きかえる
+  let done=false;
+  for(const t of Object.values(nf.T)){
+    if(done) break;
+    if(t.cols.includes('部活ID')&&t.cols.includes('活動場所')){
+      const ki=t.cols.indexOf('部活ID'), vi=t.cols.indexOf('活動場所');
+      const i=t.rows.findIndex(r=>r[ki]==='C1'); if(i>=0){ t.rows[i][vi]='多目的室'; t.mark[i+','+vi]='chg'; done=true; }
+    } else {
+      t.rows.forEach((r,i)=>r.forEach((v,j)=>{ if(!done&&v&&v.multi){ const x=v.multi.find(x=>x[0]==='C1'); if(x){ x[2]='多目的室'; t.mark[i+','+j]='chg'; done=true; } } }));
+    }
+  }
+  const bad=nfCheck('部活ID','活動場所');
+  nfRender();
+  if(bad) nfMsg('矛盾が起きました（更新時異常）',`吹奏楽部の活動場所は、この表では <b>${places} か所</b>に書かれています。1か所だけ書きかえたので、「音楽室」と「多目的室」が混ざってしまいました（赤いセル）。正しく変えるには、${places} か所すべてを書きかえる必要があります。`,'ng');
+  else nfMsg('1か所の書きかえで済みました',`活動場所は部活の表に <b>1か所</b>しか書かれていないので、書きかえは1回で済み、矛盾は起きません。`,'ok');
+});
+$('actTeacher').addEventListener('click',()=>{
+  nfClear();
+  const places=(()=>{ let n=0; for(const t of Object.values(nf.T)){ if(t.cols.includes('組')&&t.cols.includes('担任')){ const ki=t.cols.indexOf('組'); n+=t.rows.filter(r=>r[ki]===1).length; } } return n; })();
+  for(const t of Object.values(nf.T)){
+    if(t.cols.includes('組')&&t.cols.includes('担任')){
+      const ki=t.cols.indexOf('組'), vi=t.cols.indexOf('担任'); const i=t.rows.findIndex(r=>r[ki]===1);
+      if(i>=0){ t.rows[i][vi]='佐藤'; t.mark[i+','+vi]='chg'; break; }
+    }
+  }
+  const bad=nfCheck('組','担任');
+  nfRender();
+  if(bad) nfMsg('矛盾が起きました（更新時異常）',`1組の担任は、この表では <b>${places} か所</b>に書かれています。1か所だけ書きかえたので、「山本」と「佐藤」が混ざってしまいました。`+(nf.stage==='nf2'?'<br>第2正規形でも、担任は生徒の人数分くり返し書かれています。第3正規形にすると解決します。':''),'ng');
+  else nfMsg('1か所の書きかえで済みました',`担任は組の表に <b>1か所</b>しか書かれていないので、矛盾は起きません。`,'ok');
+});
+$('actDelete').addEventListener('click',()=>{
+  nfClear();
+  let lost=false;
+  if(nf.stage==='nf0'){
+    const t=nf.T['生徒と部活']; const i=t.rows.findIndex(r=>r[0]===2101); const v=t.rows[i][4];
+    v.multi=v.multi.filter(x=>x[0]!=='C3'); t.mark[i+',4']='chg';
+    lost=!t.rows.some(r=>r[4].multi.some(x=>x[0]==='C3'));
+  } else if(nf.stage==='nf1'){
+    const t=nf.T['生徒と部活']; const i=t.rows.findIndex(r=>r[0]===2101&&r[4]==='C3'); t.rows.splice(i,1);
+    lost=!t.rows.some(r=>r[4]==='C3');
+  } else {
+    const t=nf.T['所属']; const i=t.rows.findIndex(r=>r[0]===2101&&r[1]==='C3'); t.rows.splice(i,1);
+    const k=nf.T['部活'].rows.findIndex(r=>r[0]==='C3'); nf.T['部活'].rowMark[k]='add';
+  }
+  nfRender();
+  if(lost) nfMsg('美術部の情報まで消えてしまいました（削除時異常）','美術部の部員は青木だけでした。その行を消すと、美術部という部活があることや、活動場所が美術室であることまで、表から消えてしまいます。','ng');
+  else nfMsg('部活の情報は残っています','消したのは「所属」の表の1行だけです。美術部の情報は部活の表に残っています（緑の行）。','ok');
+});
+$('actInsert').addEventListener('click',()=>{
+  nfClear();
+  if(nf.stage==='nf0'||nf.stage==='nf1'){
+    const name='生徒と部活'; const cols=nf.T[name].cols;
+    nf.ghost={table:name,row: nf.stage==='nf1'? ['','','','','C4','写真','暗室'] : ['','','','','C4・写真・暗室']};
+    nfRender();
+    nfMsg('登録できません（挿入時異常）','この表では、主キーに「学籍番号」が入っています。主キーは空にできないので、部員が1人もいない部活は登録できません（赤い行）。','ng');
+  } else {
+    nf.T['部活'].rows.push(['C4','写真','暗室']); nf.T['部活'].rowMark[nf.T['部活'].rows.length-1]='add';
+    nfRender();
+    nfMsg('登録できました','部活の表は、生徒と関係なく部活だけを記録しているので、部員がまだいなくても登録できます（緑の行）。','ok');
+  }
+});
+$('actUndo').addEventListener('click',()=>nfSet(nf.stage));
+
+/* ===== 初期化 ===== */
+$('sql').value=EXAMPLES[0].sql; runSql();
+$('examples').querySelector('button').setAttribute('aria-pressed','true');
+opsNew('生徒'); opsRender(); opsMsg('表「生徒」を選んでいます','選択・射影・結合を試してみましょう。順番を変えると、SQL 文がどう変わるかも見てみましょう。');
+nfSet('nf1');
+
+</script>
+</body>
+</html>
