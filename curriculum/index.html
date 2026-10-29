@@ -94,7 +94,7 @@
   <header>
     <p class="sitenav"><a href="/">情報ラボ</a> ＞ カリキュラム対応表</p>
     <h1>カリキュラム対応表</h1>
-    <p class="lead">学習指導要領の単元ごとに、使える教材をまとめました。</p>
+    <p class="lead">学習指導要領の単元ごとに、使える教材をまとめました。1時間ごとの授業の流れと確認問題は、<a href="/lessons/" style="color:var(--navy);font-weight:700;">情報Ⅰ 授業の進め方ガイド</a>にまとめています。</p>
   </header>
 
   <div class="tabs" role="tablist">
@@ -132,11 +132,15 @@
     <span>&copy; 2026 情報ラボ</span>
     <a href="/">ホーム</a>
     <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
     <a href="/image/">画像のデジタル化</a>
     <a href="/sound/">音のデジタル化</a>
     <a href="/vector/">ラスタとベクタ</a>
     <a href="/bitop/">画像のビット演算</a>
     <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
     <a href="/binary/">2進数・16進数</a>
     <a href="/numerr/">数の表し方と計算の誤差</a>
     <a href="/charcode/">文字コード</a>
@@ -144,22 +148,27 @@
     <a href="/parity/">パリティマジック</a>
     <a href="/computer/">コンピュータのしくみ</a>
     <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
     <a href="/algorithm/">アルゴリズム</a>
     <a href="/program/">プログラム表記を動かす</a>
     <a href="/network/">ネットワークのしくみ</a>
     <a href="/web/">Webページが表示されるまで</a>
     <a href="/mail/">電子メールのしくみ</a>
     <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
     <a href="/sql/">データベースとSQL</a>
     <a href="/simulation/">シミュレーション</a>
     <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
     <a href="/ml/">機械学習</a>
     <a href="/regression/">回帰と予測</a>
     <a href="/cluster/">クラスタリング</a>
     <a href="/stats/">統計的推測</a>
     <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
     <a href="/password/">パスワードの強さ</a>
     <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
     <a href="/phishing/">あやしいメールを見分ける</a>
     <a href="/datasize/">データ量の計算</a>
     <a href="/compress/">データ圧縮</a>
@@ -208,6 +217,14 @@ const M={
   datasize:{n:'データ量の計算',   ic:'📊'},
   compress:{n:'データ圧縮',       ic:'🗜️'},
   jpeg:    {n:'JPEGのくり返し保存',ic:'🔁'},
+  sheet:{n:'表計算のしくみ',ic:'📗'},
+  textmining:{n:'テキストマイニング',ic:'💬'},
+  sensor:{n:'計測と制御',ic:'🌡️'},
+  html:{n:'HTMLとCSS',ic:'🧱'},
+  design:{n:'情報デザイン',ic:'🎨'},
+  hash:{n:'ハッシュと電子署名',ic:'#️⃣'},
+  personal:{n:'個人情報とプライバシー',ic:'🛡️'},
+  problem:{n:'問題解決の手法',ic:'🧩'},
   copyright:{n:'著作権と知的財産',ic:'©️'},
   sql:{n:'データベースとSQL',ic:'🗃️'},
   web:{n:'Webページが表示されるまで',ic:'🔗'},
@@ -228,11 +245,12 @@ const C1=[
   {no:'(1)', t:'情報社会の問題解決', units:[
     {u:'情報やメディアの特性', d:'情報の特性、メディアの種類と特徴',
      m:[['bits',null],['datasize',null]]},
-    {u:'問題の発見・解決の方法', d:'問題解決の手順、評価と改善', m:[]},
+    {u:'問題の発見・解決の方法', d:'問題解決の手順、評価と改善、アンケート',
+     m:[['problem','アイデアを出して整理する'],['problem','原因を深掘りする'],['problem','解決策を比べる'],['problem','アンケートを作る']]},
     {u:'情報に関する法規と制度', d:'知的財産権、個人情報の保護',
-     m:[['copyright','この使い方はOK？'],['copyright','保護期間を計算'],['copyright','CCライセンスを組み立てる'],['copyright','知的財産権の種類']]},
+     m:[['copyright','この使い方はOK？'],['copyright','保護期間を計算'],['copyright','CCライセンスを組み立てる'],['copyright','知的財産権の種類'],['personal','これは個人情報？'],['personal','写真にひそむ情報'],['personal','匿名にしたつもりでも…'],['personal','ネットに出した情報は消えない']]},
     {u:'情報セキュリティ', d:'不正アクセス、認証、マルウェア対策',
-     m:[['password','強さを計算する'],['phishing','判定クイズ'],['crypto','鍵をどう渡すか']]},
+     m:[['password','強さを計算する'],['hash','パスワードの保存と二要素認証'],['phishing','判定クイズ'],['crypto','鍵をどう渡すか']]},
     {u:'情報技術が果たす役割', d:'技術の進展と社会への影響',
      m:[['sysflow','紙と電子のやり取り'],['computer',null]]}
   ]},
@@ -248,7 +266,9 @@ const C1=[
     {u:'色の表現', d:'光の三原色、色の三原色、カラーコード',
      m:[['color','RGB'],['color','混ぜ方のちがい'],['color','光で照らす'],['bitop','合成する']]},
     {u:'情報デザインと表現', d:'目的に応じた表現、ユニバーサルデザイン',
-     m:[['dataviz','グラフのわな'],['vector','使い分け']]},
+     m:[['design','色の見え方のちがい'],['design','読みやすさを測る'],['design','レイアウトの4原則'],['design','伝え方を選ぶ'],['dataviz','グラフのわな'],['vector','使い分け']]},
+    {u:'Webページとコンテンツの制作', d:'HTML・CSS、Webページの構造',
+     m:[['html','書いてすぐ見る'],['html','タグの構造を見る'],['html','CSSを試す']]},
     {u:'コミュニケーション手段', d:'メディアの特性、伝達の工夫',
      m:[['mail','届くまでの流れ']]}
   ]},
@@ -257,6 +277,8 @@ const C1=[
      m:[['computer','5つの装置'],['computer','記憶の階層'],['computer','CPUシミュレータ']]},
     {u:'演算のしくみ', d:'論理回路、2進数の演算、誤差',
      m:[['logic','基本の回路'],['logic','足し算する回路'],['logic','4ビットの足し算'],['binary',null],['numerr','負の数（2の補数）'],['numerr','小数の表し方'],['numerr','誤差を体験する']]},
+    {u:'外部装置との接続と計測・制御', d:'センサー、A/D変換、アクチュエータ、制御のプログラム',
+     m:[['sensor','センサーの値を読む'],['sensor','条件で制御する'],['sensor','プログラムで制御する'],['sensor','身の回りの計測と制御']]},
     {u:'アルゴリズムとプログラミング', d:'探索、整列、順次・分岐・反復',
      m:[['algorithm','探す（探索）'],['algorithm','並べる（整列）'],['program','プログラムを動かす'],['program','フローチャート']]},
     {u:'モデル化とシミュレーション', d:'モデルの種類、確定的モデル、乱数、確率的モデル',
@@ -266,11 +288,11 @@ const C1=[
     {u:'ネットワークのしくみ', d:'プロトコル、IPアドレス、パケット通信',
      m:[['network','IPアドレス'],['network','パケット通信'],['network','プロトコル'],['web','表示までの流れ'],['web','DNSで名前を調べる'],['web','URLとHTTP']]},
     {u:'情報セキュリティの確保', d:'暗号化、認証、電子署名',
-     m:[['crypto','鍵をどう渡すか'],['mail','なりすましと対策']]},
+     m:[['crypto','鍵をどう渡すか'],['hash','ハッシュ値を作る'],['hash','改ざんを見つける'],['hash','電子署名'],['mail','なりすましと対策']]},
     {u:'情報システムとサービス', d:'データベース、クラウド、システムの流れ',
      m:[['sysflow','電子的なやり取り'],['sysflow','データベース'],['sql','SQLで検索する'],['sql','選択・射影・結合'],['sql','正規化'],['rfid','バーコードとくらべる']]},
     {u:'データの収集・整理・分析', d:'量的・質的データ、代表値、散布図、相関',
-     m:[['dataviz','散布図と相関'],['dataviz','分布を見る']]},
+     m:[['sheet','表計算ソフトを動かす'],['sheet','相対参照と絶対参照'],['sheet','並べ替えと抽出'],['dataviz','散布図と相関'],['dataviz','分布を見る'],['textmining','ことばを数える'],['textmining','いっしょに出ることば'],['textmining','データを整える'],['textmining','オープンデータ']]},
     {u:'データの表現と解釈', d:'グラフの選択、外れ値、誤った表現',
      m:[['dataviz','グラフのわな']]},
     {u:'誤りの検出', d:'パリティビット、チェックディジット',

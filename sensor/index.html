@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>センサーとコンピュータで制御しよう（A/D変換・しきい値・ヒステリシス）｜情報ラボ</title>
+<meta name="description" content="仮想のセンサーの値をA/D変換して読み、しきい値とand・orの条件で教室の照明と換気扇を制御するシミュレーションができる無料ツール。ON/OFFのばたつきとヒステリシス、プログラムとフローチャートも確かめられます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/sensor/">
+<meta property="og:title" content="センサーとコンピュータで制御しよう｜情報ラボ">
+<meta property="og:description" content="A/D変換、しきい値、and・or、ヒステリシス。センサーの値で照明と換気扇を制御して学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/sensor/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; min-width:0;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:14px 0 8px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .row{display:flex; gap:8px 10px; flex-wrap:wrap; align-items:center;}
+  .row .lab{font-size:13.5px; font-weight:700; color:var(--ink); margin-right:2px;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  label.ck{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--ink); cursor:pointer;}
+  label.ck input{width:18px; height:18px; accent-color:var(--navy);}
+
+  .sl{margin-top:12px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy); white-space:nowrap;}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px; touch-action:pan-y;}
+  .sl.off{opacity:.45;}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+  .stats.g4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr));}
+  @media (max-width:760px){ .stats.g4{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg a{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  /* 計測の流れ */
+  .pipe{display:flex; align-items:stretch; gap:6px; flex-wrap:wrap; margin-top:14px;}
+  .pbox{flex:1 1 150px; min-width:0; background:#fff; border:2px solid var(--line); border-radius:10px; padding:8px 10px; text-align:center;}
+  .pbox .k{font-size:11.5px; color:var(--muted); font-weight:700;}
+  .pbox .v{font-family:var(--mono); font-size:18px; font-weight:700; color:var(--ink); overflow-wrap:anywhere;}
+  .pbox .s{font-size:12px; color:var(--muted); overflow-wrap:anywhere;}
+  .pbox.an{border-color:#E1C27A; background:#FFF8E7;}
+  .pbox.dg{border-color:#9FB4DA; background:#EEF3FB;}
+  .pbox.off{opacity:.4;}
+  .parr{align-self:center; color:var(--muted); font-size:18px; font-weight:700;}
+  @media (max-width:760px){ .pipe{flex-direction:column;} .pbox{flex:0 0 auto;} .parr{transform:rotate(90deg);} }
+  .bitbox{display:inline-flex; gap:2px; flex-wrap:wrap; justify-content:center;}
+  .bitbox i{font-style:normal; width:16px; height:22px; line-height:22px; border-radius:3px; background:var(--panel2); color:var(--ink); font-family:var(--mono); font-size:13px; font-weight:700;}
+  .bitbox i.on{background:var(--navy); color:#fff;}
+
+  .chartbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px 6px 4px; margin-top:12px; min-width:0;}
+  .chartbox svg{display:block; width:100%; height:auto;}
+  .chartbox h3{font-size:13.5px; color:var(--ink); margin:2px 8px 0;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin:4px 8px 4px;}
+  .legend span::before{content:""; display:inline-block; width:14px; height:4px; border-radius:2px; margin-right:5px; vertical-align:3px; background:var(--c,#2F5496);}
+
+  /* 教室 */
+  .room{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:8px;}
+  .rt{background:#fff; border:2px solid var(--line); border-radius:10px; padding:8px 10px; text-align:center; min-width:0;}
+  .rt .k{font-size:11.5px; color:var(--muted);}
+  .rt .v{font-family:var(--mono); font-size:18px; font-weight:700; color:var(--ink); overflow-wrap:anywhere;}
+  .rt .s{font-size:12px; color:var(--muted);}
+  .rt.on{border-color:var(--gold); background:#FFF3D6;}
+  .rt.fan.on{border-color:var(--navy); background:#EAF1FB;}
+  .rt.warn{border-color:var(--ng); background:#FBEDEC;}
+  .ico{font-size:24px; line-height:1.2; display:inline-block;}
+  .ico.dim{filter:grayscale(1); opacity:.35;}
+  .rt.fan.on .ico{animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .rule{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-width:0;}
+  .rule h3{margin:0 0 8px; font-size:15px; color:var(--ink);}
+  .rule .cond{font-family:var(--mono); font-size:13.5px; background:var(--panel); border-radius:6px; padding:6px 10px; margin-top:10px; overflow-wrap:anywhere;}
+  .scroll{overflow-x:auto; max-width:100%;}
+  table.tb{border-collapse:collapse; width:100%; font-size:13.5px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top;}
+  table.tb th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+  table.tb td.n{font-family:var(--mono); text-align:right; white-space:nowrap;}
+
+  /* プログラム */
+  .code{background:#fff; border:1px solid var(--line); border-radius:10px; overflow-x:auto; max-width:100%;}
+  .code ol{margin:0; padding:8px 0; list-style:none; counter-reset:ln; min-width:max-content;}
+  .code li{counter-increment:ln; font-family:var(--mono); font-size:13.5px; line-height:1.75; white-space:pre; padding:0 14px 0 0;}
+  .code li::before{content:counter(ln); display:inline-block; width:2.6em; padding-right:.8em; text-align:right; color:#8A93A3; user-select:none;}
+  .code li.cm{color:#5B7A5B;}
+  .code li.hl{background:#FFE9A8;}
+  .flow{background:#fff; border:1px solid var(--line); border-radius:10px; overflow:auto; max-height:900px; padding:6px; max-width:100%;}
+  .flow svg{display:block; margin:0 auto; max-width:none;}
+  .flow .fb{fill:#fff; stroke:#1F3864; stroke-width:1.6;}
+  .flow .fb.term{fill:#E7ECF5;}
+  .flow .fb.dec{fill:#FFF8E7;}
+  .flow .fb.loop{fill:#EAF1FB;}
+  .flow .fb.io{fill:#EAF5EE;}
+  .flow .fb.hit{fill:#FFD45E;}
+  .flow .fl{stroke:#1F3864; stroke-width:1.5; fill:none;}
+  .flow .ft{font-family:var(--mono); font-size:13px; fill:#1c2430;}
+  .flow .ft.yn{font-size:12px; fill:#5B6472;}
+  .vars{font-family:var(--mono);}
+  .vars td.chg{background:#FFE9A8; font-weight:700;}
+
+  /* 身の回り */
+  .flowmini{display:flex; gap:6px; align-items:stretch; flex-wrap:wrap;}
+  .flowmini div{flex:1 1 120px; min-width:0; background:#fff; border:2px solid var(--line); border-radius:10px; padding:8px 10px; text-align:center; font-size:13.5px;}
+  .flowmini b{display:block; color:var(--ink); font-size:14.5px;}
+  .flowmini .a{flex:0 0 auto; border:none; background:none; align-self:center; color:var(--muted); font-weight:700; padding:0;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); gap:12px;}
+  .card{background:#fff; border:2px solid var(--line); border-radius:12px; padding:12px 14px; min-width:0;}
+  .card h3{margin:0 0 4px; font-size:16px; color:var(--ink);}
+  .card .q{font-size:12.5px; color:var(--muted); margin:8px 0 4px; font-weight:700;}
+  .card .opts{display:flex; flex-wrap:wrap; gap:6px;}
+  .card .opts button{text-align:left; border-radius:10px; padding:7px 11px;}
+  .card .opts button.right{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .card .opts button.wrong{background:var(--ng); border-color:var(--ng); color:#fff;}
+  .card .opts button:disabled{opacity:.55;}
+  .card .opts button.right:disabled,.card .opts button.wrong:disabled{opacity:1;}
+  @media (max-width:760px){ .flowmini{flex-direction:column;} .flowmini div{flex:0 0 auto;} .flowmini .a{transform:rotate(90deg);} }
+  .card .ex{display:none; margin-top:10px; font-size:13.5px; background:var(--panel); border-radius:8px; padding:8px 10px;}
+  .card.done .ex{display:block;}
+  .card.done.good{border-color:var(--ok);}
+  .card.done.bad{border-color:var(--ng);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px;}
+  .article pre{font-family:var(--mono); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:14px; line-height:1.7; overflow:auto; margin:0 0 14px; max-width:100%;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px; overflow-x:auto;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 計測と制御</p>
+    <h1>センサーとコンピュータで制御しよう</h1>
+    <p class="lead">センサーで量をはかり、コンピュータが条件で判断して、照明や換気扇を動かします。センサーの値の読み方から、制御のルールづくり、プログラムまでを順に確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabRead" aria-selected="true" aria-controls="toolRead">センサーの値を読む</button>
+    <button class="tab" role="tab" id="tabCtl" aria-selected="false" aria-controls="toolCtl">条件で制御する</button>
+    <button class="tab" role="tab" id="tabProg" aria-selected="false" aria-controls="toolProg">プログラムで制御する</button>
+    <button class="tab" role="tab" id="tabLife" aria-selected="false" aria-controls="toolLife">身の回りの計測と制御</button>
+  </div>
+
+  <!-- ===== センサーの値を読む ===== -->
+  <section class="tool show" id="toolRead" role="tabpanel" aria-labelledby="tabRead">
+    <div class="panel">
+      <h2>仮想のセンサーを選び、まわりのようすを変えて、コンピュータに届く値を見ます</h2>
+      <div class="row">
+        <span class="lab">センサー</span>
+        <button class="chip" data-sens="light" aria-pressed="true">明るさセンサー</button>
+        <button class="chip" data-sens="temp" aria-pressed="false">温度センサー</button>
+        <button class="chip" data-sens="pir" aria-pressed="false">人感センサー</button>
+      </div>
+      <div id="rdAnalogUI">
+        <div class="sl">
+          <div class="top"><label for="rdEnv" id="rdEnvL">まわりの明るさ</label><span class="val" id="rdEnvV">420 lx</span></div>
+          <input type="range" id="rdEnv" min="0" max="1000" step="1" value="420">
+        </div>
+        <div class="row" id="rdPresets" style="margin-top:6px;"></div>
+      </div>
+      <div id="rdPirUI" class="row" style="margin-top:12px; display:none;">
+        <button class="chip" id="rdPirIn" aria-pressed="false">人が部屋に入る</button>
+        <button class="chip" id="rdPirOut" aria-pressed="true">人が部屋から出る</button>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <span class="lab">A/D変換のビット数</span>
+        <button class="chip" data-bits="4" aria-pressed="false">4ビット</button>
+        <button class="chip" data-bits="8" aria-pressed="true">8ビット</button>
+        <button class="chip" data-bits="10" aria-pressed="false">10ビット</button>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="rdRec">記録を止める</button>
+        <button class="chip" id="rdClear">記録を消す</button>
+        <label class="ck"><input type="checkbox" id="rdNoise" checked>センサーの小さなゆらぎ（ノイズ）を入れる</label>
+      </div>
+      <p class="hint" id="rdSpec"></p>
+    </div>
+
+    <div class="pipe" aria-live="polite">
+      <div class="pbox an"><div class="k" id="pK1">まわりの明るさ</div><div class="v" id="pV1">–</div><div class="s">本当の量</div></div>
+      <div class="parr" aria-hidden="true">→</div>
+      <div class="pbox an" id="pB2"><div class="k">センサーの出力（アナログ）</div><div class="v" id="pV2">–</div><div class="s">連続的に変わる電圧</div></div>
+      <div class="parr" aria-hidden="true">→</div>
+      <div class="pbox dg" id="pB3"><div class="k" id="pK3">A/D変換（8ビット）</div><div class="v" id="pV3">–</div><div class="s" id="pS3"></div></div>
+      <div class="parr" aria-hidden="true">→</div>
+      <div class="pbox dg"><div class="k">コンピュータが換算した値</div><div class="v" id="pV4">–</div><div class="s" id="pS4"></div></div>
+    </div>
+
+    <div class="stats">
+      <div class="stt"><div class="k">段階の数（2<sup>n</sup>）</div><div class="v" id="rsLv">–</div></div>
+      <div class="stt"><div class="k">1段階の幅</div><div class="v" id="rsStep">–</div></div>
+      <div class="stt"><div class="k">換算した値と本当の量の差</div><div class="v" id="rsErr">–</div></div>
+      <div class="stt"><div class="k">記録した回数</div><div class="v" id="rsN">0</div></div>
+    </div>
+
+    <div class="chartbox">
+      <h3 id="rdChartT">時間の変化（0.25秒ごとに読み取り）</h3>
+      <div class="legend" id="rdLegend"></div>
+      <svg id="rdChart" viewBox="0 0 640 260" role="img" aria-label="センサーの値の時間変化のグラフ"></svg>
+    </div>
+    <div class="msg" id="rdMsg"></div>
+  </section>
+
+  <!-- ===== 条件で制御する ===== -->
+  <section class="tool" id="toolCtl" role="tabpanel" aria-labelledby="tabCtl">
+    <div class="panel">
+      <h2>架空の教室で、照明と換気扇を動かすルールを決め、1日（8:00〜18:00）を早送りで動かします</h2>
+      <div class="two">
+        <div class="rule">
+          <h3>💡 照明のルール</h3>
+          <div class="row" id="lMode">
+            <button class="chip" data-v="and" aria-pressed="true">人がいる かつ 暗い</button>
+            <button class="chip" data-v="or" aria-pressed="false">人がいる または 暗い</button>
+            <button class="chip" data-v="hito" aria-pressed="false">人がいる</button>
+            <button class="chip" data-v="dark" aria-pressed="false">暗い</button>
+            <button class="chip" data-v="always" aria-pressed="false">一日中ON</button>
+          </div>
+          <div class="sl" id="lXw">
+            <div class="top"><label for="lX">「暗い」＝明るさがこれより小さい</label><span class="val" id="lXv">300 lx</span></div>
+            <input type="range" id="lX" min="100" max="600" step="10" value="300">
+          </div>
+          <div class="row" style="margin-top:8px;"><label class="ck"><input type="checkbox" id="lHy">OFFにするしきい値を分ける（ヒステリシス）</label></div>
+          <div class="sl off" id="lDw">
+            <div class="top"><label for="lD">OFFにするのは、明るさが（ONのしきい値＋この差）を超えたとき</label><span class="val" id="lDv">+100 lx</span></div>
+            <input type="range" id="lD" min="20" max="300" step="10" value="100" disabled>
+          </div>
+          <div class="cond" id="lCond"></div>
+        </div>
+        <div class="rule">
+          <h3>🌀 換気扇のルール</h3>
+          <div class="row" id="fMode">
+            <button class="chip" data-v="th" aria-pressed="true">CO2 がしきい値を超えたらON</button>
+            <button class="chip" data-v="always" aria-pressed="false">一日中ON</button>
+            <button class="chip" data-v="none" aria-pressed="false">使わない</button>
+          </div>
+          <div class="sl" id="fYw">
+            <div class="top"><label for="fY">ONにするしきい値（CO2 の濃度）</label><span class="val" id="fYv">1000 ppm</span></div>
+            <input type="range" id="fY" min="600" max="1500" step="50" value="1000">
+          </div>
+          <div class="row" style="margin-top:8px;"><label class="ck"><input type="checkbox" id="fHy">OFFにするしきい値を分ける（ヒステリシス）</label></div>
+          <div class="sl off" id="fDw">
+            <div class="top"><label for="fD">OFFにするのは、CO2 が（ONのしきい値−この差）より下がったとき</label><span class="val" id="fDv">−200 ppm</span></div>
+            <input type="range" id="fD" min="50" max="400" step="50" value="200" disabled>
+          </div>
+          <div class="cond" id="fCond"></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <span class="lab">センサーを読む間隔</span>
+        <button class="chip" data-iv="1" aria-pressed="true">1分ごと</button>
+        <button class="chip" data-iv="5" aria-pressed="false">5分ごと</button>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <button class="primary" id="cPlay">▶ 早送りで動かす</button>
+        <button class="chip" id="cEnd">一気に18:00まで</button>
+        <button class="chip" id="cReset">8:00にもどす</button>
+        <button class="chip" id="cSpd" aria-pressed="false">もっと速く</button>
+      </div>
+      <p class="hint">教室・時間割・明るさ・人数はすべて架空です。CO2 の 1000 ppm は、建築物衛生法の建築物環境衛生管理基準（二酸化炭素の含有率 100万分の1000以下）の値です。学校の教室には、別に学校環境衛生基準（1500 ppm 以下であることが望ましい）があります。</p>
+    </div>
+
+    <div class="room" aria-live="off">
+      <div class="rt"><div class="k">時刻</div><div class="v" id="rmT">8:00</div><div class="s" id="rmP">登校前</div></div>
+      <div class="rt"><div class="k">人感センサー</div><div class="v" id="rmH">0</div><div class="s" id="rmN">0人</div></div>
+      <div class="rt"><div class="k">明るさセンサー</div><div class="v" id="rmL">–</div><div class="s">lx（窓からの光）</div></div>
+      <div class="rt" id="rmCw"><div class="k">CO2 センサー</div><div class="v" id="rmC">–</div><div class="s">ppm</div></div>
+      <div class="rt" id="rmLw"><div class="k">照明</div><div class="ico dim" id="rmLi" aria-hidden="true">💡</div><div class="v" id="rmLs">OFF</div></div>
+      <div class="rt fan" id="rmFw"><div class="k">換気扇</div><div class="ico dim" id="rmFi" aria-hidden="true">🌀</div><div class="v" id="rmFs">OFF</div></div>
+    </div>
+
+    <div class="two">
+      <div class="chartbox">
+        <h3>明るさと照明</h3>
+        <div class="legend"><span style="--c:#C49A2B">明るさ（センサーの値）</span><span style="--c:#C00000">しきい値</span></div>
+        <svg id="cChartL" viewBox="0 0 640 300" role="img" aria-label="明るさと照明のON/OFFのグラフ"></svg>
+      </div>
+      <div class="chartbox">
+        <h3>CO2 と換気扇</h3>
+        <div class="legend"><span style="--c:#2F5496">CO2（センサーの値）</span><span style="--c:#C00000">しきい値</span></div>
+        <svg id="cChartC" viewBox="0 0 640 300" role="img" aria-label="CO2の濃度と換気扇のON/OFFのグラフ"></svg>
+      </div>
+    </div>
+
+    <div class="stats g4">
+      <div class="stt"><div class="k">消費電力量（照明＋換気扇）</div><div class="v" id="csE">–</div></div>
+      <div class="stt"><div class="k">照明のON時間</div><div class="v" id="csLon">–</div></div>
+      <div class="stt"><div class="k">換気扇のON時間</div><div class="v" id="csFon">–</div></div>
+      <div class="stt"><div class="k">照明の切りかえ回数</div><div class="v" id="csLsw">–</div></div>
+      <div class="stt"><div class="k">換気扇の切りかえ回数</div><div class="v" id="csFsw">–</div></div>
+      <div class="stt"><div class="k">人がいるのに CO2 が 1000 ppm 超</div><div class="v" id="csOver">–</div></div>
+      <div class="stt"><div class="k">人がいて暗いのに照明OFF</div><div class="v" id="csDark">–</div></div>
+      <div class="stt"><div class="k">だれもいないのに照明ON</div><div class="v" id="csWaste">–</div></div>
+    </div>
+    <div class="msg" id="cMsg"></div>
+
+    <div class="panel" style="margin-top:16px; background:#fff;">
+      <h2>ルールを変えて比べる</h2>
+      <div class="row"><button class="chip" id="cSave">いまの結果（18:00まで）を表に残す</button><button class="chip" id="cClr">表を消す</button></div>
+      <div class="scroll" style="margin-top:10px;">
+        <table class="tb" id="cTbl"><thead><tr><th>照明のルール</th><th>換気扇のルール</th><th>間隔</th><th>電力量</th><th>切りかえ<br>照明／換気扇</th><th>CO2超</th><th>暗いのにOFF</th><th>無人でON</th></tr></thead><tbody></tbody></table>
+      </div>
+      <p class="hint">シミュレーションの仮定：教室の容積 180 m³、生徒1人が出す CO2 は 1時間に 0.015 m³、外の空気の CO2 は 420 ppm、すきま風などによる換気は 1時間に部屋の空気1回分、換気扇はさらに6回分、照明は 400 W、換気扇は 40 W。センサーの値には小さなゆらぎがあります（毎回同じゆらぎを使うので、ルールどうしを公平に比べられます）。どれもこのページで決めた値で、実際の教室の測定値ではありません。</p>
+    </div>
+  </section>
+
+  <!-- ===== プログラムで制御する ===== -->
+  <section class="tool" id="toolProg" role="tabpanel" aria-labelledby="tabProg">
+    <div class="panel">
+      <h2>「条件で制御する」で決めたルールを、共通テスト用プログラム表記とフローチャートで表します</h2>
+      <p class="hint" style="margin-top:0;">ルールを変えると、ここも書きかわります。センサーの値を読み、「もし〜ならば」で判断し、結果を照明と換気扇に送る、という処理を繰り返す形です。書き方の決まりは <a href="/program/">プログラム表記を動かす</a> の「書き方の一覧」と同じです。</p>
+      <div class="sl">
+        <div class="top"><label for="pT">1回分の処理をたどる時刻</label><span class="val" id="pTv">8:00</span></div>
+        <input type="range" id="pT" min="480" max="1079" step="1" value="600">
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button class="chip" id="pPrev">‹ 1回前</button>
+        <button class="chip" id="pNext">1回後 ›</button>
+        <button class="chip" id="pFind">次に切りかわる時刻へ</button>
+      </div>
+    </div>
+    <div class="two">
+      <div style="min-width:0;">
+        <div class="code"><ol id="pCode"></ol></div>
+        <h3 style="font-size:14px;color:var(--ink);margin:14px 0 6px;">この時刻の変数の値（黄色はこの1回で変わったもの）</h3>
+        <div class="scroll"><table class="tb vars" id="pVars"></table></div>
+        <h3 style="font-size:14px;color:var(--ink);margin:14px 0 6px;">このプログラムで使う関数</h3>
+        <div class="scroll"><table class="tb">
+          <tr><th>人感センサーの値()</th><td>人がいれば 1、いなければ 0 を返す</td></tr>
+          <tr><th>明るさセンサーの値()</th><td>明るさ（lx）を整数で返す</td></tr>
+          <tr><th>CO2センサーの値()</th><td>CO2 の濃度（ppm）を整数で返す</td></tr>
+          <tr><th>照明に送る(x)</th><td>x が 1 なら照明をつけ、0 なら消す</td></tr>
+          <tr><th>換気扇に送る(x)</th><td>x が 1 なら換気扇を回し、0 なら止める</td></tr>
+          <tr><th>待つ(m)</th><td>m 分間、何もしないで待つ</td></tr>
+        </table></div>
+        <p class="hint">共通テストでは、このような関数は問題文で説明されます。ここでは、この表の説明に従います。</p>
+      </div>
+      <div style="min-width:0;">
+        <div class="flow" id="pFlow"></div>
+        <p class="hint">ひし形は分岐、上下の角を落とした形は繰り返しの始まりと終わり、平行四辺形は入力と出力です。黄色は、選んだ時刻の1回分で通った記号です。</p>
+      </div>
+    </div>
+    <div class="msg" id="pMsg"></div>
+  </section>
+
+  <!-- ===== 身の回りの計測と制御 ===== -->
+  <section class="tool" id="toolLife" role="tabpanel" aria-labelledby="tabLife">
+    <div class="panel">
+      <h2>身の回りの機器を「センサー → 処理 → アクチュエータ（動かすもの・出力）」の組で整理します</h2>
+      <div class="flowmini">
+        <div><b>センサー</b>まわりの量をはかり、電気の信号にする</div>
+        <div class="a" aria-hidden="true">→</div>
+        <div><b>処理（コンピュータ）</b>しきい値や目標と比べて、どう動かすかを決める</div>
+        <div class="a" aria-hidden="true">→</div>
+        <div><b>アクチュエータ・出力</b>モーターなどを動かしたり、表示したりする</div>
+      </div>
+      <p class="hint">それぞれの機器で、使われているセンサーと、動かすもの（出力）を選んでください。2つとも選ぶと、処理の説明が出ます。</p>
+      <div class="stats" style="margin-top:10px;">
+        <div class="stt"><div class="k">正解</div><div class="v ok" id="qOk">0</div></div>
+        <div class="stt"><div class="k">答えた数</div><div class="v" id="qN">0 / 12</div></div>
+      </div>
+      <div class="row" style="margin-top:10px;"><button class="chip" id="qReset">もう一度</button></div>
+    </div>
+    <div class="cards" id="qCards"></div>
+    <div class="msg" id="qMsg"><div class="t">6つの機器を整理しましょう</div>どの機器も、センサーで「いまの状態」をはかり、コンピュータが判断して、アクチュエータを動かしています。</div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>計測と制御とは</h2>
+    <p>センサーなどの装置を使って、明るさや温度などの量をはかることを<strong>計測</strong>といいます。そして、ある目的の状態にするために、モーターなどの装置を動かすことを<strong>制御</strong>といいます。たとえばエアコンは、室温を計測し、設定した温度に近づくように運転を制御しています。</p>
+    <p>コンピュータを使った計測では、センサーから得たデータを<strong>入力ポート</strong>（入力端子）からコンピュータに取りこみます。制御では、コンピュータが判断した結果を<strong>出力ポート</strong>（出力端子）から送り、アクチュエータを動かします。この「センサー → 処理 → アクチュエータ」の流れの中で、データはプログラムによって処理されています。プログラムは、順次・分岐・反復の3つの基本構造の組み合わせでできています。</p>
+
+    <h2>センサーとアクチュエータ</h2>
+    <p><strong>センサー</strong>（センサとも書きます）は、光・温度・動き・距離などの自然界の量を、人間や装置が扱いやすい電気の信号に置きかえる装置です。<strong>アクチュエータ</strong>は、コンピュータが決めた内容を、動きなどの物理的なはたらきに変える装置で、さまざまなモーターが代表です。</p>
+    <table>
+      <tr><th>センサー</th><th>はかるもの</th><th>使われている例</th></tr>
+      <tr><td>温度センサー</td><td>温度</td><td>冷蔵庫、エアコン</td></tr>
+      <tr><td>湿度センサー</td><td>空気の湿り気</td><td>エアコン</td></tr>
+      <tr><td>加速度センサー</td><td>傾きや動き</td><td>スマートフォン</td></tr>
+      <tr><td>赤外線センサー</td><td>赤外線の信号</td><td>リモコン（テレビなどが信号を受け取る部分）</td></tr>
+      <tr><td>カメラ・レーダーなど</td><td>前や後ろの障害物</td><td>自動車</td></tr>
+    </table>
+    <p>アクチュエータの動きは、まっすぐ動く<strong>直進運動</strong>と、回る<strong>回転運動</strong>に分けられます。DCモーターは車輪のように回り続ける動きに、サーボモーターはロボットの関節のように決めた角度まで回す動きに使われます。動力には電気のほか、油圧（建設機械のシリンダなど）や空気圧もあります。</p>
+
+    <h3>デジタル型とアナログ型</h3>
+    <p>人感センサーのように「いる・いない」の2つの状態だけを返すセンサーは<strong>デジタル型</strong>で、その信号をそのまま 1 と 0 として入力できます。一方、明るさや温度のように連続的に変わる量を、電圧の大きさで表すセンサーは<strong>アナログ型</strong>です。アナログの信号をコンピュータが扱うには、次の A/D 変換が必要です。</p>
+
+    <h2>A/D変換とD/A変換</h2>
+    <p><strong>A/D変換</strong>（アナログ・デジタル変換）は、連続的に変わる電圧を、決まった数の段階に区切り、どの段階に入るかを整数で表す処理です。区切る段階の数はビット数で決まり、n ビットなら 2<sup>n</sup> 段階になります。</p>
+    <div class="formula">1段階の幅 ＝ 測れる範囲 ÷ 2<sup>n</sup>　　　デジタル値 ＝ 切り捨て（電圧 ÷ 基準の電圧 × 2<sup>n</sup>）</div>
+    <p>このページの仮想の明るさセンサーは、0〜1000 lx（ルクス、明るさの単位）を 0〜3.3 V の電圧に変えると決めています。これを 4 ビットで読むと 16 段階で、1段階は 62.5 lx です。8 ビットなら 256 段階で約 3.9 lx、10 ビットなら 1024 段階で約 0.98 lx になります。1段階より小さな変化は同じ値になってしまうので、ビット数が多いほど細かく計測できます。「センサーの値を読む」で 4 ビットを選ぶと、グラフが階段のようになるのはこのためです。</p>
+    <p>これは、<a href="/sound/">音のデジタル化</a>で学ぶ<strong>量子化</strong>と同じ考え方です。音では量子化ビット数が音質を決めましたが、計測ではビット数がはかれる細かさ（分解能）を決めます。また、決まった時間ごとに値を読む「記録の間隔」は、音の<strong>標本化</strong>にあたります。</p>
+    <p>センサーから入力した値は、そのままでは「何段階目か」を表す整数です。プログラムの中で、センサーの特性に合わせた計算式を使って、温度などの量に換算する必要があります。ただし教育用のプログラミング言語には、温度などを直接得られる命令が用意されていることもあります。</p>
+    <p>反対に、コンピュータが出した数値を電圧に戻す処理が<strong>D/A変換</strong>です。モーターの回る速さを少しずつ変えるなど、アナログ型のアクチュエータを動かすときに使います。</p>
+
+    <h2>条件で制御する：しきい値と論理演算</h2>
+    <p>「明るさが 300 lx より小さければ暗い」のように、判断の境目にする値を<strong>しきい値</strong>といいます。複数の条件は、and（かつ）や or（または）で組み合わせます。</p>
+    <table>
+      <tr><th>人がいる</th><th>暗い</th><th>人がいる かつ 暗い</th><th>人がいる または 暗い</th></tr>
+      <tr><td>いる</td><td>暗い</td><td>ON</td><td>ON</td></tr>
+      <tr><td>いる</td><td>明るい</td><td>OFF</td><td>ON</td></tr>
+      <tr><td>いない</td><td>暗い</td><td>OFF</td><td>ON</td></tr>
+      <tr><td>いない</td><td>明るい</td><td>OFF</td><td>OFF</td></tr>
+    </table>
+    <p>この表は、<a href="/logic/">論理回路</a>の AND と OR の真理値表と同じ形です。「または」にすると、だれもいない夕方の教室でも照明がつき、電力のむだになります。「かつ」にすると、必要なときだけつけられます。「条件で制御する」で、だれもいないのに照明がついていた時間を比べてください。</p>
+
+    <h2>ON/OFF がばたつく問題とヒステリシス</h2>
+    <p>しきい値を1つだけにすると、センサーの値がしきい値の近くで小さく上下するたびに、ON と OFF が細かく切りかわります。これを<strong>ばたつき</strong>（チャタリング）といいます。雲が出たり消えたりする日の照明や、CO2 がしきい値の近くにある換気扇がそうなります。何度も切りかわると、使う人にとってわずらわしいだけでなく、機器の負担にもなります。</p>
+    <p>そこで、ONにするしきい値と OFF にするしきい値を分けます。たとえば「CO2 が 1000 ppm を超えたら換気扇をつけ、800 ppm より下がったら止める」とすると、800〜1000 ppm の間では前の状態を続けるので、切りかえの回数が大きく減ります。このように、状態によって切りかえの境目を変えるしくみを<strong>ヒステリシス</strong>といいます。センサーを読む間隔を長くしても切りかえは減りますが、その間は変化に気づけないので、反応がおそくなります。</p>
+
+    <h2>フィードバック制御</h2>
+    <p>換気扇を回すと CO2 が減り、減った値をまたセンサーがはかって、次に換気扇をどうするかを決めます。このように、制御した結果を計測し、目標とのずれをもとに次の操作を決めるやり方を<strong>フィードバック制御</strong>といいます。</p>
+    <h3>ON/OFF 制御と比例制御</h3>
+    <p>このページの照明や換気扇は、つけるか消すかの2通りだけを選ぶ <strong>ON/OFF 制御</strong>です。しくみが簡単な反面、値が目標の上下を行ったり来たりします。これに対して、目標とのずれの大きさに応じて操作の強さを変えるのが<strong>比例制御</strong>です。</p>
+    <div class="formula">操作の強さ ＝ 比例の係数 ×（目標の値 − 計測した値）</div>
+    <p>たとえば換気扇の回る速さを、CO2 がしきい値をどれだけ超えたかに比例させれば、ずれが大きいときは強く、目標に近づくと弱く運転できます。速さを少しずつ変えるには、D/A変換のような、連続的な出力が必要になります。実際の機器では、これにさらに工夫を加えた制御が使われることもあります。</p>
+
+    <h2>プログラムで書く</h2>
+    <p>「プログラムで制御する」では、決めたルールを共通テスト用プログラム表記で表しています。センサーの値を読む → もし〜ならば で判断する → 照明と換気扇に送る → 少し待つ、という処理を繰り返す形です。ヒステリシスを入れると「そうでなくもし」が加わり、どちらの条件にも当てはまらないときは変数を変えない（前の状態を続ける）ことが、プログラムの形からも読み取れます。時刻を選ぶと、その1回でどの行を実行したかが黄色で表示されます。トレース表で変数の動きを追う練習は、<a href="/program/">プログラム表記を動かす</a>でもできます。</p>
+
+    <h2>マイコンボードでの実習につなげる</h2>
+    <p>実際にセンサーを使ってみるには、教育用のマイコンボードが便利です。マイコンボードは、小さなコンピュータ（マイクロコントローラ）にセンサーや入出力の端子を付けた板です。たとえば <strong>micro:bit</strong> は、イギリスで教育用に作られたマイコンボードで、ボタン、明るさのセンサー（LED の表示部を光センサーとして使う）、温度センサー、加速度センサー、方位（コンパス）のセンサーを持ち、新しい版（V2）にはマイクも付いています。出力には 5×5 の LED 表示があり、V2 にはスピーカーもあります。</p>
+    <p>micro:bit のプログラムを作れる Microsoft MakeCode では、明るさを 0（暗い）から 255（明るい）の数で得られます。256 段階なので、8 ビットで表せる範囲です。また、端子につないだアナログのセンサーは 0 から 1023 の数で読み取れます。1024 段階なので、10 ビットで表せる範囲です。「センサーの値を読む」の 8 ビットと 10 ビットは、この段階の数にあたります。</p>
+    <p>実習では、たとえば「暗くなったら LED を光らせる」「温度がしきい値を超えたら音を鳴らす」といったプログラムを作り、しきい値を1つにした場合とヒステリシスを入れた場合で、手で光をさえぎったときのふるまいを比べると、このページの体験とつながります。</p>
+
+    <h2>IoT（モノのインターネット）</h2>
+    <p>さまざまなモノが、センサーと無線通信を通してインターネットの一部になることを <strong>IoT</strong>（Internet of Things、モノのインターネット）といいます。センサーの値をインターネットに送れば、離れた場所から教室の CO2 の変化を見たり、たくさんの部屋のデータを集めて分析したりできます。一方で、インターネットにつながる機器は不正アクセスのねらいにもなるので、初期のパスワードを変える、ソフトウェアを更新するなどの対策が欠かせません。</p>
+
+    <h2>センサーの限界を知る</h2>
+    <p>制御は、センサーが正しく計測できる範囲でしか働きません。国土交通省は、自動車の衝突被害軽減ブレーキについて、カメラやレーダーで周囲を監視し、衝突のおそれがあれば警報で運転者にブレーキ操作をうながし、それでも衝突を避けられないと判断したときに自動でブレーキをかける装置だと説明しています。そのうえで、機能には限界があり、故障していなくても状況によっては作動しないことがあると注意をうながしています。計測と制御のしくみを知ることは、こうした機器を正しく使うことにもつながります。</p>
+    <p>CO2 の基準について補足します。建築物衛生法（建築物における衛生的環境の確保に関する法律）の建築物環境衛生管理基準では、空気調和設備のある居室の二酸化炭素の含有率を 100万分の1000以下（1000 ppm 以下）としています。学校の教室については、学校保健安全法にもとづく学校環境衛生基準で、換気の基準として二酸化炭素は 1500 ppm 以下であることが望ましいとされています。このページでは、しきい値の初めの値と評価の目安に 1000 ppm を使っています。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>センサーの値を読む</strong>：センサーを選び、スライダーやボタンでまわりのようすを変えます。センサーの電圧が A/D 変換でどんな整数になるか、ビット数を変えるとグラフの細かさがどう変わるかを確かめます。人感センサーは、A/D 変換のいらないデジタル型です。</li>
+      <li><strong>条件で制御する</strong>：照明と換気扇のルール、しきい値、ヒステリシス、センサーを読む間隔を決めて「早送りで動かす」を押します。18:00 まで進めたら「表に残す」で、ルールごとの電力量や切りかえ回数を比べます。</li>
+      <li><strong>プログラムで制御する</strong>：決めたルールのプログラムとフローチャートを見ます。時刻を選ぶと、その1回で実行した行と変数の値が分かります。</li>
+      <li><strong>身の回りの計測と制御</strong>：6つの機器について、センサーと動かすものを選び、処理の説明を読みます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L26">26. 計測と制御</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>文部科学省「高等学校情報科『情報Ⅰ』教員研修用教材（本編）」第3章 学習12「外部装置との接続」https://www.mext.go.jp/a_menu/shotou/zyouhou/detail/1416756.htm（第3章 PDF：https://www.mext.go.jp/content/20200722-mxt_jogai02-100013300_005.pdf）</li>
+      <li>厚生労働省「建築物環境衛生管理基準について」https://www.mhlw.go.jp/bunya/kenkou/seikatsu-eisei10/</li>
+      <li>文部科学省「学校環境衛生基準」（平成21年文部科学省告示第60号）https://www.mext.go.jp/content/20230817-mext_kenshoku-100000613_1.pdf</li>
+      <li>国土交通省 報道発表資料「『衝突被害軽減ブレーキがあれば、安心』ではありません。」（令和元年12月17日）https://www.mlit.go.jp/report/press/jidosha08_hh_003585.html</li>
+      <li>総務省「平成27年版 情報通信白書」ユビキタスからIoTへ https://www.soumu.go.jp/johotsusintokei/whitepaper/ja/h27/html/nc254110.html</li>
+      <li>Micro:bit Educational Foundation, "Overview" https://microbit.org/get-started/features/overview/</li>
+      <li>Microsoft MakeCode for micro:bit, "light level" https://makecode.microbit.org/reference/input/light-level</li>
+      <li>Microsoft MakeCode for micro:bit, "analog read pin" https://makecode.microbit.org/reference/pins/analog-read-pin</li>
+      <li>大学入試センター「令和7年度大学入学共通テスト 試作問題『情報』の概要」（共通テスト用プログラム表記の例示）https://www.dnc.ac.jp/albums/abm.php?d=744&amp;f=abm00003141.pdf</li>
+    </ul>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const pad2=n=>String(n).padStart(2,'0');
+const fmtT=t=>`${Math.floor(t/60)}:${pad2(t%60)}`;
+const fmtHM=m=>`${Math.floor(m/60)}時間${pad2(m%60)}分`;
+const minus=s=>String(s).replace(/-/g,'−');
+function pressGroup(btns,on){ btns.forEach(b=>b.setAttribute('aria-pressed',String(b===on))); }
+
+/* ===== タブ ===== */
+const TABS=[['tabRead','toolRead'],['tabCtl','toolCtl'],['tabProg','toolProg'],['tabLife','toolLife']];
+TABS.forEach(([tid])=>{
+  $(tid).addEventListener('click',()=>{
+    TABS.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+    if(tid==='tabCtl') cDraw();
+    if(tid==='tabProg') pDraw();
+  });
+});
+
+/* ===================== センサーの値を読む ===================== */
+const VREF=3.3;
+const SENS={
+  light:{qty:'まわりの明るさ',unit:'lx',min:0,max:1000,step:1,init:420,noise:2.5,dec:0,
+    presets:[['手でおおう',15],['カーテンを閉める',140],['カーテンを開ける',620],['窓ぎわで日が当たる',960]],
+    spec:'仮想の明るさセンサー：0〜1000 lx を 0〜3.3 V の電圧に変える（と決めています）。'},
+  temp:{qty:'まわりの温度',unit:'℃',min:-10,max:50,step:0.1,init:22,noise:0.08,dec:1,
+    presets:[['保冷剤を近づける',3],['室温にもどす',22],['手でにぎる',33],['ドライヤーの風',46]],
+    spec:'仮想の温度センサー：−10〜50 ℃ を 0〜3.3 V の電圧に変える（と決めています）。'},
+  pir:{qty:'部屋の人',digital:true,spec:'仮想の人感センサー：人がいれば 1、いなければ 0 を出す、デジタル型のセンサーです。'}
+};
+const rd={type:'light',bits:8,env:420,target:420,pir:0,hist:[],rec:true,count:0,timer:0};
+const HMAX=80;
+function sp(){ return SENS[rd.type]; }
+function fmtQ(v,s){ s=s||sp(); return minus((s.dec?v.toFixed(s.dec):Math.round(v).toString()))+' '+s.unit; }
+function toV(phys){ const s=sp(); return Math.max(0,Math.min(VREF,(phys-s.min)/(s.max-s.min)*VREF)); }
+function adc(v,bits){ const L=2**bits; return Math.min(L-1,Math.floor(v/VREF*L)); }
+function back(code,bits){ const s=sp(); return s.min+code*(s.max-s.min)/2**bits; }
+function rdSetType(t){
+  rd.type=t; rd.hist=[]; rd.count=0;
+  document.querySelectorAll('[data-sens]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sens===t)));
+  const s=sp();
+  $('rdAnalogUI').style.display=s.digital?'none':'';
+  $('rdPirUI').style.display=s.digital?'':'none';
+  document.querySelectorAll('[data-bits]').forEach(b=>b.disabled=!!s.digital);
+  $('rdNoise').disabled=!!s.digital;
+  $('pB2').classList.toggle('off',!!s.digital);
+  if(!s.digital){
+    const r=$('rdEnv'); r.min=s.min; r.max=s.max; r.step=s.step; r.value=s.init;
+    rd.env=rd.target=s.init;
+    $('rdEnvL').textContent=s.qty;
+    $('rdPresets').innerHTML=s.presets.map(([n,v])=>`<button class="chip" data-pv="${v}">${n}</button>`).join('');
+    $('rdPresets').querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>{ rd.target=+b.dataset.pv; if(!rd.rec){ rd.env=rd.target; $('rdEnv').value=rd.env; rdSample(); } }));
+  }
+  $('rdSpec').textContent=s.spec+(s.digital?'':' 読み取りの値には、小さなゆらぎ（ノイズ）を加えています。');
+  rdSample(); rdDraw();
+}
+function rdSample(){
+  const s=sp();
+  if(s.digital){ rd.hist.push({d:rd.pir}); }
+  else{
+    if(rd.rec && rd.env!==rd.target){ const df=rd.target-rd.env; rd.env = Math.abs(df)<s.step? rd.target : rd.env+df*0.3; $('rdEnv').value=rd.env; }
+    const nz=$('rdNoise').checked? (Math.random()*2-1)*s.noise : 0;
+    const phys=Math.max(s.min,Math.min(s.max,rd.env+nz));
+    rd.hist.push({p:phys});
+  }
+  if(rd.hist.length>HMAX) rd.hist.shift();
+  rd.count++;
+}
+function rdDraw(){
+  const s=sp(), last=rd.hist[rd.hist.length-1];
+  $('rsN').textContent=rd.count;
+  if(s.digital){
+    $('pK1').textContent='部屋の人'; $('pV1').textContent=rd.pir?'いる':'いない';
+    $('pV2').textContent='（なし）';
+    $('pK3').textContent='デジタル型の出力';
+    $('pV3').innerHTML=`<span class="bitbox"><i class="${rd.pir?'on':''}">${rd.pir}</i></span>`;
+    $('pS3').textContent='A/D変換はいらない';
+    $('pV4').textContent=rd.pir?'1（いる）':'0（いない）'; $('pS4').textContent='そのまま使える';
+    $('rsLv').textContent='2'; $('rsStep').textContent='–'; $('rsErr').textContent='–';
+    $('rdEnvV').textContent='';
+    const m=$('rdMsg'); m.className='msg';
+    m.innerHTML=`<div class="t">人感センサーは、1 か 0 だけを出すデジタル型のセンサーです</div>「いる・いない」の2つの状態しかないので、電圧の大きさを段階に分ける A/D 変換はいりません。入力ポートから 1 と 0 をそのまま読み取れます。明るさや温度のように連続的に変わる量をはかるアナログ型のセンサーとくらべてみましょう。`;
+    rdChart(); return;
+  }
+  const phys=last.p, v=toV(phys), n=rd.bits, L=2**n, code=adc(v,n), bk=back(code,n), step=(s.max-s.min)/L;
+  $('rdEnvV').textContent=fmtQ(rd.env);
+  $('pK1').textContent=s.qty; $('pV1').textContent=fmtQ(phys);
+  $('pV2').textContent=v.toFixed(3)+' V';
+  $('pK3').textContent=`A/D変換（${n}ビット）`;
+  $('pV3').textContent=code;
+  $('pS3').innerHTML=`<span class="bitbox">${code.toString(2).padStart(n,'0').split('').map(b=>`<i class="${b==='1'?'on':''}">${b}</i>`).join('')}</span>`;
+  $('pV4').textContent=fmtQ(bk,{dec:s.dec?2:1,unit:s.unit});
+  $('pS4').textContent=`${s.min!==0?minus(s.min)+' ＋ ':''}${code} × ${fmtStep(step)}`;
+  $('rsLv').textContent=L.toLocaleString();
+  $('rsStep').textContent=fmtStep(step)+' '+s.unit;
+  $('rsErr').textContent=(phys-bk).toFixed(s.dec?2:1)+' '+s.unit;
+  const m=$('rdMsg'); m.className='msg';
+  const what=rd.type==='light'?'明るさ':'温度';
+  let b=`${fmtQ(phys)} のとき、センサーは ${v.toFixed(3)} V を出します。${n}ビットの A/D 変換は 0〜3.3 V を ${L.toLocaleString()} 段階に区切るので、この電圧は ${code} 段階目（2進数で ${code.toString(2).padStart(n,'0')}）になります。`;
+  if(n===4) b+=`<br>4ビットでは1段階が <b>${fmtStep(step)} ${s.unit}</b> もあるので、それより小さな${what}の変化は同じ値になり、グラフは階段のようになります。`;
+  else if(n===8) b+=`<br>1段階は <b>${fmtStep(step)} ${s.unit}</b> です。4ビットや10ビットに切りかえて、グラフの細かさを比べましょう。`;
+  else b+=`<br>10ビットでは1段階が <b>${fmtStep(step)} ${s.unit}</b> まで小さくなり、センサーの小さなゆらぎ（ノイズ）まで読み取れるようになります。細かいほど、ノイズの影響も見えてくることに注意しましょう。`;
+  b+=` ビット数で細かさが決まるのは、<a href="/sound/">音のデジタル化</a>の量子化ビット数と同じ考え方です。`;
+  m.innerHTML=`<div class="t">${n}ビット：${L.toLocaleString()} 段階で、${code} と読み取りました</div>${b}`;
+  rdChart();
+}
+function fmtStep(st){ return st>=10? (+st.toFixed(2)).toString() : st>=1? (+st.toFixed(3)).toString() : (+st.toFixed(4)).toString(); }
+function rdChart(){
+  const svg=$('rdChart'), s=sp(), W=640,H=260,l=56,r=14,t=24,b=34;
+  const X=i=>l+i/(HMAX-1)*(W-l-r);
+  let h='';
+  if(s.digital){
+    const Y=v=>t+(1-v)*(H-t-b-20)+10;
+    [0,1].forEach(v=>{ h+=`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="#E3E8F0"/><text x="${l-8}" y="${Y(v)+4}" font-size="12" fill="#5B6472" text-anchor="end">${v}</text>`; });
+    let p=''; rd.hist.forEach((q,i)=>{ const x=X(i), y=Y(q.d); p+= i? `L${x.toFixed(1)} ${Y(rd.hist[i-1].d).toFixed(1)}L${x.toFixed(1)} ${y.toFixed(1)}` : `M${x.toFixed(1)} ${y.toFixed(1)}`; });
+    if(p) h+=`<path d="${p}" fill="none" stroke="#2F5496" stroke-width="2.5"/>`;
+    h+=`<text x="${(l+W-r)/2}" y="${H-6}" font-size="12" fill="#5B6472" text-anchor="middle">← 古い　　　時間（0.25秒ごと）　　　新しい →</text>`;
+    svg.innerHTML=h;
+    $('rdLegend').innerHTML='<span style="--c:#2F5496">人感センサーの出力（1 か 0）</span>';
+    $('rdChartT').textContent='時間の変化（0.25秒ごとに読み取り）';
+    return;
+  }
+  const Y=v=>t+(s.max-v)/(s.max-s.min)*(H-t-b);
+  const n=rd.bits, L=2**n, step=(s.max-s.min)/L;
+  if(n<=4){ for(let k=0;k<=L;k++){ const y=Y(s.min+k*step); h+=`<line x1="${l}" x2="${W-r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#EEF1F6"/>`; } }
+  const ticks= rd.type==='light'? [0,200,400,600,800,1000] : [-10,0,10,20,30,40,50];
+  ticks.forEach(v=>{ h+=`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v===s.min?'#9AA6BC':'#DCE2EC'}"/><text x="${l-8}" y="${Y(v)+4}" font-size="12" fill="#5B6472" text-anchor="end">${minus(v)}</text>`; });
+  h+=`<text x="${l-8}" y="${t-12}" font-size="11" fill="#5B6472" text-anchor="end">${s.unit}</text>`;
+  let pa='', pd='';
+  rd.hist.forEach((q,i)=>{
+    const x=X(i).toFixed(1);
+    pa+=(i?'L':'M')+x+' '+Y(q.p).toFixed(1);
+    const bk=back(adc(toV(q.p),n),n), y=Y(bk).toFixed(1);
+    if(!i) pd='M'+x+' '+y; else { pd+=`L${x} ${Y(back(adc(toV(rd.hist[i-1].p),n),n)).toFixed(1)}L${x} ${y}`; }
+  });
+  if(pa){ h+=`<path d="${pa}" fill="none" stroke="#C49A2B" stroke-width="2" opacity=".9"/>`; h+=`<path d="${pd}" fill="none" stroke="#2F5496" stroke-width="2.5"/>`; }
+  h+=`<text x="${(l+W-r)/2}" y="${H-6}" font-size="12" fill="#5B6472" text-anchor="middle">← 古い　　　時間（0.25秒ごと）　　　新しい →</text>`;
+  svg.innerHTML=h;
+  $('rdLegend').innerHTML=`<span style="--c:#C49A2B">本当の量（アナログ）</span><span style="--c:#2F5496">${n}ビットで読み取って換算した値</span>`;
+  $('rdChartT').textContent=`時間の変化（0.25秒ごとに読み取り。ビット数を変えると、記録した分も描き直します）`;
+}
+function rdTick(){ if(!rd.rec) return; rdSample(); if($('toolRead').classList.contains('show')) rdDraw(); }
+document.querySelectorAll('[data-sens]').forEach(b=>b.addEventListener('click',()=>rdSetType(b.dataset.sens)));
+document.querySelectorAll('[data-bits]').forEach(b=>b.addEventListener('click',()=>{
+  pressGroup(document.querySelectorAll('[data-bits]'),b); rd.bits=+b.dataset.bits; rdDraw();
+}));
+$('rdEnv').addEventListener('input',e=>{ rd.env=rd.target=+e.target.value; if(!rd.rec){ rdSample(); } rdDraw(); });
+$('rdPirIn').addEventListener('click',()=>{ rd.pir=1; pressGroup([$('rdPirIn'),$('rdPirOut')],$('rdPirIn')); if(!rd.rec) rdSample(); rdDraw(); });
+$('rdPirOut').addEventListener('click',()=>{ rd.pir=0; pressGroup([$('rdPirIn'),$('rdPirOut')],$('rdPirOut')); if(!rd.rec) rdSample(); rdDraw(); });
+$('rdRec').addEventListener('click',()=>{ rd.rec=!rd.rec; $('rdRec').textContent=rd.rec?'記録を止める':'記録を再開する'; });
+$('rdClear').addEventListener('click',()=>{ rd.hist=[]; rd.count=0; rdSample(); rdDraw(); });
+$('rdNoise').addEventListener('change',()=>{ if(!rd.rec){ rdSample(); } rdDraw(); });
+
+/* ===================== 条件で制御する（シミュレーション） ===================== */
+const T0=480, T1=1080, NSTEP=T1-T0;
+const SCHED=[[480,510,0,'登校前'],[510,530,30,'朝のHR'],[530,540,30,'休み時間'],[540,590,30,'1時間目'],[590,600,30,'休み時間'],
+  [600,650,30,'2時間目'],[650,660,0,'移動（体育へ）'],[660,710,0,'3時間目（体育館で体育）'],[710,720,30,'休み時間'],[720,770,30,'4時間目'],
+  [770,815,30,'昼休み'],[815,865,30,'5時間目'],[865,875,30,'休み時間'],[875,925,30,'6時間目'],[925,945,30,'掃除・帰りのHR'],
+  [945,1000,5,'放課後（自習）'],[1000,1050,0,'下校後'],[1050,1060,1,'先生の見回り'],[1060,1080,0,'下校後']];
+function sched(t){ for(const s of SCHED) if(t>=s[0]&&t<s[1]) return s; return SCHED[SCHED.length-1]; }
+function smooth(a,b,x){ const u=Math.max(0,Math.min(1,(x-a)/(b-a))); return u*u*(3-2*u); }
+function daylight(t){
+  const base=900*Math.max(0,Math.sin(Math.PI*(t-360)/720));
+  const cloud=smooth(800,815,t)*(1-smooth(870,885,t));
+  const f=1-0.62*cloud;
+  const amp=12+48*cloud;
+  const fl=amp*(0.6*Math.sin(t*0.9)+0.4*Math.sin(t*2.3+1));
+  return Math.max(0,base*f+fl);
+}
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const VOL=180, GEN=0.015, CO=420, ACH0=1, ACHF=6, PW_L=400, PW_F=40, CO2STD=1000, DARK=300;
+const R={lmode:'and',X:300,lhy:false,lD:100,fmode:'th',Y:1000,fhy:false,fD:200,iv:1};
+const LNAME={and:'人がいる かつ 暗い',or:'人がいる または 暗い',hito:'人がいる',dark:'暗い',always:'一日中ON'};
+function lOn(h,a){ return R.lmode==='and'? (h===1&&a<R.X) : R.lmode==='or'? (h===1||a<R.X) : R.lmode==='hito'? h===1 : a<R.X; }
+function lOff(h,a){ const Z=R.X+R.lD; return R.lmode==='and'? (h===0||a>Z) : R.lmode==='or'? (h===0&&a>Z) : a>Z; }
+function lHyOn(){ return R.lhy && R.lmode!=='hito' && R.lmode!=='always'; }
+function fHyOn(){ return R.fhy && R.fmode==='th'; }
+function decideL(h,a,prev){
+  if(R.lmode==='always') return {v:1,br:'c'};
+  if(lOn(h,a)) return {v:1,br:'a'};
+  if(lHyOn()) return lOff(h,a)? {v:0,br:'b'} : {v:prev,br:'n'};
+  return {v:0,br:'b'};
+}
+function decideF(c,prev){
+  if(R.fmode==='always') return {v:1,br:'c'};
+  if(R.fmode==='none') return {v:0,br:'c'};
+  if(c>R.Y) return {v:1,br:'a'};
+  if(fHyOn()) return c<R.Y-R.fD? {v:0,br:'b'} : {v:prev,br:'n'};
+  return {v:0,br:'b'};
+}
+let SIM=null;
+function runSim(){
+  const rnd=mulberry32(20261029);
+  const S={t:[],N:[],day:[],aR:[],co2:[],cR:[],hR:[],L:[],F:[],ctl:[],prevL:[],prevF:[],brL:[],brF:[]};
+  let C=CO, Ls=0, Fs=0;
+  for(let i=0;i<NSTEP;i++){
+    const t=T0+i, N=sched(t)[2], day=daylight(t);
+    const aR=Math.max(0,Math.round(day+(rnd()*2-1)*10));
+    const cR=Math.round(C+(rnd()*2-1)*15);
+    const hR=N>0?1:0;
+    const ctl=(i%R.iv)===0;
+    S.prevL.push(Ls); S.prevF.push(Fs);
+    let bl='-', bf='-';
+    if(ctl){ const dl=decideL(hR,aR,Ls), df=decideF(cR,Fs); Ls=dl.v; Fs=df.v; bl=dl.br; bf=df.br; }
+    S.t.push(t); S.N.push(N); S.day.push(day); S.aR.push(aR); S.co2.push(C); S.cR.push(cR); S.hR.push(hR);
+    S.L.push(Ls); S.F.push(Fs); S.ctl.push(ctl); S.brL.push(bl); S.brF.push(bf);
+    const ach=ACH0+(Fs?ACHF:0);
+    C += (1/60)*(GEN*N/VOL*1e6 + ach*(CO-C));
+  }
+  SIM=S;
+}
+function simStats(k){
+  const S=SIM; let lon=0,fon=0,lsw=0,fsw=0,over=0,dark=0,waste=0,lshort=0,fshort=0,lrun=0,frun=0;
+  for(let i=0;i<k;i++){
+    if(S.L[i]) lon++; if(S.F[i]) fon++;
+    const pl=i?S.L[i-1]:0, pf=i?S.F[i-1]:0;
+    // A state that lasted 2 minutes or less before switching again counts as flapping.
+    if(S.L[i]!==pl){ lsw++; if(i>0&&lrun<=2&&lsw>1) lshort++; lrun=1; } else lrun++;
+    if(S.F[i]!==pf){ fsw++; if(i>0&&frun<=2&&fsw>1) fshort++; frun=1; } else frun++;
+    if(S.N[i]>0 && S.co2[i]>CO2STD) over++;
+    if(S.N[i]>0 && S.day[i]<DARK && !S.L[i]) dark++;
+    if(S.N[i]===0 && S.L[i]) waste++;
+  }
+  const kwh=(lon*PW_L+fon*PW_F)/60/1000;
+  return {lon,fon,lsw,fsw,over,dark,waste,kwh,lshort,fshort};
+}
+const cs={k:1,playing:false,raf:0,last:0,acc:0,fast:false};
+function rulesChanged(){
+  cStop(); runSim(); cs.k=1; condText(); cDraw(); cMsgStart();
+  if($('toolProg').classList.contains('show')) pDraw(); else pNeed=true;
+}
+let pNeed=true;
+function condText(){
+  let l;
+  if(R.lmode==='always') l='照明 ＝ 一日中 ON';
+  else{
+    const on={and:`人がいる かつ 明るさ ＜ ${R.X}`,or:`人がいる または 明るさ ＜ ${R.X}`,hito:'人がいる',dark:`明るさ ＜ ${R.X}`}[R.lmode];
+    l=`ON：${on}`;
+    if(lHyOn()){ const Z=R.X+R.lD; l+=`<br>OFF：${{and:`人がいない または 明るさ ＞ ${Z}`,or:`人がいない かつ 明るさ ＞ ${Z}`,dark:`明るさ ＞ ${Z}`}[R.lmode]}<br>どちらでもない：そのまま`; }
+    else l+='<br>OFF：それ以外';
+  }
+  $('lCond').innerHTML=l;
+  let f;
+  if(R.fmode==='always') f='換気扇 ＝ 一日中 ON'; else if(R.fmode==='none') f='換気扇 ＝ 一日中 OFF';
+  else { f=`ON：CO2 ＞ ${R.Y}`; f+= fHyOn()? `<br>OFF：CO2 ＜ ${R.Y-R.fD}<br>どちらでもない：そのまま` : '<br>OFF：それ以外'; }
+  $('fCond').innerHTML=f;
+  const lx=R.lmode==='hito'||R.lmode==='always';
+  $('lXw').classList.toggle('off',lx); $('lX').disabled=lx;
+  $('lHy').disabled=lx; $('lDw').classList.toggle('off',!lHyOn()); $('lD').disabled=!lHyOn();
+  const fx=R.fmode!=='th';
+  $('fYw').classList.toggle('off',fx); $('fY').disabled=fx;
+  $('fHy').disabled=fx; $('fDw').classList.toggle('off',!fHyOn()); $('fD').disabled=!fHyOn();
+}
+function cDraw(){
+  const S=SIM, k=cs.k, i=k-1, t=S.t[i], sc=sched(t);
+  const fin=k>=NSTEP;
+  $('rmT').textContent=fin?'18:00':fmtT(t); $('rmP').textContent=fin?'終了':sc[3];
+  $('rmH').textContent=S.hR[i]; $('rmN').textContent=S.N[i]+'人';
+  $('rmL').textContent=S.aR[i]; $('rmC').textContent=S.cR[i];
+  $('rmCw').classList.toggle('warn',S.co2[i]>CO2STD);
+  const L=S.L[i], F=S.F[i];
+  $('rmLw').classList.toggle('on',!!L); $('rmLi').classList.toggle('dim',!L); $('rmLs').textContent=L?'ON':'OFF';
+  $('rmFw').classList.toggle('on',!!F); $('rmFi').classList.toggle('dim',!F); $('rmFs').textContent=F?'ON':'OFF';
+  const st=simStats(k);
+  $('csE').textContent=st.kwh.toFixed(2)+' kWh';
+  $('csLon').textContent=fmtHM(st.lon); $('csFon').textContent=fmtHM(st.fon);
+  $('csLsw').textContent=st.lsw+' 回'; $('csFsw').textContent=st.fsw+' 回';
+  $('csOver').textContent=st.over+' 分'; $('csDark').textContent=st.dark+' 分'; $('csWaste').textContent=st.waste+' 分';
+  $('csLsw').className='v'+(st.lshort>=5?' ng':''); $('csFsw').className='v'+(st.fshort>=5?' ng':'');
+  $('csOver').className='v'+(st.over>0?' ng':' ok'); $('csDark').className='v'+(st.dark>0?' ng':' ok'); $('csWaste').className='v'+(st.waste>0?' ng':' ok');
+  cChart('L'); cChart('C');
+  $('cPlay').textContent= cs.playing? '❚❚ 一時停止' : (k>=NSTEP? '▶ もう一度動かす' : '▶ 早送りで動かす');
+}
+function cChart(which){
+  const S=SIM, k=cs.k, svg=$(which==='L'?'cChartL':'cChartC');
+  const W=640,H=300,l=62,r=12,t=26,pb=200;
+  const X=tt=>l+(tt-T0)/NSTEP*(W-l-r);
+  const ymin= which==='L'?0:400, ymax= which==='L'?1000:3000;
+  const Y=v=>t+(ymax-Math.max(ymin,Math.min(ymax,v)))/(ymax-ymin)*(pb-t);
+  let h='';
+  const ticks= which==='L'? [0,200,400,600,800,1000] : [400,1000,1500,2000,2500,3000];
+  ticks.forEach(v=>{ h+=`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v===ymin?'#9AA6BC':'#E3E8F0'}"/><text x="${l-6}" y="${Y(v)+4}" font-size="11.5" fill="#5B6472" text-anchor="end">${v}</text>`; });
+  h+=`<text x="${l-6}" y="${t-14}" font-size="10.5" fill="#5B6472" text-anchor="end">${which==='L'?'lx':'ppm'}</text>`;
+  for(let hh=8;hh<=18;hh+=2){ const x=X(hh*60); h+=`<line x1="${x}" x2="${x}" y1="${t}" y2="${H-22}" stroke="#F0F2F6"/><text x="${x}" y="${H-6}" font-size="11.5" fill="#5B6472" text-anchor="middle">${hh}時</text>`; }
+  // しきい値
+  if(which==='L' && R.lmode!=='hito' && R.lmode!=='always'){
+    h+=`<line x1="${l}" x2="${W-r}" y1="${Y(R.X)}" y2="${Y(R.X)}" stroke="#C00000" stroke-width="1.6"/><text x="${W-r-2}" y="${Y(R.X)+14}" font-size="11" fill="#C00000" text-anchor="end">ON ＜ ${R.X}</text>`;
+    if(lHyOn()){ const Z=R.X+R.lD; h+=`<line x1="${l}" x2="${W-r}" y1="${Y(Z)}" y2="${Y(Z)}" stroke="#C00000" stroke-width="1.4" stroke-dasharray="6 4"/><text x="${W-r-2}" y="${Y(Z)-5}" font-size="11" fill="#C00000" text-anchor="end">OFF ＞ ${Z}</text>`; }
+  }
+  if(which==='C'){
+    h+=`<line x1="${l}" x2="${W-r}" y1="${Y(CO2STD)}" y2="${Y(CO2STD)}" stroke="#C49A2B" stroke-width="1.4" stroke-dasharray="2 3"/><text x="${l+4}" y="${Y(CO2STD)-5}" font-size="11" fill="#8A6A1A">1000 ppm（建築物衛生法の基準）</text>`;
+    if(R.fmode==='th'){
+      h+=`<line x1="${l}" x2="${W-r}" y1="${Y(R.Y)}" y2="${Y(R.Y)}" stroke="#C00000" stroke-width="1.6"/><text x="${W-r-2}" y="${Y(R.Y)-5}" font-size="11" fill="#C00000" text-anchor="end">ON ＞ ${R.Y}</text>`;
+      if(fHyOn()){ const Z=R.Y-R.fD; h+=`<line x1="${l}" x2="${W-r}" y1="${Y(Z)}" y2="${Y(Z)}" stroke="#C00000" stroke-width="1.4" stroke-dasharray="6 4"/><text x="${W-r-2}" y="${Y(Z)+14}" font-size="11" fill="#C00000" text-anchor="end">OFF ＜ ${Z}</text>`; }
+    }
+  }
+  // 値
+  const arr= which==='L'? S.aR : S.cR;
+  let p=''; for(let i=0;i<k;i++){ p+=(i?'L':'M')+X(S.t[i]).toFixed(1)+' '+Y(arr[i]).toFixed(1); }
+  h+=`<path d="${p}" fill="none" stroke="${which==='L'?'#C49A2B':'#2F5496'}" stroke-width="1.8"/>`;
+  // 帯
+  const bands=[['人がいる',S.N.map(n=>n>0?1:0),'#9AA6BC'],[which==='L'?'照明ON':'換気扇ON',which==='L'?S.L:S.F,which==='L'?'#C49A2B':'#2F5496']];
+  bands.forEach(([name,a,col],j)=>{
+    const y0=pb+12+j*26, bh=16;
+    h+=`<rect x="${l}" y="${y0}" width="${W-l-r}" height="${bh}" fill="#F4F6FA"/>`;
+    let i=0; while(i<k){ if(a[i]){ let j2=i; while(j2<k&&a[j2]) j2++; h+=`<rect x="${X(S.t[i]).toFixed(1)}" y="${y0}" width="${Math.max(0.8,X(S.t[i]+(j2-i))-X(S.t[i])).toFixed(1)}" height="${bh}" fill="${col}"/>`; i=j2; } else i++; }
+    h+=`<text x="${l-6}" y="${y0+12}" font-size="10.5" fill="#5B6472" text-anchor="end">${name}</text>`;
+  });
+  // いまの時刻
+  if(k<NSTEP){ const x=X(S.t[k-1]); h+=`<line x1="${x}" x2="${x}" y1="${t}" y2="${pb+64}" stroke="#1F3864" stroke-width="1" stroke-dasharray="3 3"/>`; }
+  svg.innerHTML=h;
+}
+function cMsgStart(){
+  const m=$('cMsg'); m.className='msg';
+  m.innerHTML=`<div class="t">ルールを決めたら「早送りで動かす」を押してください</div>8:00 から 18:00 までを1分ずつ進めます。人感センサー・明るさセンサー・CO2 センサーの値を読み、決めたルールで照明と換気扇を ON/OFF します。`;
+}
+function cMsgEnd(){
+  const st=simStats(NSTEP), m=$('cMsg');
+  let t, b='', cls='msg';
+  const flap=Math.max(st.lshort,st.fshort)>=5;
+  if(flap){
+    cls='msg ng';
+    t=`${st.lshort>=st.fshort?'照明':'換気扇'}の ON と OFF が、数分のうちに何度も入れかわりました（ばたつき）`;
+    b=`切りかえは 照明 ${st.lsw} 回、換気扇 ${st.fsw} 回です。`;
+    b+=`しきい値が1つだと、センサーの値がしきい値の近くで上下するたびに ON と OFF が入れかわります。グラフで、帯が細かく切れている時間を見てください。`+
+      `「OFFにするしきい値を分ける（ヒステリシス）」にチェックを入れるか、センサーを読む間隔を 5 分にして、もう一度動かしてみましょう。`;
+  } else {
+    t=`18:00 までの消費電力量は ${st.kwh.toFixed(2)} kWh でした`;
+    b=`切りかえは 照明 ${st.lsw} 回、換気扇 ${st.fsw} 回で、数分ごとに入れかわるような、ばたつきはありません。`;
+    if(lHyOn()||fHyOn()) b+='ヒステリシスを入れたので、しきい値の近くでも前の状態を続け、切りかえが少なくなっています。';
+    if(R.iv===5) b+='センサーを読む間隔を 5 分にしたので切りかえは減りますが、そのぶん変化に気づくのがおくれます。';
+    cls= (st.over||st.dark||st.waste)? 'msg' : 'msg ok';
+  }
+  const bad=[];
+  if(st.over) bad.push(`人がいるのに CO2 が 1000 ppm を超えた時間が <b>${st.over}分</b>`);
+  if(st.dark) bad.push(`人がいて暗いのに照明が消えていた時間が <b>${st.dark}分</b>`);
+  if(st.waste) bad.push(`だれもいないのに照明がついていた時間が <b>${st.waste}分</b>`);
+  if(bad.length) b+='<br>'+bad.join('、')+' ありました。';
+  if(R.fmode==='th' && st.over) b+= R.Y>CO2STD? ' しきい値を 1000 ppm より高くすると、換気扇が回り始める前に基準を超えてしまいます。' : ' しきい値を基準と同じ値にすると、CO2 は基準のあたりを行ったり来たりします。基準を超えないようにするには、ONのしきい値を基準より低めにします。';
+  if(R.fmode==='none') b+=' 換気扇を使わないと、人がいる間 CO2 は上がり続けます。';
+  if(R.lmode==='or'||R.lmode==='dark'||R.lmode==='always') b+=' 「人がいる かつ 暗い」とくらべて、むだな点灯がどれだけ減るか確かめましょう。';
+  b+=' 「表に残す」で、ルールごとの結果を並べて比べられます。';
+  m.className=cls; m.innerHTML=`<div class="t">${t}</div>${b}`;
+}
+function cStep(now){
+  if(!cs.playing) return;
+  const dt=Math.min(0.1,(now-cs.last)/1000); cs.last=now;
+  cs.acc+=dt*(cs.fast?60:15);
+  const adv=Math.floor(cs.acc); cs.acc-=adv;
+  if(adv>0){ cs.k=Math.min(NSTEP,cs.k+adv); cDraw(); }
+  if(cs.k>=NSTEP){ cStop(); cDraw(); cMsgEnd(); return; }
+  cs.raf=requestAnimationFrame(cStep);
+}
+function cStop(){ cs.playing=false; cancelAnimationFrame(cs.raf); }
+$('cPlay').addEventListener('click',()=>{
+  if(cs.playing){ cStop(); cDraw(); return; }
+  if(cs.k>=NSTEP){ cs.k=1; }
+  cs.playing=true; cs.last=performance.now(); cs.acc=0;
+  const m=$('cMsg'); m.className='msg'; m.innerHTML='<div class="t">動かしています…</div>グラフの帯が、照明・換気扇が ON だった時間です。';
+  cDraw(); cs.raf=requestAnimationFrame(cStep);
+});
+$('cEnd').addEventListener('click',()=>{ cStop(); cs.k=NSTEP; cDraw(); cMsgEnd(); });
+$('cReset').addEventListener('click',()=>{ cStop(); cs.k=1; cDraw(); cMsgStart(); });
+$('cSpd').addEventListener('click',()=>{ cs.fast=!cs.fast; $('cSpd').setAttribute('aria-pressed',String(cs.fast)); });
+function bindMode(id,key){
+  const bs=$(id).querySelectorAll('button');
+  bs.forEach(b=>b.addEventListener('click',()=>{ pressGroup(bs,b); R[key]=b.dataset.v; rulesChanged(); }));
+}
+bindMode('lMode','lmode'); bindMode('fMode','fmode');
+document.querySelectorAll('[data-iv]').forEach(b=>b.addEventListener('click',()=>{ pressGroup(document.querySelectorAll('[data-iv]'),b); R.iv=+b.dataset.iv; $('pT').step=R.iv; rulesChanged(); }));
+$('lX').addEventListener('input',e=>{ R.X=+e.target.value; $('lXv').textContent=R.X+' lx'; rulesChanged(); });
+$('lD').addEventListener('input',e=>{ R.lD=+e.target.value; $('lDv').textContent='+'+R.lD+' lx'; rulesChanged(); });
+$('fY').addEventListener('input',e=>{ R.Y=+e.target.value; $('fYv').textContent=R.Y+' ppm'; rulesChanged(); });
+$('fD').addEventListener('input',e=>{ R.fD=+e.target.value; $('fDv').textContent='−'+R.fD+' ppm'; rulesChanged(); });
+$('lHy').addEventListener('change',e=>{ R.lhy=e.target.checked; rulesChanged(); });
+$('fHy').addEventListener('change',e=>{ R.fhy=e.target.checked; rulesChanged(); });
+function ruleLabel(){
+  let l=LNAME[R.lmode]; if(R.lmode!=='hito'&&R.lmode!=='always') l+=`（${R.X} lx）`; if(lHyOn()) l+=` OFF＞${R.X+R.lD}`;
+  let f= R.fmode==='th'? `CO2＞${R.Y}`+(fHyOn()?` OFF＜${R.Y-R.fD}`:'') : R.fmode==='always'?'一日中ON':'使わない';
+  return [l,f];
+}
+$('cSave').addEventListener('click',()=>{
+  const st=simStats(NSTEP), [l,f]=ruleLabel(), tb=$('cTbl').tBodies[0];
+  if(tb.rows.length>=10) tb.deleteRow(0);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${esc(l)}</td><td>${esc(f)}</td><td class="n">${R.iv}分</td><td class="n">${st.kwh.toFixed(2)} kWh</td><td class="n">${st.lsw}／${st.fsw}</td><td class="n">${st.over}分</td><td class="n">${st.dark}分</td><td class="n">${st.waste}分</td>`;
+  tb.appendChild(tr);
+});
+$('cClr').addEventListener('click',()=>{ $('cTbl').tBodies[0].innerHTML=''; });
+
+/* ===================== プログラムで制御する ===================== */
+function lightCondTxt(){ return {and:`hito == 1 and akarusa < ${R.X}`,or:`hito == 1 or akarusa < ${R.X}`,hito:'hito == 1',dark:`akarusa < ${R.X}`}[R.lmode]; }
+function lightOffTxt(){ const Z=R.X+R.lD; return {and:`hito == 0 or akarusa > ${Z}`,or:`hito == 0 and akarusa > ${Z}`,dark:`akarusa > ${Z}`}[R.lmode]; }
+function genProg(){
+  const L=[]; const add=(s,c)=>{ L.push({s,c:!!c}); return L.length-1; };
+  const G={};
+  add('# 架空の教室の照明と換気扇を、センサーの値で制御する',1);
+  G.init=[add('jikoku = 480     # 8時0分（0時からの分）'),add(`kankaku = ${R.iv}      # センサーを読む間隔（分）`),add('syomei = 0       # 照明 0:OFF 1:ON'),add('kanki = 0        # 換気扇 0:OFF 1:ON')];
+  G.loop=add('jikoku < 1080 の間繰り返す:');
+  G.read=[add('│ hito = 人感センサーの値()'),add('│ akarusa = 明るさセンサーの値()'),add('│ co2 = CO2センサーの値()')];
+  if(R.lmode==='always') G.l={k:'c',a:add('│ syomei = 1')};
+  else if(lHyOn()) G.l={k:'elif',i:add(`│ もし ${lightCondTxt()} ならば:`),a:add('│ │ syomei = 1'),e:add(`│ そうでなくもし ${lightOffTxt()} ならば:`),b:add('│ ⎿ syomei = 0')};
+  else G.l={k:'else',i:add(`│ もし ${lightCondTxt()} ならば:`),a:add('│ │ syomei = 1'),e:add('│ そうでなければ:'),b:add('│ ⎿ syomei = 0')};
+  if(R.fmode==='always') G.f={k:'c',a:add('│ kanki = 1')};
+  else if(R.fmode==='none') G.f={k:'c',a:add('│ kanki = 0')};
+  else if(fHyOn()) G.f={k:'elif',i:add(`│ もし co2 > ${R.Y} ならば:`),a:add('│ │ kanki = 1'),e:add(`│ そうでなくもし co2 < ${R.Y-R.fD} ならば:`),b:add('│ ⎿ kanki = 0')};
+  else G.f={k:'else',i:add(`│ もし co2 > ${R.Y} ならば:`),a:add('│ │ kanki = 1'),e:add('│ そうでなければ:'),b:add('│ ⎿ kanki = 0')};
+  G.out=[add('│ 照明に送る(syomei)'),add('│ 換気扇に送る(kanki)'),add('│ 待つ(kankaku)')];
+  G.inc=add('⎿ jikoku = jikoku + kankaku');
+  return {L,G};
+}
+function execLines(G,brL,brF){
+  const s=new Set([G.loop,...G.read,...G.out,G.inc]);
+  const blk=(g,br)=>{
+    if(g.k==='c'){ s.add(g.a); return; }
+    s.add(g.i);
+    if(br==='a') s.add(g.a);
+    else { s.add(g.e); if(br==='b') s.add(g.b); }
+  };
+  blk(G.l,brL); blk(G.f,brF);
+  return s;
+}
+/* フローチャート */
+const FC={BH:40,GAP:20,LH:17};
+function tw(s){ let w=0; for(const ch of s) w+= /[\x20-\x7e]/.test(ch)? 7.9 : 13.2; return w; }
+function txtLines(x,y,lines,cls=''){
+  const n=lines.length; let s='';
+  lines.forEach((ln,i)=>{ s+=`<text x="${x}" y="${(y+(i-(n-1)/2)*FC.LH).toFixed(1)}" class="ft ${cls}" text-anchor="middle" dominant-baseline="central">${esc(ln)}</text>`; });
+  return s;
+}
+function arrowS(x1,y1,x2,y2){ return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="fl" marker-end="url(#sah)"/>`; }
+function lineS(x1,y1,x2,y2){ return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="fl"/>`; }
+function fBox(lines,shape,ln){
+  const w=Math.max(130,Math.max(...lines.map(tw))+34), h=FC.BH+(lines.length-1)*FC.LH;
+  return {w,h,cx:w/2,draw(x,y){
+    let s; const lnA=`data-ln="${ln}"`;
+    if(shape==='io') s=`<polygon points="${x+12},${y} ${x+w},${y} ${x+w-12},${y+h} ${x},${y+h}" class="fb io" ${lnA}/>`;
+    else if(shape==='term') s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" class="fb term" ${lnA}/>`;
+    else s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="fb" ${lnA}/>`;
+    return s+txtLines(x+w/2,y+h/2,lines);
+  }};
+}
+function splitCond(c){ const m=c.match(/^(.*? (?:and|or)) (.*)$/); return m? [m[1],m[2]] : [c]; }
+function fIf(cond,ln,t,e,note){
+  const lines=splitCond(cond);
+  const dw=Math.max(170,Math.max(...lines.map(tw))*1.75+24), dh=50+(lines.length-1)*FC.LH;
+  // The yes column sits under the left vertex and the no column under (or right of) the right vertex,
+  // so the branch lines never run back across the diamond.
+  const colGap=26;
+  const tW=t?t.w:60;
+  const cxL=Math.max(t?t.cx:30,40);
+  const mid=cxL+dw/2;
+  const cxR=Math.max(mid+dw/2, Math.max(tW,cxL+(t?t.w-t.cx:30))+colGap+(e?e.cx:30));
+  const w=cxR+(e?e.w-e.cx:30)+(note?70:0);
+  const bodyH=Math.max(t?t.h:0,e?e.h:0,24);
+  const h=dh+FC.GAP+bodyH+FC.GAP+10;
+  return {w,h,cx:mid,draw(x,y){
+    let s=''; const c=x+mid;
+    s+=`<polygon points="${c},${y} ${c+dw/2},${y+dh/2} ${c},${y+dh} ${c-dw/2},${y+dh/2}" class="fb dec" data-ln="${ln}"/>`+txtLines(c,y+dh/2,lines);
+    const lx=x+cxL, rx=x+cxR, by=y+dh+FC.GAP;
+    s+=lineS(c-dw/2,y+dh/2,lx,y+dh/2)+arrowS(lx,y+dh/2,lx,by)+`<text x="${c-dw/2-6}" y="${y+dh/2-8}" class="ft yn" text-anchor="end">はい</text>`;
+    s+=`<text x="${c+dw/2+6}" y="${y+dh/2-8}" class="ft yn">いいえ</text>`;
+    if(t) s+=t.draw(lx-t.cx,by);
+    if(e) s+=lineS(c+dw/2,y+dh/2,rx,y+dh/2)+arrowS(rx,y+dh/2,rx,by)+e.draw(rx-e.cx,by);
+    else { s+=lineS(c+dw/2,y+dh/2,rx,y+dh/2)+lineS(rx,y+dh/2,rx,by+bodyH); if(note) s+=`<text x="${rx+6}" y="${by+bodyH/2}" class="ft yn" dominant-baseline="central">${esc(note)}</text>`; }
+    const jy=by+bodyH+FC.GAP;
+    s+=lineS(lx,by+(t?t.h:0),lx,jy)+lineS(rx,by+(e?e.h:bodyH),rx,jy)+lineS(lx,jy,rx,jy)+lineS(c,jy,c,jy+10);
+    return s;
+  }};
+}
+function fSeq(items){
+  const cx=Math.max(...items.map(i=>i.cx)), right=Math.max(...items.map(i=>i.w-i.cx));
+  const h=items.reduce((a,i)=>a+i.h,0)+FC.GAP*(items.length-1);
+  return {w:cx+right,h,cx,draw(x,y){
+    let s='', yy=y;
+    items.forEach((it,k)=>{ s+=it.draw(x+cx-it.cx,yy); yy+=it.h; if(k<items.length-1){ s+=arrowS(x+cx,yy,x+cx,yy+FC.GAP); yy+=FC.GAP; } });
+    return s;
+  }};
+}
+function fLoop(head,tail,body,ln,lnT){
+  const w1=Math.max(170,tw(head)+44), w2=Math.max(170,tw(tail)+44);
+  const cx=Math.max(w1/2,w2/2,body.cx), right=Math.max(w1/2,w2/2,body.w-body.cx);
+  const h=FC.BH*2+FC.GAP*2+body.h;
+  return {w:cx+right,h,cx,draw(x,y){
+    const c=x+cx; let s='';
+    s+=`<polygon points="${c-w1/2+10},${y} ${c+w1/2-10},${y} ${c+w1/2},${y+10} ${c+w1/2},${y+FC.BH} ${c-w1/2},${y+FC.BH} ${c-w1/2},${y+10}" class="fb loop" data-ln="${ln}"/>`+txtLines(c,y+FC.BH/2,[head]);
+    let yy=y+FC.BH; s+=arrowS(c,yy,c,yy+FC.GAP); yy+=FC.GAP;
+    s+=body.draw(c-body.cx,yy); yy+=body.h;
+    s+=arrowS(c,yy,c,yy+FC.GAP); yy+=FC.GAP;
+    s+=`<polygon points="${c-w2/2},${yy} ${c+w2/2},${yy} ${c+w2/2},${yy+FC.BH-10} ${c+w2/2-10},${yy+FC.BH} ${c-w2/2+10},${yy+FC.BH} ${c-w2/2},${yy+FC.BH-10}" class="fb loop" data-ln="${lnT}"/>`+txtLines(c,yy+FC.BH/2,[tail]);
+    return s;
+  }};
+}
+function blockNode(g,v,ifCond,offCond){
+  if(g.k==='c') return fBox([`${v} = ${g.kv}`],'proc',g.a);
+  const t=fBox([`${v} = 1`],'proc',g.a);
+  if(g.k==='else') return fIf(ifCond,g.i,t,fBox([`${v} = 0`],'proc',g.b));
+  const inner=fIf(offCond,g.e,fBox([`${v} = 0`],'proc',g.b),null,'変えない');
+  return fIf(ifCond,g.i,t,inner);
+}
+function buildFlow(P){
+  const G=P.G;
+  G.l.kv=1; G.f.kv= R.fmode==='always'?1:0;
+  const body=fSeq([
+    fBox(['hito = 人感センサーの値()','akarusa = 明るさセンサーの値()','co2 = CO2センサーの値()'],'io',G.read.join(' ')),
+    blockNode(G.l,'syomei',R.lmode==='always'?'':lightCondTxt(),lHyOn()?lightOffTxt():''),
+    blockNode(G.f,'kanki',R.fmode==='th'?`co2 > ${R.Y}`:'',fHyOn()?`co2 < ${R.Y-R.fD}`:''),
+    fBox(['照明に送る(syomei)','換気扇に送る(kanki)'],'io',G.out[0]+' '+G.out[1]),
+    fBox(['待つ(kankaku)','jikoku = jikoku + kankaku'],'proc',G.out[2]+' '+G.inc)
+  ]);
+  const all=fSeq([
+    fBox(['はじめ'],'term','x'),
+    fBox(['jikoku = 480 , kankaku = '+R.iv,'syomei = 0 , kanki = 0'],'proc',G.init.join(' ')),
+    fLoop('jikoku < 1080 の間','繰り返しの終わり',body,G.loop,G.inc),
+    fBox(['おわり'],'term','x')
+  ]);
+  const W=Math.ceil(all.w+20), H=Math.ceil(all.h+20);
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="照明と換気扇を制御するプログラムのフローチャート"><defs><marker id="sah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1F3864"/></marker></defs>${all.draw(10,10)}</svg>`;
+}
+let P=null;
+function pDraw(){
+  if(pNeed||!P){ P=genProg(); $('pFlow').innerHTML=buildFlow(P); pNeed=false; }
+  const S=SIM, iv=R.iv;
+  let t=+$('pT').value; t=T0+Math.floor((t-T0)/iv)*iv; $('pT').value=t;
+  const i=t-T0;
+  $('pTv').textContent=fmtT(t);
+  const ex=execLines(P.G,S.brL[i],S.brF[i]);
+  $('pCode').innerHTML=P.L.map((o,k)=>`<li class="${o.c?'cm':''}${ex.has(k)?' hl':''}">${esc(o.s)}</li>`).join('');
+  // フローの強調
+  $('pFlow').querySelectorAll('[data-ln]').forEach(el=>{ const ids=el.getAttribute('data-ln').split(' '); el.classList.toggle('hit',ids.some(d=>ex.has(+d))); });
+  // 変数
+  const pl=S.prevL[i], pf=S.prevF[i], nl=S.L[i], nf=S.F[i];
+  const rows=[['jikoku',t,t+iv,true],['hito','–',S.hR[i],true],['akarusa','–',S.aR[i],true],['co2','–',S.cR[i],true],['syomei',pl,nl,pl!==nl],['kanki',pf,nf,pf!==nf]];
+  $('pVars').innerHTML='<tr><th>変数</th><th>この回の前</th><th>この回の後</th></tr>'+rows.map(([n,a,b,ch])=>`<tr><th>${n}</th><td>${a}</td><td class="${ch?'chg':''}">${b}</td></tr>`).join('');
+  const m=$('pMsg'); m.className='msg';
+  const brTxt=(br,name,v,hy)=> br==='c'? `${name} は条件なしで ${v} にしました。` : br==='a'? `「もし」の条件が成り立ったので、${name} = 1 を実行しました。` : br==='b'? (hy? `「もし」の条件は成り立たず、「そうでなくもし」の条件が成り立ったので、${name} = 0 を実行しました。` : `「もし」の条件が成り立たないので、「そうでなければ」の ${name} = 0 を実行しました。`) : `どちらの条件も成り立たないので、${name} は前の値 ${v} のままです（ヒステリシス）。`;
+  m.innerHTML=`<div class="t">${fmtT(t)} の1回分：照明 ${nl?'ON':'OFF'}、換気扇 ${nf?'ON':'OFF'}</div>センサーから hito = ${S.hR[i]}、akarusa = ${S.aR[i]}、co2 = ${S.cR[i]} を読みました。${brTxt(S.brL[i],'syomei',nl,lHyOn())}${brTxt(S.brF[i],'kanki',nf,fHyOn())}`+
+    `<br>この処理を ${iv} 分ごとに、jikoku が 1080（18時）になるまで繰り返します。`;
+}
+$('pT').addEventListener('input',pDraw);
+$('pPrev').addEventListener('click',()=>{ $('pT').value=Math.max(T0,+$('pT').value-R.iv); pDraw(); });
+$('pNext').addEventListener('click',()=>{ $('pT').value=Math.min(T1-1,+$('pT').value+R.iv); pDraw(); });
+$('pFind').addEventListener('click',()=>{
+  const S=SIM; let i=+$('pT').value-T0+R.iv;
+  for(;i<NSTEP;i+=R.iv){ if(S.L[i]!==S.prevL[i]||S.F[i]!==S.prevF[i]) break; }
+  if(i>=NSTEP){ i=0; for(;i<NSTEP;i+=R.iv){ if(S.L[i]!==S.prevL[i]||S.F[i]!==S.prevF[i]) break; } if(i>=NSTEP) i=0; }
+  $('pT').value=T0+i; pDraw();
+});
+
+/* ===================== 身の回りの計測と制御 ===================== */
+const QS=[
+  {n:'エアコン（冷房）',e:'❄️',s:['温度センサー','加速度センサー','人感センサー'],sa:0,o:['圧縮機（コンプレッサー）や送風ファンのモーター','画面の表示','ブレーキ'],oa:0,
+   x:'室温をはかり、設定温度と比べて、近づけるように運転の強さを変えます。ずれに応じて強さを変える考え方は、比例制御に近いものです。湿度センサーを使う機種もあります。'},
+  {n:'自動ドア',e:'🚪',s:['温度センサー','人の接近を検知するセンサー','CO2 センサー'],sa:1,o:['照明','ドアを動かす駆動装置（モーターなど）','スピーカー'],oa:1,
+   x:'人が近づいたことを検知したら開け、人がいなくなってしばらくしたら閉めます。「人がいる」という条件で動く、ON/OFF 型の制御です。'},
+  {n:'自動車の衝突被害軽減ブレーキ',e:'🚗',s:['カメラやレーダー','湿度センサー','明るさセンサー'],sa:0,o:['エアコン','警報とブレーキ','画面の向き'],oa:1,
+   x:'カメラやレーダーで周囲を監視し、衝突のおそれがあると警報で運転者にブレーキ操作をうながし、それでも避けられないと判断すると自動でブレーキをかけます（国土交通省の説明）。機能には限界があり、状況によっては作動しません。'},
+  {n:'スマートフォンの画面の向き',e:'📱',s:['温度センサー','加速度センサー','CO2 センサー'],sa:1,o:['画面の表示（縦・横を切りかえる）','ドアのモーター','換気扇'],oa:0,
+   x:'加速度センサーで重力の向きをはかり、本体の傾きを判断して、画面の表示を縦向き・横向きに切りかえます。出力はモーターではなく表示装置です。'},
+  {n:'暗くなるとつく照明',e:'🌙',s:['明るさ（光）センサー','加速度センサー','温度センサー'],sa:0,o:['ブレーキ','照明（LED など）','圧縮機'],oa:1,
+   x:'まわりの明るさがしきい値より下がったら照明をつけ、上がったら消します。「条件で制御する」の照明と同じしくみで、しきい値が1つだと夕方にばたつくことがあります。'},
+  {n:'冷蔵庫',e:'🧊',s:['人感センサー','温度センサー','カメラやレーダー'],sa:1,o:['冷やすための圧縮機','画面の表示','ドアのモーター'],oa:0,
+   x:'庫内の温度をはかり、高くなったら冷やす運転を強め、十分に冷えたら弱めます。温度をはかって結果をまた運転に生かす、フィードバック制御の例です。'}
+];
+const qState=QS.map(()=>({s:null,o:null}));
+function qDraw(){
+  $('qCards').innerHTML=QS.map((q,i)=>{
+    const st=qState[i], done=st.s!==null&&st.o!==null, good=done&&st.s===q.sa&&st.o===q.oa;
+    const opt=(arr,ans,sel,kind)=>arr.map((t,j)=>{
+      let cls=''; if(sel!==null){ if(j===ans) cls='right'; else if(j===sel) cls='wrong'; }
+      return `<button class="chip ${cls}" data-q="${i}" data-k="${kind}" data-j="${j}" ${sel!==null?'disabled':''} aria-pressed="${sel===j}">${esc(t)}</button>`;
+    }).join('');
+    return `<div class="card ${done?'done '+(good?'good':'bad'):''}"><h3><span aria-hidden="true">${q.e}</span> ${esc(q.n)}</h3>
+      <div class="q">センサー</div><div class="opts">${opt(q.s,q.sa,st.s,'s')}</div>
+      <div class="q">動かすもの・出力</div><div class="opts">${opt(q.o,q.oa,st.o,'o')}</div>
+      <div class="ex"><b>処理：</b>${esc(q.x)}</div></div>`;
+  }).join('');
+  $('qCards').querySelectorAll('button[data-q]').forEach(b=>b.addEventListener('click',()=>{
+    const i=+b.dataset.q; qState[i][b.dataset.k]=+b.dataset.j; qDraw();
+  }));
+  let ok=0,n=0; QS.forEach((q,i)=>{ const st=qState[i]; if(st.s!==null){n++; if(st.s===q.sa) ok++;} if(st.o!==null){n++; if(st.o===q.oa) ok++;} });
+  $('qOk').textContent=ok; $('qN').textContent=`${n} / 12`;
+  if(n===12){ const m=$('qMsg'); m.className='msg'+(ok>=10?' ok':''); m.innerHTML=`<div class="t">12問中 ${ok}問 正解でした</div>どの機器も「センサー → 処理 → アクチュエータ・出力」の組でできています。処理の説明を読み、ON/OFF 制御と、ずれに応じて強さを変える制御のどちらに近いかも考えてみましょう。`; }
+}
+$('qReset').addEventListener('click',()=>{ qState.forEach(s=>{s.s=null;s.o=null;}); const m=$('qMsg'); m.className='msg'; m.innerHTML='<div class="t">6つの機器を整理しましょう</div>どの機器も、センサーで「いまの状態」をはかり、コンピュータが判断して、アクチュエータを動かしています。'; qDraw(); });
+
+/* ===== 初期化 ===== */
+rdSetType('light');
+rd.timer=setInterval(rdTick,250);
+runSim(); condText(); cDraw(); cMsgStart();
+qDraw();
+</script>
+</body>
+</html>

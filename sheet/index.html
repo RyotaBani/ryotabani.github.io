@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表計算のしくみを体験しよう（セル参照・関数・並べ替えと抽出）｜情報ラボ</title>
+<meta name="description" content="ブラウザで動く小さな表計算ソフトで、式と関数、相対参照と絶対参照、並べ替え・フィルタ・集計を体験できる無料ツール。SUM・IF・COUNTIF・VLOOKUP などの関数やエラー値の意味、SQLとの対応、関数クイズもあります。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/sheet/">
+<meta property="og:title" content="表計算のしくみを体験しよう｜情報ラボ">
+<meta property="og:description" content="式と関数、相対参照・絶対参照、並べ替えと抽出。表計算のしくみを動かして学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/sheet/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; min-width:0;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:12px 0 6px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .lbl{font-size:13.5px; font-weight:700; color:var(--ink);}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary.sm{padding:8px 14px; font-size:14px; border-radius:8px; white-space:nowrap; flex:0 0 auto;}
+  select,input.txt{font-family:inherit; font-size:14px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:#1c2430; max-width:100%;}
+  input.txt{font-family:var(--mono);}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:0;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 12px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:17px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+  .stt .v.s{font-size:14px;}
+
+  .msg{border-radius:12px; padding:14px 18px; margin-top:14px; font-size:14.5px; color:#fff; overflow-wrap:anywhere;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:16px; font-weight:700; margin-bottom:4px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg code{font-family:var(--mono); background:rgba(255,255,255,.15); padding:1px 5px; border-radius:4px;}
+  .msg ul{margin:4px 0 0; padding-left:1.2em;}
+
+  /* 表計算 */
+  .sheetbox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:16px; min-width:0;}
+  .fbar{display:flex; gap:6px; align-items:center; margin-bottom:8px; min-width:0;}
+  .namebox{flex:0 0 auto; min-width:4.4em; text-align:center; font-family:var(--mono); font-size:14px; border:1px solid var(--line); border-radius:6px; padding:7px 6px; background:var(--panel); color:var(--ink); font-weight:700;}
+  .fx{flex:0 0 auto; font-style:italic; font-weight:700; color:var(--muted); font-family:Georgia,"Times New Roman",serif;}
+  .fbar input{flex:1 1 auto; min-width:0; width:100%; font-family:var(--mono); font-size:16px; border:1px solid var(--line); border-radius:6px; padding:7px 10px; color:#1c2430;}
+  .fbar input:focus{outline:2px solid #7FA3E0; outline-offset:0;}
+  .tools{gap:6px; margin-bottom:8px;}
+  .tools button.chip{padding:6px 11px; font-size:13px;}
+  .status{font-size:13px; color:var(--ink); background:#FFF8E7; border:1px solid #EBD9A8; border-radius:8px; padding:6px 10px; margin:0 0 8px;}
+  .status:empty{display:none;}
+  .sheetwrap{overflow:auto; max-width:100%; max-height:560px; border:1px solid var(--line); border-radius:8px; background:#fff; -webkit-overflow-scrolling:touch;}
+  .sheetwrap:focus{outline:none;}
+  .sheetwrap:focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  table.sheet{border-collapse:separate; border-spacing:0; font-size:14px; table-layout:fixed;}
+  table.sheet th{background:var(--panel2); color:var(--muted); font-weight:600; font-size:12.5px; border-right:1px solid var(--line); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:2; padding:3px 0; text-align:center; user-select:none;}
+  table.sheet thead th{min-width:92px; width:92px;}
+  table.sheet thead th.corner{left:0; z-index:3; min-width:34px; width:34px;}
+  table.sheet tbody th{position:sticky; left:0; z-index:1; min-width:34px; width:34px;}
+  table.sheet th.on{background:#C9D8F2; color:var(--ink);}
+  table.sheet td{border-right:1px solid #E3E8F0; border-bottom:1px solid #E3E8F0; height:30px; padding:0 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width:92px; cursor:cell; user-select:none; background:#fff;}
+  table.sheet td.n{text-align:right; font-family:var(--mono);}
+  table.sheet td.b{text-align:center; font-family:var(--mono);}
+  table.sheet td.e{text-align:center; color:var(--ng); font-weight:700; font-size:12.5px;}
+  table.sheet td.inr{background:#EAF0FB;}
+  table.sheet td.pre{background:#DCE8FA; box-shadow:inset 0 0 0 2px #2F5496;}
+  table.sheet td.dep{background:#FCE9D4; box-shadow:inset 0 0 0 2px #C47A1D;}
+  table.sheet td.sel{box-shadow:inset 0 0 0 3px #1F3864; background:#fff;}
+  table.sheet td.sel.inr{background:#fff;}
+  table.sheet td.flash{animation:flash 1.1s ease-out;}
+  @keyframes flash{0%{background:#FFD97A;} 100%{}}
+  table.sheet.mini thead th{min-width:66px; width:66px;}
+  table.sheet.mini td{max-width:66px; height:30px; cursor:pointer;}
+  table.sheet.mini thead th.corner{min-width:30px; width:30px;}
+  table.sheet.mini tbody th{min-width:30px; width:30px;}
+  .legend2{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:8px;}
+  .legend2 span::before{content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; border:2px solid;}
+  .legend2 .lp::before{background:#DCE8FA; border-color:#2F5496;}
+  .legend2 .ld::before{background:#FCE9D4; border-color:#C47A1D;}
+  .legend2 .lf::before{background:#FFD97A; border-color:#FFD97A;}
+  .refs{font-size:13.5px; margin-top:10px; line-height:1.9;}
+  .refs b{color:var(--ink);}
+  .kc{display:inline-block; font-family:var(--mono); font-size:12.5px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:0 6px; margin:1px 2px;}
+  .kc.p{border-color:#2F5496; background:#DCE8FA;} .kc.d{border-color:#C47A1D; background:#FCE9D4;}
+  .chain{font-family:var(--mono); font-size:13px; line-height:2; overflow-wrap:anywhere;}
+  .chain .ar{color:var(--muted); margin:0 2px;}
+  details.fnlist{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 16px; margin-top:4px;}
+  details.fnlist summary{cursor:pointer; font-weight:700; color:var(--ink); font-size:14.5px;}
+  .scroll{overflow-x:auto; max-width:100%;}
+  table.tb{border-collapse:collapse; width:100%; font-size:13.5px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:5px 9px; text-align:left; vertical-align:top;}
+  table.tb th{background:var(--panel); color:var(--ink);}
+  table.tb td.m,table.tb code{font-family:var(--mono);}
+  table.tb tr.pick td{background:#FFF3D6;}
+  table.tb tr[data-k]{cursor:pointer;}
+
+  /* 参照 */
+  .exps{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px;}
+  .exp{border:2px solid var(--line); background:#fff; border-radius:12px; padding:10px 14px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430; min-width:0;}
+  .exp b{display:block; color:var(--ink); font-size:14.5px;}
+  .exp span{font-size:12.5px; color:var(--muted);}
+  .exp[aria-pressed=true]{border-color:var(--gold); background:#FFF8E7;}
+  .frm{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:12px;}
+  .pills{display:flex; flex-wrap:wrap; gap:2px; align-items:center; font-family:var(--mono); font-size:20px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:6px 12px; min-width:0; overflow-wrap:anywhere;}
+  .pill{font-family:var(--mono); font-size:20px; font-weight:700; border:2px solid; border-radius:6px; padding:0 6px; cursor:pointer; line-height:1.5; color:#1c2430;}
+  .rc0{--c:#2F5496; --b:#DCE8FA;} .rc1{--c:#2E7D4F; --b:#E3F4E6;} .rc2{--c:#B5651D; --b:#FCE9D4;} .rc3{--c:#7B3FA0; --b:#EFE3F7;}
+  .pill{border-color:var(--c); background:var(--b);}
+  table.sheet td.rh{background:var(--b); box-shadow:inset 0 0 0 2px var(--c);}
+  table.sheet td.src{background:#FFF3D6; box-shadow:inset 0 0 0 2px var(--gold);}
+  table.sheet td.fill{background:#F7F9FC;}
+  table.sheet td.just{animation:flash .6s ease-out;}
+  table.sheet td.right{color:var(--ok); font-weight:700;}
+  table.sheet td.wrong{color:var(--ng); background:#FBEDEC; font-weight:700;}
+  table.sheet td.pk{box-shadow:inset 0 0 0 3px #1F3864;}
+  .fline{font-family:var(--mono); font-size:17px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin:6px 0; overflow-wrap:anywhere;}
+  .fline .r{border-bottom:3px solid var(--c); background:var(--b); padding:0 2px; border-radius:3px;}
+  .shiftlist{margin:6px 0 0; padding-left:1.2em; font-size:13.5px;}
+
+  /* データベース */
+  .ops{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;}
+  @media (max-width:900px){ .ops{grid-template-columns:minmax(0,1fr);} }
+  .op{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-width:0;}
+  .op h3{margin:0 0 4px; font-size:14.5px; color:var(--navy);}
+  .op p{margin:0 0 8px; font-size:12.5px; color:var(--muted);}
+  .op .row{gap:6px; margin-bottom:6px;}
+  .op .num{font-size:12px; color:var(--muted); width:1.3em;}
+  .op input.txt{width:6.5em;}
+  .tw{overflow-x:auto; max-width:100%; margin-top:10px; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  .tw.tall{max-height:520px; overflow-y:auto;}
+  table.dt{border-collapse:collapse; width:100%; font-size:14px;}
+  table.dt th,table.dt td{border-bottom:1px solid #E6EAF1; padding:6px 12px; text-align:left; white-space:nowrap;}
+  table.dt th{background:var(--panel2); color:var(--ink); position:sticky; top:0; font-size:13.5px;}
+  table.dt td.n{text-align:right; font-family:var(--mono);}
+  table.dt th.key,table.dt td.key{background:#FFF3D6;}
+  table.dt th .ord{color:var(--gold); font-size:12px; margin-left:3px;}
+  table.dt td.hit{background:#E3F4E6; font-weight:700;}
+  table.dt tr.out td{opacity:.35; text-decoration:line-through;}
+  .cnt{font-size:13.5px; color:var(--muted); margin-top:12px;}
+  .cnt b{color:var(--ink);}
+  .sqlbox{font-family:var(--mono); font-size:14.5px; background:#0f1a2e; color:#E6EDF7; border-radius:10px; padding:12px 14px; white-space:pre-wrap; word-break:break-all; margin-top:12px;}
+  .sqlbox .c{color:#9fb3d1;}
+  .sqlbox .kw{color:#ffd97a;}
+
+  /* クイズ */
+  .qhead{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:13.5px; color:var(--muted); margin-bottom:6px;}
+  .qhead b{color:var(--ink);}
+  .qgrid{display:inline-block; max-width:100%; margin:4px 0 10px;}
+  table.sheet td.q{background:#FFF3D6; box-shadow:inset 0 0 0 2px var(--gold); text-align:center; font-weight:700; color:var(--gold);}
+  table.sheet td.q.done{color:var(--ink);}
+  .fshow{font-family:var(--mono); font-size:16px; background:#0f1a2e; color:#E6EDF7; border-radius:8px; padding:8px 12px; overflow-wrap:anywhere;}
+  .fshow .c{color:#9fb3d1; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif; font-size:13.5px; margin-right:6px;}
+  .qq{font-size:15.5px; font-weight:700; color:var(--ink); margin:12px 0 8px;}
+  .qopts{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;}
+  @media (max-width:520px){ .qopts{grid-template-columns:minmax(0,1fr);} }
+  .qopt{border:2px solid var(--line); background:#fff; border-radius:10px; padding:10px 14px; cursor:pointer; text-align:left; font-family:var(--mono); font-size:16px; color:#1c2430; min-width:0; overflow-wrap:anywhere;}
+  .qopt:hover{background:var(--panel2);}
+  .qopt.ok{border-color:var(--ok); background:#EAF5EE;}
+  .qopt.ng{border-color:var(--ng); background:#FBEDEC;}
+  .qopt:disabled{cursor:default;}
+  .qres{list-style:none; padding:0; margin:10px 0 0; font-size:14px;}
+  .qres li{padding:4px 0; border-bottom:1px dashed var(--line);}
+  .qres .o{color:var(--ok); font-weight:700;} .qres .x{color:var(--ng); font-weight:700;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article .atw{overflow-x:auto; max-width:100%; margin:0 0 16px;}
+  .article table{border-collapse:collapse; font-size:14px;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 12px; text-align:left; vertical-align:top;}
+  .article th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px; font-size:.95em; overflow-wrap:anywhere;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (max-width:520px){
+    .wrap{padding:18px 14px 50px;}
+    .panel{padding:14px;}
+    .sheetbox{padding:10px;}
+    .pills,.pill{font-size:17px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 表計算のしくみ</p>
+    <h1>表計算のしくみを体験しよう</h1>
+    <p class="lead">セルに「計算のしかた（式）」を書いておくと、もとの数を変えたときに結果が自動で計算し直されます。ブラウザの中で動く小さな表計算で、式・関数・セルの参照・並べ替えと抽出を確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabCalc" aria-selected="true" aria-controls="toolCalc">表計算ソフトを動かす</button>
+    <button class="tab" role="tab" id="tabRef" aria-selected="false" aria-controls="toolRef">相対参照と絶対参照</button>
+    <button class="tab" role="tab" id="tabDb" aria-selected="false" aria-controls="toolDb">並べ替えと抽出</button>
+    <button class="tab" role="tab" id="tabQz" aria-selected="false" aria-controls="toolQz">関数クイズ</button>
+  </div>
+
+  <!-- ===== 表計算ソフトを動かす ===== -->
+  <section class="tool show" id="toolCalc" role="tabpanel" aria-labelledby="tabCalc">
+    <div class="panel">
+      <h2>セルを押して選び、上の数式バーに値か式（= で始まる）を入れて Enter（または「確定」）を押します</h2>
+      <div class="row" id="cSamples">
+        <span class="lbl">見本：</span>
+        <button class="chip" data-sample="score" aria-pressed="true">テストの成績表</button>
+        <button class="chip" data-sample="sales" aria-pressed="false">文化祭の売上表</button>
+        <button class="chip" data-sample="wage" aria-pressed="false">アルバイトの給料</button>
+        <button class="chip" data-sample="lookup" aria-pressed="false">商品コードで探す</button>
+        <button class="chip" data-sample="errors" aria-pressed="false">エラーの見本</button>
+        <button class="chip" data-sample="blank" aria-pressed="false">空の表</button>
+      </div>
+      <p class="hint">見本の人物・商品・金額はすべて架空です。見本を選び直すと、それまでの入力は消えます。</p>
+    </div>
+
+    <div class="sheetbox">
+      <div class="fbar">
+        <span class="namebox" id="cName" aria-label="選んでいるセル">A1</span>
+        <span class="fx" aria-hidden="true">fx</span>
+        <input id="cInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="数式バー（セルの中身）">
+        <button class="primary sm" id="cOk">確定</button>
+      </div>
+      <div class="row tools">
+        <button class="chip" id="cRange" aria-pressed="false">範囲を選ぶ</button>
+        <button class="chip" id="cCopy">コピー</button>
+        <button class="chip" id="cPaste">貼り付け</button>
+        <button class="chip" id="cFillD">下へフィル</button>
+        <button class="chip" id="cFillR">右へフィル</button>
+        <button class="chip" id="cClear">消去</button>
+        <button class="chip" id="cSaveV">CSVで保存（値）</button>
+        <button class="chip" id="cSaveF">CSVで保存（式）</button>
+        <button class="chip" id="cLoad">CSVを読み込む</button>
+        <input type="file" id="cFile" accept=".csv,text/csv" hidden>
+      </div>
+      <div class="status" id="cStatus" role="status"></div>
+      <div class="sheetwrap" id="cWrap" tabindex="0" aria-label="表（A〜H列、1〜20行）"><table class="sheet" id="cGrid"></table></div>
+      <div class="legend2"><span class="lp">選んだセルが参照しているセル</span><span class="ld">選んだセルを参照しているセル</span><span class="lf">計算し直したセル（順に光る）</span></div>
+      <p class="hint">範囲は、1つ目のセルを押してから「範囲を選ぶ」を押し、もう1つの角のセルを押して選びます（パソコンでは Shift を押しながらクリックでも選べます）。式を入力している途中に「=」「+」「(」「,」「:」などの後でセルを押すと、そのセル番地が式に入ります。</p>
+    </div>
+
+    <div class="two">
+      <div class="panel" style="margin-bottom:0;">
+        <h2>選んだセル</h2>
+        <div class="stats">
+          <div class="stt"><div class="k">セル番地</div><div class="v" id="iKey">A1</div></div>
+          <div class="stt"><div class="k">入っているもの</div><div class="v s" id="iKind">空のセル</div></div>
+          <div class="stt"><div class="k">表示される値</div><div class="v" id="iVal">–</div></div>
+        </div>
+        <div class="refs" id="iRefs"></div>
+        <div class="msg" id="iMsg"></div>
+      </div>
+      <div class="panel" style="margin-bottom:0;" id="cRecalc"></div>
+    </div>
+
+    <details class="fnlist" style="margin-top:16px;">
+      <summary>このページで使える関数と演算子</summary>
+      <div class="scroll" style="margin-top:10px;">
+        <table class="tb">
+          <tr><th>関数</th><th>書き方</th><th>はたらき</th></tr>
+          <tr><td>SUM</td><td class="m">SUM(範囲, …)</td><td>数値の合計</td></tr>
+          <tr><td>AVERAGE</td><td class="m">AVERAGE(範囲, …)</td><td>数値の平均（空のセル・文字のセルは数に入れない。0 は入れる）</td></tr>
+          <tr><td>MAX / MIN</td><td class="m">MAX(範囲, …)</td><td>いちばん大きい数 / 小さい数</td></tr>
+          <tr><td>COUNT</td><td class="m">COUNT(範囲, …)</td><td>数値が入っているセルの個数</td></tr>
+          <tr><td>COUNTIF</td><td class="m">COUNTIF(範囲, 条件)</td><td>条件に合うセルの個数。条件の例 <code>"&gt;=80"</code> <code>"1組"</code> <code>"&lt;&gt;"</code>（空でない）<code>"*部"</code>（* は任意の文字の並び、? は任意の1文字）</td></tr>
+          <tr><td>SUMIF</td><td class="m">SUMIF(範囲, 条件, [合計範囲])</td><td>条件に合う行の合計。合計範囲を省くと「範囲」を合計</td></tr>
+          <tr><td>IF</td><td class="m">IF(条件, 真のとき, [偽のとき])</td><td>条件が TRUE なら2つ目、FALSE なら3つ目の値</td></tr>
+          <tr><td>ROUND</td><td class="m">ROUND(数値, 桁数)</td><td>四捨五入。桁数 1 なら小数第1位まで、0 なら整数、−1 なら十の位まで</td></tr>
+          <tr><td>RANK.EQ（RANK）</td><td class="m">RANK.EQ(数値, 範囲, [順序])</td><td>範囲の中での順位。順序を省くか 0 なら大きい順、それ以外は小さい順。同じ値は同じ順位</td></tr>
+          <tr><td>VLOOKUP</td><td class="m">VLOOKUP(検索値, 範囲, 列番号, [検索の型])</td><td>範囲の左はしの列で検索値を探し、同じ行の「列番号」列目の値を返す。FALSE は完全一致、TRUE または省略は近似一致</td></tr>
+        </table>
+      </div>
+      <p class="hint">演算子：<code>+ - * / ^</code>（べき乗）<code>%</code> <code>&amp;</code>（文字列をつなぐ）<code>= &lt;&gt; &lt; &gt; &lt;= &gt;=</code>（比較）、かっこ <code>( )</code>、範囲 <code>:</code>。文字列は <code>"合格"</code> のように " で囲みます。全角で入力した記号や数字は半角として読みます。</p>
+    </details>
+  </section>
+
+  <!-- ===== 相対参照と絶対参照 ===== -->
+  <section class="tool" id="toolRef" role="tabpanel" aria-labelledby="tabRef">
+    <div class="panel">
+      <h2>式をコピーすると、式の中のセル番地は、コピーした方向へ同じだけずれます（相対参照）。$ をつけた列や行は動きません（絶対参照）</h2>
+      <div class="exps" id="rList">
+        <button class="exp" data-sc="ratio" aria-pressed="true"><b>割合を求める</b><span>よくあるまちがいを体験</span></button>
+        <button class="exp" data-sc="tax" aria-pressed="false"><b>税込み価格</b><span>エラーが出ないまちがい</span></button>
+        <button class="exp" data-sc="kuku" aria-pressed="false"><b>かけ算の表</b><span>複合参照（$A2 と B$1）</span></button>
+        <button class="exp" data-sc="free" aria-pressed="false"><b>自分で式を書く</b><span>コピーの向きも選べる</span></button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 id="rTitle"></h2>
+      <p id="rDesc" style="margin:0;font-size:14.5px;"></p>
+      <div id="rFree" hidden>
+        <div class="row" style="margin-top:10px;">
+          <label class="lbl" for="rFreeIn">B2 の式</label>
+          <input class="txt" id="rFreeIn" value="=A2*B1" style="width:14em;font-size:16px;" autocomplete="off" spellcheck="false">
+          <button class="chip" id="rFreeSet">この式にする</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <span class="lbl">コピー先：</span>
+          <button class="chip" data-dir="down" aria-pressed="true">下へ（B3〜B7）</button>
+          <button class="chip" data-dir="right" aria-pressed="false">右へ（C2〜G2）</button>
+          <button class="chip" data-dir="both" aria-pressed="false">下と右（B2:G7 全体）</button>
+        </div>
+      </div>
+      <div class="frm"><span class="lbl">元の式（<span id="rSrcK"></span>）</span><div class="pills" id="rPills"></div></div>
+      <p class="hint">色のついたセル番地を押すたびに、A1 → $A$1 → A$1 → $A1 → A1 の順に切りかわります。</p>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="rGo">コピーする（フィル）</button>
+        <button class="chip" id="rReset">コピー前にもどす</button>
+      </div>
+    </div>
+    <div class="two">
+      <div>
+        <div class="sheetwrap" style="max-height:none;"><table class="sheet mini" id="rGrid"></table></div>
+        <p class="hint">金色の枠が元のセルです。表のセルを押すと、そのセルの式と、参照しているセル（同じ色）が表示されます。</p>
+      </div>
+      <div class="panel" id="rDetail" style="margin-bottom:0;"></div>
+    </div>
+    <div class="msg" id="rMsg"></div>
+    <div class="scroll" style="margin-top:14px;"><table class="tb" id="rTable"></table></div>
+  </section>
+
+  <!-- ===== 並べ替えと抽出 ===== -->
+  <section class="tool" id="toolDb" role="tabpanel" aria-labelledby="tabDb">
+    <div class="panel">
+      <h2>架空の「テスト結果」（18人分）を、並べ替え・抽出（フィルタ）・集計します。同じ操作をする SQL 文も表示します</h2>
+      <div class="row" id="dPresets">
+        <span class="lbl">例：</span>
+        <button class="chip" data-pre="math">数学の高い順（同点は番号順）</button>
+        <button class="chip" data-pre="c1">1組だけ</button>
+        <button class="chip" data-pre="sport">運動部で数学80点以上</button>
+        <button class="chip" data-pre="avg">組ごとの数学の平均</button>
+        <button class="chip" data-pre="club">部活ごとの人数</button>
+        <button class="chip" data-pre="reset">すべて解除</button>
+      </div>
+    </div>
+    <div class="ops">
+      <div class="op"><h3>並べ替え</h3><p>上のキーほど優先されます。2つ目のキーは、1つ目のキーが同じ行どうしの並べ方です。</p><div id="dSorts"></div></div>
+      <div class="op"><h3>抽出（フィルタ）</h3><p>条件に合う行だけを残します。</p><div id="dConds"></div></div>
+      <div class="op"><h3>集計</h3><p>抽出した行を、グループごとにまとめて計算します。</p><div id="dAgg"></div></div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <button class="chip" id="dShowAll" aria-pressed="false">除かれた行も薄く表示</button>
+      <button class="chip" id="dToSheet">この結果を「表計算ソフトを動かす」で開く</button>
+    </div>
+    <div class="cnt" id="dCnt"></div>
+    <div class="tw tall"><table class="dt" id="dTable"></table></div>
+    <div id="dAggOut"></div>
+    <div class="sqlbox" id="dSql"></div>
+    <div class="msg" id="dMsg"></div>
+  </section>
+
+  <!-- ===== 関数クイズ ===== -->
+  <section class="tool" id="toolQz" role="tabpanel" aria-labelledby="tabQz">
+    <div class="panel" id="qBox">
+      <div class="qhead"><span id="qNo"></span><span id="qScore"></span></div>
+      <h2 id="qTitle"></h2>
+      <div class="sheetwrap qgrid"><table class="sheet mini" id="qGrid"></table></div>
+      <div class="fshow" id="qF"></div>
+      <p class="qq" id="qQ"></p>
+      <div class="qopts" id="qOpts"></div>
+      <div class="msg" id="qMsg" hidden></div>
+      <div class="row" style="margin-top:12px;"><button class="primary" id="qNext" hidden>次の問題へ</button></div>
+    </div>
+    <div class="panel" id="qEnd" hidden></div>
+  </section>
+
+  <section class="article">
+    <h2>表計算ソフトウェアとは</h2>
+    <p><strong>表計算ソフトウェア</strong>（スプレッドシート）は、縦横のマス目に数値や文字を入れて、計算・集計・並べ替え・グラフの作成などができるソフトウェアです。Microsoft Excel や Google スプレッドシートなどがあり、成績の集計、売上や家計の管理、アンケートの集計など、身近なデータの処理に広く使われています。</p>
+    <p>表計算のいちばんの特徴は、マス目に「計算の結果」ではなく「計算のしかた（式）」を書いておけることです。もとの数を書きかえると、その数を使っている式の結果が自動で計算し直されます。電卓で計算した結果を書き写す方法では、数が1つ変わるたびに計算をやり直さなければなりませんが、表計算なら入力し直すのはもとの数だけですみます。</p>
+
+    <h2>セル・セル番地・範囲</h2>
+    <p>マス目の1つひとつを<strong>セル</strong>といいます。横の並びを<strong>行</strong>（1, 2, 3 …）、縦の並びを<strong>列</strong>（A, B, C …）といい、セルの位置は列と行を組み合わせた<strong>セル番地</strong>で表します。<code>B3</code> は「B列の3行目」のセルです。</p>
+    <p>いくつかのセルをまとめて指定するときは、長方形の左上と右下のセル番地を「:」でつないだ<strong>範囲</strong>を使います。<code>B2:D5</code> は、B2 を左上、D5 を右下とする 3列 × 4行 ＝ 12 個のセルです。</p>
+
+    <h2>式と演算子</h2>
+    <p>セルに「=」から始まる内容を入れると<strong>式</strong>になります。<code>=B2+C2</code> のようにセル番地を書くと、そのセルに入っている値を使って計算します。このように、式の中でほかのセルを指定することを<strong>参照</strong>といいます。式で使う主な演算子と、計算される順番（優先順位）は次のとおりです。上にあるものほど先に計算されます。</p>
+    <div class="atw"><table>
+      <tr><th>順番</th><th>演算子</th><th>意味</th></tr>
+      <tr><td>1</td><td><code>:</code></td><td>範囲（B2:B9 など）</td></tr>
+      <tr><td>2</td><td><code>-</code></td><td>負の符号（−1 など）</td></tr>
+      <tr><td>3</td><td><code>%</code></td><td>パーセント（50% は 0.5）</td></tr>
+      <tr><td>4</td><td><code>^</code></td><td>べき乗（2^3 は 8）</td></tr>
+      <tr><td>5</td><td><code>*</code> <code>/</code></td><td>かけ算・割り算</td></tr>
+      <tr><td>6</td><td><code>+</code> <code>-</code></td><td>足し算・引き算</td></tr>
+      <tr><td>7</td><td><code>&amp;</code></td><td>文字列をつなぐ</td></tr>
+      <tr><td>8</td><td><code>= &lt;&gt; &lt; &gt; &lt;= &gt;=</code></td><td>比較（等しい、等しくない、より小さい、より大きい、以下、以上）</td></tr>
+    </table></div>
+    <p>同じ順番の演算子は、左から順に計算されます。かっこ ( ) の中は先に計算されるので、<code>=2+3*4</code> は 14、<code>=(2+3)*4</code> は 20 です。比較の結果は TRUE（真）か FALSE（偽）の<strong>論理値</strong>になり、IF 関数の条件などに使います。</p>
+
+    <h2>相対参照・絶対参照・複合参照</h2>
+    <p>表計算では、1つのセルに作った式をほかのセルへコピーして使い回します。このとき、式の中のセル番地は、コピーした方向へ同じだけずれます。C2 の <code>=B2/B7</code> を1つ下の C3 へコピーすると <code>=B3/B8</code> になります。このように、コピーするとずれる参照を<strong>相対参照</strong>といいます。式は「B2 というセル」ではなく、「この式のあるセルから見て、左に1つのセル」という<strong>位置の関係</strong>を覚えている、と考えると分かりやすくなります。だから、1行目に作った「その行の合計」の式を下へコピーするだけで、どの行でも正しくその行の合計が求められるのです。</p>
+    <p>コピーしてもずれては困るときは、列や行の前に <code>$</code> をつけて固定します。これを<strong>絶対参照</strong>といいます。列か行の片方だけを固定する書き方は<strong>複合参照</strong>といいます。A1 のセルにある式を、2行下・2列右の C3 へコピーしたとき、参照は次のように変わります。</p>
+    <div class="atw"><table>
+      <tr><th>元の参照</th><th>種類</th><th>C3 へコピーすると</th></tr>
+      <tr><td><code>$A$1</code></td><td>列も行も固定（絶対参照）</td><td><code>$A$1</code>（変わらない）</td></tr>
+      <tr><td><code>A$1</code></td><td>行だけ固定（複合参照）</td><td><code>C$1</code></td></tr>
+      <tr><td><code>$A1</code></td><td>列だけ固定（複合参照）</td><td><code>$A3</code></td></tr>
+      <tr><td><code>A1</code></td><td>どちらも固定しない（相対参照）</td><td><code>C3</code></td></tr>
+    </table></div>
+    <p>Excel では、式を編集しているときに F4 キーを押すと、参照の種類を切りかえられます。</p>
+    <h3>よくあるまちがい：合計に対する割合</h3>
+    <p>割合を <code>=B2/B7</code> で求めて下へコピーすると、売上の B2 だけでなく、合計の B7 まで B8、B9 …とずれてしまいます。B8 は空のセルなので 0 として扱われ、0 で割ることになって <code>#DIV/0!</code> になります。合計のセルは動いてほしくないので <code>=B2/$B$7</code> と書きます。下へコピーするときに変わるのは行だけなので、行だけを固定した <code>=B2/B$7</code> でも正しく計算できます。</p>
+    <p>もっと気をつけたいのは、エラーが出ないまちがいです。税率を1つのセルに入れて <code>=A2*(1+E1)</code> と書き、$ をつけずに下へコピーすると、参照先の E2、E3 …は空のセルなので、エラーにならずに「税抜価格のまま」という誤った値が出ます。式をコピーしたら、いくつかのセルを選んで、参照しているセルが正しいかを確かめる習慣をつけましょう。</p>
+
+    <h2>よく使う関数</h2>
+    <p><strong>関数</strong>は、よく使う計算をひとまとめにしたしくみで、<code>=関数名(引数)</code> の形で書きます。かっこの中に渡す値を<strong>引数</strong>といい、複数あるときは「,」で区切ります。</p>
+    <div class="atw"><table>
+      <tr><th>関数</th><th>例</th><th>はたらきと注意</th></tr>
+      <tr><td>SUM</td><td><code>=SUM(B2:B9)</code></td><td>数値の合計。</td></tr>
+      <tr><td>AVERAGE</td><td><code>=AVERAGE(B2:B9)</code></td><td>数値の平均。範囲の中の空のセルや文字が入ったセルは無視されますが、0 が入ったセルは数に入ります。</td></tr>
+      <tr><td>MAX・MIN</td><td><code>=MAX(B2:B9)</code></td><td>最大値・最小値。</td></tr>
+      <tr><td>COUNT</td><td><code>=COUNT(B2:B9)</code></td><td>数値が入っているセルの個数。範囲の中の空のセル・文字・論理値・エラー値は数えません。</td></tr>
+      <tr><td>COUNTIF</td><td><code>=COUNTIF(B2:B9,"&gt;=80")</code></td><td>条件に合うセルの個数。比較の条件は " で囲みます。<code>*</code> は任意の文字の並び、<code>?</code> は任意の1文字を表し、大文字と小文字は区別しません。</td></tr>
+      <tr><td>SUMIF</td><td><code>=SUMIF(B2:B7,"飲み物",E2:E7)</code></td><td>条件に合う行の値の合計。3つ目の範囲を省くと、1つ目の範囲そのものを合計します。</td></tr>
+      <tr><td>IF</td><td><code>=IF(F2&gt;=80,"A","B")</code></td><td>条件が TRUE なら2つ目、FALSE なら3つ目の値になります。</td></tr>
+      <tr><td>ROUND</td><td><code>=ROUND(A2,1)</code></td><td>四捨五入。桁数が正なら小数点以下、0 なら整数、負なら整数部分で丸めます（<code>=ROUND(626.3,-3)</code> は 1000）。</td></tr>
+      <tr><td>RANK.EQ</td><td><code>=RANK.EQ(E2,$E$2:$E$9)</code></td><td>範囲の中での順位。3つ目の順序を省くか 0 なら大きい順、0 以外なら小さい順です。</td></tr>
+      <tr><td>VLOOKUP</td><td><code>=VLOOKUP(A2,$F$2:$H$6,3,FALSE)</code></td><td>範囲の左はしの列から検索値を探し、同じ行の、左から数えて「列番号」列目の値を返します。</td></tr>
+    </table></div>
+    <h3>RANK.EQ：同じ値があるときの順位</h3>
+    <p>RANK.EQ は、同じ値に同じ順位をつけます。その分、次の順位は飛ばされます。2位が2人いれば、その次は4位になり、3位の人はいません。範囲の中の数値以外の値は無視されます。並べ替えをしなくても順位が求められ、点数を直すと順位も自動で計算し直されます。</p>
+    <h3>VLOOKUP：検索の型</h3>
+    <p>4つ目の引数「検索の型」に FALSE を指定すると、検索値と<strong>完全に一致</strong>する値を探し、見つからなければ <code>#N/A</code> になります。TRUE を指定するか、4つ目を省くと<strong>近似一致</strong>になります。近似一致では、範囲の左はしの列が小さい順に並べてあることが前提で、検索値をこえる値が出てくる手前の行、つまり検索値以下でいちばん近い値の行が使われます。「3000円以上なら送料300円」のような料金表を引くときに便利です。</p>
+    <p>4つ目を省くと近似一致になるので、商品コードのように完全に一致するものを探すときは、FALSE を書き忘れないことが大切です。また、列番号が範囲の列数より大きいと <code>#REF!</code> になります。検索値の 101（数値）と、表の中の「101」（文字列）は別のものとして扱われる点にも注意しましょう。</p>
+    <h3>IF の入れ子と条件の順番</h3>
+    <p>IF の中に IF を入れる（<strong>入れ子</strong>にする）と、3つ以上に分けられます。<code>=IF(F2&gt;=80,"A",IF(F2&gt;=65,"B","C"))</code> は、80以上なら A、65以上なら B、それ以外は C です。条件は外側から順に調べられ、TRUE になった時点で結果が決まります。そのため <code>=IF(F2&gt;=65,"B",IF(F2&gt;=80,"A","C"))</code> のように、ゆるい条件を先に書くと、80点以上の人も先に B に決まってしまい、A が1人も出ません。Excel では IF を64個まで入れ子にできますが、入れ子が深い式は読みにくく、まちがいの原因になるのですすめられていません。</p>
+
+    <h2>エラー値の意味</h2>
+    <p>式がうまく計算できないとき、セルには<strong>エラー値</strong>が表示されます。エラー値は、どこがおかしいかを知らせる手がかりです。</p>
+    <div class="atw"><table>
+      <tr><th>エラー値</th><th>主な原因</th><th>直し方の例</th></tr>
+      <tr><td><code>#DIV/0!</code></td><td>0 や空のセルで割った</td><td>割る数を確かめる。<code>=IF(B7=0,"",B2/B7)</code> のように、0 のときは割り算をしないようにする</td></tr>
+      <tr><td><code>#NAME?</code></td><td>関数名のつづりのまちがい、文字列を " で囲んでいない、範囲の「:」が抜けている</td><td>関数名と " を確かめる</td></tr>
+      <tr><td><code>#VALUE!</code></td><td>計算に使うセルに文字や空白が入っている</td><td>数値を入れ直す。「80点」のように単位をつけない</td></tr>
+      <tr><td><code>#REF!</code></td><td>参照しているセルが正しくない（参照していたセルを削除した、VLOOKUP の列番号が大きすぎるなど）</td><td>参照先を指定し直す</td></tr>
+      <tr><td><code>#N/A</code></td><td>VLOOKUP などで、探した値が見つからない</td><td>検索値と表を確かめる。検索の型を確かめる</td></tr>
+    </table></div>
+    <p>エラーは、そのセルを参照しているセルにも伝わります。見本「商品コードで探す」では、1行の <code>#N/A</code> が合計のセルにまで伝わることを確かめられます。エラーを見つけたら、表示されているセルではなく、最初にエラーが起きたセルを探して直します。</p>
+    <h3>循環参照</h3>
+    <p>式が、直接または間接に自分自身のセルを参照している状態を<strong>循環参照</strong>といいます。B9 に <code>=B10+1</code>、B10 に <code>=B9*2</code> と入れると、B9 を求めるには B10 が、B10 を求めるには B9 が必要になり、計算の順番が決まりません。Excel では、循環参照が見つかると警告のメッセージが表示され、セルには 0 や最後に計算された値が表示されることがあります。このページの表計算では「循環参照」と表示します。</p>
+
+    <h2>再計算のしくみ</h2>
+    <p>表計算ソフトは、どのセルがどのセルを参照しているかという関係を記録しています。Microsoft の開発者向けの説明によると、Excel はこの関係（依存関係のツリー）から、式を計算する順番の一覧（計算チェーン）を作ります。新しいデータや式が入力されると、そのセルに直接・間接に依存するセルすべてに「計算し直しが必要」という印をつけ、計算チェーンの順に計算し直します。A1 を変えたとき、A1 を使う B1、B1 を使う C1 の順に計算すれば、どのセルも新しい値をもとに計算できるからです。「表計算ソフトを動かす」のタブでは、値を変えたときに計算し直したセルを、その順番どおりに光らせて表示します。</p>
+
+    <h2>データベース機能（並べ替え・フィルタ・集計）</h2>
+    <p>1行に1件のデータ、1列に1つの項目を入れた表は、データベースのように扱えます。表計算ソフトには、そのための機能があります。</p>
+    <ul>
+      <li><strong>並べ替え</strong>：指定した列（キー）の値で、行を昇順（小さい順）や降順（大きい順）に並べかえます。複数のキーを指定すると、1つ目のキーが同じ行どうしを2つ目のキーで並べます。</li>
+      <li><strong>フィルタ（抽出）</strong>：条件に合う行だけを表示します。条件に合わない行は、削除されるのではなく、一時的にかくされます。</li>
+      <li><strong>集計</strong>：組や部活などのグループごとに、件数・合計・平均などを求めます。</li>
+    </ul>
+    <p>これらの操作は、リレーショナルデータベースを操作する言語 SQL の SELECT 文と対応しています。SQL について詳しくは「<a href="/sql/">データベースとSQL</a>」で体験できます。</p>
+    <div class="atw"><table>
+      <tr><th>表計算での操作</th><th>SQL の書き方の例</th></tr>
+      <tr><td>並べ替え（数学の高い順、同点は番号順）</td><td><code>ORDER BY 数学 DESC, 番号 ASC</code></td></tr>
+      <tr><td>フィルタ（1組で、数学が80以上）</td><td><code>WHERE 組 = 1 AND 数学 &gt;= 80</code></td></tr>
+      <tr><td>必要な列だけを見る</td><td><code>SELECT 氏名, 数学</code></td></tr>
+      <tr><td>組ごとの平均</td><td><code>SELECT 組, AVG(数学) … GROUP BY 組</code></td></tr>
+      <tr><td><code>=COUNTIF(C2:C19,1)</code></td><td><code>SELECT COUNT(*) FROM テスト結果 WHERE 組 = 1</code></td></tr>
+      <tr><td><code>=SUMIF(C2:C19,1,F2:F19)</code></td><td><code>SELECT SUM(数学) FROM テスト結果 WHERE 組 = 1</code></td></tr>
+    </table></div>
+    <h3>データベースとして使う表の作り方</h3>
+    <ul>
+      <li>1行目に見出し（項目名）を置き、2行目から1行に1件ずつデータを入れます。途中に空の行や、見出しの行をはさみません。並べ替えやフィルタが、表の範囲を正しく決められなくなるからです。</li>
+      <li>1つのセルには1つの値だけを入れます。「80点」のように単位をつけると文字列になり、計算や COUNT に使えません。単位は見出しに「数学（点）」のように書きます。</li>
+      <li>同じものは同じ書き方でそろえます。「1組」「１組」「1-組」が混ざると、COUNTIF やフィルタで別のものとして扱われます。</li>
+    </ul>
+
+    <h2>グラフにするときの注意</h2>
+    <p>集計した結果は、グラフにすると比べやすくなります。ただし、グラフの種類は目的に合わせて選びます。量の大小を比べるなら棒グラフ、時間による変化なら折れ線グラフ、全体に対する割合なら円グラフや帯グラフが向いています。縦軸を 0 から始めないと小さな差が大きく見えるなど、同じデータでも見せ方で印象が変わることにも注意が必要です。くわしくは「<a href="/dataviz/">データを分析しよう</a>」で確かめられます。</p>
+
+    <h2>このページの表計算について</h2>
+    <p>このページの表計算は、学習のために作った小さなもので、Excel や Google スプレッドシートと同じ書き方で式を書けますが、細かい動きがちがうことがあります。日付・時刻、セルの書式、範囲をまとめて返す式には対応していません。文字列の大小は文字の番号（文字コード）の順で比べます。セルの中の数値は、セルの幅に入るように有効数字を減らして表示します（<code>=0.1+0.2</code> は 0.3 と表示）。式の書き方そのものがまちがっているときは <code>#ERROR!</code> と表示します。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>表計算ソフトを動かす</strong>：見本を選び、セルを押して数式バーで中身を書きかえます。Enter で確定すると、そのセルを使っている式だけが、参照される側から順に計算し直され、黄色く光ります。選んだセルが参照しているセルは青、そのセルを参照しているセルはオレンジで表示されます。範囲を選んでコピー・貼り付け・フィルをすると、相対参照がずれるようすも確かめられます。「CSVで保存（値）」は計算結果を、「CSVで保存（式）」は式のままを保存します。CSV はただの文字の並びなので、値で保存したファイルには式が残らないことも確かめてみましょう。</li>
+      <li><strong>相対参照と絶対参照</strong>：元の式のセル番地を押して $ のつけ方を変え、「コピーする」を押します。コピー先のセルが順に埋まり、参照しているセル（同じ色の枠）がずれていくようすが見られます。割合・税込み価格・かけ算の表では、正しくできたかどうかを判定します。</li>
+      <li><strong>並べ替えと抽出</strong>：キー・条件・集計の方法を選ぶと、すぐに結果と SQL 文が変わります。「この結果を表計算ソフトを動かすで開く」で、結果の表を表計算で続けて使えます。</li>
+      <li><strong>関数クイズ</strong>：表と式を見て、表示される値やコピーした後の式を選びます。答えた後に、このページの表計算で実際に計算した結果と解説が表示されます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L39">39. 表計算で整理する</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>Microsoft サポート「相対参照、絶対参照、複合参照を切り替える」https://support.microsoft.com/ja-jp/excel/switch-between-relative-absolute-and-mixed-references</li>
+      <li>Microsoft サポート「演算子と Excel での優先順位」https://support.microsoft.com/ja-jp/excel/calculation-operators-and-precedence-in-excel</li>
+      <li>Microsoft サポート「AVERAGE 関数」https://support.microsoft.com/ja-jp/excel/functions/average-function</li>
+      <li>Microsoft サポート「COUNT 関数」https://support.microsoft.com/ja-jp/excel/functions/count-function</li>
+      <li>Microsoft サポート「Microsoft Excel で COUNTIF 関数を使用する」https://support.microsoft.com/ja-jp/excel/get-started/use-the-countif-function-in-microsoft-excel</li>
+      <li>Microsoft サポート「SUMIF 関数」https://support.microsoft.com/ja-jp/excel/functions/sumif-function</li>
+      <li>Microsoft サポート「ROUND 関数」https://support.microsoft.com/ja-jp/excel/functions/round-function</li>
+      <li>Microsoft サポート「RANK.EQ 関数」https://support.microsoft.com/ja-jp/excel/functions/rank-eq-function</li>
+      <li>Microsoft サポート「VLOOKUP 関数」https://support.microsoft.com/ja-jp/excel/functions/vlookup-function</li>
+      <li>Microsoft サポート「IF 関数 – 入れ子になった式と問題の回避」https://support.microsoft.com/ja-jp/excel/if-function-nested-formulas-and-avoiding-pitfalls</li>
+      <li>Microsoft サポート「エラー値 #DIV/0! を修正する方法」https://support.microsoft.com/ja-jp/excel/how-to-correct-a-div-0-error</li>
+      <li>Microsoft サポート「#NAME? エラーの修正方法」https://support.microsoft.com/ja-jp/excel/how-to-correct-a-name-error</li>
+      <li>Microsoft サポート「エラー値 #VALUE! を修正する」https://support.microsoft.com/ja-jp/excel/how-to-correct-a-value-error</li>
+      <li>Microsoft サポート「エラー値 #REF! を修正する方法」https://support.microsoft.com/ja-jp/excel/how-to-correct-a-ref-error</li>
+      <li>Microsoft サポート「Excel で循環参照を削除または許可する」https://support.microsoft.com/ja-jp/excel/remove-or-allow-a-circular-reference-in-excel</li>
+      <li>Microsoft サポート「Excel で範囲またはテーブルのデータをフィルター処理する」https://support.microsoft.com/ja-jp/excel/get-started/filter-data-in-a-range-or-table-in-excel</li>
+      <li>Microsoft Learn「Excel の再計算」https://learn.microsoft.com/ja-jp/office/client-developer/excel/excel-recalculation</li>
+      <li>Google ドキュメント エディタ ヘルプ「VLOOKUP」https://support.google.com/docs/answer/3093318?hl=ja</li>
+      <li>Google ドキュメント エディタ ヘルプ「データの並べ替えとフィルタ」https://support.google.com/docs/answer/3540681?hl=ja</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ===== タブ ===== */
+const TABS=[['tabCalc','toolCalc'],['tabRef','toolRef'],['tabDb','toolDb'],['tabQz','toolQz']];
+function showTab(tid){ TABS.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); }); }
+TABS.forEach(([tid])=>$(tid).addEventListener('click',()=>showTab(tid)));
+
+/*ENGINE-START*/
+/* ===================== 表計算エンジン ===================== */
+const colName=c=>{ let s=''; c++; while(c>0){ const m=(c-1)%26; s=String.fromCharCode(65+m)+s; c=Math.floor((c-1)/26); } return s; };
+const colIndex=s=>{ let n=0; for(const ch of s.toUpperCase()) n=n*26+(ch.charCodeAt(0)-64); return n-1; };
+const keyOf=(c,r)=>colName(c)+(r+1);
+const parseKey=k=>{ const m=/^([A-Z]+)(\d+)$/.exec(k); return {c:colIndex(m[1]), r:+m[2]-1}; };
+const cmpKey=(a,b)=>{ const x=parseKey(a), y=parseKey(b); return x.r-y.r||x.c-y.c; };
+const NUMRE=/^[+-]?(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?$/i;
+
+class Err{ constructor(code,why){ this.code=code; this.why=why||''; this.at=null; } }
+const isErr=v=>v instanceof Err;
+class SynErr extends Error{}
+const ERRS={
+  '#DIV/0!':'0 で割り算をしています。割る数のセルが 0 や空のセルになっていないかを確かめましょう。',
+  '#NAME?':'知らない名前が使われています。関数名のつづりのまちがい、文字列を " " で囲み忘れた、範囲の「:」が抜けた、などが原因です。',
+  '#VALUE!':'数値が必要なところに、文字列などが入っています。',
+  '#REF!':'正しくないセルを参照しています。',
+  '#N/A':'探した値が見つかりません。',
+  '#NUM!':'計算の結果を数として表せません。',
+  'CIRC':'循環参照：式が、直接または間接に自分自身のセルを参照しています。計算の順番が決まらないので、値が求められません。',
+  '#ERROR!':'式の書き方に誤りがあります（このページでの表示）。'
+};
+
+function toHalf(s){ // 全角の英数字・記号を半角に（" " の中はそのまま）
+  let out='', inq=false;
+  for(const ch of s){
+    if(ch==='"'||ch==='＂'||ch==='“'||ch==='”'){ out+='"'; inq=!inq; continue; }
+    if(inq){ out+=ch; continue; }
+    const code=ch.charCodeAt(0);
+    if(code>=0xFF01&&code<=0xFF5E) out+=String.fromCharCode(code-0xFEE0);
+    else if(ch==='　') out+=' ';
+    else if(ch==='−') out+='-';
+    else if(ch==='×') out+='*';
+    else if(ch==='÷') out+='/';
+    else out+=ch;
+  }
+  return out;
+}
+
+function tokenize(src){
+  const T=[]; let i=0;
+  while(i<src.length){
+    const ch=src[i];
+    if(ch===' '||ch==='\t'||ch==='\n'||ch==='\r'){ i++; continue; }
+    const rest=src.slice(i); let m;
+    if(ch==='"'){
+      let j=i+1, v='';
+      for(;;){
+        if(j>=src.length) throw new SynErr('文字列の「"」が閉じていません。');
+        if(src[j]==='"'){ if(src[j+1]==='"'){ v+='"'; j+=2; continue; } break; }
+        v+=src[j++];
+      }
+      T.push({t:'str',v,s:i,e:j+1}); i=j+1; continue;
+    }
+    if((m=/^#(DIV\/0!|NAME\?|VALUE!|REF!|N\/A|NUM!)/i.exec(rest))){ T.push({t:'err',v:'#'+m[1].toUpperCase(),s:i,e:i+m[0].length}); i+=m[0].length; continue; }
+    if((m=/^(\d+(\.\d*)?|\.\d+)(E[+-]?\d+)?/i.exec(rest))){ T.push({t:'num',v:Number(m[0]),s:i,e:i+m[0].length}); i+=m[0].length; continue; }
+    if((m=/^(\$?)([A-Za-z]{1,3})(\$?)(\d{1,7})(?![A-Za-z0-9_.(぀-ヿ㐀-鿿])/.exec(rest))){
+      T.push({t:'ref',ac:!!m[1],c:colIndex(m[2]),ar:!!m[3],r:+m[4]-1,s:i,e:i+m[0].length}); i+=m[0].length; continue;
+    }
+    if((m=/^[A-Za-z_぀-ヿ㐀-鿿ｦ-ﾟ][A-Za-z0-9_.぀-ヿ㐀-鿿ｦ-ﾟ]*/.exec(rest))){ T.push({t:'id',v:m[0],s:i,e:i+m[0].length}); i+=m[0].length; continue; }
+    if((m=/^(<=|>=|<>|[-+*\/^&=<>%])/.exec(rest))){ T.push({t:'op',v:m[0],s:i,e:i+m[0].length}); i+=m[0].length; continue; }
+    if('(),:'.includes(ch)){ T.push({t:ch,s:i,e:i+1}); i++; continue; }
+    throw new SynErr(`「${ch}」は式の中で使えない文字です。`);
+  }
+  return T;
+}
+
+function parseFormula(src){
+  const T=tokenize(src); let p=0;
+  const next=()=>T[p++];
+  const isOp=v=>T[p]&&T[p].t==='op'&&T[p].v===v;
+  const CMP=['=','<>','<','>','<=','>='];
+  function expr(){ return cmp(); }
+  function cmp(){ let a=cat(); while(T[p]&&T[p].t==='op'&&CMP.includes(T[p].v)){ const o=next().v; a={t:'bin',o,a,b:cat()}; } return a; }
+  function cat(){ let a=add(); while(isOp('&')){ next(); a={t:'bin',o:'&',a,b:add()}; } return a; }
+  function add(){ let a=mul(); while(isOp('+')||isOp('-')){ const o=next().v; a={t:'bin',o,a,b:mul()}; } return a; }
+  function mul(){ let a=pow(); while(isOp('*')||isOp('/')){ const o=next().v; a={t:'bin',o,a,b:pow()}; } return a; }
+  function pow(){ let a=una(); while(isOp('^')){ next(); a={t:'bin',o:'^',a,b:una()}; } return a; }
+  function una(){ if(isOp('-')){ next(); return {t:'neg',a:una()}; } if(isOp('+')){ next(); return una(); } return post(); }
+  function post(){ let a=prim(); while(isOp('%')){ next(); a={t:'pct',a}; } return a; }
+  function prim(){
+    const tk=next();
+    if(!tk) throw new SynErr('式が途中で終わっています。演算子の後ろに値やセル番地が必要です。');
+    if(tk.t==='num') return {t:'num',v:tk.v};
+    if(tk.t==='str') return {t:'str',v:tk.v};
+    if(tk.t==='err') return {t:'err',v:tk.v};
+    if(tk.t==='ref'){
+      if(T[p]&&T[p].t===':'){ next(); const b=next(); if(!b||b.t!=='ref') throw new SynErr('「:」の後ろにはセル番地を書きます（例 A1:A5）。'); return {t:'range',a:tk,b}; }
+      return Object.assign({t:'ref'},tk);
+    }
+    if(tk.t==='id'){
+      const name=tk.v.toUpperCase();
+      if(T[p]&&T[p].t==='('){
+        next(); const args=[];
+        if(T[p]&&T[p].t===')'){ next(); }
+        else for(;;){
+          if(T[p]&&(T[p].t===','||T[p].t===')')) args.push({t:'blank'}); else args.push(expr());
+          const s=next();
+          if(!s) throw new SynErr(`${name}( の「)」が足りません。`);
+          if(s.t===')') break;
+          if(s.t!==',') throw new SynErr(`${name}( ) の中で、引数は「,」で区切ります。`);
+        }
+        const f=FN[name];
+        if(f&&(args.length<f.min||args.length>f.max)) throw new SynErr(`${name} 関数の引数の数がちがいます。書き方：${f.syn}`);
+        return {t:'call',name,args};
+      }
+      if(name==='TRUE'||name==='FALSE') return {t:'bool',v:name==='TRUE'};
+      return {t:'name',v:tk.v};
+    }
+    if(tk.t==='('){ const e=expr(); const c=next(); if(!c||c.t!==')') throw new SynErr('「(」に対応する「)」が足りません。'); return {t:'paren',a:e}; }
+    if(tk.t===')') throw new SynErr('「)」が多すぎるか、「)」の前に値がありません。');
+    if(tk.t===',') throw new SynErr('「,」は関数のかっこの中で、引数を区切るときに使います。');
+    throw new SynErr(`「${tk.v||tk.t}」の前に値が必要です。`);
+  }
+  if(!T.length) throw new SynErr('「=」の後ろに式を書きます。');
+  const ast=expr();
+  if(p<T.length){ const tk=T[p]; throw new SynErr(tk.t===')'?'「(」と「)」の数が合っていません。':`「${src.slice(tk.s,tk.e)}」の前に演算子（+ や * など）か「,」が必要です。`); }
+  return {ast,tokens:T};
+}
+
+function parseLiteral(s){
+  if(s.startsWith("'")) return s.slice(1);
+  const t=toHalf(s).trim();
+  if(t!==''&&NUMRE.test(t)) return Number(t);
+  if(/^(TRUE|FALSE)$/i.test(t)) return t.toUpperCase()==='TRUE';
+  return s;
+}
+const isFormulaText=s=>/^[=＝]/.test(s)&&s.length>1;
+function compileCell(raw){
+  const s=String(raw);
+  if(isFormulaText(s)){
+    try{ const {ast}=parseFormula(toHalf(s.slice(1))); return {kind:'f',ast}; }
+    catch(e){ if(e instanceof SynErr) return {kind:'f',perr:e.message}; throw e; }
+  }
+  return {kind:'lit',v:parseLiteral(s)};
+}
+
+function fmtNum(v){ if(Object.is(v,-0)) v=0; if(Number.isInteger(v)&&Math.abs(v)<1e15) return String(v); return String(Number(v.toPrecision(15))); }
+function fitNum(v,w){ let s=fmtNum(v); if(s.length<=w) return s; for(let p=12;p>=1;p--){ const t=String(Number(v.toPrecision(p))); if(t.length<=w) return t; s=t; } return s; }
+function dispVal(v,w){
+  if(v===null||v===undefined) return '';
+  if(isErr(v)) return v.code==='CIRC'?'循環参照':v.code;
+  if(typeof v==='number') return w? fitNum(v,w) : fmtNum(v);
+  if(typeof v==='boolean') return v?'TRUE':'FALSE';
+  return v;
+}
+const refText=t=>(t.ac?'$':'')+colName(t.c)+(t.ar?'$':'')+(t.r+1);
+
+function num(v){
+  if(isErr(v)) return v;
+  if(v===null) return 0;
+  if(typeof v==='number') return v;
+  if(typeof v==='boolean') return v?1:0;
+  const t=toHalf(v).trim();
+  if(t!==''&&NUMRE.test(t)) return Number(t);
+  return new Err('#VALUE!',`文字列「${v}」を数値として計算しようとしました。`);
+}
+function str(v){ if(v===null) return ''; if(typeof v==='number') return fmtNum(v); if(typeof v==='boolean') return v?'TRUE':'FALSE'; return v; }
+function bool(v){
+  if(isErr(v)) return v; if(v===null) return false;
+  if(typeof v==='boolean') return v; if(typeof v==='number') return v!==0;
+  const t=v.trim().toUpperCase(); if(t==='TRUE') return true; if(t==='FALSE') return false;
+  return new Err('#VALUE!',`IF の条件「${v}」が TRUE か FALSE になりません。`);
+}
+const typeRank=v=>typeof v==='number'?0:typeof v==='string'?1:2;
+function cmpVals(a,b){
+  if(a===null) a= typeof b==='string'?'' : typeof b==='boolean'?false : 0;
+  if(b===null) b= typeof a==='string'?'' : typeof a==='boolean'?false : 0;
+  const ta=typeRank(a), tb=typeRank(b);
+  if(ta!==tb) return ta<tb?-1:1;
+  if(ta===1){ const x=a.toLowerCase(), y=b.toLowerCase(); return x<y?-1:x>y?1:0; }
+  if(ta===2){ return (a?1:0)-(b?1:0); }
+  return a<b?-1:a>b?1:0;
+}
+function binop(o,a,b){
+  if(o==='&'){ if(isErr(a)) return a; if(isErr(b)) return b; return str(a)+str(b); }
+  if(['=','<>','<','>','<=','>='].includes(o)){
+    if(isErr(a)) return a; if(isErr(b)) return b;
+    const c=cmpVals(a,b);
+    return o==='='?c===0 : o==='<>'?c!==0 : o==='<'?c<0 : o==='>'?c>0 : o==='<='?c<=0 : c>=0;
+  }
+  const x=num(a); if(isErr(x)) return x;
+  const y=num(b); if(isErr(y)) return y;
+  let r;
+  if(o==='+') r=x+y; else if(o==='-') r=x-y; else if(o==='*') r=x*y;
+  else if(o==='/'){ if(y===0) return new Err('#DIV/0!','割る数が 0（または空のセル）です。'); r=x/y; }
+  else if(o==='^'){ if(x===0&&y===0) return new Err('#NUM!','0 の 0 乗は計算できません。'); r=x**y; }
+  if(!isFinite(r)) return new Err('#NUM!','計算の結果が大きすぎるか、数として表せません。');
+  return r;
+}
+function wild(p){
+  let r='';
+  for(let i=0;i<p.length;i++){
+    const ch=p[i];
+    if(ch==='~'&&i+1<p.length&&'*?~'.includes(p[i+1])){ r+='\\'+p[++i]; continue; }
+    if(ch==='*') r+='[\\s\\S]*'; else if(ch==='?') r+='[\\s\\S]';
+    else r+=ch.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&');
+  }
+  return new RegExp('^'+r+'$','i');
+}
+function makeCrit(c){
+  if(typeof c==='number') return v=>typeof v==='number'&&v===c;
+  if(typeof c==='boolean') return v=>v===c;
+  const s=c===null?'':String(c);
+  const m=/^(<=|>=|<>|<|>|=)?([\s\S]*)$/.exec(s); const op=m[1]||'', rhs=m[2];
+  const t=toHalf(rhs).trim();
+  if(t!==''&&NUMRE.test(t)){
+    const x=Number(t);
+    if(op==='<>') return v=>!(typeof v==='number'&&v===x);
+    const f={'':a=>a===x,'=':a=>a===x,'<':a=>a<x,'>':a=>a>x,'<=':a=>a<=x,'>=':a=>a>=x}[op];
+    return v=>typeof v==='number'&&f(v);
+  }
+  if(/^(TRUE|FALSE)$/i.test(t)&&(op===''||op==='='||op==='<>')){ const b=t.toUpperCase()==='TRUE'; return op==='<>'? v=>v!==b : v=>v===b; }
+  if(op===''||op==='='){ if(rhs==='') return v=>v===null||v===''; const re=wild(rhs); return v=>typeof v==='string'&&re.test(v); }
+  if(op==='<>'){ if(rhs==='') return v=>!(v===null||v===''); const re=wild(rhs); return v=>!(typeof v==='string'&&re.test(v)); }
+  const g={'<':x=>x<0,'>':x=>x>0,'<=':x=>x<=0,'>=':x=>x>=0}[op];
+  return v=>typeof v==='string'&&g(cmpVals(v,rhs));
+}
+
+function areaOf(n,sh){
+  while(n.t==='paren') n=n.a;
+  if(n.t==='ref') n={t:'range',a:n,b:n};
+  if(n.t!=='range') return null;
+  const c1=Math.min(n.a.c,n.b.c), c2=Math.max(n.a.c,n.b.c), r1=Math.min(n.a.r,n.b.r), r2=Math.max(n.a.r,n.b.r);
+  if(c1<0||r1<0||c2>=sh.cols||r2>=sh.rows) return new Err('#REF!',`${keyOf(Math.max(c1,0),Math.max(r1,0))} などがこの表の外です（この表は A〜${colName(sh.cols-1)} 列、1〜${sh.rows} 行）。`);
+  return {c1,r1,c2,r2,w:c2-c1+1,h:r2-r1+1,get:(i,j)=>sh.value(keyOf(c1+j,r1+i))};
+}
+function eachArea(ar,fn){ for(let i=0;i<ar.h;i++) for(let j=0;j<ar.w;j++){ if(fn(ar.get(i,j),i,j)===false) return; } }
+function collect(args,sh){
+  const out=[];
+  for(const a of args){
+    const ar=areaOf(a,sh);
+    if(ar){ if(isErr(ar)) return ar; let e=null; eachArea(ar,v=>{ if(isErr(v)){ e=v; return false; } if(typeof v==='number') out.push(v); }); if(e) return e; continue; }
+    const v=evalNode(a,sh);
+    if(isErr(v)) return v;
+    if(v===null) continue;
+    if(typeof v==='string'){ const x=num(v); if(isErr(x)) return x; out.push(x); }
+    else out.push(typeof v==='boolean'?(v?1:0):v);
+  }
+  return out;
+}
+const FN={
+  'SUM':{min:1,max:255,syn:'SUM(範囲, …)',desc:'範囲の数値の合計を求めます。',f(a,sh){ const r=collect(a,sh); if(isErr(r)) return r; return r.reduce((x,y)=>x+y,0); }},
+  'AVERAGE':{min:1,max:255,syn:'AVERAGE(範囲, …)',desc:'数値の平均を求めます。空のセルや文字のセルは数に入れませんが、0 のセルは数に入れます。',f(a,sh){ const r=collect(a,sh); if(isErr(r)) return r; if(!r.length) return new Err('#DIV/0!','平均を求める数値が1つもありません（個数 0 で割ることになります）。'); return r.reduce((x,y)=>x+y,0)/r.length; }},
+  'MAX':{min:1,max:255,syn:'MAX(範囲, …)',desc:'いちばん大きい数を求めます。',f(a,sh){ const r=collect(a,sh); if(isErr(r)) return r; return r.length?Math.max(...r):0; }},
+  'MIN':{min:1,max:255,syn:'MIN(範囲, …)',desc:'いちばん小さい数を求めます。',f(a,sh){ const r=collect(a,sh); if(isErr(r)) return r; return r.length?Math.min(...r):0; }},
+  'COUNT':{min:1,max:255,syn:'COUNT(範囲, …)',desc:'数値が入っているセルの個数を数えます。空のセル・文字・エラーは数えません。',f(a,sh){
+    let n=0;
+    for(const x of a){ const ar=areaOf(x,sh); if(ar){ if(isErr(ar)) continue; eachArea(ar,v=>{ if(typeof v==='number') n++; }); continue; }
+      const v=evalNode(x,sh); if(typeof v==='number'||typeof v==='boolean') n++; else if(typeof v==='string'&&!isErr(num(v))) n++; }
+    return n; }},
+  'COUNTIF':{min:2,max:2,syn:'COUNTIF(範囲, 条件)',desc:'範囲の中で、条件に合うセルの個数を数えます。',f(a,sh){
+    const ar=areaOf(a[0],sh); if(!ar) return new Err('#VALUE!','COUNTIF の1つ目には範囲（例 B2:B10）を書きます。'); if(isErr(ar)) return ar;
+    const cv=evalNode(a[1],sh); if(isErr(cv)) return cv; const m=makeCrit(cv); let n=0;
+    eachArea(ar,v=>{ if(!isErr(v)&&m(v)) n++; }); return n; }},
+  'SUMIF':{min:2,max:3,syn:'SUMIF(範囲, 条件, [合計範囲])',desc:'範囲の中で条件に合うセルと同じ行（列）の、合計範囲の数値を合計します。',f(a,sh){
+    const ar=areaOf(a[0],sh); if(!ar) return new Err('#VALUE!','SUMIF の1つ目には範囲を書きます。'); if(isErr(ar)) return ar;
+    let sr=ar; if(a.length>2&&a[2].t!=='blank'){ sr=areaOf(a[2],sh); if(!sr) return new Err('#VALUE!','SUMIF の3つ目には範囲を書きます。'); if(isErr(sr)) return sr; }
+    const cv=evalNode(a[1],sh); if(isErr(cv)) return cv; const m=makeCrit(cv); let s=0, e=null;
+    eachArea(ar,(v,i,j)=>{ if(isErr(v)||!m(v)) return; const c=sr.c1+j, r=sr.r1+i; if(c>=sh.cols||r>=sh.rows) return; const w=sh.value(keyOf(c,r)); if(isErr(w)){ e=w; return false; } if(typeof w==='number') s+=w; });
+    return e||s; }},
+  'IF':{min:2,max:3,syn:'IF(条件, 真のときの値, [偽のときの値])',desc:'条件が TRUE なら2つ目、FALSE なら3つ目の値になります。',f(a,sh){
+    const t=evalNode(a[0],sh); if(isErr(t)) return t; const b=bool(t); if(isErr(b)) return b;
+    if(b) return evalNode(a[1],sh); return a.length>2? evalNode(a[2],sh) : false; }},
+  'ROUND':{min:2,max:2,syn:'ROUND(数値, 桁数)',desc:'数値を指定した桁数に四捨五入します。桁数が負なら整数部分で丸めます。',f(a,sh){
+    const x=num(evalNode(a[0],sh)); if(isErr(x)) return x; let d=num(evalNode(a[1],sh)); if(isErr(d)) return d; d=Math.trunc(d);
+    return xround(x,d); }},
+  'RANK.EQ':{min:2,max:3,syn:'RANK.EQ(数値, 範囲, [順序])',desc:'範囲の中での順位を求めます。順序を省くか 0 なら大きい順です。同じ値には同じ順位がつき、次の順位は飛ばされます。',f:rankEq},
+  'RANK':{min:2,max:3,syn:'RANK(数値, 範囲, [順序])',desc:'RANK.EQ と同じ計算をします（このページでは同じあつかい）。',f:rankEq},
+  'VLOOKUP':{min:3,max:4,syn:'VLOOKUP(検索値, 範囲, 列番号, [検索の型])',desc:'範囲の左はしの列で検索値を探し、同じ行の「列番号」列目の値を返します。検索の型が FALSE なら完全一致、TRUE か省略なら近似一致（左はしの列が小さい順に並んでいる必要があります）。',f(a,sh){
+    const key=evalNode(a[0],sh); if(isErr(key)) return key;
+    if(key===null) return new Err('#N/A','検索値が空です。');
+    const ar=areaOf(a[1],sh); if(!ar) return new Err('#VALUE!','VLOOKUP の2つ目には範囲を書きます。'); if(isErr(ar)) return ar;
+    let col=num(evalNode(a[2],sh)); if(isErr(col)) return col; col=Math.trunc(col);
+    if(col<1) return new Err('#VALUE!','列番号は 1 以上にします（範囲の左はしの列が 1）。');
+    if(col>ar.w) return new Err('#REF!',`列番号 ${col} が、範囲の列数（${ar.w} 列）より大きくなっています。`);
+    let sorted=true; if(a.length>3&&a[3].t!=='blank'){ sorted=bool(evalNode(a[3],sh)); if(isErr(sorted)) return sorted; }
+    if(!sorted){
+      const re= typeof key==='string'? wild(key) : null;
+      for(let i=0;i<ar.h;i++){ const v=ar.get(i,0);
+        if(re? (typeof v==='string'&&re.test(v)) : (typeof v===typeof key&&v===key)){ const r=ar.get(i,col-1); return r===null?0:r; } }
+      return new Err('#N/A',`検索値「${dispVal(key)}」と完全に一致する値が、範囲の左はしの列にありません。`+(typeof key==='number'?'（数値と、数字の文字列は別のものとして扱われます）':''));
+    }
+    let found=-1;
+    for(let i=0;i<ar.h;i++){ const v=ar.get(i,0); if(v===null||isErr(v)||typeRank(v)!==typeRank(key)) continue; if(cmpVals(v,key)<=0) found=i; else break; }
+    if(found<0) return new Err('#N/A',`近似一致で、検索値「${dispVal(key)}」以下の値が範囲の左はしの列にありません。`);
+    const r=ar.get(found,col-1); return r===null?0:r; }},
+};
+function rankEq(a,sh){
+  const x=num(evalNode(a[0],sh)); if(isErr(x)) return x;
+  const ar=areaOf(a[1],sh); if(!ar) return new Err('#VALUE!','RANK.EQ の2つ目には範囲を書きます。'); if(isErr(ar)) return ar;
+  let ord=0; if(a.length>2&&a[2].t!=='blank'){ ord=num(evalNode(a[2],sh)); if(isErr(ord)) return ord; }
+  const vs=[]; let e=null; eachArea(ar,v=>{ if(isErr(v)){ e=v; return false; } if(typeof v==='number') vs.push(v); }); if(e) return e;
+  if(!vs.includes(x)) return new Err('#N/A',`${fmtNum(x)} が範囲の中にありません。`);
+  return 1+vs.filter(v=>ord? v<x : v>x).length;
+}
+function xround(x,d){
+  const s=x<0?-1:1, a=Math.abs(x); let r;
+  if(d>=0){ const m=10**d; r=Math.floor(Number((a*m).toPrecision(15))+0.5)/m; }
+  else { const m=10**(-d); r=Math.floor(Number((a/m).toPrecision(15))+0.5)*m; }
+  return s*r;
+}
+function evalNode(n,sh){
+  switch(n.t){
+    case 'num': case 'str': case 'bool': return n.v;
+    case 'blank': return 0;
+    case 'err': return new Err(n.v,'式の中にエラー値がそのまま書かれています（コピーで参照先がなくなったときなどに起きます）。');
+    case 'paren': return evalNode(n.a,sh);
+    case 'name': return new Err('#NAME?',`「${n.v}」という名前（関数・セル番地）はありません。文字列として使うなら "${n.v}" のように " で囲みます。`);
+    case 'ref': if(!sh.inGrid(n.c,n.r)) return new Err('#REF!',`${refText(n)} はこの表の外です（この表は A〜${colName(sh.cols-1)} 列、1〜${sh.rows} 行）。`); return sh.value(keyOf(n.c,n.r));
+    case 'range': return new Err('#VALUE!','範囲（A1:B5 など）は、SUM などの関数の中で使います。1つの値として使うことはできません。');
+    case 'neg': { const x=num(evalNode(n.a,sh)); return isErr(x)?x:-x; }
+    case 'pct': { const x=num(evalNode(n.a,sh)); return isErr(x)?x:x/100; }
+    case 'bin': return binop(n.o,evalNode(n.a,sh),evalNode(n.b,sh));
+    case 'call': { const f=FN[n.name]; if(!f) return new Err('#NAME?',`「${n.name}」という関数は、このページの表計算にはありません。つづりを確かめましょう（使える関数は下の一覧にあります）。`); return f.f(n.args,sh); }
+  }
+  return new Err('#VALUE!');
+}
+function walkRefs(n,sh,set){
+  if(!n||typeof n!=='object') return;
+  if(n.t==='ref'){ if(sh.inGrid(n.c,n.r)) set.add(keyOf(n.c,n.r)); return; }
+  if(n.t==='range'){ const c1=Math.max(0,Math.min(n.a.c,n.b.c)), c2=Math.min(sh.cols-1,Math.max(n.a.c,n.b.c)), r1=Math.max(0,Math.min(n.a.r,n.b.r)), r2=Math.min(sh.rows-1,Math.max(n.a.r,n.b.r));
+    for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) set.add(keyOf(c,r)); return; }
+  if(n.a) walkRefs(n.a,sh,set); if(n.b) walkRefs(n.b,sh,set); if(n.args) n.args.forEach(x=>walkRefs(x,sh,set));
+}
+function fnNames(n,set){ if(!n||typeof n!=='object') return set; if(n.t==='call') set.add(n.name); if(n.a&&n.t!=='range') fnNames(n.a,set); if(n.b&&n.t!=='range') fnNames(n.b,set); if(n.args) n.args.forEach(x=>fnNames(x,set)); return set; }
+function findCycles(deps){
+  let idx=0; const index={}, low={}, on=new Set(), st=[], out=new Set();
+  function sc(v){
+    index[v]=low[v]=idx++; st.push(v); on.add(v);
+    for(const w of (deps[v]||[])){ if(!(w in deps)) continue; if(!(w in index)){ sc(w); low[v]=Math.min(low[v],low[w]); } else if(on.has(w)) low[v]=Math.min(low[v],index[w]); }
+    if(low[v]===index[v]){ const comp=[]; let w; do{ w=st.pop(); on.delete(w); comp.push(w); }while(w!==v); if(comp.length>1||(deps[v]&&deps[v].has(v))) comp.forEach(x=>out.add(x)); }
+  }
+  for(const v in deps) if(!(v in index)) sc(v);
+  return out;
+}
+class Sheet{
+  constructor(cols,rows){ this.cols=cols; this.rows=rows; this.raw={}; this.comp={}; this.vals={}; this.deps={}; this.rdeps={}; this.circ=new Set(); this.busy=new Set(); }
+  inGrid(c,r){ return c>=0&&r>=0&&c<this.cols&&r<this.rows; }
+  set(k,s){ s=s==null?'':String(s); if(s==='') delete this.raw[k]; else this.raw[k]=s; }
+  load(cells){ this.raw={}; for(const k in cells) this.set(k,cells[k]); this.recalc(); }
+  recalc(){
+    this.comp={}; this.deps={}; this.rdeps={}; this.vals={}; this.busy=new Set();
+    for(const k in this.raw){ const c=compileCell(this.raw[k]); this.comp[k]=c; const d=new Set(); if(c.ast) walkRefs(c.ast,this,d); this.deps[k]=d;
+      for(const x of d) (this.rdeps[x]||(this.rdeps[x]=new Set())).add(k); }
+    this.circ=findCycles(this.deps);
+    for(const k in this.raw) this.value(k);
+  }
+  value(k){
+    if(k in this.vals) return this.vals[k];
+    const c=this.comp[k]; if(!c) return null;
+    let v;
+    if(c.kind==='lit') v=c.v;
+    else if(c.perr) v=new Err('#ERROR!',c.perr);
+    else if(this.circ.has(k)||this.busy.has(k)) v=new Err('CIRC');
+    else { this.busy.add(k); v=evalNode(c.ast,this); if(v===null) v=0; this.busy.delete(k); }
+    if(isErr(v)&&!v.at){ v=Object.assign(new Err(v.code,v.why),{at:k}); }
+    this.vals[k]=v; return v;
+  }
+}
+function shiftFormula(raw,dc,dr){
+  if(!isFormulaText(raw)) return raw;
+  const body=toHalf(raw.slice(1)); let T;
+  try{ T=tokenize(body); }catch(e){ return raw; }
+  let out='', last=0;
+  for(const tk of T){ if(tk.t!=='ref') continue;
+    const c=tk.ac?tk.c:tk.c+dc, r=tk.ar?tk.r:tk.r+dr;
+    out+=body.slice(last,tk.s)+(c<0||r<0?'#REF!':(tk.ac?'$':'')+colName(c)+(tk.ar?'$':'')+(r+1)); last=tk.e; }
+  return '='+out+body.slice(last);
+}
+function recalcOrder(sh,keys){
+  const aff=new Set(), st=[...keys];
+  while(st.length){ const x=st.pop(); for(const y of (sh.rdeps[x]||[])) if(!aff.has(y)){ aff.add(y); st.push(y); } }
+  keys.forEach(k=>{ if(sh.comp[k]&&sh.comp[k].kind==='f') aff.add(k); });
+  const indeg={}; for(const x of aff){ let n=0; for(const d of (sh.deps[x]||[])) if(aff.has(d)&&d!==x) n++; indeg[x]=n; }
+  const q=[...aff].filter(x=>indeg[x]===0).sort(cmpKey), out=[];
+  while(q.length){ const x=q.shift(); out.push(x); const nx=[]; for(const y of (sh.rdeps[x]||[])) if(aff.has(y)&&y!==x){ if(--indeg[y]===0) nx.push(y); } q.push(...nx.sort(cmpKey)); }
+  const rest=[...aff].filter(x=>!out.includes(x)).sort(cmpKey);
+  return {order:out,circ:rest};
+}
+function compressKeys(keys){ // B2,B3,B4 → B2:B4
+  const byCol={}; keys.forEach(k=>{ const p=parseKey(k); (byCol[p.c]||(byCol[p.c]=[])).push(p.r); });
+  const out=[];
+  Object.keys(byCol).map(Number).sort((a,b)=>a-b).forEach(c=>{ const rs=byCol[c].sort((a,b)=>a-b); let s=rs[0], p=rs[0];
+    for(let i=1;i<=rs.length;i++){ if(i<rs.length&&rs[i]===p+1){ p=rs[i]; continue; } out.push(s===p?keyOf(c,s):keyOf(c,s)+':'+keyOf(c,p)); if(i<rs.length){ s=p=rs[i]; } } });
+  return out;
+}
+/*ENGINE-END*/
+
+/* ===================== 表計算ソフトを動かす ===================== */
+const S1=new Sheet(8,20);
+const C={act:{c:0,r:0}, ext:null, rangeMode:false, clip:null, dirty:false, last:null};
+function gridCells(rows,startRow){ const o={}; rows.forEach((row,i)=>row.forEach((v,j)=>{ if(v!==''&&v!=null) o[keyOf(j,(startRow||1)-1+i)]=String(v); })); return o; }
+const SAMPLES=(()=>{
+  const S={};
+  // テストの成績表
+  const sc=[['名前','国語','数学','英語','合計','平均','順位','評価']];
+  [['生徒A',72,85,64],['生徒B',88,62,91],['生徒C',55,70,58],['生徒D',64,92,77],['生徒E',79,85,83],['生徒F',91,48,70],['生徒G',68,77,72],['生徒H',83,81,77]]
+    .forEach((s,i)=>{ const r=i+2; sc.push([...s,`=SUM(B${r}:D${r})`,`=ROUND(AVERAGE(B${r}:D${r}),1)`,`=RANK.EQ(E${r},$E$2:$E$9)`,`=IF(F${r}>=80,"A",IF(F${r}>=65,"B","C"))`]); });
+  const cs=['B','C','D','E'];
+  sc.push([]);
+  sc.push(['平均',...cs.map(c=>`=ROUND(AVERAGE(${c}2:${c}9),1)`)]);
+  sc.push(['最高',...cs.map(c=>`=MAX(${c}2:${c}9)`)]);
+  sc.push(['最低',...cs.map(c=>`=MIN(${c}2:${c}9)`)]);
+  sc.push(['人数',...cs.map(c=>`=COUNT(${c}2:${c}9)`)]);
+  sc.push(['80点以上',...['B','C','D'].map(c=>`=COUNTIF(${c}2:${c}9,">=80")`)]);
+  sc.push([]);
+  sc.push(['評価Aの人数','=COUNTIF(H2:H9,"A")']);
+  S.score={cells:gridCells(sc),act:'E2',note:'E2（生徒A の合計）を選んでいます。青いセルが E2 の式で使っているセル、オレンジのセルが E2 を使っている式のセルです。<b>B2（国語）の 72 を 95 に書きかえて</b>、計算し直されるセルの順番を見てみましょう。生徒B と生徒H は合計が同じなので、順位（G列）が同じ2位になり、3位がありません。'};
+  // 文化祭の売上表
+  const sa=[['品名','区分','単価','個数','売上','割合(%)','順位']];
+  [['焼きそば','食べ物',300,120],['フランクフルト','食べ物',200,95],['クレープ','食べ物',350,80],['ジュース','飲み物',100,150],['お茶','飲み物',100,60],['わたあめ','食べ物',150,40]]
+    .forEach((s,i)=>{ const r=i+2; sa.push([...s,`=C${r}*D${r}`,`=ROUND(E${r}/$E$8*100,1)`,`=RANK.EQ(E${r},$E$2:$E$7)`]); });
+  sa.push(['合計','','','=SUM(D2:D7)','=SUM(E2:E7)','=SUM(F2:F7)']);
+  sa.push([]);
+  sa.push(['区分','売上合計','品数']);
+  sa.push(['食べ物','=SUMIF($B$2:$B$7,A11,$E$2:$E$7)','=COUNTIF($B$2:$B$7,A11)']);
+  sa.push(['飲み物','=SUMIF($B$2:$B$7,A12,$E$2:$E$7)','=COUNTIF($B$2:$B$7,A12)']);
+  sa.push([]);
+  sa.push(['1万円以上の品数','=COUNTIF(E2:E7,">=10000")']);
+  S.sales={cells:gridCells(sa),act:'F2',note:'F2 の割合は <code>=ROUND(E2/$E$8*100,1)</code> です。合計の E8 を $ で固定しているので、下へコピーしても正しく計算できます。F8 が 100 ではなく 100.1 になるのは、四捨五入した後の値を足しているためです。B11・B12 では SUMIF で区分ごとの売上を求めています。'};
+  // アルバイトの給料
+  const wg=[['日','開始','終了','休憩','勤務時間','給料']];
+  [['1日目',17,21,0],['2日目',17.5,21,0],['3日目',10,18,1],['4日目',13,17.5,0.5],['5日目',17,22,0.5]]
+    .forEach((s,i)=>{ const r=i+2; wg.push([...s,`=C${r}-B${r}-D${r}`,`=E${r}*$B$9`]); });
+  wg.push(['合計','','','','=SUM(E2:E6)','=SUM(F2:F6)']);
+  wg.push([]);
+  wg.push(['時給',1100]);
+  wg.push(['交通費(1日)',300]);
+  wg.push(['支給額','=F7+B10*COUNT(E2:E6)']);
+  wg.push([]);
+  wg.push(['4時間以上の日数','=COUNTIF(E2:E6,">=4")']);
+  S.wage={cells:gridCells(wg),act:'F2',note:'時刻は 17.5（17時30分）のように、時間を小数で入れています。時給は B9 の1つのセルにまとめ、給料の式では <code>$B$9</code> と固定しています。<b>B9 の時給を 1200 に変えると</b>、F2〜F6、F7、B11 が順に計算し直されます。'};
+  // 商品コードで探す
+  const lk=[['コード','個数','商品名','単価','金額','コード','商品名','単価']];
+  const prod=[['A01','ノート',150],['A02','消しゴム',80],['B01','ボールペン',120],['B02','定規',200],['C01','ファイル',250]];
+  [['B01',3],['A01',5],['C01',2],['A03',1],['B02',4]].forEach((s,i)=>{ const r=i+2; lk.push([...s,`=VLOOKUP(A${r},$F$2:$H$6,2,FALSE)`,`=VLOOKUP(A${r},$F$2:$H$6,3,FALSE)`,`=B${r}*D${r}`,...prod[i]]); });
+  lk.push(['合計','','','','=SUM(E2:E6)']);
+  lk.push([]);
+  lk.push(['送料の計算','','','','','金額','送料']);
+  lk.push(['金額',2400,'','','',0,500]);
+  lk.push(['送料','=VLOOKUP(B10,F10:G12,2,TRUE)','','','',1000,300]);
+  lk.push(['','','','','',3000,0]);
+  S.lookup={cells:gridCells(lk),act:'C2',note:'C2・D2 は、A2 のコードを右の商品一覧（F2:H6）から探しています（完全一致の FALSE）。A5 の「A03」は一覧にないので <code>#N/A</code> になり、それを使う E5、さらに合計の E7 にまでエラーが伝わります。<b>A5 を A02 に直してみましょう。</b>B11 は近似一致（TRUE）で送料表を引いています。B10 の金額を変えて確かめましょう。'};
+  // エラーの見本
+  const er=[['式（文字として表示）','結果','原因','','データ','商品','値段']];
+  er.push(["'=10/0",'=10/0','0 で割った','',75,'りんご',120]);
+  er.push(["'=E2/E3",'=E2/E3','0 のセルで割った','',0,'みかん',80]);
+  er.push(["'=SUMM(E2:E3)",'=SUMM(E2:E3)','関数名のまちがい']);
+  er.push(["'=IF(E2>=80,合格,不合格)",'=IF(E2>=80,合格,不合格)','" で囲んでいない']);
+  er.push(["'=\"点数\"+E2",'="点数"+E2','文字列を足した']);
+  er.push(["'=VLOOKUP(\"ぶどう\",F2:G3,2,FALSE)",'=VLOOKUP("ぶどう",F2:G3,2,FALSE)','見つからない']);
+  er.push(["'=VLOOKUP(\"りんご\",F2:G3,3,FALSE)",'=VLOOKUP("りんご",F2:G3,3,FALSE)','列番号が大きすぎる']);
+  er.push(["'=B10+1",'=B10+1','B9 と B10 が']);
+  er.push(["'=B9*2",'=B9*2','おたがいを参照']);
+  er.push(["'=(1+2",'=(1+2','かっこが閉じていない']);
+  er.push(["'=SUM(E2E3)",'=SUM(E2E3)','範囲の : が抜けた']);
+  S.errors={cells:gridCells(er),act:'B2',note:'B列のセルを1つずつ選んで、下の説明を読みましょう。A列は、B列に入っている式を文字として表示したものです（先頭に \' をつけると、= から始まっていても文字列になります）。直し方が分かったら、B列の式を正しく書き直してみましょう。'};
+  S.blank={cells:{},act:'A1',note:'空の表です。A1 に 10、A2 に 20 を入れてから、A3 に <code>=A1+A2</code> と入れてみましょう。そのあと A1 を書きかえると、A3 が自動で計算し直されます。'};
+  return S;
+})();
+
+function curRange(){ const a=C.act, b=C.ext||C.act; return {c1:Math.min(a.c,b.c),c2:Math.max(a.c,b.c),r1:Math.min(a.r,b.r),r2:Math.max(a.r,b.r)}; }
+const rangeText=g=>g.c1===g.c2&&g.r1===g.r2? keyOf(g.c1,g.r1) : keyOf(g.c1,g.r1)+':'+keyOf(g.c2,g.r2);
+function status(html){ $('cStatus').innerHTML=html||''; }
+function short(s){ s=String(s); return s.length>24? s.slice(0,23)+'…' : s; }
+
+function renderCalc(){
+  const ak=keyOf(C.act.c,C.act.r), g=curRange();
+  const pre=S1.deps[ak]||new Set(), dep=S1.rdeps[ak]||new Set();
+  let h='<thead><tr><th class="corner"></th>';
+  for(let c=0;c<S1.cols;c++) h+=`<th class="${c>=g.c1&&c<=g.c2?'on':''}">${colName(c)}</th>`;
+  h+='</tr></thead><tbody>';
+  for(let r=0;r<S1.rows;r++){
+    h+=`<tr><th class="${r>=g.r1&&r<=g.r2?'on':''}">${r+1}</th>`;
+    for(let c=0;c<S1.cols;c++){
+      const k=keyOf(c,r), has=k in S1.raw, v=has?S1.vals[k]:null;
+      const cls=[];
+      if(isErr(v)) cls.push('e'); else if(typeof v==='number') cls.push('n'); else if(typeof v==='boolean') cls.push('b');
+      if(c>=g.c1&&c<=g.c2&&r>=g.r1&&r<=g.r2&&(g.c1!==g.c2||g.r1!==g.r2)) cls.push('inr');
+      if(pre.has(k)) cls.push('pre'); if(dep.has(k)) cls.push('dep');
+      if(k===ak) cls.push('sel');
+      const t=dispVal(v,typeof v==='number'?9:0);
+      h+=`<td data-k="${k}" class="${cls.join(' ')}"${t.length>8?` title="${esc(t)}"`:''}>${esc(t)}</td>`;
+    }
+    h+='</tr>';
+  }
+  $('cGrid').innerHTML=h+'</tbody>';
+  $('cName').textContent=rangeText(g);
+  if(!C.dirty) $('cInput').value=S1.raw[ak]||'';
+  renderInfo(ak);
+}
+const typeName=v=>v===null?'空':isErr(v)?'エラー':typeof v==='number'?'数値':typeof v==='boolean'?'論理値':'文字列';
+function renderInfo(k){
+  const raw=S1.raw[k], has=raw!=null, v=has?S1.vals[k]:null, comp=S1.comp[k];
+  $('iKey').textContent=k;
+  $('iKind').textContent=!has?'空のセル':comp.kind==='f'?`式（結果は${typeName(v)}）`:typeName(v);
+  $('iVal').textContent=has?dispVal(v)||'（空の文字列）':'–';
+  $('iVal').className='v'+(isErr(v)?' ng':'');
+  const pre=[...(S1.deps[k]||[])], dep=[...(S1.rdeps[k]||[])];
+  let rf='';
+  if(has&&comp.kind==='f') rf+=`<div><b>参照しているセル</b>：${pre.length?compressKeys(pre).map(x=>`<span class="kc p">${x}</span>`).join(''):'なし'}</div>`;
+  rf+=`<div><b>このセルを参照しているセル</b>：${dep.length?compressKeys(dep).map(x=>`<span class="kc d">${x}</span>`).join(''):'なし'}</div>`;
+  $('iRefs').innerHTML=rf;
+  const m=$('iMsg');
+  if(isErr(v)){
+    m.className='msg ng';
+    const own=!v.at||v.at===k;
+    let t=`<div class="t">${esc(dispVal(v))}</div>${esc(ERRS[v.code]||'')}`;
+    if(own&&v.why) t+=`<br>${esc(v.why)}`;
+    if(!own) t+=`<br>このセルの式そのものではなく、参照しているセルをたどった先の <b>${esc(v.at)}</b> でエラーが起きています。エラーは、そのセルを使うすべての式に伝わります。`+(v.code==='CIRC'?'':`（${esc(v.at)} の原因：${esc(v.why)}）`);
+    if(v.code==='CIRC'&&own) t+='<br>参照をたどると、このセルにもどってきます。どちらかの式を、相手を使わない式に書き直しましょう。';
+    m.innerHTML=t;
+  } else if(has&&comp.kind==='f'){
+    m.className='msg';
+    const fs=[...fnNames(comp.ast,new Set())].filter(x=>FN[x]);
+    let t=`<div class="t">式 <code>${esc(raw)}</code> の結果：${esc(dispVal(v))}</div>`;
+    if(fs.length) t+='<ul>'+fs.map(x=>`<li><b>${x}</b>：${esc(FN[x].desc)}</li>`).join('')+'</ul>';
+    else t+='セルの値を使って計算する式です。';
+    t+='参照しているセルの値が変わると、自動で計算し直されます。';
+    m.innerHTML=t;
+  } else if(has){
+    m.className='msg';
+    if(typeof v==='number') m.innerHTML='<div class="t">数値</div>数値は、セルの中で右寄せで表示されます。式の計算に使えます。';
+    else if(typeof v==='boolean') m.innerHTML='<div class="t">論理値</div>TRUE（真）か FALSE（偽）です。比較の式の結果も論理値になります。';
+    else m.innerHTML='<div class="t">文字列</div>文字列は、セルの中で左寄せで表示されます。'+(/[0-9０-９]/.test(v)?'数字をふくんでいても、「80点」のように単位などがつくと文字列になり、計算に使えません（SUM や COUNT では数えられません）。':'式の中で文字列を書くときは、"合格" のように " で囲みます。');
+  } else {
+    m.className='msg';
+    m.innerHTML='<div class="t">空のセル</div>式で参照すると、数値の計算では 0 として扱われます（AVERAGE や COUNT では数に入りません）。';
+  }
+}
+function renderRecalc(){
+  const L=C.last; const box=$('cRecalc');
+  if(!L){ box.innerHTML='<h2>再計算</h2><p style="margin:0;font-size:14px;">'+(SAMPLES[C.sample]?SAMPLES[C.sample].note:'')+'</p>'; return; }
+  let h=`<h2>再計算</h2><p style="margin:0 0 8px;font-size:14px;">${esc(L.label)}</p>`;
+  if(L.order.length){
+    const shown=L.order.slice(0,40);
+    h+=`<div class="chain">${shown.map(k=>`<span class="kc">${k}</span>`).join('<span class="ar">→</span>')}${L.order.length>40?' …':''}</div>`;
+    h+=`<p style="margin:8px 0 0;font-size:13.5px;">変えたセルを、直接または間接に参照している式のセル（${L.order.length} 個）だけを、参照される側から順に計算し直しました。ほかのセルは計算し直す必要がありません。</p>`;
+  } else h+='<p style="margin:0;font-size:13.5px;">変えたセルを参照している式はないので、計算し直したセルはありません。</p>';
+  if(L.circ.length) h+=`<p style="margin:6px 0 0;font-size:13.5px;color:var(--ng);">${L.circ.join('、')} は循環参照のため、計算の順番が決まりません。</p>`;
+  box.innerHTML=h;
+}
+function flash(order){
+  if(RM) return;
+  order.slice(0,60).forEach((k,i)=>setTimeout(()=>{ const td=$('cGrid').querySelector(`td[data-k="${k}"]`); if(!td) return; td.classList.remove('flash'); void td.offsetWidth; td.classList.add('flash'); },i*120));
+}
+function afterChange(keys,label){
+  S1.recalc();
+  const o=recalcOrder(S1,keys);
+  C.last={label,order:o.order,circ:o.circ};
+  renderCalc(); renderRecalc(); flash(o.order);
+}
+function clampAct(p){ return {c:Math.max(0,Math.min(S1.cols-1,p.c)),r:Math.max(0,Math.min(S1.rows-1,p.r))}; }
+function commit(text,dc,dr){
+  const k=keyOf(C.act.c,C.act.r), before=S1.raw[k]||'';
+  C.dirty=false;
+  if(dc||dr){ C.act=clampAct({c:C.act.c+dc,r:C.act.r+dr}); C.ext=null; }
+  if(text!==before){ S1.set(k,text); afterChange([k],`${k} を「${short(before)||'空'}」から「${short(text)||'空'}」に変えました。`); }
+  else renderCalc();
+}
+function pointMode(){ const v=$('cInput').value; return C.dirty&&isFormulaText(v.length>1?v:v+' ')&&/[=＝+\-*\/^(,:<>&＋－＊／（，：＜＞＆]\s*$/.test(v); }
+$('cInput').addEventListener('input',()=>{ C.dirty=true; });
+$('cInput').addEventListener('keydown',e=>{
+  if(e.isComposing||e.keyCode===229) return;
+  if(e.key==='Enter'){ e.preventDefault(); commit($('cInput').value,0,e.shiftKey?-1:1); $('cWrap').focus({preventScroll:true}); }
+  else if(e.key==='Tab'){ e.preventDefault(); commit($('cInput').value,e.shiftKey?-1:1,0); $('cWrap').focus({preventScroll:true}); }
+  else if(e.key==='Escape'){ e.preventDefault(); C.dirty=false; renderCalc(); $('cWrap').focus({preventScroll:true}); }
+});
+$('cOk').addEventListener('click',()=>commit($('cInput').value,0,0));
+$('cGrid').addEventListener('mousedown',e=>{ if(pointMode()&&e.target.closest('td[data-k]')) e.preventDefault(); });
+$('cGrid').addEventListener('click',e=>{
+  const td=e.target.closest('td[data-k]'); if(!td) return;
+  const k=td.dataset.k, p=parseKey(k), inp=$('cInput');
+  if(pointMode()){ inp.value+=k; C.dirty=true; inp.focus(); const n=inp.value.length; inp.setSelectionRange(n,n); return; }
+  let fl=null;
+  if(C.dirty){ const k0=keyOf(C.act.c,C.act.r), before=S1.raw[k0]||'', text=inp.value; C.dirty=false; if(text!==before){ S1.set(k0,text); S1.recalc(); const o=recalcOrder(S1,[k0]); C.last={label:`${k0} を「${short(before)||'空'}」から「${short(text)||'空'}」に変えました。`,order:o.order,circ:o.circ}; fl=o.order; } }
+  if(e.shiftKey||C.rangeMode){ C.ext=p; if(C.rangeMode){ C.rangeMode=false; $('cRange').setAttribute('aria-pressed','false'); status(`範囲 ${rangeText(curRange())} を選びました。`); } }
+  else { C.act=p; C.ext=null; }
+  renderCalc();
+  if(fl){ renderRecalc(); flash(fl); }
+  $('cWrap').focus({preventScroll:true});
+});
+$('cWrap').addEventListener('keydown',e=>{
+  if(e.target!==$('cWrap')) return;
+  const mv={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];
+  if(mv){ e.preventDefault();
+    if(e.shiftKey){ const b=C.ext||C.act; C.ext=clampAct({c:b.c+mv[0],r:b.r+mv[1]}); }
+    else { C.act=clampAct({c:C.act.c+mv[0],r:C.act.r+mv[1]}); C.ext=null; }
+    renderCalc(); const td=$('cGrid').querySelector(`td[data-k="${keyOf((C.ext||C.act).c,(C.ext||C.act).r)}"]`); if(td) td.scrollIntoView({block:'nearest',inline:'nearest'}); return; }
+  if(e.key==='Enter'||e.key==='F2'){ e.preventDefault(); const inp=$('cInput'); inp.focus(); const n=inp.value.length; inp.setSelectionRange(n,n); return; }
+  if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); doClear(); return; }
+  if((e.ctrlKey||e.metaKey)&&(e.key==='c'||e.key==='C')){ e.preventDefault(); doCopy(); return; }
+  if((e.ctrlKey||e.metaKey)&&(e.key==='v'||e.key==='V')){ e.preventDefault(); doPaste(); return; }
+  if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){ e.preventDefault(); const inp=$('cInput'); inp.value=e.key; C.dirty=true; inp.focus(); return; }
+  if(e.key==='Process'){ const inp=$('cInput'); inp.value=''; C.dirty=true; inp.focus(); }
+});
+$('cRange').addEventListener('click',()=>{ C.rangeMode=!C.rangeMode; $('cRange').setAttribute('aria-pressed',String(C.rangeMode)); status(C.rangeMode?`範囲の始まりは ${keyOf(C.act.c,C.act.r)} です。範囲のもう1つの角のセルを押してください。`:''); });
+function doCopy(){
+  const g=curRange(), cells=[];
+  for(let r=g.r1;r<=g.r2;r++) for(let c=g.c1;c<=g.c2;c++) cells.push({dc:c-g.c1,dr:r-g.r1,raw:S1.raw[keyOf(c,r)]||''});
+  C.clip={c:g.c1,r:g.r1,w:g.c2-g.c1+1,h:g.r2-g.r1+1,cells};
+  status(`${rangeText(g)} をコピーしました。貼り付けたいセル（または範囲）を選んで「貼り付け」を押します。式は、貼り付けた位置に合わせて相対参照がずれます。`);
+}
+function doPaste(){
+  if(!C.clip){ status('先に、コピーしたいセルを選んで「コピー」を押します。'); return; }
+  const g=curRange(), cl=C.clip, changed=[];
+  if(cl.w===1&&cl.h===1){
+    for(let r=g.r1;r<=g.r2;r++) for(let c=g.c1;c<=g.c2;c++){ const k=keyOf(c,r); S1.set(k,shiftFormula(cl.cells[0].raw,c-cl.c,r-cl.r)); changed.push(k); }
+  } else {
+    for(const x of cl.cells){ const c=g.c1+x.dc, r=g.r1+x.dr; if(!S1.inGrid(c,r)) continue; const k=keyOf(c,r); S1.set(k,shiftFormula(x.raw,c-(cl.c+x.dc),r-(cl.r+x.dr))); changed.push(k); }
+  }
+  const src=rangeText({c1:cl.c,r1:cl.r,c2:cl.c+cl.w-1,r2:cl.r+cl.h-1});
+  const one=changed.length===1&&cl.w===1&&cl.h===1? `（式は ${S1.raw[changed[0]]||'空'}）` : '';
+  status(`${src} を ${compressKeys(changed).join('、')} に貼り付けました${esc(one)}。`);
+  afterChange(changed,`${src} を ${compressKeys(changed).join('、')} に貼り付けました。`);
+}
+function doFill(dir){
+  const g=curRange(), changed=[];
+  if(dir==='down'){ if(g.r1===g.r2){ status('下へフィルは、コピーしたい式のセルを一番上にして、下へ範囲を選んでから押します（例：C2 を選んで「範囲を選ぶ」→ C6）。'); return; }
+    for(let c=g.c1;c<=g.c2;c++){ const src=S1.raw[keyOf(c,g.r1)]||''; for(let r=g.r1+1;r<=g.r2;r++){ const k=keyOf(c,r); S1.set(k,shiftFormula(src,0,r-g.r1)); changed.push(k); } } }
+  else { if(g.c1===g.c2){ status('右へフィルは、コピーしたい式のセルを一番左にして、右へ範囲を選んでから押します。'); return; }
+    for(let r=g.r1;r<=g.r2;r++){ const src=S1.raw[keyOf(g.c1,r)]||''; for(let c=g.c1+1;c<=g.c2;c++){ const k=keyOf(c,r); S1.set(k,shiftFormula(src,c-g.c1,0)); changed.push(k); } } }
+  status(`${rangeText(g)} に${dir==='down'?'下':'右'}へフィルしました。コピー先のセルを選んで、式がどうずれたかを見てみましょう。`);
+  afterChange(changed,`${rangeText(g)} に${dir==='down'?'下':'右'}へフィルしました。`);
+}
+function doClear(){
+  const g=curRange(), changed=[];
+  for(let r=g.r1;r<=g.r2;r++) for(let c=g.c1;c<=g.c2;c++){ const k=keyOf(c,r); if(k in S1.raw){ S1.set(k,''); changed.push(k); } }
+  C.dirty=false;
+  if(changed.length) afterChange(changed,`${rangeText(g)} を消去しました。`); else renderCalc();
+}
+$('cCopy').addEventListener('click',doCopy);
+$('cPaste').addEventListener('click',doPaste);
+$('cFillD').addEventListener('click',()=>doFill('down'));
+$('cFillR').addEventListener('click',()=>doFill('right'));
+$('cClear').addEventListener('click',doClear);
+function csvCell(s){ s=String(s); return /[",\r\n]/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }
+function saveCsv(mode){
+  let mr=-1, mc=-1; for(const k in S1.raw){ const p=parseKey(k); mr=Math.max(mr,p.r); mc=Math.max(mc,p.c); }
+  if(mr<0){ status('表が空なので、保存するものがありません。'); return; }
+  const lines=[];
+  for(let r=0;r<=mr;r++){ const row=[]; for(let c=0;c<=mc;c++){ const k=keyOf(c,r); row.push(csvCell(!(k in S1.raw)?'' : mode==='f'? S1.raw[k] : dispVal(S1.vals[k]))); } lines.push(row.join(',')); }
+  const blob=new Blob(['﻿'+lines.join('\r\n')+'\r\n'],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=mode==='f'?'sheet_formulas.csv':'sheet_values.csv';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  status(mode==='f'? 'CSV（式のまま）で保存しました。このファイルを読み込めば、式も元にもどります。' : 'CSV（値）で保存しました。CSV はカンマで区切った文字だけのファイルなので、式ではなく計算結果が保存されます。このファイルを読み込むと、すべてただの値になります。');
+}
+$('cSaveV').addEventListener('click',()=>saveCsv('v'));
+$('cSaveF').addEventListener('click',()=>saveCsv('f'));
+function parseCsv(t){
+  const rows=[]; let row=[], f='', q=false, i=0;
+  while(i<t.length){ const ch=t[i];
+    if(q){ if(ch==='"'){ if(t[i+1]==='"'){ f+='"'; i+=2; continue; } q=false; i++; continue; } f+=ch; i++; continue; }
+    if(ch==='"'&&f===''){ q=true; i++; continue; }
+    if(ch===','){ row.push(f); f=''; i++; continue; }
+    if(ch==='\r'){ i++; continue; }
+    if(ch==='\n'){ row.push(f); rows.push(row); row=[]; f=''; i++; continue; }
+    f+=ch; i++; }
+  if(f!==''||row.length){ row.push(f); rows.push(row); }
+  return rows;
+}
+function loadCsvText(text,name){
+  text=text.replace(/^﻿/,'');
+  const rows=parseCsv(text); let cut=false; const cells={};
+  rows.forEach((row,r)=>row.forEach((v,c)=>{ if(v==='') return; if(r>=S1.rows||c>=S1.cols){ cut=true; return; } cells[keyOf(c,r)]=v; }));
+  S1.load(cells); C.act={c:0,r:0}; C.ext=null; C.dirty=false; C.last=null; C.sample=null;
+  document.querySelectorAll('[data-sample]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  renderCalc(); $('cRecalc').innerHTML=`<h2>再計算</h2><p style="margin:0;font-size:14px;">${esc(name)} を読み込みました。</p>`;
+  status(`${esc(name)} を読み込みました（${rows.length} 行）。`+(cut?'この表は A〜H 列・1〜20 行までなので、はみ出した部分は読み込んでいません。':''));
+}
+$('cLoad').addEventListener('click',()=>$('cFile').click());
+$('cFile').addEventListener('change',()=>{
+  const f=$('cFile').files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const t=String(rd.result);
+    if(t.includes('�')){ const r2=new FileReader(); r2.onload=()=>loadCsvText(String(r2.result),f.name); r2.onerror=()=>loadCsvText(t,f.name); r2.readAsText(f,'shift_jis'); }
+    else loadCsvText(t,f.name); $('cFile').value=''; };
+  rd.readAsText(f,'utf-8');
+});
+function loadSample(name){
+  const s=SAMPLES[name]; C.sample=name;
+  S1.load(s.cells); C.act=parseKey(s.act); C.ext=null; C.dirty=false; C.last=null; C.rangeMode=false;
+  $('cRange').setAttribute('aria-pressed','false');
+  document.querySelectorAll('[data-sample]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.sample===name)));
+  status(''); renderCalc(); renderRecalc();
+}
+document.querySelectorAll('[data-sample]').forEach(b=>b.addEventListener('click',()=>loadSample(b.dataset.sample)));
+
+/* ===================== 相対参照と絶対参照 ===================== */
+const RS=new Sheet(7,11);
+const kukuCells=(()=>{ const o={A1:'×'}; for(let i=1;i<=6;i++){ o[keyOf(i,0)]=String(i); o[keyOf(0,i)]=String(i); } return o; })();
+const RSC={
+  ratio:{title:'割合を求める：C2 の式を C3〜C6 にコピーします',desc:'C2 には「その品の売上 ÷ 合計」の式が入っています。そのまま下へコピーすると、どうなるでしょうか。$ のつけ方を変えて、正しく求められるようにしましょう。',
+    cells:{A1:'品名',B1:'売上',C1:'割合',A2:'焼きそば',B2:'32000',A3:'フランクフルト',B3:'18000',A4:'ジュース',B4:'12500',A5:'クレープ',B5:'26000',A6:'わたあめ',B6:'11500',A7:'合計',B7:'=SUM(B2:B6)'},
+    src:'C2',f:'=B2/B7',targets:()=>['C3','C4','C5','C6']},
+  tax:{title:'税込み価格：B2 の式を B3〜B6 にコピーします',desc:'税率（10％＝0.1）は E1 の1つのセルに入れてあります。B2 の式を下へコピーして、すべての税込み価格を求めます。',
+    cells:{A1:'税抜価格',B1:'税込価格',D1:'税率',E1:'0.1',A2:'120',A3:'450',A4:'980',A5:'1500',A6:'3000'},
+    src:'B2',f:'=A2*(1+E1)',targets:()=>['B3','B4','B5','B6']},
+  kuku:{title:'かけ算の表：B2 の式を B2:G7 の全体にコピーします',desc:'B2 に「左はしの数（A列）× 上はしの数（1行目）」の式を作り、右へも下へもコピーします。正しい表にするには、どの参照の、どこに $ をつければよいでしょうか。',
+    cells:kukuCells,src:'B2',f:'=A2*B1',targets:()=>{ const t=[]; for(let r=1;r<=6;r++) for(let c=1;c<=6;c++) if(!(r===1&&c===1)) t.push(keyOf(c,r)); return t; }},
+  free:{title:'自分で式を書く：B2 の式をコピーします',desc:'B2 に好きな式を書き、コピーする向きを選んで「コピーする」を押します。A列と1行目には 1〜6 が入っています。',
+    cells:kukuCells,src:'B2',f:'=A2*B1',targets:()=>{ const t=[]; if(R.dir==='down'){ for(let r=2;r<=6;r++) t.push(keyOf(1,r)); } else if(R.dir==='right'){ for(let c=2;c<=6;c++) t.push(keyOf(c,1)); } else { for(let r=1;r<=6;r++) for(let c=1;c<=6;c++) if(!(r===1&&c===1)) t.push(keyOf(c,r)); } return t; }},
+};
+const R={sc:'ratio',formula:'=B2/B7',filled:[],pick:null,timer:[],done:false,dir:'down'};
+const refGroups=T=>{ const g=[]; let gi=0; T.forEach((tk,i)=>{ if(tk.t!=='ref') return; if(i>=2&&T[i-1].t===':'&&T[i-2].t==='ref'){ g[i]=g[i-2]; } else g[i]=gi++; }); return g; };
+function fTokens(f){ try{ const body=toHalf(f.slice(1)); return {body,T:tokenize(body)}; }catch(e){ return null; } }
+function fHtml(f,mode){ // 色つきの式（mode='pill' はボタン）
+  const x=fTokens(f); if(!x) return esc(f);
+  const g=refGroups(x.T); let h='=', last=0;
+  x.T.forEach((tk,i)=>{ if(tk.t!=='ref') return; h+=esc(x.body.slice(last,tk.s));
+    h+= mode==='pill'? `<button class="pill rc${g[i]%4}" data-ti="${i}" aria-label="${refText(tk)} の参照の種類を切りかえる">${refText(tk)}</button>` : `<span class="r rc${g[i]%4}">${refText(tk)}</span>`;
+    last=tk.e; });
+  return h+esc(x.body.slice(last));
+}
+function cycleRef(ti){
+  const x=fTokens(R.formula); if(!x) return; const tk=x.T[ti];
+  const st=[[false,false],[true,true],[false,true],[true,false]]; const i=st.findIndex(s=>s[0]===tk.ac&&s[1]===tk.ar);
+  const n=st[(i+1)%4]; tk.ac=n[0]; tk.ar=n[1];
+  let out='', last=0; x.T.forEach(t=>{ if(t.t!=='ref') return; out+=x.body.slice(last,t.s)+refText(t); last=t.e; });
+  R.formula='='+out+x.body.slice(last); rReset();
+}
+function rClear(){ R.timer.forEach(t=>clearTimeout(t)); R.timer=[]; }
+function rReset(){
+  rClear(); const sc=RSC[R.sc];
+  RS.load(Object.assign({},sc.cells,{[sc.src]:R.formula})); R.filled=[]; R.pick=sc.src; R.done=false;
+  $('rPills').innerHTML=fHtml(R.formula,'pill');
+  $('rPills').querySelectorAll('[data-ti]').forEach(b=>b.addEventListener('click',()=>cycleRef(+b.dataset.ti)));
+  $('rSrcK').textContent=sc.src;
+  $('rMsg').className='msg'; $('rMsg').innerHTML='<div class="t">「コピーする（フィル）」を押してみましょう</div>コピー先のセルが1つずつ埋まり、そのセルが参照しているセル（同じ色の枠）がどこへずれていくかが見られます。';
+  $('rTable').innerHTML='';
+  rRender();
+}
+function refCellsOf(k){ // そのセルの式が参照するセル → グループ番号
+  const raw=RS.raw[k]; const map={}; if(!raw||!isFormulaText(raw)) return map;
+  const x=fTokens(raw); if(!x) return map; const g=refGroups(x.T);
+  x.T.forEach((tk,i)=>{ if(tk.t!=='ref') return;
+    if(x.T[i+1]&&x.T[i+1].t===':'&&x.T[i+2]&&x.T[i+2].t==='ref'){ const b=x.T[i+2]; for(let r=Math.min(tk.r,b.r);r<=Math.max(tk.r,b.r);r++) for(let c=Math.min(tk.c,b.c);c<=Math.max(tk.c,b.c);c++) if(RS.inGrid(c,r)) map[keyOf(c,r)]=g[i]%4; }
+    else if(!(i>=2&&x.T[i-1].t===':')) { if(RS.inGrid(tk.c,tk.r)) map[keyOf(tk.c,tk.r)]=g[i]%4; } });
+  return map;
+}
+function kukuOk(k){ const p=parseKey(k); const v=RS.vals[k]; return typeof v==='number'&&v===p.c*p.r; }
+function rRender(justK){
+  const sc=RSC[R.sc], hl=refCellsOf(R.pick), fset=new Set(R.filled);
+  const judge=R.done&&(R.sc==='kuku');
+  let h='<thead><tr><th class="corner"></th>'; for(let c=0;c<RS.cols;c++) h+=`<th>${colName(c)}</th>`; h+='</tr></thead><tbody>';
+  for(let r=0;r<RS.rows;r++){ h+=`<tr><th>${r+1}</th>`;
+    for(let c=0;c<RS.cols;c++){ const k=keyOf(c,r), v=k in RS.raw?RS.vals[k]:null; const cls=[];
+      if(isErr(v)) cls.push('e'); else if(typeof v==='number') cls.push('n');
+      if(k===sc.src) cls.push('src'); else if(fset.has(k)) cls.push('fill');
+      if(k in hl) cls.push('rh','rc'+hl[k]);
+      if(judge&&(fset.has(k)||k===sc.src)) cls.push(kukuOk(k)?'right':'wrong');
+      if(k===R.pick) cls.push('pk'); if(k===justK&&!RM) cls.push('just');
+      h+=`<td data-k="${k}" class="${cls.join(' ')}">${esc(dispVal(v,typeof v==='number'?7:0))}</td>`; }
+    h+='</tr>'; }
+  $('rGrid').innerHTML=h+'</tbody>';
+  rDetail();
+}
+function shiftDesc(srcTk,dc,dr){
+  const nt={...srcTk,c:srcTk.ac?srcTk.c:srcTk.c+dc,r:srcTk.ar?srcTk.r:srcTk.r+dr};
+  const part=(fixed,d,a,b,name)=> fixed? `${name}は $ で固定` : d? `${name}が${d>0?a:b}へ ${Math.abs(d)}` : `${name}はそのまま`;
+  const bad=nt.c<0||nt.r<0;
+  return `${refText(srcTk)} → ${bad?'#REF!':refText(nt)}（${part(srcTk.ac,dc,'右','左','列')}、${part(srcTk.ar,dr,'下','上','行')}）`;
+}
+function rDetail(){
+  const sc=RSC[R.sc], k=R.pick, raw=RS.raw[k], d=$('rDetail');
+  if(!raw){ d.innerHTML=`<h2>${k}</h2><p style="margin:0;font-size:14px;">空のセルです。</p>`; return; }
+  const v=RS.vals[k]; let h=`<h2>${k} の中身</h2>`;
+  if(isFormulaText(raw)){
+    h+=`<div class="fline">${fHtml(raw)}</div><div style="font-size:14px;">結果：<b style="font-family:var(--mono);${isErr(v)?'color:var(--ng)':''}">${esc(dispVal(v))}</b></div>`;
+    const s=parseKey(sc.src), p=parseKey(k);
+    if(k!==sc.src&&R.filled.includes(k)){
+      const dc=p.c-s.c, dr=p.r-s.r; const x=fTokens(R.formula);
+      h+=`<p style="margin:8px 0 2px;font-size:13.5px;">元の ${sc.src} から、<b>${dr?`${dr>0?'下':'上'}へ ${Math.abs(dr)}`:'上下はそのまま'}・${dc?`${dc>0?'右':'左'}へ ${Math.abs(dc)}`:'左右はそのまま'}</b> の位置にコピーしたので、参照は次のようにずれました。</p>`;
+      if(x) h+='<ul class="shiftlist">'+x.T.filter(t=>t.t==='ref').map(t=>`<li>${esc(shiftDesc(t,dc,dr))}</li>`).join('')+'</ul>';
+    } else if(k===sc.src) h+='<p style="margin:8px 0 0;font-size:13.5px;">これが元の式です。同じ色の枠のセルを参照しています。</p>';
+    if(isErr(v)) h+=`<p style="margin:8px 0 0;font-size:13.5px;color:var(--ng);">${esc(ERRS[v.code]||'')} ${esc(v.at===k?v.why:'')}</p>`;
+  } else h+=`<p style="margin:0;font-size:14px;">値 <b style="font-family:var(--mono);">${esc(dispVal(v))}</b> が入っています。</p>`;
+  d.innerHTML=h;
+}
+function rGo(){
+  rReset(); const sc=RSC[R.sc], s=parseKey(sc.src), tg=sc.targets();
+  const delay=RM?0:(tg.length>8?80:450);
+  const step=i=>{ const k=tg[i], p=parseKey(k); RS.set(k,shiftFormula(R.formula,p.c-s.c,p.r-s.r)); RS.recalc(); R.filled.push(k); R.pick=k; rRender(k); };
+  if(!delay){ tg.forEach((_,i)=>step(i)); rDone(); return; }
+  $('rGo').disabled=true;
+  tg.forEach((_,i)=>R.timer.push(setTimeout(()=>{ step(i); if(i===tg.length-1){ $('rGo').disabled=false; rDone(); } },delay*(i+1))));
+}
+function rDone(){
+  R.done=true; const sc=RSC[R.sc], m=$('rMsg'), x=fTokens(R.formula), refs=x?x.T.filter(t=>t.t==='ref'):[];
+  const vals=k=>RS.vals[k];
+  if(R.sc==='ratio'){
+    const ok=sc.targets().concat(['C2']).every(k=>{ const p=parseKey(k), v=vals(k), want=Number(RS.raw[keyOf(1,p.r)])/100000; return typeof v==='number'&&Math.abs(v-want)<1e-12; });
+    const b2=refs[0], b7=refs[1];
+    if(ok){ m.className='msg ok'; m.innerHTML=`<div class="t">正しく求められました</div>合計の ${b7?refText(b7):'B7'} を $ で固定したので、どの行でも合計で割っています。下へコピーするときに変わるのは行だけなので、<code>$B$7</code> でも、行だけを固定した <code>B$7</code> でも正しく計算できます。`; }
+    else if(b7&&!b7.ar){ m.className='msg ng'; m.innerHTML=`<div class="t">C3 から下が #DIV/0! になりました</div>C3 の式は <code>${esc(RS.raw.C3)}</code> です。下へ1つコピーしたので、売上の B2 だけでなく、合計の B7 まで1つ下の B8（空のセル＝0）にずれ、0 で割ってしまいました。合計のセルは動いてほしくないので、B7 を押して <code>$B$7</code> にしてから、もう一度コピーしてみましょう。`; }
+    else if(b2&&b2.ar){ m.className='msg ng'; m.innerHTML='<div class="t">エラーは出ませんが、すべて同じ割合になりました</div>売上の B2 の行まで $ で固定したので、どの行でも焼きそばの売上を使っています。売上は行ごとに変わってほしいので、B2 は相対参照（$ をつけない）にします。'; }
+    else { m.className='msg ng'; m.innerHTML='<div class="t">正しくない値があります</div>表のセルを押して、どのセルを参照しているかを確かめましょう。'; }
+  } else if(R.sc==='tax'){
+    const ok=['B2',...sc.targets()].every(k=>{ const p=parseKey(k), v=vals(k), want=Number(RS.raw[keyOf(0,p.r)])*1.1; return typeof v==='number'&&Math.abs(v-want)<1e-6; });
+    const e1=refs[1];
+    if(ok){ m.className='msg ok'; m.innerHTML=`<div class="t">正しく求められました</div>税率の E1 を ${e1?refText(e1):''} と固定したので、どの行でも E1 の税率を使っています。`; }
+    else if(e1&&!e1.ar){ m.className='msg ng'; m.innerHTML=`<div class="t">エラーは出ていないのに、B3 から下がまちがっています</div>B3 の式は <code>${esc(RS.raw.B3)}</code> です。税率の E1 が E2、E3 …（空のセル）にずれたため、1＋0＝1 をかけることになり、税抜価格のままになりました。<b>エラーが出ないまちがいは、とくに気づきにくい</b>ので、コピーした後は式を確かめましょう。E1 を押して <code>$E$1</code> にしてみましょう。`; }
+    else { m.className='msg ng'; m.innerHTML='<div class="t">正しくない値があります</div>表のセルを押して、どのセルを参照しているかを確かめましょう。'; }
+  } else if(R.sc==='kuku'){
+    const all=['B2',...sc.targets()], good=all.filter(kukuOk).length;
+    if(good===all.length){ m.className='msg ok'; m.innerHTML=`<div class="t">36 マスすべて正しくできました</div>左はしの数は A 列にあるので、列だけを固定して <code>$A2</code>、上はしの数は1行目にあるので、行だけを固定して <code>B$1</code> にします。このように、列か行の片方だけを固定する参照を<b>複合参照</b>といいます。`; }
+    else { const tips=[]; const a=refs[0], b=refs[1];
+      if(a){ if(!a.ac) tips.push(`左はしの数（A列）を指す ${refText(a)} は、右へコピーすると列が B、C …とずれます。列の前に $ をつけます。`); if(a.ar) tips.push(`${refText(a)} は行に $ がついているので、下の行へコピーしても2行目の数を使い続けます。行の $ ははずします。`); }
+      if(b){ if(!b.ar) tips.push(`上はしの数（1行目）を指す ${refText(b)} は、下へコピーすると行が 2、3 …とずれます。行の前に $ をつけます。`); if(b.ac) tips.push(`${refText(b)} は列に $ がついているので、右の列へコピーしても B 列の数を使い続けます。列の $ ははずします。`); }
+      m.className='msg ng'; m.innerHTML=`<div class="t">36 マス中 ${good} マスが正しい値です（赤いマスがまちがい）</div><ul>${tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`; }
+  } else {
+    m.className='msg'; m.innerHTML=`<div class="t">${R.filled.length} 個のセルにコピーしました</div>表のセルを押すと、元の式からどれだけずれた位置にあり、参照がどうずれたかが表示されます。$ をつけた列や行だけは、どこへコピーしても変わりません。`;
+  }
+  // 一覧
+  const list=R.filled.slice(0,10);
+  let h='<tr><th>コピー先</th><th>式</th><th>結果</th><th>参照のずれ</th></tr>';
+  const s=parseKey(sc.src);
+  list.forEach(k=>{ const p=parseKey(k), v=RS.vals[k];
+    h+=`<tr data-k="${k}"><td class="m">${k}</td><td class="m">${fHtml(RS.raw[k])}</td><td class="m" style="${isErr(v)?'color:var(--ng);font-weight:700':''}">${esc(dispVal(v))}</td><td>${refs.map(t=>esc(shiftDesc(t,p.c-s.c,p.r-s.r))).join('<br>')}</td></tr>`; });
+  if(R.filled.length>list.length) h+=`<tr><td colspan="4" style="color:var(--muted);">ほか ${R.filled.length-list.length} 個（表のセルを押すと見られます）</td></tr>`;
+  $('rTable').innerHTML=h;
+  $('rTable').querySelectorAll('tr[data-k]').forEach(tr=>tr.addEventListener('click',()=>{ R.pick=tr.dataset.k; rRender(); }));
+  rRender();
+}
+$('rGrid').addEventListener('click',e=>{ const td=e.target.closest('td[data-k]'); if(!td) return; R.pick=td.dataset.k; rRender(); });
+$('rGo').addEventListener('click',rGo);
+$('rReset').addEventListener('click',rReset);
+function rSetScenario(name){
+  R.sc=name; const sc=RSC[name];
+  document.querySelectorAll('[data-sc]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.sc===name)));
+  $('rTitle').textContent=sc.title; $('rDesc').textContent=sc.desc; $('rFree').hidden=name!=='free';
+  R.formula= name==='free'? (toHalf($('rFreeIn').value.trim())||'=A2*B1') : sc.f;
+  if(name==='free'&&!isFormulaText(R.formula)) R.formula='='+R.formula;
+  rReset();
+}
+document.querySelectorAll('[data-sc]').forEach(b=>b.addEventListener('click',()=>rSetScenario(b.dataset.sc)));
+$('rFreeSet').addEventListener('click',()=>{ let f=toHalf($('rFreeIn').value.trim()); if(!f) return; if(!isFormulaText(f)) f='='+f; R.formula=f; rReset(); });
+$('rFreeIn').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.isComposing){ e.preventDefault(); $('rFreeSet').click(); } });
+document.querySelectorAll('[data-dir]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-dir]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); R.dir=b.dataset.dir; rReset(); }));
+
+/* ===================== 並べ替えと抽出 ===================== */
+const DCOLS=['番号','氏名','組','部活','国語','数学','英語','合計'];
+const NUMC=new Set(['番号','組','国語','数学','英語','合計']);
+const DROWS=[[1,'生徒A',1,'運動部',72,85,64],[2,'生徒B',1,'文化部',88,62,91],[3,'生徒C',1,'なし',55,70,58],[4,'生徒D',1,'運動部',64,92,77],[5,'生徒E',1,'文化部',79,85,83],[6,'生徒F',1,'運動部',91,48,70],
+  [7,'生徒G',2,'なし',68,77,72],[8,'生徒H',2,'運動部',83,85,69],[9,'生徒I',2,'文化部',60,54,66],[10,'生徒J',2,'運動部',74,96,88],[11,'生徒K',2,'文化部',95,70,93],[12,'生徒L',2,'なし',50,63,47],
+  [13,'生徒M',3,'運動部',77,81,80],[14,'生徒N',3,'文化部',86,77,95],[15,'生徒O',3,'運動部',69,59,61],[16,'生徒P',3,'なし',82,88,74],[17,'生徒Q',3,'文化部',58,92,79],[18,'生徒R',3,'運動部',73,66,85]]
+  .map(r=>[...r,r[4]+r[5]+r[6]]);
+const D={sorts:[{col:'',dir:'asc'},{col:'',dir:'asc'},{col:'',dir:'asc'}],conds:[{col:'',op:'=',val:''},{col:'',op:'=',val:''}],join:'AND',grp:'',agg:'',aggCol:'数学',showAll:false};
+const OPS=['=','<>','>','>=','<','<=','を含む'];
+const opt=(v,t,cur)=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(t)}</option>`;
+function dBuildUI(){
+  $('dSorts').innerHTML=D.sorts.map((s,i)=>`<div class="row"><span class="num">${i+1}</span><select data-s="${i}" data-f="col" aria-label="並べ替えのキー${i+1}">${opt('',i?'（なし）':'（並べ替えない）',s.col)}${DCOLS.map(c=>opt(c,c,s.col)).join('')}</select><select data-s="${i}" data-f="dir" aria-label="順序${i+1}">${opt('asc','昇順（小さい順）',s.dir)}${opt('desc','降順（大きい順）',s.dir)}</select></div>`).join('');
+  $('dConds').innerHTML=D.conds.map((c,i)=>(i?`<div class="row"><select data-j="1" aria-label="条件のつなぎ方">${opt('AND','かつ（AND）',D.join)}${opt('OR','または（OR）',D.join)}</select></div>`:'')+
+    `<div class="row"><span class="num">${i+1}</span><select data-c="${i}" data-f="col" aria-label="条件${i+1}の列">${opt('','（条件なし）',c.col)}${DCOLS.map(x=>opt(x,x,c.col)).join('')}</select><select data-c="${i}" data-f="op" aria-label="条件${i+1}の比較">${OPS.map(o=>opt(o,o,c.op)).join('')}</select><input class="txt" data-c="${i}" data-f="val" value="${esc(c.val)}" aria-label="条件${i+1}の値" placeholder="値"></div>`).join('');
+  $('dAgg').innerHTML=`<div class="row"><span class="lbl" style="font-weight:400;font-size:13px;">グループ</span><select data-a="grp" aria-label="グループにする列">${opt('','まとめない（全体）',D.grp)}${opt('組','組ごと',D.grp)}${opt('部活','部活ごと',D.grp)}</select></div>
+    <div class="row"><span class="lbl" style="font-weight:400;font-size:13px;">計算</span><select data-a="agg" aria-label="集計の方法">${opt('','集計しない',D.agg)}${opt('COUNT','件数',D.agg)}${opt('SUM','合計',D.agg)}${opt('AVG','平均',D.agg)}${opt('MAX','最大',D.agg)}${opt('MIN','最小',D.agg)}</select>
+    <select data-a="aggCol" aria-label="集計する列"${D.agg===''||D.agg==='COUNT'?' disabled':''}>${['国語','数学','英語','合計'].map(x=>opt(x,x,D.aggCol)).join('')}</select></div>`;
+  document.querySelectorAll('#toolDb select, #toolDb input.txt').forEach(el=>{
+    const ev= el.tagName==='INPUT'?'input':'change';
+    el.addEventListener(ev,()=>{ if(el.dataset.s!=null) D.sorts[+el.dataset.s][el.dataset.f]=el.value; else if(el.dataset.c!=null) D.conds[+el.dataset.c][el.dataset.f]=el.value; else if(el.dataset.j) D.join=el.value; else if(el.dataset.a) D[el.dataset.a]=el.value;
+      if(el.dataset.a==='agg') dBuildUI(); dRun(); });
+  });
+}
+function condOf(c){
+  if(!c.col) return null;
+  const v=toHalf(c.val).trim();
+  if(c.op==='を含む') return {ok:v!=='',f:r=>String(r[DCOLS.indexOf(c.col)]).includes(v),sql:`${c.col} LIKE '%${v.replace(/'/g,"''")}%'`,txt:`${c.col}に「${v}」を含む`,v,c};
+  if(NUMC.has(c.col)){ if(!NUMRE.test(v)) return {ok:false,txt:`${c.col}の値には数を入れます`};
+    const x=Number(v), i=DCOLS.indexOf(c.col); const fn={'=':a=>a===x,'<>':a=>a!==x,'>':a=>a>x,'>=':a=>a>=x,'<':a=>a<x,'<=':a=>a<=x}[c.op];
+    return {ok:true,f:r=>fn(r[i]),sql:`${c.col} ${c.op} ${x}`,txt:`${c.col} ${c.op} ${x}`,v:x,c}; }
+  const i=DCOLS.indexOf(c.col); const fn={'=':a=>a===v,'<>':a=>a!==v,'>':a=>a>v,'>=':a=>a>=v,'<':a=>a<v,'<=':a=>a<=v}[c.op];
+  return {ok:true,f:r=>fn(r[i]),sql:`${c.col} ${c.op} '${v.replace(/'/g,"''")}'`,txt:`${c.col} ${c.op} 「${v}」`,v,c};
+}
+const kw=s=>s.replace(/\b(SELECT|FROM|WHERE|AND|OR|ORDER BY|GROUP BY|ASC|DESC|LIKE|COUNT|SUM|AVG|MAX|MIN)\b/g,'<span class="kw">$1</span>');
+let DLAST=[];
+function dRun(){
+  const conds=D.conds.map(condOf).filter(Boolean), bad=conds.filter(c=>!c.ok), good=conds.filter(c=>c.ok);
+  const pass=r=>!good.length? true : D.join==='AND'? good.every(c=>c.f(r)) : good.some(c=>c.f(r));
+  const sorts=D.sorts.filter(s=>s.col);
+  let rows=DROWS.map((r,i)=>({r,i,ok:pass(r)}));
+  if(sorts.length) rows.sort((a,b)=>{ for(const s of sorts){ const i=DCOLS.indexOf(s.col), x=a.r[i], y=b.r[i]; const c=x<y?-1:x>y?1:0; if(c) return s.dir==='desc'?-c:c; } return 0; });
+  const kept=rows.filter(x=>x.ok); DLAST=kept.map(x=>x.r);
+  const shown=D.showAll?rows:kept;
+  const sortIdx={}; sorts.forEach((s,j)=>sortIdx[s.col]={j:j+1,dir:s.dir});
+  const condCols=new Set(good.map(c=>c.c.col));
+  let h='<tr>'+DCOLS.map(c=>`<th class="${sortIdx[c]?'key':''}">${c}${sortIdx[c]?`<span class="ord">${sortIdx[c].dir==='desc'?'▼':'▲'}${sorts.length>1?sortIdx[c].j:''}</span>`:''}</th>`).join('')+'</tr>';
+  shown.forEach(x=>{ h+=`<tr class="${x.ok?'':'out'}">`+x.r.map((v,j)=>{ const c=DCOLS[j]; const cls=[]; if(typeof v==='number') cls.push('n'); if(sortIdx[c]) cls.push('key'); if(x.ok&&condCols.has(c)) cls.push('hit'); return `<td class="${cls.join(' ')}">${esc(v)}</td>`; }).join('')+'</tr>'; });
+  if(!shown.length) h+=`<tr><td colspan="${DCOLS.length}" style="color:var(--muted);">条件に合う行はありません。</td></tr>`;
+  $('dTable').innerHTML=h;
+  $('dCnt').innerHTML=`18 件中 <b>${kept.length} 件</b>が条件に合っています。`+(sorts.length?`並べ替えのキー：${sorts.map(s=>`${s.col}（${s.dir==='desc'?'降順':'昇順'}）`).join(' → ')}`:'');
+  // SQL
+  const where=good.length? `\nWHERE ${good.map(c=>c.sql).join(` ${D.join} `)}` : '';
+  let sql=`SELECT *\nFROM テスト結果${where}`+(sorts.length?`\nORDER BY ${sorts.map(s=>`${s.col} ${s.dir==='desc'?'DESC':'ASC'}`).join(', ')}`:'')+';';
+  // 集計
+  let aggHtml='';
+  if(D.agg){
+    const ai=DCOLS.indexOf(D.aggCol), name={COUNT:'件数',SUM:'合計',AVG:'平均',MAX:'最大',MIN:'最小'}[D.agg];
+    const expr=D.agg==='COUNT'?'COUNT(*)':`${D.agg}(${D.aggCol})`;
+    const groups=new Map(); kept.forEach(x=>{ const g=D.grp?x.r[DCOLS.indexOf(D.grp)]:'全体'; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(x.r); });
+    const keys=[...groups.keys()].sort((a,b)=>a<b?-1:a>b?1:0);
+    const calc=rs=>{ const vs=rs.map(r=>r[ai]); if(D.agg==='COUNT') return rs.length; if(!vs.length) return '–'; if(D.agg==='SUM') return vs.reduce((a,b)=>a+b,0); if(D.agg==='AVG') return Number((vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(2)); return D.agg==='MAX'?Math.max(...vs):Math.min(...vs); };
+    aggHtml=`<h3 style="font-size:15px;color:var(--ink);margin:16px 0 0;">集計の結果（${D.grp?D.grp+'ごとの':''}${D.agg==='COUNT'?'件数':D.aggCol+'の'+name}）</h3><div class="tw" style="max-width:420px;"><table class="dt"><tr>${D.grp?`<th>${D.grp}</th>`:''}<th>${D.agg==='COUNT'?'件数':`${D.aggCol}の${name}`}</th></tr>`+
+      (keys.length? keys.map(k=>`<tr>${D.grp?`<td>${esc(k)}</td>`:''}<td class="n">${calc(groups.get(k))}</td></tr>`).join('') : `<tr>${D.grp?'<td>–</td>':''}<td class="n">${D.agg==='COUNT'?0:'–'}</td></tr>`)+'</table></div>'+(D.agg==='AVG'?'<p class="hint">平均は小数第2位までに丸めて表示しています。</p>':'');
+    sql+=`\n\n-- 集計\nSELECT ${D.grp?D.grp+', ':''}${expr}\nFROM テスト結果${where}`+(D.grp?`\nGROUP BY ${D.grp}\nORDER BY ${D.grp}`:'')+';';
+  }
+  $('dAggOut').innerHTML=aggHtml;
+  $('dSql').innerHTML=('-- 同じ操作をする SQL 文（表の名前は「テスト結果」）\n'+sql).split('\n').map(l=>l.startsWith('--')?`<span class="c">${esc(l)}</span>`:kw(esc(l))).join('\n');
+  // 説明
+  const m=$('dMsg'); let t='';
+  if(bad.length){ m.className='msg ng'; m.innerHTML=`<div class="t">条件を読めません</div>${bad.map(b=>esc(b.txt||'値を入れてください')).join('<br>')}（この条件は使わずに計算しています）`; return; }
+  m.className='msg';
+  if(sorts.length>1) t+=`<div class="t">並べ替え：まず ${sorts[0].col} の${sorts[0].dir==='desc'?'大きい':'小さい'}順</div>${sorts[0].col} が同じ行どうしは、${sorts[1].col} の${sorts[1].dir==='desc'?'大きい':'小さい'}順に並べています（2つ目のキー）。`;
+  else if(sorts.length) t+=`<div class="t">並べ替え：${sorts[0].col} の${sorts[0].dir==='desc'?'大きい':'小さい'}順（${sorts[0].dir==='desc'?'降順':'昇順'}）</div>${sorts[0].col} が同じ行どうしの順番は、指定していないので元の順番のままです。2つ目のキーを指定すると、同じ値の行の並べ方を決められます。`;
+  if(good.length) t+=`${t?'<br>':''}<b>抽出</b>：${good.map(c=>esc(c.txt)).join(D.join==='AND'?' かつ ':' または ')} という条件に合う行だけを残しました（緑のセルが条件に使った列です）。条件に合わない ${18-kept.length} 件は、表から消したのではなく、かくしているだけです。`;
+  // 表計算の式
+  let fx='';
+  const letter=c=>colName(DCOLS.indexOf(c)), rng=c=>`${letter(c)}2:${letter(c)}19`;
+  const critTxt=c=>{ if(c.c.op==='を含む') return `"*${c.v}*"`; if(NUMC.has(c.c.col)) return c.c.op==='='?String(c.v):`"${c.c.op}${c.v}"`; return c.c.op==='='?`"${c.v}"`:`"${c.c.op}${c.v}"`; };
+  if(D.agg&&!D.grp){
+    if(!good.length) fx= D.agg==='COUNT'?`=COUNT(${rng('番号')})` : `=${{SUM:'SUM',AVG:'AVERAGE',MAX:'MAX',MIN:'MIN'}[D.agg]}(${rng(D.aggCol)})`;
+    else if(good.length===1&&(D.agg==='COUNT'||D.agg==='SUM')) fx= D.agg==='COUNT'?`=COUNTIF(${rng(good[0].c.col)},${critTxt(good[0])})` : `=SUMIF(${rng(good[0].c.col)},${critTxt(good[0])},${rng(D.aggCol)})`;
+  } else if(D.agg&&D.grp&&!good.length&&(D.agg==='COUNT'||D.agg==='SUM')){
+    const k0=[...new Set(DROWS.map(r=>r[DCOLS.indexOf(D.grp)]))].sort((a,b)=>a<b?-1:a>b?1:0)[0]; const ct= typeof k0==='number'?String(k0):`"${k0}"`;
+    fx= D.agg==='COUNT'?`=COUNTIF(${rng(D.grp)},${ct})` : `=SUMIF(${rng(D.grp)},${ct},${rng(D.aggCol)})`; fx+=`（${D.grp}が ${k0} の場合）`;
+  }
+  if(D.agg) t+=`${t?'<br>':''}<b>集計</b>：${D.grp?`${D.grp}ごとにまとめて（GROUP BY）`:'抽出した行全体で'}${D.agg==='COUNT'?'件数':D.aggCol+'の'+{SUM:'合計',AVG:'平均',MAX:'最大',MIN:'最小'}[D.agg]}を求めています。`+(fx?`表計算の関数なら <code>${esc(fx)}</code> で求められます（データが A1:H19 にあるとき）。`:'');
+  if(!t) t='<div class="t">並べ替え・抽出・集計の方法を選んでみましょう</div>上の「例」のボタンを押すと、よく使う操作をすぐに試せます。';
+  m.innerHTML=t;
+}
+const PRE={
+  math:()=>{ D.sorts=[{col:'数学',dir:'desc'},{col:'番号',dir:'asc'},{col:'',dir:'asc'}]; },
+  c1:()=>{ D.conds=[{col:'組',op:'=',val:'1'},{col:'',op:'=',val:''}]; },
+  sport:()=>{ D.conds=[{col:'部活',op:'=',val:'運動部'},{col:'数学',op:'>=',val:'80'}]; D.join='AND'; D.sorts=[{col:'数学',dir:'desc'},{col:'',dir:'asc'},{col:'',dir:'asc'}]; },
+  avg:()=>{ D.grp='組'; D.agg='AVG'; D.aggCol='数学'; },
+  club:()=>{ D.grp='部活'; D.agg='COUNT'; },
+  reset:()=>{ D.sorts=[{col:'',dir:'asc'},{col:'',dir:'asc'},{col:'',dir:'asc'}]; D.conds=[{col:'',op:'=',val:''},{col:'',op:'=',val:''}]; D.join='AND'; D.grp=''; D.agg=''; D.aggCol='数学'; },
+};
+document.querySelectorAll('[data-pre]').forEach(b=>b.addEventListener('click',()=>{ if(b.dataset.pre!=='reset') PRE.reset(); PRE[b.dataset.pre](); dBuildUI(); dRun(); }));
+$('dShowAll').addEventListener('click',()=>{ D.showAll=!D.showAll; $('dShowAll').setAttribute('aria-pressed',String(D.showAll)); dRun(); });
+$('dToSheet').addEventListener('click',()=>{
+  const cells={}; DCOLS.forEach((c,j)=>cells[keyOf(j,0)]=c);
+  DLAST.forEach((r,i)=>r.forEach((v,j)=>{ cells[keyOf(j,i+1)]= j===7? `=SUM(E${i+2}:G${i+2})` : String(v); }));
+  S1.load(cells); C.act={c:7,r:1}; C.ext=null; C.dirty=false; C.last=null; C.sample=null;
+  document.querySelectorAll('[data-sample]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  showTab('tabCalc'); renderCalc();
+  $('cRecalc').innerHTML=`<h2>再計算</h2><p style="margin:0;font-size:14px;">「並べ替えと抽出」の結果（${DLAST.length} 件）を読み込みました。合計の H列は <code>=SUM(E2:G2)</code> のような式にしてあります。点数を書きかえて、合計が計算し直されるのを確かめましょう。</p>`;
+  status('「並べ替えと抽出」の結果を読み込みました。');
+  $('toolCalc').scrollIntoView({block:'start'});
+});
+
+/* ===================== 関数クイズ ===================== */
+const QZ=[
+  {t:'IF の入れ子',cells:{A1:'点数',B1:'評価',A2:'75'},cell:'B2',f:'=IF(A2>=80,"A",IF(A2>=60,"B","C"))',q:'B2 に表示されるのはどれでしょう。',ch:['B','A','C','FALSE'],a:0,
+    exp:'A2 は 75 なので、1つ目の条件 A2>=80 は FALSE です。そこで3つ目の引数にある2つ目の IF が調べられ、A2>=60 は TRUE なので "B" になります。'},
+  {t:'IF の条件の順番',cells:{A1:'点数',B1:'判定',A2:'92'},cell:'B2',f:'=IF(A2>=60,"合格",IF(A2>=90,"優秀","不合格"))',q:'B2 に表示されるのはどれでしょう。',ch:['優秀','合格','不合格','FALSE'],a:1,
+    exp:'1つ目の条件 A2>=60 が TRUE になった時点で "合格" に決まり、2つ目の IF は調べられません。この式では、90点以上の人も "優秀" になりません。きびしい条件（A2>=90）を先に調べるように書く必要があります。'},
+  {t:'COUNTIF（比較の条件）',cells:{A1:'点数',C1:'結果',A2:'68',A3:'80',A4:'74',A5:'91',A6:'80',A7:'55'},cell:'C2',f:'=COUNTIF(A2:A7,">=80")',q:'C2 に表示されるのはどれでしょう。',ch:['4','251','3','2'],a:2,
+    exp:'">=80" は「80以上」という条件です。80、91、80 の3つが当てはまります。80 ちょうども「以上」にふくまれます。251 は当てはまる数の合計で、それを求めるのは SUMIF です。'},
+  {t:'SUMIF',cells:{A1:'区分',B1:'売上',D1:'結果',A2:'食べ物',B2:'300',A3:'飲み物',B3:'150',A4:'食べ物',B4:'450',A5:'飲み物',B5:'200',A6:'食べ物',B6:'500'},cell:'D2',f:'=SUMIF(A2:A6,"飲み物",B2:B6)',q:'D2 に表示されるのはどれでしょう。',ch:['350','2','1600','1250'],a:0,
+    exp:'A2:A6 が "飲み物" なのは3行目と5行目です。その行の B 列（150 と 200）を足して 350 になります。2 は件数（COUNTIF で求める値）です。'},
+  {t:'AVERAGE と空のセル',cells:{A1:'点数',C1:'結果',A2:'80',A4:'0',A5:'70'},cell:'C2',f:'=AVERAGE(A2:A5)',q:'A3 は空のセルです。C2 に表示されるのはどれでしょう。',ch:['37.5','75','#DIV/0!','50'],a:3,
+    exp:'AVERAGE は、空のセル（A3）を数に入れませんが、0 が入ったセル（A4）は数に入れます。(80＋0＋70)÷3＝50 です。'},
+  {t:'COUNT が数えるもの',cells:{A1:'点数',C1:'結果',A2:'65',A3:'欠席',A4:'80',A5:'0'},cell:'C2',f:'=COUNT(A2:A6)',q:'A6 は空のセルです。C2 に表示されるのはどれでしょう。',ch:['5','4','3','2'],a:2,
+    exp:'COUNT は数値が入っているセルだけを数えます。65、80、0 の3つです。0 も数値なので数えます。「欠席」（文字列）と空のセルは数えません。'},
+  {t:'RANK.EQ と同じ点数',cells:{A1:'点数',C1:'結果',A2:'90',A3:'85',A4:'70',A5:'85',A6:'60'},cell:'C2',f:'=RANK.EQ(A4,A2:A6)',q:'C2 に表示されるのはどれでしょう（A4 の 70 の順位）。',ch:['4','3','3.5','5'],a:0,
+    exp:'大きい順で、90 が1位、85 の2人がどちらも2位です。同じ順位が2つあるので3位は飛ばされ、70 は4位になります。'},
+  {t:'VLOOKUP（完全一致）',cells:{A1:'コード',B1:'単価',A2:'B01',D1:'コード',E1:'商品名',F1:'単価',D2:'A01',E2:'りんご',F2:'120',D3:'A02',E3:'みかん',F3:'80',D4:'B01',E4:'バナナ',F4:'150',D5:'B02',E5:'ぶどう',F5:'400'},cell:'B2',f:'=VLOOKUP(A2,D2:F5,3,FALSE)',q:'B2 に表示されるのはどれでしょう。',ch:['150','バナナ','#N/A','80'],a:0,
+    exp:'検索の型が FALSE なので、範囲の左はしの列（D2:D5）から "B01" と完全に一致する行を探します。見つかった行の、範囲の左から3列目（F列）の 150 を返します。'},
+  {t:'VLOOKUP（近似一致）',cells:{A1:'金額',B1:'送料',A2:'4200',D1:'金額',E1:'送料',D2:'0',E2:'500',D3:'3000',E3:'300',D4:'5000',E4:'0'},cell:'B2',f:'=VLOOKUP(A2,D2:E4,2,TRUE)',q:'B2 に表示されるのはどれでしょう。',ch:['0','500','#N/A','300'],a:3,
+    exp:'検索の型が TRUE（近似一致）なので、小さい順に並べた左はしの列から、4200 をこえない最も近い値 3000 の行を使います。その行の2列目は 300 です。「3000円以上5000円未満なら送料300円」という表になっています。'},
+  {t:'絶対参照のコピー',cells:{A1:'品名',B1:'税抜',C1:'税込',D1:'倍率',E1:'1.1',A2:'品A',B2:'100',A3:'品B',B3:'250',A4:'品C',B4:'480',A5:'品D',B5:'1200'},cell:'C2',f:'=B2*$E$1',copyTo:'C5',q:'C2 の式を C5 にコピーすると、C5 の式はどれになるでしょう。',ch:['=B5*$E$4','=B5*E1','=B5*$E$1','=B2*$E$1'],a:2,
+    exp:'C2 から C5 へは、下へ3つずれています。相対参照の B2 は3つ下の B5 になり、$ で固定した $E$1 はそのままです。'},
+  {t:'複合参照のコピー',cells:{A1:'×',B1:'1',C1:'2',D1:'3',A2:'1',A3:'2',A4:'3'},cell:'B2',f:'=$A2*B$1',copyTo:'D4',q:'B2 の式を D4 にコピーすると、D4 の式はどれになるでしょう。',ch:['=$A2*D$1','=$C4*D$3','=$A4*B$1','=$A4*D$1'],a:3,
+    exp:'B2 から D4 へは、右へ2列、下へ2行ずれています。$A2 は列が固定されているので行だけずれて $A4、B$1 は行が固定されているので列だけずれて D$1 になります。'},
+  {t:'ROUND（負の桁数）',cells:{A1:'数値',C1:'結果',A2:'1234.567'},cell:'C2',f:'=ROUND(A2,-2)',q:'C2 に表示されるのはどれでしょう。',ch:['1300','1234.57','1200','1234.6'],a:2,
+    exp:'桁数が −2 なので、十の位を四捨五入して百の位までにします。1234.567 → 1200 です。桁数が 2 なら 1234.57、1 なら 1234.6 になります。'},
+];
+const Q={i:0,score:0,ans:[]};
+function qSheet(q){ const sh=new Sheet(8,10); const cells=Object.assign({},q.cells,{[q.cell]:q.f}); sh.load(cells); return sh; }
+function qAnswer(q){ if(q.copyTo){ const s=parseKey(q.cell), t=parseKey(q.copyTo); return shiftFormula(q.f,t.c-s.c,t.r-s.r); } const sh=qSheet(q); return dispVal(sh.value(q.cell)); }
+QZ.forEach((q,i)=>{ const a=qAnswer(q); if(a!==q.ch[q.a]) console.error('quiz mismatch',i+1,a,q.ch[q.a]); });
+function qRender(){
+  const q=QZ[Q.i], done=Q.ans[Q.i]!=null;
+  $('qNo').innerHTML=`第 <b>${Q.i+1}</b> 問 / ${QZ.length}`; $('qScore').innerHTML=`正解 <b>${Q.score}</b>`;
+  $('qTitle').textContent=q.t;
+  const sh=qSheet(q); const keys=Object.keys(q.cells).concat([q.cell,q.copyTo||q.cell]).map(parseKey);
+  const mc=Math.max(...keys.map(p=>p.c)), mr=Math.max(...keys.map(p=>p.r));
+  const target=q.copyTo||q.cell;
+  let h='<thead><tr><th class="corner"></th>'; for(let c=0;c<=mc;c++) h+=`<th>${colName(c)}</th>`; h+='</tr></thead><tbody>';
+  for(let r=0;r<=mr;r++){ h+=`<tr><th>${r+1}</th>`; for(let c=0;c<=mc;c++){ const k=keyOf(c,r);
+    if(k===target){ let t='?'; if(done){ if(q.copyTo){ const s2=new Sheet(8,10); s2.load(Object.assign({},q.cells,{[q.cell]:q.f,[q.copyTo]:qAnswer(q)})); t=dispVal(s2.value(q.copyTo),7); } else t=dispVal(sh.value(k),7); }
+      h+=`<td class="q${done?' done':''}">${esc(t)}</td>`; continue; }
+    const v=k in sh.raw?sh.value(k):null; const cls=isErr(v)?'e':typeof v==='number'?'n':'';
+    h+=`<td class="${cls}${k===q.cell&&q.copyTo?' src':''}" style="cursor:default">${esc(dispVal(v,7))}</td>`; }
+    h+='</tr>'; }
+  $('qGrid').innerHTML=h+'</tbody>';
+  $('qF').innerHTML=`<span class="c">${q.cell} の式</span>${esc(q.f)}`+(q.copyTo&&done?`<br><span class="c">${q.copyTo} の式</span>${esc(qAnswer(q))}`:'');
+  $('qQ').textContent=q.q;
+  $('qOpts').innerHTML=q.ch.map((c,i)=>{ let cls='qopt'; if(done){ if(i===q.a) cls+=' ok'; else if(i===Q.ans[Q.i]) cls+=' ng'; } return `<button class="${cls}" data-o="${i}"${done?' disabled':''}>${esc(c)}</button>`; }).join('');
+  $('qOpts').querySelectorAll('[data-o]').forEach(b=>b.addEventListener('click',()=>qPick(+b.dataset.o)));
+  const m=$('qMsg');
+  if(done){ const ok=Q.ans[Q.i]===q.a; m.hidden=false; m.className='msg '+(ok?'ok':'ng');
+    m.innerHTML=`<div class="t">${ok?'正解です':'ざんねん'}：答えは ${esc(q.ch[q.a])}</div>${esc(q.exp)}<br><span style="font-size:13px;opacity:.9;">このページの表計算で${q.copyTo?'コピーした式':'計算した結果'}：${esc(qAnswer(q))}</span>`;
+    $('qNext').hidden=false; $('qNext').textContent=Q.i<QZ.length-1?'次の問題へ':'結果を見る'; }
+  else { m.hidden=true; $('qNext').hidden=true; }
+}
+function qPick(o){ if(Q.ans[Q.i]!=null) return; Q.ans[Q.i]=o; if(o===QZ[Q.i].a) Q.score++; qRender(); }
+function qEnd(){
+  $('qBox').hidden=true; const e=$('qEnd'); e.hidden=false;
+  e.innerHTML=`<h2>結果：${QZ.length} 問中 ${Q.score} 問正解</h2><ul class="qres">${QZ.map((q,i)=>`<li><span class="${Q.ans[i]===q.a?'o':'x'}">${Q.ans[i]===q.a?'○':'×'}</span> 第${i+1}問 ${esc(q.t)}：答え ${esc(q.ch[q.a])}</li>`).join('')}</ul>
+    <p class="hint">まちがえた問題は、「表計算ソフトを動かす」の空の表に同じ値と式を入れて確かめてみましょう。</p><div class="row" style="margin-top:12px;"><button class="primary" id="qAgain">もう一度ちょうせんする</button></div>`;
+  $('qAgain').addEventListener('click',()=>{ Q.i=0; Q.score=0; Q.ans=[]; e.hidden=true; $('qBox').hidden=false; qRender(); });
+}
+$('qNext').addEventListener('click',()=>{ if(Q.i<QZ.length-1){ Q.i++; qRender(); } else qEnd(); });
+
+/* ===== 初期化 ===== */
+loadSample('score');
+rSetScenario('ratio');
+dBuildUI(); dRun();
+qRender();
+</script>
+</body>
+</html>

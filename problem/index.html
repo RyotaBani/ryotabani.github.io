@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問題解決の手法を体験しよう（KJ法・ロジックツリー・意思決定マトリクス・アンケート）｜情報ラボ</title>
+<meta name="description" content="付箋を動かしてアイデアを整理するKJ法、「なぜ」をくり返すロジックツリー、重みをつけて解決策を比べる意思決定マトリクスを体験し、アンケートの質問文やデータの尺度を見分けるクイズにも挑戦できる無料教材。PDCAサイクルも解説。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/problem/">
+<meta property="og:title" content="問題解決の手法を体験しよう｜情報ラボ">
+<meta property="og:description" content="KJ法、ロジックツリー、意思決定マトリクス、PDCA、アンケートの作り方。問題解決の手法を手を動かして体験できる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/problem/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+    --note:#FFF4B8; --noteb:#E2CB6A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:14px 0 8px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:8px 10px; flex-wrap:wrap; align-items:center;}
+  .row>*{min-width:0;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:default;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{opacity:.45; cursor:default;}
+  input.txt,select.sel{font-family:inherit; font-size:15px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; color:#1c2430; max-width:100%;}
+  select.sel{padding:6px 8px;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d); overflow-wrap:anywhere;}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg ul{margin:6px 0 0; padding-left:1.3em;}
+
+  /* ===== KJ法 ===== */
+  .rules{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-top:4px;}
+  .rule{background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 12px; font-size:13px; min-width:0;}
+  .rule b{display:block; color:var(--ink); font-size:14px;}
+  .addrow{display:flex; gap:8px; margin-top:12px;}
+  .addrow input{flex:1 1 auto; min-width:0;}
+  .zone{border:2px dashed var(--line); border-radius:12px; background:#fff; padding:10px; min-width:0; transition:background .15s,border-color .15s;}
+  .zone.over{background:#FFF8E7; border-color:var(--gold);}
+  .zone.cando{border-color:#9DB3DA;}
+  .pool{background:#FBFCFE;}
+  .zhead{display:flex; gap:6px; align-items:center; margin-bottom:8px;}
+  .zhead .zt{font-weight:700; color:var(--ink); font-size:14px;}
+  .zhead input{flex:1 1 auto; min-width:0; font-weight:700; color:var(--ink); font-size:14.5px; padding:6px 8px;}
+  .zhead .cnt{font-size:12px; color:var(--muted); white-space:nowrap;}
+  .zhead .del{border:none; background:none; color:var(--muted); font-size:18px; cursor:pointer; padding:2px 6px; line-height:1;}
+  .notes{display:flex; flex-wrap:wrap; gap:6px; min-height:44px; align-content:flex-start;}
+  .notes .empty{font-size:12.5px; color:#98A2B3; align-self:center;}
+  .note{position:relative; background:var(--note); border:1px solid var(--noteb); border-radius:6px; padding:6px 26px 6px 10px; font-size:14px; line-height:1.45;
+    max-width:100%; overflow-wrap:anywhere; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .note .x{position:absolute; top:1px; right:1px; border:none; background:none; color:#8a7a3a; font-size:15px; cursor:pointer; padding:2px 6px; line-height:1;}
+  .note.sel{outline:3px solid var(--gold); outline-offset:1px;}
+  .note.dragging{opacity:.35;}
+  .ghost{position:fixed; z-index:50; pointer-events:none; margin:0; transform:rotate(-2deg); box-shadow:0 6px 16px rgba(0,0,0,.25); cursor:grabbing;}
+  .groups{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; margin-top:10px;}
+  .groups>*{min-width:0;}
+
+  /* ===== ロジックツリー ===== */
+  .tree{margin-top:4px;}
+  .tnode{position:relative;}
+  .tkids{margin-left:14px; padding-left:16px; border-left:2px solid var(--line);}
+  .tkids>.tnode::before{content:""; position:absolute; left:-16px; top:24px; width:14px; border-top:2px solid var(--line);}
+  .tkids>.tnode:last-child::after{content:""; position:absolute; left:-18px; top:25px; bottom:0; border-left:4px solid var(--panel);}
+  .tcard{display:flex; gap:6px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 6px 6px 8px; margin:6px 0; min-width:0;}
+  .tnode.root>.tcard{border:2px solid var(--navy); background:#EEF3FB;}
+  .tlab{flex:0 0 auto; font-size:11.5px; font-weight:700; color:#fff; background:var(--navy); border-radius:999px; padding:2px 8px; margin-top:6px; white-space:nowrap;}
+  .tnode:not(.root) .tlab{background:#6C83B5;}
+  .tcard textarea{flex:1 1 auto; min-width:0; border:1px solid transparent; border-radius:6px; font-family:inherit; font-size:14.5px; line-height:1.5; padding:4px 6px; resize:none; background:transparent; color:#1c2430; overflow:hidden; height:auto;}
+  .tcard textarea:focus{border-color:var(--line); background:#fff;}
+  .tbtn{flex:0 0 auto; border:1px solid var(--line); background:#fff; border-radius:8px; font-size:13px; padding:5px 8px; cursor:pointer; font-family:inherit; color:var(--ink); margin-top:2px; white-space:nowrap;}
+  .tbtn:hover{background:var(--panel2);}
+  .tbtn:disabled{opacity:.4; cursor:default;}
+  .tbtn.del{color:var(--ng);}
+  @media (max-width:600px){
+    .tcard{flex-wrap:wrap;}
+    .tcard .tlab{margin-right:auto; margin-top:4px;}
+    .tcard textarea{order:5; flex:1 1 100%;}
+    .tkids{margin-left:6px; padding-left:10px;}
+    .tkids>.tnode::before{left:-10px; width:8px; top:20px;}
+    .tkids>.tnode:last-child::after{left:-12px; top:21px;}
+  }
+  .figbox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; overflow-x:auto; max-width:100%;}
+  .figbox svg{display:block; height:auto;}
+
+  /* ===== マトリクス ===== */
+  .scroll{overflow-x:auto; max-width:100%;}
+  table.mx{border-collapse:collapse; width:100%; font-size:14px; background:#fff; min-width:560px;}
+  table.mx th,table.mx td{border:1px solid var(--line); padding:6px 8px; text-align:center; vertical-align:middle;}
+  table.mx th{background:var(--panel); color:var(--ink); font-weight:700;}
+  table.mx input.txt{font-size:14px; padding:5px 6px; width:100%; min-width:6.5em;}
+  table.mx td.on{text-align:left;}
+  table.mx .tot{font-family:var(--mono); font-weight:700; font-size:16px; color:var(--ink);}
+  table.mx .rk{font-weight:700; font-size:15px; white-space:nowrap;}
+  table.mx th.nw{white-space:nowrap;}
+  table.mx th.cr{min-width:10.5em;}
+  @media (max-width:600px){ table.mx th.first{min-width:10em !important;} table.mx th.cr{min-width:9em;} }
+  table.mx tr.first td{background:#FFF8E7;}
+  table.mx .wl{font-size:11.5px; color:var(--muted); font-weight:400; display:block; margin-top:4px;}
+  .xs{border:none; background:none; color:var(--muted); cursor:pointer; font-size:16px; padding:0 4px;}
+  .cellin{display:flex; gap:4px; align-items:center;}
+  .bars{margin-top:12px; display:grid; gap:8px;}
+  .bar{display:grid; grid-template-columns:minmax(0,9em) minmax(0,1fr) 3.2em; gap:8px; align-items:center; font-size:13.5px;}
+  .bar .nm{overflow-wrap:anywhere; line-height:1.35;}
+  .bar .trk{background:#E9EDF4; border-radius:6px; height:24px; display:flex; overflow:hidden;}
+  .bar .seg{height:100%;}
+  .bar .sc{font-family:var(--mono); font-weight:700; text-align:right;}
+  .legend{display:flex; gap:6px 14px; flex-wrap:wrap; font-size:12.5px; margin-top:8px; color:var(--muted);}
+  .legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  .pdca{display:grid; grid-template-columns:minmax(0,300px) minmax(0,1fr); gap:16px; align-items:center;}
+  .pdca>*{min-width:0;}
+  @media (max-width:700px){ .pdca{grid-template-columns:minmax(0,1fr);} .pdca svg{max-width:280px; margin:0 auto;} }
+  .pdca svg{display:block; width:100%; height:auto;}
+  .pdca svg .q{cursor:pointer;}
+  .pdcabox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; font-size:14.5px;}
+  .pdcabox .ph{font-size:17px; font-weight:700; color:var(--ink); margin-bottom:4px;}
+  .pdcabox .ex{background:var(--panel); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:14px;}
+
+  /* ===== アンケート ===== */
+  .modes{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px;}
+  .mode{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px 14px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430; min-width:0;}
+  .mode b{display:block; color:var(--ink); font-size:15px;}
+  .mode span{font-size:13px; color:var(--muted);}
+  .mode[aria-pressed=true]{border-color:var(--gold); background:#FFF8E7;}
+  .qcard{background:#fff; border:1px solid var(--line); border-left:5px solid var(--navy); border-radius:10px; padding:14px 16px; margin:10px 0 12px;}
+  .qcard .qn{font-size:12px; color:var(--muted);}
+  .qcard .qq{font-size:16px; font-weight:700; color:var(--ink); margin:2px 0 8px;}
+  .qcard .opts{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:14.5px;}
+  .qcard .opts span::before{content:"□ "; color:var(--muted);}
+  .ans{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;}
+  .ans button{border:2px solid var(--line); background:#fff; border-radius:10px; padding:10px 8px; font-family:inherit; font-size:14px; font-weight:700; color:var(--ink); cursor:pointer;}
+  .ans button:hover:not(:disabled){background:var(--panel2);}
+  .ans button.right{border-color:var(--ok); background:#E8F4EC; color:var(--ok);}
+  .ans button.wrong{border-color:var(--ng); background:#FBECEB; color:var(--ng);}
+  .ans button:disabled{cursor:default;}
+  .prog{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--muted);}
+  .fix{background:rgba(255,255,255,.12); border-radius:8px; padding:8px 12px; margin-top:8px;}
+  .tag{display:inline-block; border-radius:999px; padding:1px 10px; font-size:12.5px; margin:2px 4px 2px 0; background:rgba(255,255,255,.18);}
+  .tag.no{text-decoration:line-through; opacity:.6;}
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff; min-width:540px;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 10px; text-align:left;}
+  table.tb th{background:var(--panel); color:var(--ink);}
+  table.tb td.c{text-align:center; font-weight:700;}
+  table.tb td.c.y{color:var(--ok);} table.tb td.c.n{color:#A0A8B6;}
+  table.tb tr.hl td{background:#FFF8E7;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px; overflow-x:auto;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;} .ghost{transform:none;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 問題解決の手法</p>
+    <h1>問題解決の手法を体験しよう</h1>
+    <p class="lead">アイデアを出して整理し、原因を深掘りし、解決策を比べて選ぶ。調べるためのアンケートも、作り方しだいで結果が変わります。問題解決で使う道具を、実際に手を動かして使ってみましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabKj" aria-selected="true" aria-controls="toolKj">アイデアを出して整理する</button>
+    <button class="tab" role="tab" id="tabTree" aria-selected="false" aria-controls="toolTree">原因を深掘りする</button>
+    <button class="tab" role="tab" id="tabMx" aria-selected="false" aria-controls="toolMx">解決策を比べる</button>
+    <button class="tab" role="tab" id="tabSv" aria-selected="false" aria-controls="toolSv">アンケートを作る</button>
+  </div>
+
+  <!-- ===== KJ法 ===== -->
+  <section class="tool show" id="toolKj" role="tabpanel" aria-labelledby="tabKj">
+    <div class="panel">
+      <h2>① ブレーンストーミングで付箋（アイデア）を出す</h2>
+      <div class="row">
+        <label style="font-size:14px;font-weight:700;color:var(--ink);" for="kTheme">テーマ</label>
+        <input class="txt" id="kTheme" style="flex:1 1 260px;" value="">
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <span style="font-size:13px;color:var(--muted);">例題（架空の題材）：</span>
+        <button class="chip" data-kset="0">図書室の利用者を増やすには</button>
+        <button class="chip" data-kset="1">文化祭アンケートの回答を増やすには</button>
+        <button class="chip" data-kset="2">朝の遅刻を減らすには</button>
+        <button class="chip" id="kBlank">白紙から始める</button>
+      </div>
+      <div class="addrow">
+        <input class="txt" id="kIn" maxlength="40" placeholder="アイデアを1つ書いて「追加」（Enterでも追加）" aria-label="付箋に書く内容">
+        <button class="primary" id="kAdd">追加</button>
+      </div>
+      <h3>ブレーンストーミングの4つのルール</h3>
+      <div class="rules">
+        <div class="rule"><b>質より量</b>良い悪いは問わず、とにかくたくさん出す</div>
+        <div class="rule"><b>制約を設けない</b>テーマに関係しそうなら、奇抜な発想も受け入れる</div>
+        <div class="rule"><b>便乗の奨励</b>人のアイデアに乗って広げるのも歓迎する</div>
+        <div class="rule"><b>批判の禁止</b>出す段階では批判しない（発想がせまくなるため）</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>② 似ている付箋を集めてグループにし、グループに名前をつける（KJ法）</h2>
+      <p class="hint" style="margin:-4px 0 10px;">付箋を<b>ドラッグ</b>して動かします。指でも動かせます。付箋を<b>タップして選んでから、移したい枠をタップ</b>しても移動できます。</p>
+      <div class="row">
+        <button class="chip" id="kGroup">＋ グループを追加</button>
+        <button class="chip" id="kReset">すべて未分類にもどす</button>
+        <button class="chip" id="kTxt">テキストで保存</button>
+        <button class="chip" id="kPng">画像で保存</button>
+      </div>
+      <div id="kBoard" style="margin-top:12px;"></div>
+      <div class="stats">
+        <div class="stt"><div class="k">付箋の数</div><div class="v" id="kN">0</div></div>
+        <div class="stt"><div class="k">グループの数</div><div class="v" id="kG">0</div></div>
+        <div class="stt"><div class="k">未分類</div><div class="v" id="kP">0</div></div>
+      </div>
+      <div class="msg" id="kMsg"></div>
+    </div>
+  </section>
+
+  <!-- ===== ロジックツリー ===== -->
+  <section class="tool" id="toolTree" role="tabpanel" aria-labelledby="tabTree">
+    <div class="panel">
+      <h2>問題を左はしに置き、「なぜ？」や「何に分けられる？」をくり返して、木の形に枝分かれさせます</h2>
+      <div class="row">
+        <button class="chip" data-tmode="why" aria-pressed="true">なぜなぜ（原因をさかのぼる）</button>
+        <button class="chip" data-tmode="split" aria-pressed="false">分解（要素に分ける）</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <span style="font-size:13px;color:var(--muted);">例（架空）：</span>
+        <button class="chip" data-tex="0">図書室の利用者が少ない（なぜなぜ）</button>
+        <button class="chip" data-tex="1">貸出冊数を増やす（分解）</button>
+        <button class="chip" id="tBlank">白紙から始める</button>
+      </div>
+      <p class="hint" id="tHint"></p>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>組み立てる（文字をタップして書きかえ）</h2>
+        <div class="tree" id="tTree"></div>
+        <div class="row" style="margin-top:12px;">
+          <button class="chip" id="tTxt">テキストで保存</button>
+          <button class="chip" id="tPng">画像で保存</button>
+        </div>
+      </div>
+      <div style="min-width:0;">
+        <h3 style="font-size:15px;color:var(--ink);margin:0 0 8px;">図で見る（黄色の枠＝末端）</h3>
+        <div class="figbox" id="tFig"></div>
+        <div class="stats">
+          <div class="stt"><div class="k">項目の数</div><div class="v" id="tN">0</div></div>
+          <div class="stt"><div class="k">深さ</div><div class="v" id="tD">0</div></div>
+          <div class="stt"><div class="k">末端の数</div><div class="v" id="tL">0</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="msg" id="tMsg"></div>
+  </section>
+
+  <!-- ===== 意思決定マトリクス ===== -->
+  <section class="tool" id="toolMx" role="tabpanel" aria-labelledby="tabMx">
+    <div class="panel">
+      <h2>解決策（案）を、評価の基準ごとに 1〜5 点で採点します。基準には重み（0〜5）をつけます</h2>
+      <div class="row">
+        <button class="chip" id="mEx">例を読み込む（図書室・架空）</button>
+        <button class="chip" id="mAddC">＋ 基準を追加</button>
+        <button class="chip" id="mAddO">＋ 案を追加</button>
+      </div>
+      <div class="row" style="margin-top:10px;" id="mPresets">
+        <span style="font-size:13px;color:var(--muted);">重みを切りかえる（例の4つの基準）：</span>
+        <button class="chip" data-wp="3,3,3,3">すべて同じ</button>
+        <button class="chip" data-wp="5,1,1,1">効果を重視</button>
+        <button class="chip" data-wp="1,5,1,1">費用の安さを重視</button>
+        <button class="chip" data-wp="1,1,5,1">実行しやすさを重視</button>
+      </div>
+      <div class="scroll" style="margin-top:12px;"><table class="mx" id="mTable"></table></div>
+      <p class="hint">合計 ＝（点数 × 重み）を、すべての基準について足したもの。重みを 0 にした基準は、計算に入りません。</p>
+      <div class="bars" id="mBars"></div>
+      <div class="legend" id="mLeg"></div>
+      <div class="msg" id="mMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>決めた案を実行したら終わり？ ― PDCA サイクルで改善を続ける</h2>
+      <div class="pdca">
+        <svg id="pSvg" viewBox="0 0 300 300" role="group" aria-label="PDCAサイクルの図"></svg>
+        <div class="pdcabox" id="pBox"></div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="chip" data-ph="0">P 計画</button>
+        <button class="chip" data-ph="1">D 実行</button>
+        <button class="chip" data-ph="2">C 評価</button>
+        <button class="chip" data-ph="3">A 改善</button>
+        <button class="primary" id="pNext">次の段階へ ▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== アンケート ===== -->
+  <section class="tool" id="toolSv" role="tabpanel" aria-labelledby="tabSv">
+    <div class="modes">
+      <button class="mode" data-sv="word" aria-pressed="true"><b>質問文のよくない例を見抜く</b><span>どこが問題か、6つから選ぶ（12問）</span></button>
+      <button class="mode" data-sv="scale" aria-pressed="false"><b>データの尺度を判定する</b><span>名義・順序・間隔・比例のどれか（12問）</span></button>
+    </div>
+    <div class="panel" style="margin-top:14px;">
+      <div class="prog"><span id="qProg"></span><span id="qScore"></span></div>
+      <div class="qcard" id="qCard"></div>
+      <div class="ans" id="qAns"></div>
+      <div class="msg" id="qMsg"></div>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="qNext">次の問題 ▶</button>
+        <button class="chip" id="qRestart">最初から</button>
+        <button class="chip" id="qShuffle">順番を入れかえて最初から</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>データの尺度と、使える代表値</h2>
+      <div class="scroll"><table class="tb" id="sTable">
+        <tr><th>尺度</th><th>例</th><th>区別</th><th>大小・順序</th><th>差（間隔）</th><th>比（何倍）</th><th>使える代表値</th></tr>
+        <tr data-sc="nom"><td><b>名義尺度</b></td><td>血液型、好きな教科</td><td class="c y">○</td><td class="c n">×</td><td class="c n">×</td><td class="c n">×</td><td>最頻値</td></tr>
+        <tr data-sc="ord"><td><b>順序尺度</b></td><td>順位、5段階の満足度</td><td class="c y">○</td><td class="c y">○</td><td class="c n">×</td><td class="c n">×</td><td>最頻値・中央値</td></tr>
+        <tr data-sc="int"><td><b>間隔尺度</b></td><td>気温（℃）、西暦の年</td><td class="c y">○</td><td class="c y">○</td><td class="c y">○</td><td class="c n">×</td><td>最頻値・中央値・平均値</td></tr>
+        <tr data-sc="rat"><td><b>比例尺度</b></td><td>身長、冊数、時間</td><td class="c y">○</td><td class="c y">○</td><td class="c y">○</td><td class="c y">○</td><td>最頻値・中央値・平均値</td></tr>
+      </table></div>
+      <p class="hint">名義尺度・順序尺度は<b>質的データ</b>、間隔尺度・比例尺度は<b>量的データ</b>です。下の尺度ほど、できる計算が増えます。比例尺度は「比尺度」とも呼ばれます。</p>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>「問題」とは、理想と現実のギャップ</h2>
+    <p>問題解決でいう「問題」は、テストの問題のように答えが1つに決まっているものだけではありません。文部科学省の「情報Ⅰ」教員研修用教材では、問題という言葉を「あるべき理想の姿と現実とのギャップ」や「解決や解消を必要とする状況」という意味で説明しています。たとえば「図書室を利用する生徒が少ない」が現実で、「多くの生徒が図書室を使っている」が理想だとすると、その<strong>差</strong>が問題です。</p>
+    <p>同じ教材では、ゴール（理想の姿）やそこへ着く手段がはじめから示されている問題のほかに、ゴールそのものを自分で決めなければならない問題もあると述べています。「ロッカーの鍵をよく忘れて困っている」という状況なら、どんな状態になれば解決といえるのかを、自分で具体的に決める必要があります。ゴールがあいまいなままだと、何をすればよいかも、うまくいったかどうかも判断できません。だから、問題解決の最初の一歩は、<strong>問題を見つけて、はっきりさせること</strong>です。</p>
+
+    <h2>問題解決の手順</h2>
+    <p>問題解決の進め方は問題の性質によっていろいろありますが、教員研修用教材では、情報科の学習過程のイメージとして次のような流れを示しています。</p>
+    <ol>
+      <li>問題の発見</li>
+      <li>問題の定義、情報の収集と分析</li>
+      <li>解決方法の探索、計画の立案</li>
+      <li>結果の予測、計画の実行</li>
+      <li>振り返り</li>
+      <li>次の問題解決へ</li>
+    </ol>
+    <p>最後が「次の問題解決へ」になっていることに注目しましょう。振り返りで見つかった課題が、次の問題解決の出発点になります。また同教材は、アンケート調査でどのような問いや選択肢を設定するかによって、結果や効率が変わる可能性があることにもふれています。このページの4つのタブは、この流れの中で使う道具です。</p>
+    <table>
+      <tr><th>段階</th><th>使う手法</th><th>このページのタブ</th></tr>
+      <tr><td>問題の発見・情報の収集</td><td>ブレーンストーミング、KJ法、アンケート</td><td>アイデアを出して整理する／アンケートを作る</td></tr>
+      <tr><td>問題の定義・分析</td><td>ロジックツリー（なぜなぜ・分解）</td><td>原因を深掘りする</td></tr>
+      <tr><td>解決方法の探索・計画</td><td>意思決定マトリクス</td><td>解決策を比べる</td></tr>
+      <tr><td>実行・振り返り</td><td>PDCA サイクル</td><td>解決策を比べる（下の図）</td></tr>
+    </table>
+
+    <h2>アイデアを広げる：ブレーンストーミング</h2>
+    <p>原因や解決策を考えるには、まず材料となるアイデアをたくさん出す必要があります。そのためによく使われるのが<strong>ブレーンストーミング</strong>です。教員研修用教材によると、アメリカの広告代理店 BBDO 社の A・F・オズボーンが考案した手法で、次の4つのルールがあります。</p>
+    <table>
+      <tr><th>ルール</th><th>意味</th></tr>
+      <tr><td>質より量</td><td>アイデアの良い悪いは問わず、とにかくたくさん出す</td></tr>
+      <tr><td>制約を設けない</td><td>テーマに関係しそうなことなら、奇抜な発想でも受け入れる</td></tr>
+      <tr><td>便乗の奨励</td><td>人の意見を参考に、さらに広げたアイデアも歓迎する</td></tr>
+      <tr><td>批判の禁止</td><td>アイデアを出す段階では批判しない</td></tr>
+    </table>
+    <p>批判を禁止する理由は、批判されると相手が萎縮してしまい、発想の範囲がせまくなるおそれがあるからです。アイデアを「出す」ことと「評価する」ことを分け、評価はあとの段階（意思決定マトリクスなど）でまとめて行います。</p>
+    <p>アイデアを広げる方法には、ほかに<strong>マインドマップ</strong>があります。紙の中心にテーマを書き、そこから枝を放射状に伸ばして、思いついた言葉を次々につないでいく方法です。言葉どうしのつながりが線で見えるので、1つのアイデアから連想を広げるのに向いています。</p>
+
+    <h2>アイデアを整理する：KJ法</h2>
+    <p>出したアイデアは、そのままでは数が多すぎて全体が見えません。そこで使うのが<strong>KJ法</strong>です。中央公論新社による『発想法』（川喜田二郎 著、中公新書）の紹介によると、KJ法は著者の川喜田二郎が長年の野外研究の体験から考案したもので、「データそれ自体に語らしめつつ」まとめることをねらった方法です。教員研修用教材では、アイデアをカードに書き、二次元に配置しながらグループにしたり、表題をつけたり、関連づけたりして、新たな解釈やアイデアを生み出す方法の代表例として挙げられています。</p>
+    <ol>
+      <li><strong>カードに書く</strong>：1枚に1つのことだけを書く。2つのことを1枚に書くと、あとで別々のグループに分けられなくなるからです。</li>
+      <li><strong>近いものを集める</strong>：内容が近いと感じるカードを集めて、小さなグループにする。はじめから「人」「物」のような分類の箱を決めて振り分けるのではなく、カードの内容から考えるのがポイントです。</li>
+      <li><strong>グループに名前をつける</strong>：中のカードをまとめて言い表す短い文をつける。「その他」のような名前では、何も整理されていないのと同じです。</li>
+      <li><strong>関係を考える</strong>：グループどうしの関係（原因と結果、対立など）を考え、線や矢印で表したり、文章にまとめたりする。</li>
+    </ol>
+
+    <h2>原因を深掘りする：ロジックツリー</h2>
+    <p>教員研修用教材では、アイデアや項目を一定のルールで線でつなぎ、関係を分かりやすく示す方法の例として<strong>ロジックツリー</strong>を挙げています。問題を左はし（または上）に置き、それを細かく分けたものを右へ枝分かれさせていくので、木を横にしたような形になります。</p>
+    <h3>なぜなぜ（原因をさかのぼる）</h3>
+    <p>「図書室の利用者が少ない」→「なぜ？」→「行くきっかけがない」→「なぜ？」→「新しい本が入ったことが伝わっていない」のように、「なぜ」をくり返して原因をさかのぼります。1回目の答えはまだ大まかで、手の打ちようがないことが多いのですが、くり返すうちに「新刊のお知らせを出していない」のような、<strong>自分たちで手を打てる具体的な原因</strong>にたどり着きます。</p>
+    <h3>分解（要素に分ける）</h3>
+    <p>「貸出冊数を増やす」を「来る人数を増やす」と「1人が借りる冊数を増やす」に分けるように、目標や問題を要素に分ける使い方もあります。分けるときは、<strong>もれなく、ダブりなく</strong>なっているかを確かめます。この考え方は、英語の頭文字をとって MECE（Mutually Exclusive and Collectively Exhaustive）と呼ばれます。もれがあると大事な原因を見落とし、ダブりがあると同じことを二重に数えてしまいます。</p>
+
+    <h2>解決策を比べる：意思決定マトリクス</h2>
+    <p>解決策の案がいくつか出たら、どれを実行するかを決めます。教員研修用教材では、2次元の表（マトリクス表）を作ることが、いくつかの解決策を評価するのに使えると述べています。このページの<strong>意思決定マトリクス</strong>は、行に案、列に評価の基準を並べ、それぞれを点数で評価する表です。</p>
+    <p>基準によって大切さがちがうときは、基準に<strong>重み</strong>をつけます。合計は「点数 × 重み」を全部の基準について足したものです。</p>
+    <div class="formula">合計 ＝ 点数<sub>1</sub>×重み<sub>1</sub> ＋ 点数<sub>2</sub>×重み<sub>2</sub> ＋ … ＋ 点数<sub>n</sub>×重み<sub>n</sub></div>
+    <p>例の「ビブリオバトルを開く」は、効果 5 点、費用の安さ 4 点、実行しやすさ 2 点、続けやすさ 2 点です。4つの重みがすべて 3 なら 5×3＋4×3＋2×3＋2×3＝39 点で、4つの案の中で3位ですが、効果の重みを 5、ほかを 1 にすると 5×5＋4×1＋2×1＋2×1＝33 点で1位になります。このように、<strong>重みのつけ方しだいで順位が変わります</strong>。だから重みは、採点の前に話し合って決め、なぜその重みにしたのかを説明できるようにしておくことが大切です。点数のつけ方にも人の判断が入るので、合計点だけで決めつけず、結果を見て話し合うための材料として使いましょう。</p>
+    <p>教員研修用教材では、2つの評価項目を縦軸と横軸にとって案を配置し、決めた理由を見えるようにする方法も紹介されています。基準が2つにしぼれるときは、こちらも使えます。</p>
+
+    <h2>実行して終わりにしない：PDCA サイクル</h2>
+    <p><strong>PDCA サイクル</strong>は、計画（Plan）、実行（Do）、評価（Check）、改善（Action）の4つの段階をくり返して、少しずつよくしていく考え方です。教員研修用教材でも、問題解決の手順の例として挙げられています。</p>
+    <ul>
+      <li><strong>計画（Plan）</strong>：目標と、そのための方法・期限・役割分担を決める。何を記録すれば効果が分かるかも、ここで決めておく。</li>
+      <li><strong>実行（Do）</strong>：計画にそって実行し、記録をとる。</li>
+      <li><strong>評価（Check）</strong>：記録を目標や実行前と比べ、うまくいった点・いかなかった点とその理由を考える。</li>
+      <li><strong>改善（Action）</strong>：評価をもとに、続ける・やめる・変えるを決め、次の計画に生かす。</li>
+    </ul>
+    <p>評価の段階で比べるためには、計画の段階で「何を、どう記録するか」を決めておく必要があります。総務省統計局の「なるほど統計学園」では、統計を使った問題解決の枠組みとして、問題（Problem）、調査の計画（Plan）、データ（Data）、分析（Analysis）、結論（Conclusion）からなる <strong>PPDAC サイクル</strong>も紹介しています。</p>
+
+    <h2>調べるためのアンケートの作り方</h2>
+    <p>問題の原因や、解決策の効果を確かめるには、アンケートで多くの人の意見や行動を調べることがあります。しかし、質問の書き方しだいで結果がゆがんでしまいます。総務省統計局の資料をもとに、主な注意点をまとめます。</p>
+    <table>
+      <tr><th>よくない例</th><th>何が問題か</th><th>直し方</th></tr>
+      <tr><td>ダブルバーレル質問</td><td>1つの質問に2つ以上の論点が入っている。片方に賛成で片方に反対の人が答えられない</td><td>1つの質問では論点を1つにしぼる</td></tr>
+      <tr><td>誘導的な質問</td><td>権威ある人の発言や世間の見方を前置きにしたり、一方の立場だけを強調したりすると、回答がかたよる</td><td>前置きを中立にし、両方の立場がありうることを示す</td></tr>
+      <tr><td>あいまいな言葉</td><td>「最近」「よく」などは、人によって受け取り方がちがう</td><td>「この1か月に」のように、はっきりした言葉にする</td></tr>
+      <tr><td>選択肢の重なり・もれ</td><td>2つの選択肢に当てはまる人や、どれにも当てはまらない人が出る</td><td>選択肢を網羅的（もれなく）かつ相互排他的（重ならない）に作る</td></tr>
+    </table>
+    <p>1つだけ選ぶ形式の選択肢は、「網羅的に、かつ相互排他的に」作るのが原則です。数の範囲を選択肢にするときは「30分以上1時間未満」のように「以上」「未満」で境目をはっきりさせ、すべての場合を書き出せないときは「その他」を用意します。質問の順番も回答に影響するので、答えやすい質問から始め、前の質問が後の答えを誘導しないように並べます。</p>
+
+    <h2>データの尺度と代表値</h2>
+    <p>アンケートで集めたデータは、測り方（尺度）によって4種類に分けられます。学習指導要領解説でも、情報Ⅰでこの尺度水準の違いを理解するよう示されています。</p>
+    <ul>
+      <li><strong>名義尺度</strong>：区別するためだけの値。血液型や、「1:運動部 2:文化部」のように番号をつけた分類。数字でも、大小や平均に意味はない。</li>
+      <li><strong>順序尺度</strong>：順序に意味がある値。順位や「満足・どちらともいえない・不満」。ただし、となりどうしの間隔が等しいとは限らない。</li>
+      <li><strong>間隔尺度</strong>：間隔が等しく、差に意味がある値。気温（℃）など。0 は便宜的に決めたものなので、「30℃は15℃の2倍暑い」とはいえない。</li>
+      <li><strong>比例尺度</strong>：絶対的な 0（まったくない状態）がある値。身長や体重、時間など。差だけでなく「何倍」にも意味がある。</li>
+    </ul>
+    <p>尺度によって、使える代表値が変わります。名義尺度は大小がないので、いちばん多い値である<strong>最頻値</strong>だけが使えます。順序尺度は並べることができるので、真ん中の値である<strong>中央値</strong>も使えます。間隔尺度と比例尺度は差に意味があるので、<strong>平均値</strong>も使えます。この対応は、尺度水準を整理した S. S. スティーブンスの1946年の論文の表にも示されています。名義尺度のデータに番号がついているからといって平均を計算するのは、尺度と分析の方法が合っていない典型的な例です。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>アイデアを出して整理する</strong>：テーマを決めて付箋を追加し、ドラッグ（またはタップで選んで移したい枠をタップ）でグループに分け、グループ名をつけます。例題は架空の題材です。結果はテキストか画像（PNG）で保存できます。ページを閉じると内容は消えるので、残したいときは保存してください。</li>
+      <li><strong>原因を深掘りする</strong>：「＋」で枝を足し、「×」で消します。右側の図は自動で描かれます。なぜなぜと分解の2つの使い方を切りかえられます。</li>
+      <li><strong>解決策を比べる</strong>：点数と重みを選ぶと、合計と順位がすぐに計算されます。重みのボタンで順位が入れかわる様子を確かめましょう。下の PDCA の図は、段階を押すと説明が出ます。</li>
+      <li><strong>アンケートを作る</strong>：質問文のクイズと尺度のクイズがあります。答えると、理由と直し方が表示されます。</li>
+    </ul>
+    <p>1時間の授業なら、たとえば「テーマを決めてブレーンストーミングとKJ法 → 大きなグループを1つ選んでロジックツリーで原因を深掘り → 末端の原因に対する解決策をマトリクスで比べる」という流れで、問題解決の一連の手順を体験できます。アンケートのタブは、実際に調査を行う前の確認に使えます。</p>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L02">2. 問題解決の手順（発見と分析）</a></li>
+      <li><a href="/lessons/#L03">3. 解決策を選び、評価する（PDCA）</a></li>
+      <li><a href="/lessons/#L04">4. アンケートを作る</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>文部科学省「高等学校情報科『情報Ⅰ』教員研修用教材（本編）」https://www.mext.go.jp/a_menu/shotou/zyouhou/detail/1416756.htm （第1章 情報社会の問題解決 https://www.mext.go.jp/content/20200722-mxt_jogai02-100013300_003.pdf 、第4章 情報通信ネットワークとデータの活用 https://www.mext.go.jp/content/20200722-mxt_jogai02-100013300_006.pdf ）</li>
+      <li>文部科学省「高等学校学習指導要領（平成30年告示）解説 情報編」https://www.mext.go.jp/content/1407073_11_1_2.pdf</li>
+      <li>総務省統計局 統計データ利活用センター「Data StaRt」1-2 調査票の作り方（質問文の作成）https://www.stat.go.jp/dstart/point/seminar/02/1-2-2.html</li>
+      <li>総務省統計局 統計データ利活用センター「Data StaRt」1-2 調査票の作り方（選択肢の作成）https://www.stat.go.jp/dstart/point/seminar/02/1-2-3.html</li>
+      <li>総務省統計局 統計データ利活用センター「Data StaRt」3-1 データと変数の尺度 https://www.stat.go.jp/dstart/point/seminar/02/3-1.html</li>
+      <li>総務省統計局「なるほど統計学園」12 問題の解決 https://www.stat.go.jp/naruhodo/12_ppdac/index.html 、調査票の作成 https://www.stat.go.jp/naruhodo/12_ppdac/plan/plan2.html</li>
+      <li>中央公論新社「発想法 改版 創造性開発のために（川喜田二郎 著）」https://www.chuko.co.jp/shinsho/2017/06/180136.html</li>
+      <li>S. S. Stevens, "On the Theory of Scales of Measurement," Science, 103(2684), 677–680 (1946) https://doi.org/10.1126/science.103.2684.677</li>
+    </ul>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FONT='"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif';
+function download(name,blob){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+}
+function saveText(name,text){ download(name,new Blob(['﻿'+text],{type:'text/plain;charset=utf-8'})); }
+function savePng(name,canvas){ canvas.toBlob(b=>{ if(b) download(name,b); },'image/png'); }
+function wrapText(ctx,text,maxW){
+  const out=[];
+  String(text).split('\n').forEach(par=>{
+    let cur='';
+    for(const ch of par){ if(cur && ctx.measureText(cur+ch).width>maxW){ out.push(cur); cur=ch; } else cur+=ch; }
+    out.push(cur);
+  });
+  return out.length?out:[''];
+}
+function rrect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+const measureCtx=document.createElement('canvas').getContext('2d');
+function fileStamp(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabKj','toolKj'],['tabTree','toolTree'],['tabMx','toolMx'],['tabSv','toolSv']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+    if(tid==='tabTree') autosizeAll();
+  }));
+})();
+
+/* ===================== ① KJ法 ===================== */
+const KSETS=[
+  {theme:'学校の図書室の利用者を増やすには', notes:['新しく入った本を入口に並べる','おすすめ本の紹介カードを書く','図書委員が校内放送で本を紹介','昼休みに読み聞かせ会','ビブリオバトルを開く','自習用の机を増やす','放課後も遅くまで開ける','漫画や雑誌を置く','読みたい本のリクエストを受け付ける','静かすぎて入りにくい雰囲気を変える','貸出ランキングを掲示する','授業で図書室を使う','冷暖房を快適にする','借りられる冊数を増やす']},
+  {theme:'文化祭の来場者アンケートの回答を増やすには', notes:['QRコードを入口と出口に貼る','回答した人に記念のしおりを渡す','質問を5問以内にしぼる','「1分で終わります」と書く','出口で声をかける','紙でもスマホでも答えられるようにする','結果を後日Webで公開すると伝える','クラスごとに回答数を競う','休憩所に回答コーナーを作る','文字を大きく読みやすくする','子ども向けに絵の選択肢を用意','校内放送で呼びかける']},
+  {theme:'朝の遅刻を減らすには', notes:['前の晩に持ち物をそろえる','目覚ましを2つかける','夜のスマホの時間を決める','早く寝る','朝ごはんを準備しやすくする','1本早い電車に乗る','友達と待ち合わせる','遅刻した理由を記録する','自転車を整備しておく','雨の日の行き方を決めておく','朝の始業前に楽しみな活動を置く','家族に声をかけてもらう']},
+];
+let kNotes=[], kGroups=[], kSel=null, kUid=1;
+const kid=()=>'k'+(kUid++);
+function kLoad(i){
+  const s=KSETS[i]; $('kTheme').value=s.theme+'（架空の例）';
+  kNotes=s.notes.map(t=>({id:kid(),text:t,g:null})); kGroups=[{id:kid(),name:''},{id:kid(),name:''},{id:kid(),name:''}]; kSel=null;
+  document.querySelectorAll('[data-kset]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.kset===i)));
+  kRender();
+}
+function kRender(){
+  const notesOf=g=>kNotes.filter(n=>n.g===g);
+  const noteHtml=n=>`<div class="note${kSel===n.id?' sel':''}" data-id="${n.id}" tabindex="0" role="button" aria-pressed="${kSel===n.id}" aria-label="付箋：${esc(n.text)}">${esc(n.text)}<button class="x" data-del="${n.id}" aria-label="この付箋を消す">×</button></div>`;
+  const zoneBody=(list)=> list.length? list.map(noteHtml).join('') : '<span class="empty">ここに付箋を入れる</span>';
+  const pool=notesOf(null);
+  let h=`<div class="zone pool${kSel?' cando':''}" data-zone=""><div class="zhead"><span class="zt">未分類</span><span class="cnt">${pool.length}枚</span></div><div class="notes">${zoneBody(pool)}</div></div>`;
+  h+=`<div class="groups">`+kGroups.map((g,i)=>{ const l=notesOf(g.id);
+    return `<div class="zone${kSel?' cando':''}" data-zone="${g.id}"><div class="zhead"><input class="txt" data-gname="${g.id}" value="${esc(g.name)}" placeholder="グループ${i+1}の名前" maxlength="30" aria-label="グループ${i+1}の名前"><span class="cnt">${l.length}枚</span><button class="del" data-gdel="${g.id}" aria-label="このグループを消す（付箋は未分類へ）">×</button></div><div class="notes">${zoneBody(l)}</div></div>`; }).join('')+`</div>`;
+  $('kBoard').innerHTML=h;
+  kStatus();
+}
+function kStatus(){
+  const pool=kNotes.filter(n=>n.g===null).length, used=kGroups.filter(g=>kNotes.some(n=>n.g===g.id));
+  $('kN').textContent=kNotes.length; $('kG').textContent=used.length; $('kP').textContent=pool;
+  const unnamed=used.filter(g=>!g.name.trim()).length;
+  const m=$('kMsg'); m.className='msg';
+  if(!kNotes.length){ m.innerHTML='<div class="t">まず、付箋を出しましょう</div>テーマについて思いつくことを、1枚に1つずつ書いて追加します。この段階では<b>批判せず、質より量</b>。例題を読み込んで始めることもできます。'; return; }
+  if(!used.length){ m.innerHTML=`<div class="t">付箋が ${kNotes.length} 枚あります。似ているもの同士を集めましょう</div>付箋をドラッグして、下の枠に入れます。はじめから「人」「物」のような分類の箱を決めるのではなく、<b>内容が近いと感じるもの</b>を集めるのがコツです。枠が足りなければ「＋ グループを追加」。`; return; }
+  if(pool){ m.innerHTML=`<div class="t">未分類の付箋が、あと ${pool} 枚あります</div>どこにも入らない付箋は、無理に入れず、1枚だけのグループにしてもかまいません。`+(unnamed?` 付箋の入ったグループのうち ${unnamed} 個に、まだ名前がありません。`:''); return; }
+  if(unnamed){ m.innerHTML=`<div class="t">すべて分けられました。あと ${unnamed} 個のグループに名前をつけましょう</div>名前は、中の付箋をまとめて言い表す<b>短い文</b>にします（例：「本との出会いを増やす」）。「その他」のような名前では整理したことになりません。`; return; }
+  m.className='msg ok';
+  m.innerHTML=`<div class="t">${used.length} 個のグループに整理できました</div>グループ名を見比べて、関係を話し合いましょう。どれが<b>原因</b>で、どれが<b>解決策</b>でしょうか。気になるグループは「原因を深掘りする」タブで、解決策は「解決策を比べる」タブで続きを考えられます。保存ボタンで結果を残せます。`;
+}
+function kAdd(){
+  const t=$('kIn').value.trim(); if(!t) return;
+  if(kNotes.length>=60){ $('kMsg').className='msg ng'; $('kMsg').innerHTML='<div class="t">付箋は60枚までです</div>不要な付箋を×で消してから追加してください。'; return; }
+  kNotes.push({id:kid(),text:t,g:null}); $('kIn').value=''; kRender(); $('kIn').focus();
+}
+$('kAdd').addEventListener('click',kAdd);
+$('kIn').addEventListener('keydown',e=>{ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); kAdd(); } });
+document.querySelectorAll('[data-kset]').forEach(b=>b.addEventListener('click',()=>kLoad(+b.dataset.kset)));
+$('kBlank').addEventListener('click',()=>{ $('kTheme').value=''; kNotes=[]; kGroups=[{id:kid(),name:''},{id:kid(),name:''}]; kSel=null; document.querySelectorAll('[data-kset]').forEach(b=>b.setAttribute('aria-pressed','false')); kRender(); $('kTheme').focus(); });
+$('kGroup').addEventListener('click',()=>{ if(kGroups.length>=12) return; kGroups.push({id:kid(),name:''}); kRender(); });
+$('kReset').addEventListener('click',()=>{ kNotes.forEach(n=>n.g=null); kSel=null; kRender(); });
+function kMove(id,zone){ const n=kNotes.find(x=>x.id===id); if(!n) return; n.g= zone? zone : null; kNotes=kNotes.filter(x=>x!==n).concat([n]); }
+const board=$('kBoard');
+board.addEventListener('input',e=>{ const id=e.target.dataset.gname; if(id){ const g=kGroups.find(x=>x.id===id); if(g){ g.name=e.target.value; kStatus(); } } });
+board.addEventListener('click',e=>{
+  const d=e.target.closest('[data-del]'); if(d){ kNotes=kNotes.filter(n=>n.id!==d.dataset.del); if(kSel===d.dataset.del) kSel=null; kRender(); return; }
+  const gd=e.target.closest('[data-gdel]'); if(gd){ const id=gd.dataset.gdel; kNotes.forEach(n=>{ if(n.g===id) n.g=null; }); kGroups=kGroups.filter(g=>g.id!==id); kRender(); return; }
+  if(e.target.closest('.note')||e.target.closest('input')) return;
+  if(Date.now()-kNoteUp<400) return;
+  const z=e.target.closest('[data-zone]'); if(z && kSel){ kMove(kSel,z.dataset.zone); kSel=null; kRender(); }
+});
+board.addEventListener('keydown',e=>{
+  const n=e.target.closest('.note'); if(!n || e.target.closest('.x')) return;
+  if(e.key==='Enter'||e.key===' '){ e.preventDefault(); kSel= kSel===n.dataset.id? null : n.dataset.id; kRender(); }
+  if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); kNotes=kNotes.filter(x=>x.id!==n.dataset.id); kSel=null; kRender(); }
+});
+/* ドラッグ（マウス・タッチ共通） */
+let kDrag=null, kNoteUp=0;
+board.addEventListener('pointerdown',e=>{
+  const n=e.target.closest('.note'); if(!n || e.target.closest('.x') || e.button>0) return;
+  kDrag={id:n.dataset.id, el:n, sx:e.clientX, sy:e.clientY, moved:false, ghost:null, over:null, ox:0, oy:0};
+  e.preventDefault();
+});
+function kZoneAt(x,y){ const el=document.elementFromPoint(x,y); return el? el.closest('#kBoard [data-zone]') : null; }
+let kScrollTimer=null;
+window.addEventListener('pointermove',e=>{
+  if(!kDrag) return;
+  if(!kDrag.moved){
+    if(Math.hypot(e.clientX-kDrag.sx,e.clientY-kDrag.sy)<6) return;
+    kDrag.moved=true; const r=kDrag.el.getBoundingClientRect();
+    kDrag.ox=kDrag.sx-r.left; kDrag.oy=kDrag.sy-r.top;
+    const g=kDrag.el.cloneNode(true); g.classList.add('ghost'); g.classList.remove('sel'); g.style.width=r.width+'px';
+    document.body.appendChild(g); kDrag.ghost=g; kDrag.el.classList.add('dragging');
+  }
+  kDrag.ghost.style.left=(e.clientX-kDrag.ox)+'px'; kDrag.ghost.style.top=(e.clientY-kDrag.oy)+'px';
+  const z=kZoneAt(e.clientX,e.clientY);
+  if(z!==kDrag.over){ if(kDrag.over) kDrag.over.classList.remove('over'); if(z) z.classList.add('over'); kDrag.over=z; }
+  const edge=50; kDrag.vy= e.clientY<edge? -12 : e.clientY>innerHeight-edge? 12 : 0;
+  if(kDrag.vy && !kScrollTimer) kScrollTimer=setInterval(()=>{ if(!kDrag||!kDrag.vy){ clearInterval(kScrollTimer); kScrollTimer=null; return; } window.scrollBy(0,kDrag.vy); },30);
+});
+function kEnd(e,cancel){
+  if(!kDrag) return; const d=kDrag; kDrag=null; kNoteUp=Date.now();
+  if(kScrollTimer){ clearInterval(kScrollTimer); kScrollTimer=null; }
+  if(d.ghost) d.ghost.remove();
+  if(d.moved){
+    const z= cancel? null : kZoneAt(e.clientX,e.clientY);
+    if(z) kMove(d.id,z.dataset.zone);
+    kSel=null; kRender();
+  } else if(!cancel){
+    kSel= kSel===d.id? null : d.id; kRender();
+  }
+}
+window.addEventListener('pointerup',e=>kEnd(e,false));
+window.addEventListener('pointercancel',e=>kEnd(e,true));
+/* 保存 */
+function kGroupsForSave(){
+  const list=kGroups.filter(g=>kNotes.some(n=>n.g===g.id)).map((g,i)=>({name:g.name.trim()||('（名前なし）'), notes:kNotes.filter(n=>n.g===g.id).map(n=>n.text)}));
+  const pool=kNotes.filter(n=>n.g===null).map(n=>n.text);
+  if(pool.length) list.push({name:'未分類', notes:pool, pool:true});
+  return list;
+}
+$('kTxt').addEventListener('click',()=>{
+  const th=$('kTheme').value.trim()||'（テーマ未入力）';
+  let s=`テーマ：${th}\n付箋 ${kNotes.length} 枚\n\n`;
+  kGroupsForSave().forEach(g=>{ s+=`■ ${g.name}（${g.notes.length}枚）\n`+g.notes.map(t=>'・'+t).join('\n')+'\n\n'; });
+  s+='（情報ラボ「問題解決の手法を体験しよう」で作成 https://joholab.net/problem/）\n';
+  saveText(`kj-${fileStamp()}.txt`,s);
+});
+function kCanvas(){
+  const W=1200, pad=32, gap=18, cols=3, colW=(W-pad*2-gap*(cols-1))/cols, S=2;
+  const c=document.createElement('canvas'), ctx=c.getContext('2d');
+  ctx.font=`15px ${FONT}`;
+  const groups=kGroupsForSave().map(g=>{
+    const notes=g.notes.map(t=>{ const lines=wrapText(ctx,t,colW-44); return {lines,h:lines.length*21+16}; });
+    ctx.font=`bold 17px ${FONT}`; const tl=wrapText(ctx,g.name,colW-30); ctx.font=`15px ${FONT}`;
+    const h=18+tl.length*24+8+notes.reduce((a,n)=>a+n.h+8,0)+8;
+    return {g,notes,tl,h};
+  });
+  const th=$('kTheme').value.trim()||'（テーマ未入力）';
+  ctx.font=`bold 26px ${FONT}`; const titleLines=wrapText(ctx,'テーマ：'+th,W-pad*2);
+  const top=pad+titleLines.length*36+30;
+  const colH=new Array(cols).fill(top); const pos=[];
+  groups.forEach(gr=>{ let k=0; for(let i=1;i<cols;i++) if(colH[i]<colH[k]) k=i; pos.push({x:pad+k*(colW+gap),y:colH[k]}); colH[k]+=gr.h+gap; });
+  const H=Math.max(...colH, top+60)+pad;
+  c.width=W*S; c.height=H*S; ctx.scale(S,S);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1F3864'; ctx.font=`bold 26px ${FONT}`; ctx.textBaseline='top';
+  titleLines.forEach((l,i)=>ctx.fillText(l,pad,pad+i*36));
+  ctx.fillStyle='#5B6472'; ctx.font=`13px ${FONT}`; ctx.fillText(`付箋 ${kNotes.length} 枚 ／ グループ ${groups.filter(x=>!x.g.pool).length} 個　情報ラボ https://joholab.net/problem/`,pad,pad+titleLines.length*36+4);
+  groups.forEach((gr,i)=>{
+    const {x,y}=pos[i];
+    rrect(ctx,x,y,colW,gr.h,12); ctx.fillStyle= gr.g.pool? '#F7F8FA':'#F2F5FA'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle= gr.g.pool? '#C9D2E0':'#2F5496'; ctx.stroke();
+    ctx.fillStyle= gr.g.pool? '#5B6472':'#1F3864'; ctx.font=`bold 17px ${FONT}`;
+    gr.tl.forEach((l,j)=>ctx.fillText(l,x+15,y+16+j*24));
+    let yy=y+18+gr.tl.length*24+8; ctx.font=`15px ${FONT}`;
+    gr.notes.forEach(n=>{
+      rrect(ctx,x+12,yy,colW-24,n.h,6); ctx.fillStyle='#FFF4B8'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle='#E2CB6A'; ctx.stroke();
+      ctx.fillStyle='#1c2430'; n.lines.forEach((l,j)=>ctx.fillText(l,x+22,yy+9+j*21)); yy+=n.h+8;
+    });
+  });
+  return c;
+}
+$('kPng').addEventListener('click',()=>savePng(`kj-${fileStamp()}.png`,kCanvas()));
+
+/* ===================== ② ロジックツリー ===================== */
+const TEX=[
+  {mode:'why', root:{text:'図書室の利用者が少ない', children:[
+    {text:'図書室に行くきっかけがない', children:[
+      {text:'新しい本が入ったことが伝わっていない', children:[{text:'新刊のお知らせを出していない', children:[]}]},
+      {text:'授業で図書室を使う機会が少ない', children:[]}]},
+    {text:'行っても読みたい本が少ない', children:[
+      {text:'生徒の希望が本選びに反映されていない', children:[{text:'リクエストを受け付けるしくみがない', children:[]}]}]},
+    {text:'行ける時間が限られている', children:[
+      {text:'放課後すぐに閉まる', children:[]},
+      {text:'昼休みは混んでいて座れない', children:[]}]}]}},
+  {mode:'split', root:{text:'1か月の貸出冊数を増やす', children:[
+    {text:'図書室に来る人数を増やす', children:[
+      {text:'初めて来る人を増やす', children:[{text:'授業や行事で図書室を使う', children:[]}]},
+      {text:'くり返し来る人を増やす', children:[{text:'新刊のお知らせを定期的に出す', children:[]}]}]},
+    {text:'1人が借りる冊数を増やす', children:[
+      {text:'借りられる上限を見直す', children:[]},
+      {text:'関連する本を並べて紹介する', children:[]}]}]}},
+];
+let tMode='why', tRoot=null, tUid=1;
+const T_MAXD=5, T_MAXN=40;
+function tClone(n){ return {id:'t'+(tUid++), text:n.text, children:n.children.map(tClone)}; }
+function tAll(n,arr=[]){ arr.push(n); n.children.forEach(c=>tAll(c,arr)); return arr; }
+function tDepth(n){ return n.children.length? 1+Math.max(...n.children.map(tDepth)) : 0; }
+function tFind(n,id,parent=null){ if(n.id===id) return {node:n,parent}; for(const c of n.children){ const r=tFind(c,id,n); if(r) return r; } return null; }
+function tLabel(d){ if(d===0) return tMode==='why'?'問題':'目的'; return tMode==='why'? `なぜ ${d}` : `第${d}層`; }
+function tSetMode(m){
+  tMode=m; document.querySelectorAll('[data-tmode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tmode===m)));
+  $('tHint').innerHTML= m==='why'
+    ? '「＋ なぜ？」で、その項目が<b>なぜ起きるのか</b>の答えを右に足します。くり返して、<b>自分たちで手を打てる具体的な原因</b>までさかのぼりましょう。'
+    : '「＋ 分ける」で、その項目を<b>何に分けられるか</b>を右に足します。分けたものが<b>もれなく、ダブりなく</b>（MECE）なっているか確かめましょう。';
+  tRenderOutline();
+}
+function tRenderOutline(){
+  const total=tAll(tRoot).length;
+  const node=(n,d)=>`<div class="tnode${d===0?' root':''}" data-id="${n.id}"><div class="tcard"><span class="tlab">${tLabel(d)}</span><textarea rows="1" data-tt="${n.id}" maxlength="40" aria-label="${tLabel(d)}の内容">${esc(n.text)}</textarea><button class="tbtn" data-tadd="${n.id}" ${d>=T_MAXD||total>=T_MAXN?'disabled':''} aria-label="この項目の右に枝を足す">＋ ${tMode==='why'?'なぜ？':'分ける'}</button>${d?`<button class="tbtn del" data-tdel="${n.id}" aria-label="この項目と、その先を消す">×</button>`:''}</div>${n.children.length?`<div class="tkids">${n.children.map(c=>node(c,d+1)).join('')}</div>`:''}</div>`;
+  $('tTree').innerHTML=node(tRoot,0);
+  autosizeAll(); tUpdate();
+}
+function autosize(t){ t.style.height='auto'; t.style.height=t.scrollHeight+'px'; }
+function autosizeAll(){ document.querySelectorAll('#tTree textarea').forEach(autosize); }
+const tTreeEl=$('tTree');
+tTreeEl.addEventListener('input',e=>{ const id=e.target.dataset.tt; if(!id) return; const f=tFind(tRoot,id); if(f){ f.node.text=e.target.value.replace(/\n/g,''); } autosize(e.target); tUpdate(); });
+tTreeEl.addEventListener('keydown',e=>{ if(e.target.dataset.tt && e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
+tTreeEl.addEventListener('click',e=>{
+  const a=e.target.closest('[data-tadd]'), d=e.target.closest('[data-tdel]');
+  if(a){ const f=tFind(tRoot,a.dataset.tadd); if(!f) return; const nn={id:'t'+(tUid++), text:'', children:[]}; f.node.children.push(nn); tRenderOutline(); const ta=document.querySelector(`[data-tt="${nn.id}"]`); if(ta) ta.focus(); }
+  if(d){ const f=tFind(tRoot,d.dataset.tdel); if(!f||!f.parent) return; f.parent.children=f.parent.children.filter(c=>c!==f.node); tRenderOutline(); }
+});
+/* 図の配置（SVG と画像保存で共通） */
+function tLayout(){
+  const nodeW=176, colW=214, lh=19, padY=10, gap=12, maxTW=nodeW-20;
+  measureCtx.font=`13.5px ${FONT}`;
+  let y=10; const bottom={}; const list=[];
+  function shift(n,dy){ n._y+=dy; bottom[n._d]=Math.max(bottom[n._d]===undefined?-1e9:bottom[n._d], n._y+n._h); n.children.forEach(c=>shift(c,dy)); }
+  function place(n,d){
+    n._d=d; n._x=10+d*colW; measureCtx.font=`${d===0?'bold ':''}13.5px ${FONT}`; n._lines=wrapText(measureCtx,n.text||'（未入力）',maxTW); n._h=n._lines.length*lh+padY*2;
+    if(!n.children.length){ n._y=y; y+=n._h+gap; }
+    else { n.children.forEach(c=>place(c,d+1)); const f=n.children[0], l=n.children[n.children.length-1]; n._y=((f._y+f._h/2)+(l._y+l._h/2))/2-n._h/2; }
+    const b=bottom[d]; if(b!==undefined && n._y<b+gap){ const dy=b+gap-n._y; shift(n,dy); y+=dy; }
+    if(n._y+n._h+gap>y) y=n._y+n._h+gap;
+    bottom[d]=n._y+n._h; list.push(n);
+  }
+  place(tRoot,0);
+  const W=10+tDepth(tRoot)*colW+nodeW+10, H=Math.max(y,60);
+  return {list,W,H,nodeW,lh,padY};
+}
+function tDrawSvg(){
+  const L=tLayout(); let s='';
+  L.list.forEach(n=>n.children.forEach(c=>{ const x1=n._x+L.nodeW, y1=n._y+n._h/2, x2=c._x, y2=c._y+c._h/2, mx=(x1+x2)/2;
+    s+=`<path d="M${x1} ${y1} H${mx} V${y2} H${x2}" fill="none" stroke="#9AA9C4" stroke-width="2"/>`; }));
+  L.list.forEach(n=>{ const root=n._d===0, leaf=!n.children.length&&!root;
+    s+=`<rect x="${n._x}" y="${n._y}" width="${L.nodeW}" height="${n._h}" rx="8" fill="${root?'#2F5496':leaf?'#FFF8E7':'#fff'}" stroke="${root?'#2F5496':leaf?'#C49A2B':'#9AA9C4'}" stroke-width="${leaf?2:1.5}"/>`;
+    n._lines.forEach((l,i)=>{ s+=`<text x="${n._x+10}" y="${n._y+L.padY+14+i*L.lh}" font-size="13.5" fill="${root?'#fff':n.text?'#1c2430':'#98A2B3'}"${root?' font-weight="700"':''}>${esc(l)}</text>`; });
+  });
+  $('tFig').innerHTML=`<svg viewBox="0 0 ${L.W} ${L.H}" width="${L.W}" height="${L.H}" role="img" aria-label="ロジックツリーの図。黄色の枠は末端の項目" font-family='${FONT}'>${s}</svg>`;
+}
+function tUpdate(){
+  tDrawSvg();
+  const all=tAll(tRoot), leaves=all.filter(n=>n!==tRoot&&!n.children.length), d=tDepth(tRoot);
+  $('tN').textContent=all.length; $('tD').textContent=d; $('tL').textContent=leaves.length;
+  const m=$('tMsg'); m.className='msg';
+  const empty=all.filter(n=>!n.text.trim()).length;
+  if(!tRoot.children.length){ m.innerHTML=`<div class="t">左はしの「${tMode==='why'?'問題':'目的'}」に、考えたいことを書きましょう</div>書けたら「＋ ${tMode==='why'?'なぜ？':'分ける'}」で枝を足していきます。`; return; }
+  const list=leaves.filter(n=>n.text.trim()).map(n=>`<li>${esc(n.text)}</li>`).join('');
+  if(tMode==='why'){
+    m.innerHTML=`<div class="t">末端（黄色の枠）の原因が ${leaves.length} 個あります（深さ ${d}）</div>`+(d<2?'まだ1段目だけです。それぞれについて、もう一度「なぜ？」と問いかけてみましょう。':'末端が、<b>自分たちで手を打てる具体的な原因</b>になっているか確かめましょう。「やる気がない」のような、それ以上たどれない大まかな言葉で止まっていたら、もう一度「なぜ？」と問いかけます。')+(list?`<ul>${list}</ul>`:'')+(empty?`<div style="margin-top:6px;">まだ文字の入っていない項目が ${empty} 個あります。</div>`:'')+(d>=2?'<div style="margin-top:6px;">末端の原因それぞれに対する解決策を考えたら、「解決策を比べる」タブで比べましょう。</div>':'');
+  } else {
+    m.innerHTML=`<div class="t">末端（黄色の枠）が ${leaves.length} 個あります（深さ ${d}）</div>同じ親から分かれた項目どうしが<b>もれなく</b>（ほかに分け方の抜けがないか）、<b>ダブりなく</b>（同じことを二重に数えていないか）なっているか確かめましょう。末端は、実際に行動できることになっていますか。`+(list?`<ul>${list}</ul>`:'')+(empty?`<div style="margin-top:6px;">まだ文字の入っていない項目が ${empty} 個あります。</div>`:'');
+  }
+}
+function tLoad(i){ const ex=TEX[i]; tRoot=tClone(ex.root); document.querySelectorAll('[data-tex]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.tex===i))); tSetMode(ex.mode); }
+document.querySelectorAll('[data-tex]').forEach(b=>b.addEventListener('click',()=>tLoad(+b.dataset.tex)));
+document.querySelectorAll('[data-tmode]').forEach(b=>b.addEventListener('click',()=>tSetMode(b.dataset.tmode)));
+$('tBlank').addEventListener('click',()=>{ tRoot={id:'t'+(tUid++),text:'',children:[]}; document.querySelectorAll('[data-tex]').forEach(b=>b.setAttribute('aria-pressed','false')); tRenderOutline(); const ta=document.querySelector('#tTree textarea'); if(ta) ta.focus(); });
+$('tTxt').addEventListener('click',()=>{
+  let s=`ロジックツリー（${tMode==='why'?'なぜなぜ':'分解'}）\n\n`;
+  const walk=(n,d)=>{ s+='　'.repeat(d)+(d?'└ ':'')+`[${tLabel(d)}] `+(n.text||'（未入力）')+'\n'; n.children.forEach(c=>walk(c,d+1)); };
+  walk(tRoot,0); s+='\n（情報ラボ「問題解決の手法を体験しよう」で作成 https://joholab.net/problem/）\n';
+  saveText(`logictree-${fileStamp()}.txt`,s);
+});
+$('tPng').addEventListener('click',()=>{
+  const L=tLayout(), S=2, c=document.createElement('canvas'), ctx=c.getContext('2d');
+  c.width=(L.W+20)*S; c.height=(L.H+20)*S; ctx.scale(S,S); ctx.translate(10,10);
+  ctx.fillStyle='#fff'; ctx.fillRect(-10,-10,L.W+20,L.H+20);
+  ctx.strokeStyle='#9AA9C4'; ctx.lineWidth=2;
+  L.list.forEach(n=>n.children.forEach(ch=>{ const x1=n._x+L.nodeW, y1=n._y+n._h/2, x2=ch._x, y2=ch._y+ch._h/2, mx=(x1+x2)/2; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(mx,y1); ctx.lineTo(mx,y2); ctx.lineTo(x2,y2); ctx.stroke(); }));
+  ctx.textBaseline='alphabetic';
+  L.list.forEach(n=>{ const root=n._d===0, leaf=!n.children.length&&!root;
+    rrect(ctx,n._x,n._y,L.nodeW,n._h,8); ctx.fillStyle=root?'#2F5496':leaf?'#FFF8E7':'#fff'; ctx.fill(); ctx.lineWidth=leaf?2:1.5; ctx.strokeStyle=root?'#2F5496':leaf?'#C49A2B':'#9AA9C4'; ctx.stroke();
+    ctx.fillStyle=root?'#fff':n.text?'#1c2430':'#98A2B3'; ctx.font=`${root?'bold ':''}13.5px ${FONT}`;
+    n._lines.forEach((l,i)=>ctx.fillText(l,n._x+10,n._y+L.padY+14+i*L.lh));
+  });
+  savePng(`logictree-${fileStamp()}.png`,c);
+});
+
+/* ===================== ③ 意思決定マトリクス ===================== */
+const MCOL=['#2F5496','#C49A2B','#2E7D4F','#8E5BB5','#D2691E','#4A9BB5'];
+const MEX={crit:[{name:'効果の大きさ',w:3},{name:'費用の安さ',w:3},{name:'実行しやすさ',w:3},{name:'続けやすさ',w:3}],
+  opts:[{name:'新刊コーナーを入口に置く',s:[3,4,5,4]},{name:'ビブリオバトルを開く',s:[5,4,2,2]},{name:'自習スペースを増やす',s:[4,1,2,5]},{name:'掲示とお便りで本を紹介',s:[2,5,4,3]}]};
+let mCrit=[], mOpts=[], mPrevTop=null, mPrevW=null;
+function mLoad(){ mCrit=MEX.crit.map(c=>({...c})); mOpts=MEX.opts.map(o=>({name:o.name,s:o.s.slice()})); mPrevTop=null; mRender(); }
+function mScores(){ return mOpts.map((o,i)=>({i, name:o.name.trim()||`案${i+1}`, parts:mCrit.map((c,j)=>o.s[j]*c.w), total:mCrit.reduce((a,c,j)=>a+o.s[j]*c.w,0)})); }
+function mRanks(sc){ return sc.map(x=>1+sc.filter(y=>y.total>x.total).length); }
+const opt=(v,lo,hi)=>Array.from({length:hi-lo+1},(_,k)=>lo+k).map(k=>`<option value="${k}"${k===v?' selected':''}>${k}</option>`).join('');
+function mRender(){
+  let h=`<tr><th class="first" style="min-width:16em;">案 ＼ 基準</th>`+mCrit.map((c,j)=>`<th class="cr"><div class="cellin"><input class="txt" data-cn="${j}" value="${esc(c.name)}" maxlength="20" aria-label="基準${j+1}の名前"><button class="xs" data-cdel="${j}" aria-label="基準${j+1}を消す" ${mCrit.length<=1?'disabled':''}>×</button></div><span class="wl"><label>重み <select class="sel" data-cw="${j}" aria-label="基準${j+1}の重み">${opt(c.w,0,5)}</select></label></span></th>`).join('')+`<th class="nw">合計</th><th class="nw">順位</th></tr>`;
+  h+=mOpts.map((o,i)=>`<tr data-row="${i}"><td class="on"><div class="cellin"><input class="txt" data-on="${i}" value="${esc(o.name)}" maxlength="24" aria-label="案${i+1}の名前"><button class="xs" data-odel="${i}" aria-label="案${i+1}を消す" ${mOpts.length<=2?'disabled':''}>×</button></div></td>`+mCrit.map((c,j)=>`<td><select class="sel" data-sc="${i},${j}" aria-label="案${i+1}・基準${j+1}の点数">${opt(o.s[j],1,5)}</select></td>`).join('')+`<td class="tot" id="mTot${i}"></td><td class="rk" id="mRk${i}"></td></tr>`).join('');
+  $('mTable').innerHTML=h;
+  $('mAddC').disabled=mCrit.length>=6; $('mAddO').disabled=mOpts.length>=6;
+  mCompute();
+}
+function mCompute(){
+  const sc=mScores(), rk=mRanks(sc), max=Math.max(1,...sc.map(x=>x.total));
+  sc.forEach((x,k)=>{ $('mTot'+k).textContent=x.total; $('mRk'+k).textContent=rk[k]+'位'; $('mTable').querySelector(`tr[data-row="${k}"]`).classList.toggle('first',rk[k]===1); });
+  const order=sc.slice().sort((a,b)=>b.total-a.total||a.i-b.i);
+  const maxPossible=Math.max(1,mCrit.reduce((a,c)=>a+5*c.w,0));
+  $('mBars').innerHTML=order.map(x=>`<div class="bar"><div class="nm">${rk[x.i]}位 ${esc(x.name)}</div><div class="trk">${x.parts.map((p,j)=>p?`<div class="seg" style="width:${(p/maxPossible*100).toFixed(2)}%;background:${MCOL[j%MCOL.length]};" title="${esc(mCrit[j].name)}：${p}"></div>`:'').join('')}</div><div class="sc">${x.total}</div></div>`).join('');
+  $('mLeg').innerHTML=mCrit.map((c,j)=>`<span><i style="background:${MCOL[j%MCOL.length]}"></i>${esc(c.name.trim()||'基準'+(j+1))}（重み ${c.w}）</span>`).join('')+`<span>棒の右はし＝満点（${maxPossible}点）</span>`;
+  const tops=order.filter(x=>rk[x.i]===1), top=tops[0];
+  const calc=mCrit.map((c,j)=>`${mOpts[top.i].s[j]}×${c.w}`).join(' ＋ ')+` ＝ ${top.total}`;
+  const topNames=tops.map(x=>'「'+esc(x.name)+'」').join('と');
+  const key=tops.map(x=>x.i).join(',');
+  let change='';
+  if(mPrevTop!==null && mPrevTop!==key){ change=`<div style="margin-top:8px;"><b>1位が入れかわりました。</b>重みを変えると、何を大切にするかが変わるので、選ばれる案も変わります。</div>`; }
+  const m=$('mMsg'); m.className= change? 'msg ok' : 'msg';
+  m.innerHTML=`<div class="t">1位は ${topNames}（${top.total}点）${tops.length>1?'：同点です':''}</div>計算：<code>${calc}</code>`+change+`<div style="margin-top:8px;font-size:14px;">重みは<b>採点の前に話し合って決め</b>、理由を説明できるようにしておきましょう。点数にも人の判断が入るので、合計点だけで決めつけず、話し合いの材料として使います。</div>`;
+  mPrevTop=key;
+}
+const mt=$('mTable');
+mt.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.cw!==undefined){ mCrit[+t.dataset.cw].w=+t.value; mCompute(); }
+  if(t.dataset.sc!==undefined){ const [i,j]=t.dataset.sc.split(',').map(Number); mOpts[i].s[j]=+t.value; mCompute(); }
+});
+mt.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.cn!==undefined){ mCrit[+t.dataset.cn].name=t.value; mCompute(); }
+  if(t.dataset.on!==undefined){ mOpts[+t.dataset.on].name=t.value; mCompute(); }
+});
+mt.addEventListener('click',e=>{
+  const c=e.target.closest('[data-cdel]'), o=e.target.closest('[data-odel]');
+  if(c && mCrit.length>1){ const j=+c.dataset.cdel; mCrit.splice(j,1); mOpts.forEach(x=>x.s.splice(j,1)); mRender(); }
+  if(o && mOpts.length>2){ mOpts.splice(+o.dataset.odel,1); mRender(); }
+});
+$('mEx').addEventListener('click',mLoad);
+$('mAddC').addEventListener('click',()=>{ if(mCrit.length>=6) return; mCrit.push({name:'',w:3}); mOpts.forEach(x=>x.s.push(3)); mRender(); const ins=mt.querySelectorAll('[data-cn]'); ins[ins.length-1].focus(); });
+$('mAddO').addEventListener('click',()=>{ if(mOpts.length>=6) return; mOpts.push({name:'',s:mCrit.map(()=>3)}); mRender(); const ins=mt.querySelectorAll('[data-on]'); ins[ins.length-1].focus(); });
+document.querySelectorAll('[data-wp]').forEach(b=>b.addEventListener('click',()=>{
+  const ws=b.dataset.wp.split(',').map(Number);
+  mCrit.forEach((c,j)=>{ c.w= j<ws.length? ws[j] : 1; });
+  document.querySelectorAll('[data-wp]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  mt.querySelectorAll('[data-cw]').forEach(s=>{ s.value=mCrit[+s.dataset.cw].w; });
+  mCompute();
+}));
+mt.addEventListener('change',e=>{ if(e.target.dataset.cw!==undefined) document.querySelectorAll('[data-wp]').forEach(x=>x.setAttribute('aria-pressed','false')); });
+
+/* PDCA */
+const PH=[
+  {k:'P',name:'計画（Plan）',col:'#2F5496',d:'目標と、そのための方法・期限・役割分担を決めます。あとで効果を確かめられるように、<b>何を記録するか</b>もここで決めておきます。',ex:'例（架空）：新刊コーナーを入口に置く。期間は1か月。毎週、新刊コーナーの本の貸出冊数を記録する。'},
+  {k:'D',name:'実行（Do）',col:'#2E7D4F',d:'計画にそって実行し、決めたとおりに記録をとります。予定どおりにいかなかったことも記録しておくと、評価のときに役立ちます。',ex:'例（架空）：図書委員が新刊を入口に並べ、毎週金曜日に貸出冊数を数える。'},
+  {k:'C',name:'評価（Check）',col:'#C49A2B',d:'記録を、目標や実行する前の状態と比べます。うまくいった点・いかなかった点と、<b>その理由</b>を考えます。',ex:'例（架空）：実行前の1か月と比べて貸出冊数が増えたか。増えなかった週はなぜか。'},
+  {k:'A',name:'改善（Action）',col:'#C00000',d:'評価をもとに、続ける・やめる・やり方を変える、を決めます。決めたことは次の計画（P）に生かし、サイクルをもう一周します。',ex:'例（架空）：紹介カードを添えたほうが借りられていたので、次の1か月は全部の新刊に紹介カードをつける。'},
+];
+let pCur=0;
+function pDraw(){
+  const cx=150, cy=150, R=118, r=58; let s='';
+  const pt=(a,rad)=>[cx+rad*Math.cos(a), cy+rad*Math.sin(a)];
+  PH.forEach((p,i)=>{
+    const a0=-Math.PI/2+i*Math.PI/2+0.04, a1=a0+Math.PI/2-0.08, on=i===pCur, RR=on?R+6:R;
+    const [x0,y0]=pt(a0,RR),[x1,y1]=pt(a1,RR),[x2,y2]=pt(a1,r),[x3,y3]=pt(a0,r);
+    s+=`<g class="q" data-pq="${i}" role="button" tabindex="0" aria-label="${p.name}"><path d="M${x0} ${y0} A${RR} ${RR} 0 0 1 ${x1} ${y1} L${x2} ${y2} A${r} ${r} 0 0 0 ${x3} ${y3} Z" fill="${p.col}" opacity="${on?1:.45}"/>`;
+    const am=(a0+a1)/2, [tx,ty]=pt(am,(RR+r)/2);
+    s+=`<text x="${tx}" y="${ty-2}" text-anchor="middle" font-size="26" font-weight="700" fill="#fff">${p.k}</text><text x="${tx}" y="${ty+16}" text-anchor="middle" font-size="12" fill="#fff">${p.name.replace(/（.*/,'')}</text></g>`;
+    const [ax,ay]=pt(a1+0.04,(R+r)/2+0);
+    const ang=(a1+0.04)*180/Math.PI+90;
+    s+=`<polygon points="-7,-6 7,0 -7,6" transform="translate(${ax} ${ay}) rotate(${ang})" fill="#5B6472"/>`;
+  });
+  s+=`<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="13" fill="#1F3864" font-weight="700">くり返して</text><text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="13" fill="#1F3864" font-weight="700">改善する</text>`;
+  $('pSvg').innerHTML=s;
+  const p=PH[pCur];
+  $('pBox').innerHTML=`<div class="ph" style="color:${p.col}">${p.k}：${p.name}</div><div>${p.d}</div><div class="ex">${p.ex}</div>`;
+  document.querySelectorAll('[data-ph]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.ph===pCur)));
+  $('pNext').textContent= pCur===3? '次の計画（P）へ ▶' : '次の段階へ ▶';
+}
+$('pSvg').addEventListener('click',e=>{ const g=e.target.closest('[data-pq]'); if(g){ pCur=+g.dataset.pq; pDraw(); } });
+$('pSvg').addEventListener('keydown',e=>{ const g=e.target.closest('[data-pq]'); if(g&&(e.key==='Enter'||e.key===' ')){ e.preventDefault(); pCur=+g.dataset.pq; pDraw(); const n=$('pSvg').querySelector(`[data-pq="${pCur}"]`); if(n) n.focus(); } });
+document.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>{ pCur=+b.dataset.ph; pDraw(); }));
+$('pNext').addEventListener('click',()=>{ pCur=(pCur+1)%4; pDraw(); });
+
+/* ===================== ④ アンケート ===================== */
+const WTYPES=[['dbl','ダブルバーレル質問'],['lead','誘導的な質問'],['vague','あいまいな言葉'],['overlap','選択肢の重なり'],['gap','選択肢のもれ'],['ok','問題なし']];
+const WQ=[
+  {q:'図書室の本の種類と、開いている時間に満足していますか。',o:['はい','いいえ'],a:'dbl',why:'「本の種類」と「開いている時間」という<b>2つのこと</b>を1つの質問で聞いています。種類には満足しているが時間には不満、という人は答えられません。',fix:'「図書室の本の種類に満足していますか。」と「図書室の開いている時間に満足していますか。」の2問に分ける。'},
+  {q:'多くの先生が「高校生のうちにたくさん本を読むべきだ」と言っています。あなたは、もっと本を読みたいと思いますか。',o:['思う','思わない'],a:'lead',why:'先生という<b>権威のある人の意見</b>を前置きにしているので、それに合わせた回答が増えるおそれがあります。',fix:'前置きをなくして「あなたは、今よりも本を読む時間を増やしたいと思いますか。」とし、選択肢も「増やしたい／今のままでよい／減らしたい」のように両方の立場を用意する。'},
+  {q:'最近、図書室をよく利用しますか。',o:['はい','いいえ'],a:'vague',why:'「最近」がどのくらいの期間か、「よく」が何回くらいかは、<b>人によって受け取り方がちがいます</b>。同じ「はい」でも意味がそろいません。',fix:'「この1か月に、図書室を何回利用しましたか。」選択肢「0回／1〜2回／3〜5回／6回以上」。'},
+  {q:'平日の1日の読書時間はどのくらいですか。',o:['30分まで','30分〜1時間','1時間〜2時間','2時間以上'],a:'overlap',why:'ちょうど30分、1時間、2時間の人は、<b>2つの選択肢に当てはまって</b>しまいます。',fix:'「30分未満／30分以上1時間未満／1時間以上2時間未満／2時間以上」のように、「以上」「未満」で境目をはっきりさせる。'},
+  {q:'ふだんの通学方法を1つ選んでください。',o:['徒歩','自転車','電車'],a:'gap',why:'バスや、家族の車で送ってもらう人は<b>どれも選べません</b>。答えられない人は、適当な選択肢を選ぶか、答えるのをやめてしまいます。',fix:'「バス」「自動車（送迎）」を加え、さらに「その他（　　）」を用意する。'},
+  {q:'この1週間に、図書室で本を借りましたか。',o:['借りた','借りていない'],a:'ok',why:'期間（この1週間）がはっきりしていて、聞いていることも1つだけです。選択肢も、すべての人がどちらか1つに当てはまります。',fix:'このままで使えます。'},
+  {q:'スマートフォンの使いすぎで睡眠不足になる高校生が増えていると言われていますが、あなたはスマートフォンを使う時間を減らしたいと思いますか。',o:['思う','思わない'],a:'lead',why:'前置きで<b>不安をあおる</b>説明をしているため、「減らしたい」と答える人が増えるおそれがあります。',fix:'前置きをなくし、「あなたは、スマートフォンを使う時間を、今より減らしたいと思いますか、増やしたいと思いますか、今のままでよいと思いますか。」と聞く。'},
+  {q:'購買のパンは、安くておいしいと思いますか。',o:['そう思う','そう思わない'],a:'dbl',why:'「値段」と「味」の2つを1つの質問で聞いています。おいしいが高い、と思う人は答えられません。',fix:'「購買のパンの値段は、どう思いますか。」と「購買のパンの味は、どう思いますか。」に分ける。'},
+  {q:'家から学校まで、片道の通学時間はどのくらいですか。',o:['15分未満','15分以上30分未満','30分以上1時間未満','1時間以上'],a:'ok',why:'選択肢の境目が「以上」「未満」ではっきりしていて、<b>重なりも、もれもありません</b>。どんな人もちょうど1つに当てはまります。',fix:'このままで使えます。'},
+  {q:'部活動には、適度に参加していますか。',o:['はい','いいえ'],a:'vague',why:'「適度」の基準は人によってちがいます。週1回で適度と思う人も、毎日でなければ適度でないと思う人もいます。',fix:'「この1か月に、部活動に参加した日は何日ですか。」のように、数で答えられる形にする。'},
+  {q:'いちばん好きな教科を1つ選んでください。',o:['国語','数学','英語','理科','社会'],a:'gap',why:'情報、保健体育、芸術などが好きな人は<b>選ぶものがありません</b>。',fix:'学校で学ぶ教科をすべて並べるか、「その他（　　）」を用意する。'},
+  {q:'1か月に、本や雑誌に使うお金はどのくらいですか。',o:['0〜1000円','1000〜3000円','3000〜5000円','5000円以上'],a:'overlap',why:'ちょうど1000円、3000円、5000円の人は、<b>2つの選択肢に当てはまって</b>しまいます。',fix:'「1000円未満／1000円以上3000円未満／3000円以上5000円未満／5000円以上」とする。'},
+];
+const SC={nom:'名義尺度',ord:'順序尺度',int:'間隔尺度',rat:'比例尺度'};
+const SCOPS={nom:[1,0,0,0],ord:[1,1,0,0],int:[1,1,1,0],rat:[1,1,1,1]};
+const SCREP={nom:'最頻値',ord:'最頻値・中央値',int:'最頻値・中央値・平均値',rat:'最頻値・中央値・平均値'};
+const SQ=[
+  {q:'血液型（A型・B型・O型・AB型）',a:'nom',why:'型を<b>区別するだけ</b>で、どれが大きい・小さいという順序はありません。'},
+  {q:'マラソン大会の順位（1位、2位、3位…）',a:'ord',why:'順序に意味がありますが、1位と2位の差（タイムの差）と、2位と3位の差が<b>等しいとは限りません</b>。'},
+  {q:'気温（℃）',a:'int',why:'1℃の差はどこでも同じ大きさなので、差に意味があります。しかし 0℃ は「熱がまったくない」状態ではなく、決め方しだいの点です。だから「30℃は15℃の2倍暑い」とはいえません。'},
+  {q:'身長（cm）',a:'rat',why:'0cm は「長さがまったくない」状態（絶対的な0）です。差だけでなく、「180cm は 90cm の2倍」のように<b>比にも意味</b>があります。'},
+  {q:'図書室の満足度（1:満足 2:やや満足 3:どちらともいえない 4:やや不満 5:不満）',a:'ord',why:'数字は順序を表していますが、「満足」と「やや満足」の間と、「やや満足」と「どちらともいえない」の間が<b>等しいとは限りません</b>。そのため、得点のように平均を計算するのは注意が必要です。'},
+  {q:'所属する部活動（1:運動部 2:文化部 3:所属なし）',a:'nom',why:'数字が書いてありますが、<b>区別のために番号をつけただけ</b>です。平均を計算して「1.8」と出しても意味がありません。'},
+  {q:'1か月に図書室で借りた本の冊数',a:'rat',why:'0冊は「まったく借りていない」状態です。「4冊は2冊の2倍」のように<b>比にも意味</b>があります。'},
+  {q:'生まれた年（西暦）',a:'int',why:'1年の差はどこでも同じなので、差に意味があります。しかし西暦0年は「時間がまったくない」点ではなく、数え始めを決めただけです。「2010年は1005年の2倍」には意味がありません。'},
+  {q:'成績の評価（A・B・C）',a:'ord',why:'A＞B＞C という順序がありますが、AとBの差と、BとCの差が<b>同じとは限りません</b>。'},
+  {q:'好きな教科（国語・数学・英語・情報…）',a:'nom',why:'教科を区別するだけで、順序はありません。'},
+  {q:'片道の通学時間（分）',a:'rat',why:'0分は「時間がまったくかからない」状態です。「40分は20分の2倍」のように<b>比にも意味</b>があります。'},
+  {q:'テストが始まった時刻（9時、10時、11時…）',a:'int',why:'1時間の差はどこでも同じなので、差に意味があります。しかし0時は1日の区切りとして決めた点で、「時間がまったくない」わけではありません。「10時は5時の2倍」には意味がありません。'},
+];
+let qMode='word', qOrder=[], qIdx=0, qRight=0, qDone=0, qAnswered=false;
+const qBank=()=> qMode==='word'? WQ : SQ;
+function qStart(shuffle){
+  const n=qBank().length; qOrder=Array.from({length:n},(_,i)=>i);
+  if(shuffle){ for(let i=n-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [qOrder[i],qOrder[j]]=[qOrder[j],qOrder[i]]; } }
+  qIdx=0; qRight=0; qDone=0; qShow();
+}
+function qShow(){
+  qAnswered=false;
+  const bank=qBank(), it=bank[qOrder[qIdx]];
+  $('qProg').textContent=`${qIdx+1} / ${bank.length} 問目`;
+  $('qScore').textContent=`正解 ${qRight} / ${qDone}`;
+  if(qMode==='word'){
+    $('qCard').innerHTML=`<div class="qn">この質問文の問題点は？</div><div class="qq">問　${esc(it.q)}</div><div class="opts">${it.o.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`;
+    $('qAns').innerHTML=WTYPES.map(([k,l])=>`<button data-qa="${k}">${l}</button>`).join('');
+  } else {
+    $('qCard').innerHTML=`<div class="qn">このデータの尺度は？</div><div class="qq">${esc(it.q)}</div>`;
+    $('qAns').innerHTML=Object.entries(SC).map(([k,l])=>`<button data-qa="${k}">${l}</button>`).join('');
+  }
+  const m=$('qMsg'); m.className='msg';
+  m.innerHTML= qMode==='word'
+    ? '<div class="t">答えを選びましょう</div>アンケートの回答者になったつもりで読んでみます。答えにくい人はいないでしょうか。'
+    : '<div class="t">答えを選びましょう</div>「区別だけ？」「順序はある？」「差に意味がある？」「0 は“まったくない”を表す？」の順に考えます。';
+  $('qNext').disabled=true; $('qNext').textContent= qIdx===bank.length-1? '結果を見る ▶' : '次の問題 ▶';
+  document.querySelectorAll('#sTable tr[data-sc]').forEach(tr=>tr.classList.remove('hl'));
+}
+$('qAns').addEventListener('click',e=>{
+  const b=e.target.closest('[data-qa]'); if(!b||qAnswered) return;
+  qAnswered=true; const it=qBank()[qOrder[qIdx]], ok=b.dataset.qa===it.a;
+  qDone++; if(ok) qRight++;
+  $('qAns').querySelectorAll('button').forEach(x=>{ x.disabled=true; if(x.dataset.qa===it.a) x.classList.add('right'); else if(x===b) x.classList.add('wrong'); });
+  $('qScore').textContent=`正解 ${qRight} / ${qDone}`;
+  const m=$('qMsg'); m.className='msg '+(ok?'ok':'ng');
+  if(qMode==='word'){
+    const lab=WTYPES.find(x=>x[0]===it.a)[1];
+    m.innerHTML=`<div class="t">${ok?'正解！':'ざんねん。'}答えは「${lab}」</div>${it.why}<div class="fix"><b>${it.a==='ok'?'ポイント':'直し方'}</b>：${esc(it.fix)}</div>`;
+  } else {
+    const ops=['区別','大小・順序','差','比（何倍）'];
+    m.innerHTML=`<div class="t">${ok?'正解！':'ざんねん。'}答えは「${SC[it.a]}」</div>${it.why}<div class="fix"><b>意味のある計算</b>：${ops.map((o,k)=>`<span class="tag${SCOPS[it.a][k]?'':' no'}">${o}</span>`).join('')}<br><b>使える代表値</b>：${SCREP[it.a]}</div>`;
+    const tr=document.querySelector(`#sTable tr[data-sc="${it.a}"]`); if(tr) tr.classList.add('hl');
+  }
+  $('qNext').disabled=false;
+});
+$('qNext').addEventListener('click',()=>{
+  const bank=qBank();
+  if(qIdx<bank.length-1){ qIdx++; qShow(); return; }
+  $('qCard').innerHTML=`<div class="qn">結果</div><div class="qq">${bank.length} 問中 ${qRight} 問正解</div>`;
+  $('qAns').innerHTML='';
+  const m=$('qMsg'); m.className='msg '+(qRight===bank.length?'ok':'');
+  m.innerHTML= qMode==='word'
+    ? `<div class="t">${qRight===bank.length?'全問正解！':'おつかれさまでした'}</div>自分でアンケートを作ったら、送る前に<b>だれかに回答者役になってもらい</b>、答えにくい質問がないか確かめましょう。`
+    : `<div class="t">${qRight===bank.length?'全問正解！':'おつかれさまでした'}</div>アンケートを作るときは、集めたデータで<b>どんな計算をしたいか</b>を先に考え、それができる尺度で聞くようにしましょう。`;
+  $('qNext').disabled=true;
+});
+$('qRestart').addEventListener('click',()=>qStart(false));
+$('qShuffle').addEventListener('click',()=>qStart(true));
+document.querySelectorAll('[data-sv]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-sv]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  qMode=b.dataset.sv; qStart(false);
+}));
+
+window.addEventListener('resize',()=>{ if($('toolTree').classList.contains('show')) autosizeAll(); });
+/* ===== 初期化 ===== */
+kLoad(0); tLoad(0); mLoad(); pDraw(); qStart(false);
+</script>
+</body>
+</html>

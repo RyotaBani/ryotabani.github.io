@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>個人情報とプライバシーを守ろう（これは個人情報？・写真の位置情報・匿名化とk-匿名性）｜情報ラボ</title>
+<meta name="description" content="個人情報とプライバシーを、判定クイズ、写真のExif（撮影日時・位置情報）の読み取りと削除、氏名を消したデータから1人に絞り込める体験（k-匿名性）、SNS投稿が広がるモデルで学べる無料教材。個人情報保護法の条文にもとづいて解説します。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/personal/">
+<meta property="og:title" content="個人情報とプライバシーを守ろう｜情報ラボ">
+<meta property="og:description" content="これは個人情報？写真に位置情報は入っている？氏名を消せば匿名？個人情報保護法の考え方を体験しながら学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/personal/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; min-width:0;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:14px 0 8px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.primary,a.primary,label.primary{display:inline-block; background:var(--navy); color:#fff; border:none; padding:11px 22px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; text-decoration:none; line-height:1.4;}
+  button.primary:hover,a.primary:hover,label.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d); overflow-wrap:anywhere;}
+  .msg b{color:#ffd97a;}
+  .msg a{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg .law{display:block; margin-top:8px; font-size:13px; color:#d6e0f0;}
+
+  /* クイズ */
+  .qhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .qno{font-size:13px; color:var(--muted); font-weight:700;}
+  .score{font-size:13.5px; color:var(--ink);}
+  .score b{font-family:var(--mono); font-size:16px;}
+  .scene{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; gap:14px; align-items:flex-start;}
+  .scene .ic{font-size:34px; line-height:1;}
+  .scene .tx{font-size:16.5px; line-height:1.8; color:#1c2430; min-width:0; overflow-wrap:anywhere;}
+  .choices{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px;}
+  @media (max-width:640px){ .choices{grid-template-columns:minmax(0,1fr);} }
+  .choice{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px 12px; cursor:pointer; font-family:inherit;
+    font-size:15px; font-weight:700; color:var(--ink); text-align:left; transition:all .15s;}
+  .choice small{display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:2px;}
+  .choice:hover{border-color:var(--navy);}
+  .choice.right{border-color:var(--ok); background:#EAF5EE; color:var(--ok);}
+  .choice.wrong{border-color:var(--ng); background:#FBEDEC; color:var(--ng);}
+  .choice:disabled{cursor:default;}
+  .dots{display:flex; gap:5px; flex-wrap:wrap; margin-top:12px;}
+  .dot{width:28px; height:28px; border-radius:50%; border:2px solid var(--line); background:#fff; font-size:11.5px; font-weight:700; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; font-family:inherit;}
+  .dot.cur{border-color:var(--navy); color:var(--navy);}
+  .dot.r{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .dot.w{background:var(--ng); border-color:var(--ng); color:#fff;}
+
+  /* Exif */
+  .vh{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+  .drop{border:2px dashed var(--line); border-radius:12px; background:#fff; padding:14px; margin-top:12px; text-align:center; color:var(--muted); font-size:13.5px;}
+  .drop.over{border-color:var(--navy); background:#EAF1FB;}
+  .prev{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; text-align:center;}
+  .prev img{max-width:100%; max-height:300px; height:auto; display:block; margin:0 auto; border-radius:6px;}
+  .prev .cap{font-size:12.5px; color:var(--muted); margin-top:6px; overflow-wrap:anywhere;}
+  table.kv{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.kv th,table.kv td{border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; overflow-wrap:anywhere;}
+  table.kv th{background:var(--panel); color:var(--ink); width:38%; font-weight:700;}
+  table.kv tr.warn td{color:var(--ng); font-weight:700;}
+  table.kv td.m{font-family:var(--mono);}
+  .hex{font-family:var(--mono); font-size:13px; background:#0f1a2e; color:#C9D4E8; border-radius:8px; padding:10px 12px; line-height:1.9; overflow-wrap:anywhere;}
+  .hex span{display:inline-block; width:2.2em; text-align:center;}
+  .hex .soi{color:#9FC3FF; font-weight:700;} .hex .app{color:#FFD97A; font-weight:700;} .hex .sig{color:#8FE3A8; font-weight:700;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; margin-top:6px; color:var(--muted);}
+  .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:4px; vertical-align:-1px;}
+  details.all{margin-top:10px; font-size:13.5px;}
+  details.all summary{cursor:pointer; color:var(--navy); font-weight:700;}
+  .scroll{overflow-x:auto; max-width:100%;}
+
+  /* k-匿名性 */
+  .ctl{display:grid; grid-template-columns:7.5em minmax(0,1fr); gap:8px 12px; align-items:center;}
+  .ctl .lab{font-weight:700; font-size:14px; color:var(--ink);}
+  @media (max-width:560px){ .ctl{grid-template-columns:minmax(0,1fr);} .ctl .lab{margin-top:6px;} }
+  .ctl .row{gap:6px;}
+  .ctl button.chip{padding:6px 12px; font-size:13px;}
+  table.data{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px; background:#fff;}
+  table.data th,table.data td{border:1px solid var(--line); padding:5px 8px; text-align:left; white-space:nowrap;}
+  table.data th{background:var(--panel); color:var(--ink); position:sticky; top:0;}
+  table.data td.m{font-family:var(--mono);}
+  table.data tr.k1 td{background:#FBEDEC;}
+  table.data tr.k2 td{background:#FFF4D6;}
+  table.data tr.tg td{box-shadow:inset 0 2px 0 var(--navy), inset 0 -2px 0 var(--navy);}
+  table.data td.kc{font-weight:700; font-family:var(--mono); text-align:center;}
+  table.data tr.k1 td.kc{color:var(--ng);}
+  table.data td.sens{font-weight:700;}
+  table.data td.sens.bad{color:var(--ng);}
+  .meter{height:10px; background:#fff; border:1px solid var(--line); border-radius:999px; overflow:hidden; margin-top:6px;}
+  .meter i{display:block; height:100%; background:var(--gold);}
+  .know{background:#fff; border:1px solid var(--line); border-left:4px solid var(--gold); border-radius:10px; padding:10px 14px; font-size:14.5px;}
+  .tablebox{max-height:460px; overflow:auto; border:1px solid var(--line); border-radius:10px; margin-top:12px;}
+
+  /* SNS */
+  .snsbox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px;}
+  .snsbox svg{display:block; width:100%; max-width:640px; height:auto; margin:0 auto;}
+  .snsbox circle{transition:fill .25s;}
+  .lg{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); justify-content:center; margin:4px 0 2px;}
+  .lg i{display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:4px; vertical-align:-1px; border:1.5px solid #9AA6BC;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:10px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:14px;}
+  .card b{display:block; color:var(--ink); font-size:15px; margin-bottom:2px;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article .tbl{overflow-x:auto; max-width:100%; margin:0 0 16px;}
+  .article .tbl table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px; background:#fff;}
+  .article .tbl th,.article .tbl td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top;}
+  .article .tbl th{background:var(--panel); color:var(--ink);}
+  .note{background:#FFF8E7; border:1px solid #E8D3A0; border-radius:10px; padding:12px 16px; font-size:14px; margin:0 0 16px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 個人情報とプライバシー</p>
+    <h1>個人情報とプライバシーを守ろう</h1>
+    <p class="lead">どんな情報が個人情報にあたるのかを判定し、写真にかくれた位置情報や、氏名を消しても人が分かってしまうしくみを確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabQ" aria-selected="true" aria-controls="toolQ">これは個人情報？</button>
+    <button class="tab" role="tab" id="tabX" aria-selected="false" aria-controls="toolX">写真にひそむ情報</button>
+    <button class="tab" role="tab" id="tabK" aria-selected="false" aria-controls="toolK">匿名にしたつもりでも…</button>
+    <button class="tab" role="tab" id="tabS" aria-selected="false" aria-controls="toolS">ネットに出した情報は消えない</button>
+  </div>
+
+  <!-- ===== クイズ ===== -->
+  <section class="tool show" id="toolQ" role="tabpanel" aria-labelledby="tabQ">
+    <div class="panel">
+      <div class="qhead">
+        <span class="qno" id="qNo">第1問</span>
+        <span class="score">正解 <b id="qScore">0</b> / <span id="qDone">0</span> 問（全 <span id="qAll"></span> 問）</span>
+      </div>
+      <div class="scene"><div class="ic" id="qIc" aria-hidden="true"></div><div class="tx" id="qTx"></div></div>
+      <div class="choices" id="qCh">
+        <button class="choice" data-a="name">個人情報<small>氏名や顔などで、または他の情報と照らし合わせて、だれか分かる</small></button>
+        <button class="choice" data-a="code">個人情報（個人識別符号）<small>それ1つでだれか分かると、政令で決められた番号・データ</small></button>
+        <button class="choice" data-a="care">要配慮個人情報<small>差別や偏見につながらないよう、特に慎重に扱う個人情報</small></button>
+        <button class="choice" data-a="not">このままでは個人情報ではない<small>ただし、他の情報と結びつくと個人情報になることがある</small></button>
+      </div>
+      <div class="msg" id="qMsg" hidden></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="chip" id="qPrev">◀ 前の問題</button>
+        <button class="primary" id="qNext">次の問題 ▶</button>
+        <button class="chip" id="qReset">最初から</button>
+      </div>
+      <div class="dots" id="qDots" aria-label="問題の一覧"></div>
+    </div>
+    <p class="hint">答えは、個人情報保護法の条文と、個人情報保護委員会のガイドライン・Q&amp;Aにもとづく一般的な考え方です。ここでは、会社などの事業者が扱う場面を想定しています。実際には、だれがどんな情報と合わせて持っているかで結論が変わることがあります。</p>
+  </section>
+
+  <!-- ===== Exif ===== -->
+  <section class="tool" id="toolX" role="tabpanel" aria-labelledby="tabX">
+    <div class="panel">
+      <h2>写真のファイルには、画像のほかに撮影日時や機種、撮影した場所が記録されていることがあります（Exif）。ファイルを選んで調べてみましょう</h2>
+      <div class="row">
+        <label class="primary" for="xFile">画像ファイルを選ぶ</label>
+        <input type="file" id="xFile" accept="image/jpeg,image/png,image/webp,image/*" class="vh">
+        <button class="chip" id="xSample">サンプル画像で試す（架空の位置情報入り）</button>
+      </div>
+      <div class="drop" id="xDrop">ここに画像ファイルをドラッグして置くこともできます</div>
+      <p class="hint"><b>選んだ画像は、このページのプログラムがブラウザの中だけで読み取ります。インターネットには送信しません。</b>読めるのは JPEG（.jpg）と、Exif が入った PNG・WebP です。HEIC 形式には対応していません。</p>
+    </div>
+    <div id="xOut" hidden>
+      <div class="two">
+        <div>
+          <div class="prev"><img id="xImg" alt="選んだ画像"><div class="cap" id="xCap"></div></div>
+          <div style="margin-top:12px;font-size:14px;font-weight:700;color:var(--ink);">ファイルの先頭の64バイト（16進数）</div>
+          <div class="hex" id="xHex"></div>
+          <div class="legend"><span><i style="background:#9FC3FF"></i>FF D8：JPEGの始まり</span><span><i style="background:#FFD97A"></i>FF E1：APP1（Exifの区画）</span><span><i style="background:#8FE3A8"></i>「Exif」の文字</span></div>
+        </div>
+        <div>
+          <table class="kv" id="xTable"></table>
+          <details class="all" id="xAllBox"><summary>記録されている項目をすべて見る</summary><div class="scroll" style="margin-top:8px;"><table class="kv" id="xAll"></table></div></details>
+        </div>
+      </div>
+      <div class="msg" id="xMsg"></div>
+      <div class="panel" style="margin-top:16px;">
+        <h2>位置情報などを取り除いた画像を作る</h2>
+        <p style="margin:0 0 10px;font-size:14.5px;">画像を canvas（ブラウザの描画領域）に描き直して、JPEG で保存し直します。描き直した画像には、もとの Exif は引きつがれません。</p>
+        <button class="primary" id="xStrip">取り除いた画像を作る</button>
+        <div id="xStripOut" hidden style="margin-top:14px;">
+          <div class="two">
+            <div class="prev"><img id="xImg2" alt="Exifを取り除いた画像"><div class="cap" id="xCap2"></div></div>
+            <div>
+              <table class="kv" id="xTable2"></table>
+              <div style="margin-top:12px;"><a class="primary" id="xSave" download="photo_no-exif.jpg" href="#">この画像を保存する</a></div>
+              <p class="hint">描き直すときに JPEG として圧縮し直すので、画質やファイルの大きさが少し変わります。透明な部分は白になります。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== k-匿名性 ===== -->
+  <section class="tool" id="toolK" role="tabpanel" aria-labelledby="tabK">
+    <div class="panel">
+      <h2>架空の高校が、健康診断の結果を研究用に公開しようとしています。氏名を消せば「だれのデータか」分からなくなるでしょうか。公開する列と、どこまでおおまかにするか（一般化）を選んでみましょう</h2>
+      <div class="ctl" id="kCtl"></div>
+      <div class="row" style="margin-top:12px;">
+        <button class="chip" id="kPresetA">氏名だけ消す</button>
+        <button class="chip" id="kPresetB">郵便番号を上3けた・生まれ年だけに</button>
+        <button class="chip" id="kSort" aria-pressed="true">同じ組み合わせごとに並べる</button>
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">k（同じ組み合わせの人数の最小）</div><div class="v" id="kK">–</div></div>
+        <div class="stt"><div class="k">1人に絞り込める人</div><div class="v" id="kU">–</div></div>
+        <div class="stt"><div class="k">組み合わせの種類</div><div class="v" id="kG">–</div></div>
+        <div class="stt"><div class="k">残した情報の細かさ</div><div class="v" id="kD">–</div><div class="meter"><i id="kDm" style="width:0"></i></div></div>
+      </div>
+      <div class="msg" id="kMsg"></div>
+    </div>
+    <div class="panel">
+      <h2>あなたは、公開されたデータを見る側です。次のことを知っているとき、中村さん（架空）の結果が分かるでしょうか</h2>
+      <div class="know">中村さんは <b>〒123-4567</b> に住んでいて、<b>2009年6月14日生まれ</b>の<b>女子</b>、<b>吹奏楽部</b>です。（同じ学校なので、このくらいは知っている、という想定です）</div>
+      <div class="msg" id="kAtk"></div>
+      <div class="tablebox"><table class="data" id="kTable"></table></div>
+      <p class="hint">データはすべて架空です。郵便番号も、説明のために作った番号です。表の色：<span style="background:#FBEDEC;padding:0 6px;">k＝1（1人に絞り込める）</span> <span style="background:#FFF4D6;padding:0 6px;">k＝2</span>、青い線は中村さんと同じ組み合わせの行です。</p>
+    </div>
+  </section>
+
+  <!-- ===== SNS ===== -->
+  <section class="tool" id="toolS" role="tabpanel" aria-labelledby="tabS">
+    <div class="panel">
+      <h2>写真を投稿したとします。公開範囲を選んで「時間を進める」を押してみましょう。見た人の中には、画面を保存（スクリーンショット）して、別の場所に投稿し直す人もいます</h2>
+      <div class="row">
+        <span style="font-size:14px;font-weight:700;color:var(--ink);">公開範囲</span>
+        <button class="chip" data-sc="self" aria-pressed="false">自分だけ</button>
+        <button class="chip" data-sc="friends" aria-pressed="true">友だちまで</button>
+        <button class="chip" data-sc="public" aria-pressed="false">全体に公開</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" id="sStep">▶ 時間を進める</button>
+        <button class="chip" id="sDel">元の投稿を削除する</button>
+        <button class="chip" id="sReset">最初から</button>
+        <button class="chip" id="sSeed">別の広がり方で</button>
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">経過</div><div class="v" id="sT">0</div></div>
+        <div class="stt"><div class="k">投稿を見た人</div><div class="v" id="sSeen">0</div></div>
+        <div class="stt"><div class="k">保存・投稿し直した人（コピー）</div><div class="v" id="sCopy">0</div></div>
+        <div class="stt"><div class="k">元の投稿</div><div class="v" id="sOrig">あり</div></div>
+      </div>
+      <div class="snsbox" style="margin-top:12px;">
+        <svg id="sSvg" viewBox="0 0 640 470" role="img" aria-label="投稿が広がるようすのモデル図"></svg>
+        <div class="lg"><span><i style="background:#fff"></i>まだ見ていない</span><span><i style="background:#2F5496;border-color:#2F5496"></i>見た</span><span><i style="background:#C49A2B;border-color:#8a6a14"></i>保存・投稿し直した（コピーを持つ）</span></div>
+      </div>
+      <div class="msg" id="sMsg"></div>
+      <p class="hint">これは、しくみを説明するための単純なモデルです。円の内側から「友だち」「友だちの友だち」「知らない人」を表します。実際の人数や広がる速さを予測するものではありません。</p>
+    </div>
+    <div class="panel">
+      <h2>投稿する前に見直したいこと</h2>
+      <div class="cards">
+        <div class="card"><b>位置情報</b>写真の Exif に緯度・経度が入っていないか。「写真にひそむ情報」で確かめられます。</div>
+        <div class="card"><b>写り込み</b>制服や校章、名札、電柱の住所表示、窓の外の景色、車のナンバーなど。</div>
+        <div class="card"><b>友だちの顔</b>写っている人に、公開してよいかを先に聞く（肖像権）。</div>
+        <div class="card"><b>公開範囲</b>「友だちまで」でも、コピーされればその先は自分では止められない。</div>
+        <div class="card"><b>あとから読まれる</b>数年後に、進学先や就職先の人が見ても困らない内容か。</div>
+        <div class="card"><b>組み合わせ</b>1つ1つは小さな情報でも、いくつもの投稿を合わせると、住んでいる所や生活のリズムが分かることがある。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>個人情報とプライバシーは同じではない</h2>
+    <p>「個人情報」と「プライバシー」は、似ていますが、同じ意味ではありません。<strong>個人情報</strong>は、個人情報保護法という法律で決められた言葉で、生きている人に関する情報のうち、その人がだれか分かる（特定の個人を識別できる）ものを指します。一方、<strong>プライバシー</strong>は、私生活のことがらを他人にみだりに知られたり、公開されたりしないことを守る考え方で、法律の条文に定義があるわけではなく、裁判の判例の中で守られてきました。</p>
+    <p>たとえば、友だちの住所は個人情報で、本人に無断で広めればプライバシーの侵害にもなりえます。反対に、だれのものか分からない位置情報のように、それだけでは個人情報にあたらない情報でも、たくさん集まると、その人の生活のようすが分かってしまうことがあります。法律のルールを守ることと、相手が知られたくないと思うことを勝手に広めないことの、両方が大切です。</p>
+
+    <h2>個人情報保護法の「個人情報」</h2>
+    <p>個人情報保護法（個人情報の保護に関する法律、平成15年法律第57号）の第2条第1項は、個人情報を「生存する個人に関する情報」で、次のどちらかにあたるものと定めています。</p>
+    <ol>
+      <li>氏名、生年月日などの記述により特定の個人を識別できるもの（<strong>他の情報と容易に照合でき</strong>、それにより特定の個人を識別できるものをふくむ）</li>
+      <li><strong>個人識別符号</strong>がふくまれるもの</li>
+    </ol>
+    <p>1つめの「他の情報と容易に照合できる」がポイントです。学籍番号と点数だけの表でも、同じ学校が学籍番号と氏名の名簿を持っていれば、照らし合わせてだれの点数か分かるので、学校にとっては個人情報です。また、新聞やSNSなどですでに公開されている情報も、個人情報であることに変わりはありません。なお、亡くなった人の情報は法律の「個人情報」にはあたりませんが、それが遺族に関する情報でもある場合は、遺族の個人情報になります。</p>
+
+    <h3>個人識別符号</h3>
+    <p>第2条第2項の<strong>個人識別符号</strong>は、それ1つで特定の個人を識別できるとして、政令（個人情報保護法施行令第1条）と規則で決められた符号です。大きく2種類あります。</p>
+    <ul>
+      <li><strong>体の特徴をコンピュータで使えるように変換したもの</strong>：DNAの塩基配列、顔、虹彩（目の黒目のまわりの模様）、声、歩き方、手のひらや指の静脈、指紋・掌紋。本人を認証できるようにしたデータがあたります。</li>
+      <li><strong>公的な番号など</strong>：旅券（パスポート）の番号、基礎年金番号、運転免許証の番号、住民票コード、マイナンバー（個人番号）、健康保険の被保険者番号、在留カードの番号など。</li>
+    </ul>
+    <p>携帯電話の番号やクレジットカードの番号は、個人識別符号に入っていません。契約のしかたがいろいろで、どんな場合でも特定の個人を識別できるとは限らないからです。ただし、氏名などと照合できれば、全体として個人情報になります。</p>
+
+    <h3>要配慮個人情報</h3>
+    <p>第2条第3項の<strong>要配慮個人情報</strong>は、本人の人種、信条、社会的身分、病歴、犯罪の経歴、犯罪により害を被った事実など、知られると差別や偏見などの不利益につながるおそれがあるため、特に慎重な扱いが必要な個人情報です。施行令第2条では、障害があること、健康診断などの結果、医師の指導・診療・調剤を受けたこと、逮捕などの刑事事件の手続きを受けたこと、少年の保護事件の手続きを受けたことも加えています。要配慮個人情報は、法令に基づく場合などを除いて、あらかじめ本人の同意を得なければ取得できません（第20条第2項）。</p>
+    <p>ただし、「ある宗教の本を買った」という記録だけでは、信条（信じていること）なのか、単に調べものをしただけなのか分からないので、それだけでは要配慮個人情報にはあたらないとされています（個人情報保護委員会 Q&amp;A 1-27）。</p>
+
+    <h3>個人情報にあたらないもの</h3>
+    <p>「1年生は男子120人、女子115人」のような<strong>統計情報</strong>は、特定の個人との対応関係がない限り、個人情報ではありません。また、Cookie（Webサイトがブラウザに保存させる小さなデータ）を通じて集めた閲覧の履歴や、だれのものか分からない位置情報などは<strong>個人関連情報</strong>（第2条第7項）と呼ばれ、それだけでは個人情報ではありません。ただし、位置情報が連続して積み重なり、特定の個人が分かるようになれば、個人情報になります。</p>
+
+    <h2>事業者が守るルール</h2>
+    <p>個人情報を検索できるように整理した集まり（個人情報データベース等）を事業に使っている者を<strong>個人情報取扱事業者</strong>といいます（第16条第2項）。ガイドラインでは、営利か非営利かを問わず、扱う人数が少なくても、法人ではない団体や個人でも当てはまるとされています。国の機関や地方公共団体などには、同じ法律の第5章「行政機関等の義務等」のルールが別に定められています。個人情報取扱事業者のおもな義務は次のとおりです。</p>
+    <div class="tbl"><table>
+      <tr><th>ルール</th><th>内容</th><th>条文</th></tr>
+      <tr><td>利用目的の特定</td><td>何のために使うかを、できる限り具体的に決める</td><td>第17条</td></tr>
+      <tr><td>利用目的による制限</td><td>本人の同意なしに、決めた目的に必要な範囲をこえて使わない</td><td>第18条</td></tr>
+      <tr><td>不適正な利用の禁止</td><td>違法・不当な行為を助長したり誘発したりするおそれのある方法で使わない</td><td>第19条</td></tr>
+      <tr><td>適正な取得</td><td>うそや不正な手段で取得しない。要配慮個人情報は原則として本人の同意が必要</td><td>第20条</td></tr>
+      <tr><td>利用目的の通知・公表</td><td>取得したら、利用目的を本人に知らせるか、公表する</td><td>第21条</td></tr>
+      <tr><td>安全管理措置</td><td>漏えい・滅失・毀損を防ぐ対策をとる</td><td>第23条</td></tr>
+      <tr><td>漏えい等の報告</td><td>本人の権利利益を害するおそれが大きい漏えいなどが起きたら、個人情報保護委員会に報告し、本人に知らせる</td><td>第26条</td></tr>
+      <tr><td>第三者提供の制限</td><td>法令に基づく場合などを除き、本人の同意なしに他の人や会社に渡さない</td><td>第27条</td></tr>
+      <tr><td>本人からの請求</td><td>本人は、自分のデータの開示や、利用の停止・消去などを請求できる</td><td>第33条、第35条</td></tr>
+    </table></div>
+    <h3>漏えいしたときの報告</h3>
+    <p>2022年（令和4年）4月1日に全面施行された改正（令和2年改正）で、漏えい等の報告と本人への通知が義務になりました。個人情報保護委員会規則第7条は、報告が必要な場合として、①要配慮個人情報がふくまれる、②クレジットカード番号のように、不正に使われると財産的な被害が出るおそれがある、③不正アクセスなど、不正の目的による、④本人の数が1000人をこえる、の4つを定めています。ガイドラインでは、事態を知ってからおおむね3〜5日以内に速報し、30日以内（③の場合は60日以内）にくわしい報告をするとしています。</p>
+
+    <h2>仮名加工情報と匿名加工情報</h2>
+    <p>データを分析に役立てながら個人を守るために、法律は2種類の「加工した情報」を定めています。</p>
+    <div class="tbl"><table>
+      <tr><th></th><th>仮名加工情報（第2条第5項）</th><th>匿名加工情報（第2条第6項）</th></tr>
+      <tr><th>加工のしかた</th><td>氏名などを削除したり置きかえたりして、他の情報と照合しない限りだれか分からないようにする</td><td>だれか分からないようにし、さらに、もとの個人情報に復元できないようにする</td></tr>
+      <tr><th>他の会社などへの提供</th><td>法令に基づく場合などを除き、できない（第41条第6項、第42条第1項）</td><td>本人の同意がなくても、決められたルールの下でできる。ふくまれる項目などを公表する（第43条第3項・第4項）</td></tr>
+      <tr><th>本人を識別する行為</th><td>禁止（第41条第7項）</td><td>禁止（第43条第5項）</td></tr>
+    </table></div>
+    <p>仮名加工情報は、令和2年改正で新しくつくられました。匿名加工情報をつくるときは、氏名や個人識別符号を削除するだけでなく、「年齢116歳」のように数人しかいない特異な記述を削除するなど、個人情報保護委員会規則第34条の基準に従って加工しなければなりません。単に氏名を隠しただけのデータは、匿名加工情報ではなく、個人データのままです。</p>
+
+    <h2>氏名を消しても「匿名」とは限らない</h2>
+    <p>「匿名にしたつもりでも…」で確かめたように、氏名を消しても、郵便番号・生年月日・性別のような情報の組み合わせで、1人に絞り込めてしまうことがあります。アメリカの研究者ラタニア・スウィーニーは、1990年の国勢調査の集計データを使って、5けたの郵便番号（ZIPコード）・性別・生年月日の3つだけで、アメリカの人口の約87％（2億4800万人のうち2億1600万人）が1人に特定できる可能性が高いことを示しました。</p>
+    <p>そこで考えられたのが<strong>k-匿名性</strong>です。公開するデータのうち、他の情報と結びつけて人を特定するのに使われうる項目（準識別子）について、同じ組み合わせの人が、どの組み合わせでも少なくとも k 人いるようにする、という考え方です。k＝1 の人がいれば、その人は特定されてしまいます。k を大きくするには、年齢を年代に、郵便番号を上3けたにするように情報をおおまかにする（<strong>一般化</strong>）か、項目そのものを削除します。ただし、おおまかにするほど、データから分かることは少なくなります。</p>
+    <p>また、k が2以上でも、同じ組み合わせの全員の健康診断の結果が同じなら、その人の結果は分かってしまいます。体験では、中村さんと同じ組み合わせの2人がどちらも「要再検査」になる場面があります。k-匿名性は大切な目安ですが、それだけで安全とは言い切れません。</p>
+
+    <h2>肖像権とプライバシー権</h2>
+    <p>自分の顔や姿を、勝手に撮影されたり公開されたりしない権利を<strong>肖像権</strong>といいます。日本には肖像権を直接定めた法律の条文はなく、裁判の判例によって認められてきました。最高裁判所は、1969年（昭和44年）12月24日の大法廷判決で、「何人も、その承諾なしに、みだりにその容ぼう・姿態を撮影されない自由を有する」とし、これを憲法第13条の趣旨と結びつけました。また、2005年（平成17年）11月10日の判決では、人はみだりに自分の容ぼう・姿態を撮影されないことについて法律上保護されるべき人格的利益を持つとし、撮影が違法になるかどうかは、撮影の場所・目的・方法・必要性などを総合的に考えて判断するとしました。</p>
+    <p>プライバシーについても、最高裁判所は2003年（平成15年）9月12日の判決で、大学が講演会の参加申込者の学籍番号・氏名・住所・電話番号を本人に無断で警察に開示したことを、プライバシーの侵害として不法行為にあたるとしました。氏名や住所のような情報でも、本人の知らないところで勝手に渡してよいわけではありません。</p>
+    <p>写真や動画をSNSに載せるときは、写っている人に先に了解を得ましょう。著作権との関係は<a href="/copyright/">著作権と知的財産</a>で確かめられます。</p>
+
+    <h2>写真にひそむ位置情報（Exif）</h2>
+    <p>デジタルカメラやスマートフォンで撮った写真のファイルには、画像そのもののほかに、撮影日時、カメラのメーカーや機種、撮影したときの設定などが記録されていることがあります。この記録の形式を<strong>Exif</strong>（イグジフ）といい、カメラ映像機器工業会（CIPA）と電子情報技術産業協会（JEITA）が規格を定めています。2026年10月の時点で最新の版は、2026年1月30日発行の CIPA DC-008-2026（Exif 3.1）です。</p>
+    <p>位置情報を記録する設定にしていると、GPSなどで測った緯度・経度も書き込まれます。自宅で撮った写真をそのまま公開すると、住んでいる場所が分かってしまうおそれがあります。公開する前に、自分で確かめる習慣をつけましょう。また、Exif を消しても、写っているもの（制服、名札、電柱の住所表示、窓から見える景色など）から場所が分かることもあります。</p>
+    <p>「写真にひそむ情報」のタブでは、ファイルのバイト列（0と1の並びを8ビットずつ区切ったもの）を JavaScript で読み、JPEG の中の「APP1」という区画に入っている Exif を、このページのプログラムで解析しています。Exif の中は、項目の番号（タグ）・データの型・個数・値が順に並んだ表のようなつくりになっています。ファイルの中身がすべて数値で表されていることは、<a href="/bits/">データはすべて0と1</a>でも確かめられます。</p>
+
+    <h2>ネットに出した情報は消えない</h2>
+    <p>インターネットに投稿した文章や写真は、自分で削除しても、ほかの人が保存したり、画面を撮影したり、別の場所に投稿し直したりしていれば、そのコピーは残ります。一度広まった情報をすべて消すことはとても難しく、入れ墨（タトゥー）が消しにくいことにたとえて「デジタルタトゥー」と呼ばれることがあります。「友だちまで」に公開しても、友だちがコピーして広めれば、その先は自分では管理できません。</p>
+    <p>自分や友だちの情報が勝手に公開されて困ったときは、まずそのサービスの削除の申し出の窓口を使います。どうすればよいか分からないときは、総務省の委託事業である「違法・有害情報相談センター」などに相談できます。一人でかかえこまず、家族や先生にも相談しましょう。</p>
+
+    <h2>自分の情報を守るために</h2>
+    <ul>
+      <li>写真を投稿する前に、位置情報が入っていないか、写り込みがないかを確かめる</li>
+      <li>友だちが写った写真は、公開する前に本人の了解を得る</li>
+      <li>公開範囲を確かめる。「友だちまで」でもコピーされることを忘れない</li>
+      <li>アプリが求める権限（位置情報・連絡先・写真など）が、そのアプリの働きに本当に必要かを考える</li>
+      <li>懸賞やアンケートに個人情報を書く前に、利用目的と、他の会社に提供されるかどうかを確かめる</li>
+      <li>パスワードを使い回さない（<a href="/password/">パスワードの強さ</a>）。あやしいメールのリンクから個人情報を入力しない（<a href="/phishing/">あやしいメールを見分ける</a>）</li>
+    </ul>
+
+    <h2>2026年に成立した改正</h2>
+    <p>令和2年改正法の附則では、施行後3年ごとに見直しを検討することが定められています。この見直しをふまえて、2026年（令和8年）7月17日に、新しい改正法（個人情報の保護に関する法律等の一部を改正する法律）が公布されました。個人情報保護委員会の資料によると、16歳未満の人が本人の場合に、同意や通知の相手を親などの法定代理人とすることを明文化すること、顔特徴データの扱いのルールを強めること、悪質な違反に課徴金（違反で得た利益に相当する額を納めさせるお金）を課す制度などがふくまれています。施行は原則として公布の日から2年をこえない範囲で、細かいルールはこれから政令や規則で決められます。</p>
+    <div class="note">このページの条文番号は、2026年10月の時点で施行されている条文（e-Gov法令検索に掲載されているもの）にもとづいています。改正法が施行されると、条文の番号や内容が変わることがあります。</div>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>これは個人情報？</strong>：15の情報について、「個人情報」「個人識別符号」「要配慮個人情報」「このままでは個人情報ではない」から選びます。答えと理由、根拠の条文などが表示されます。</li>
+      <li><strong>写真にひそむ情報</strong>：画像ファイルを選ぶと、Exif の撮影日時・機種・緯度経度などを表示します。位置情報があれば、国土地理院の地理院地図で場所を確かめるリンクが出ます（押すと外部のサイトが開きます）。「取り除いた画像を作る」で、Exif のない画像を作って保存できます。サンプル画像の位置は、富士山の山頂付近にしてあります。</li>
+      <li><strong>匿名にしたつもりでも…</strong>：公開する列と一般化の度合いを選ぶと、同じ組み合わせの人数（k）と、中村さん（架空）の結果が分かってしまうかどうかを表示します。</li>
+      <li><strong>ネットに出した情報は消えない</strong>：公開範囲を選んで時間を進めると、投稿が広がるようすを表示します。途中で元の投稿を削除しても、コピーが残ることを確かめられます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L05">5. 個人情報とプライバシー</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>個人情報の保護に関する法律（平成15年法律第57号）e-Gov法令検索 https://laws.e-gov.go.jp/law/415AC0000000057</li>
+      <li>個人情報の保護に関する法律施行令（平成15年政令第507号）e-Gov法令検索 https://laws.e-gov.go.jp/law/415CO0000000507</li>
+      <li>個人情報保護委員会「個人情報の保護に関する法律についてのガイドライン（通則編）」（令和8年6月一部改正）https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/</li>
+      <li>個人情報保護委員会「『個人情報の保護に関する法律についてのガイドライン』に関するQ&amp;A」https://www.ppc.go.jp/personalinfo/faq/APPI_QA/</li>
+      <li>個人情報保護委員会「個人情報の保護に関する法律についてのガイドライン（仮名加工情報・匿名加工情報編）」https://www.ppc.go.jp/personalinfo/legal/guidelines_anonymous/</li>
+      <li>個人情報保護委員会「匿名加工情報」https://www.ppc.go.jp/personalinfo/tokumeikakouInfo/</li>
+      <li>個人情報保護委員会「令和２年 改正個人情報保護法について」https://www.ppc.go.jp/personalinfo/legal/kaiseihogohou/</li>
+      <li>個人情報保護委員会「令和８年 改正個人情報保護法について」https://www.ppc.go.jp/personalinfo/legal/r8kaiseihogohou/</li>
+      <li>最高裁判所 昭和44年12月24日 大法廷判決（昭和40(あ)1187）https://www.courts.go.jp/hanrei/51765/detail2/index.html</li>
+      <li>最高裁判所 平成15年9月12日 第二小法廷判決（平成14(受)1656）https://www.courts.go.jp/hanrei/52357/detail2/index.html</li>
+      <li>最高裁判所 平成17年11月10日 第一小法廷判決（平成15(受)281）https://www.courts.go.jp/hanrei/52388/detail2/index.html</li>
+      <li>一般社団法人カメラ映像機器工業会（CIPA）「CIPA規格」（DC-008-2026 デジタルスチルカメラ用画像ファイルフォーマット規格 Exif 3.1）https://www.cipa.jp/j/std/std-sec.html</li>
+      <li>L. Sweeney, "Simple Demographics Often Identify People Uniquely," Carnegie Mellon University, Data Privacy Working Paper 3, 2000. https://dataprivacylab.org/projects/identifiability/paper1.pdf</li>
+      <li>L. Sweeney, "k-anonymity: a model for protecting privacy," International Journal on Uncertainty, Fuzziness and Knowledge-based Systems, 10(5), 2002. https://dataprivacylab.org/dataprivacy/projects/kanonymity/kanonymity.pdf</li>
+      <li>国土地理院「地理院地図」https://maps.gsi.go.jp/</li>
+      <li>違法・有害情報相談センター（総務省委託事業）https://ihaho.jp/</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabQ','toolQ'],['tabX','toolX'],['tabK','toolK'],['tabS','toolS']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+
+/* ===================== これは個人情報？ ===================== */
+const LABEL={name:'個人情報',code:'個人情報（個人識別符号）',care:'要配慮個人情報',not:'このままでは個人情報ではない'};
+const QUIZ=[
+ {ic:'📝', q:'「鈴木 花子」と、氏名だけが書かれたメモ。', a:'name',
+  why:'氏名だけでも、社会通念上、特定の個人を識別できると考えられるので、個人情報にあたります。同じ名前の人がほかにいる可能性があっても同じです。',
+  law:'個人情報保護法 第2条第1項第1号／個人情報保護委員会 Q&A 1-2'},
+ {ic:'📧', q:'「suzuki_hanako@example.com」というメールアドレス。example社に勤めるスズキハナコさんのものだと分かる。', a:'name',
+  why:'メールアドレスのユーザー名とドメイン名から、特定の個人を識別できる場合は、メールアドレスだけでも個人情報にあたります。',
+  law:'個人情報保護法 第2条第1項第1号／Q&A 1-4'},
+ {ic:'📨', q:'「k7x2q9@example.net」というメールアドレスだけ。だれのものか分かる情報は、ほかに何もない。', a:'not',
+  why:'文字の並びからだれのものか分からず、照らし合わせられる情報もなければ、それだけでは個人情報にあたりません。ただし、氏名などの他の情報と容易に照合できる場合は、合わせて個人情報になります。',
+  law:'Q&A 1-4'},
+ {ic:'📸', q:'クラスの友だちの顔が、はっきり写っている写真。', a:'name',
+  why:'本人だと判別できる写真や映像は、個人情報にあたります。また、写っている人には肖像権があるので、SNSなどに載せる前に本人の了解を得ることが大切です。',
+  law:'個人情報保護法 第2条第1項第1号／ガイドライン（通則編）2-1 事例3'},
+ {ic:'🙂', q:'スマートフォンの顔認証のために、顔の特徴を数値に変換して保存したデータ。', a:'code',
+  why:'顔の骨格や、目・鼻・口の位置や形などから取り出した特徴を、本人の認証に使えるようにしたデータは、個人識別符号です。それだけで個人情報になります。顔の写真そのもの（前の問題）とのちがいに注目しましょう。',
+  law:'個人情報保護法 第2条第2項第1号／施行令 第1条第1号ロ'},
+ {ic:'👆', q:'指紋認証のために登録された、指紋のデータ。', a:'code',
+  why:'指紋や掌紋（手のひらの紋）を、本人の認証に使えるように変換したデータは、個人識別符号です。',
+  law:'個人情報保護法 第2条第2項第1号／施行令 第1条第1号ト'},
+ {ic:'🔢', q:'マイナンバー（個人番号）。', a:'code',
+  why:'マイナンバーは、1人に1つずつ割り当てられた番号で、個人識別符号として政令に定められています。パスポートの番号、運転免許証の番号、基礎年金番号なども同じです。',
+  law:'個人情報保護法 第2条第2項第2号／施行令 第1条第9号'},
+ {ic:'📱', q:'携帯電話の番号だけ。', a:'not',
+  why:'携帯電話の番号は、契約のしかたがいろいろで、どんな場合でも特定の個人を識別できるとは限らないため、個人識別符号には入っていません。ただし、氏名などと容易に照合できる場合は個人情報になります。',
+  law:'Q&A 1-25'},
+ {ic:'🏫', q:'学校が持っている「学籍番号と定期テストの点数」だけの表。学校は、学籍番号と氏名を対応させた名簿も持っている。', a:'name',
+  why:'表だけでは名前が分かりませんが、学校は名簿と照らし合わせれば、だれの点数かすぐ分かります。「他の情報と容易に照合でき、特定の個人を識別できる」ので、学校にとっては個人情報です。なお、学籍番号は個人識別符号には入っていません。',
+  law:'個人情報保護法 第2条第1項第1号（かっこ書き）'},
+ {ic:'🏥', q:'「Aさん（氏名つき）が、ある病気で通院している」という記録。', a:'care',
+  why:'病歴は、知られると差別や偏見につながるおそれがあるため、要配慮個人情報にあたります。事業者が取得するには、原則として本人の同意が必要です。',
+  law:'個人情報保護法 第2条第3項、第20条第2項'},
+ {ic:'📚', q:'「Bさん（氏名つき）が、ある宗教についての本を買った」という購入の記録。', a:'name',
+  why:'氏名つきなので個人情報ですが、本を買ったというだけでは、信仰しているのか、調べものをしただけなのか分かりません。「信条」を推測させるにすぎないので、それだけでは要配慮個人情報にはあたらないとされています。',
+  law:'Q&A 1-27'},
+ {ic:'📊', q:'「1年生は男子120人、女子115人」という集計。', a:'not',
+  why:'たくさんの人の情報から共通する項目を取り出して集計した統計情報は、特定の個人との対応関係がない限り、個人情報にあたりません。',
+  law:'Q&A 1-7、1-17'},
+ {ic:'🎮', q:'オンラインゲームで公開されている、プレイヤーのニックネームとID。', a:'not',
+  why:'ニックネームとIDだけでは、ふつうは特定の個人を識別できないので、個人情報にあたりません。ただし、ゲームの運営会社が持っている登録情報と照合できる場合や、だれのことか広く知られている有名なニックネームの場合は、個人情報になりえます。',
+  law:'Q&A 1-9'},
+ {ic:'📰', q:'新聞やSNSで公開されている、有名人の氏名と経歴。', a:'name',
+  why:'すでに公開されている情報でも、特定の個人を識別できれば個人情報です。使い方や他の情報との組み合わせによっては本人の権利利益を害するおそれがあるため、法律は公開されている情報も区別せずに保護の対象にしています。',
+  law:'ガイドライン（通則編）2-1 事例7／Q&A 1-5'},
+ {ic:'📍', q:'だれのものか分からない、スマートフォンの位置情報1回分。', a:'not',
+  why:'ある人の位置情報だけでは、ふつうは個人情報にあたらず、「個人関連情報」とされます。ただし、位置情報が連続して積み重なり、特定の個人が分かるようになれば、個人情報になります。',
+  law:'個人情報保護法 第2条第7項／ガイドライン（通則編）2-8'},
+];
+let qi=0; const qAns=QUIZ.map(()=>null);
+function qDraw(){
+  const q=QUIZ[qi];
+  $('qNo').textContent=`第${qi+1}問`;
+  $('qIc').textContent=q.ic; $('qTx').textContent=q.q;
+  const done=qAns.filter(x=>x!==null).length, right=qAns.filter((x,i)=>x!==null&&x===QUIZ[i].a).length;
+  $('qScore').textContent=right; $('qDone').textContent=done; $('qAll').textContent=QUIZ.length;
+  const my=qAns[qi];
+  document.querySelectorAll('#qCh .choice').forEach(b=>{
+    b.classList.remove('right','wrong'); b.disabled= my!==null;
+    if(my!==null){ if(b.dataset.a===q.a) b.classList.add('right'); else if(b.dataset.a===my) b.classList.add('wrong'); }
+  });
+  const m=$('qMsg');
+  if(my===null){ m.hidden=true; }
+  else{
+    const ok=my===q.a;
+    m.hidden=false; m.className='msg '+(ok?'ok':'ng');
+    m.innerHTML=`<div class="t">${ok?'正解！':'ざんねん'}　答えは「${LABEL[q.a]}」</div>${esc(q.why)}<span class="law">根拠：${esc(q.law)}</span>`+
+      (done===QUIZ.length? `<span class="law" style="color:#ffd97a;font-size:14px;margin-top:10px;">全${QUIZ.length}問中 ${right}問 正解でした。「最初から」でもう一度挑戦できます。</span>`:'');
+  }
+  $('qPrev').disabled=qi===0; $('qNext').disabled=qi===QUIZ.length-1;
+  $('qDots').innerHTML=QUIZ.map((_,i)=>{ const a=qAns[i]; const c=['dot']; if(i===qi)c.push('cur'); if(a!==null) c.push(a===QUIZ[i].a?'r':'w');
+    return `<button class="${c.join(' ')}" data-i="${i}" aria-label="第${i+1}問">${i+1}</button>`; }).join('');
+  $('qDots').querySelectorAll('.dot').forEach(d=>d.addEventListener('click',()=>{ qi=+d.dataset.i; qDraw(); }));
+}
+document.querySelectorAll('#qCh .choice').forEach(b=>b.addEventListener('click',()=>{ if(qAns[qi]!==null) return; qAns[qi]=b.dataset.a; qDraw(); }));
+$('qPrev').addEventListener('click',()=>{ if(qi>0){ qi--; qDraw(); } });
+$('qNext').addEventListener('click',()=>{ if(qi<QUIZ.length-1){ qi++; qDraw(); } });
+$('qReset').addEventListener('click',()=>{ qAns.fill(null); qi=0; qDraw(); });
+qDraw();
+
+/* ===================== Exif の読み取り（自作） ===================== */
+const TYPESZ={1:1,2:1,3:2,4:4,5:8,6:1,7:1,8:2,9:4,10:8,11:4,12:8,129:1};
+const TAGNAME={
+  ifd0:{0x010E:'画像の説明',0x010F:'カメラのメーカー',0x0110:'カメラの機種',0x0112:'画像の向き',0x011A:'横の解像度',0x011B:'縦の解像度',0x0128:'解像度の単位',
+    0x0131:'ソフトウェア',0x0132:'ファイルの更新日時',0x013B:'撮影者',0x0213:'色の配置',0x8298:'著作権者',0x8769:'（Exif情報の位置）',0x8825:'（GPS情報の位置）'},
+  exif:{0x829A:'露出時間（秒）',0x829D:'F値',0x8822:'露出プログラム',0x8827:'ISO感度',0x9000:'Exifのバージョン',0x9003:'撮影日時',0x9004:'デジタル化した日時',
+    0x9010:'時差（更新日時）',0x9011:'時差（撮影日時）',0x9012:'時差（デジタル化）',0x9101:'色の成分',0x9201:'シャッタースピード',0x9202:'絞り',0x9204:'露出補正',0x9207:'測光方式',0x9209:'フラッシュ',0x920A:'焦点距離（mm）',
+    0x927C:'メーカー独自の情報',0x9286:'ユーザーコメント',0x9290:'撮影日時の秒未満',0x9291:'撮影日時の秒未満',0x9292:'デジタル化の秒未満',0xA000:'FlashPixのバージョン',0xA001:'色空間',0xA002:'画像の幅',0xA003:'画像の高さ',0xA005:'（互換性情報の位置）',
+    0xA402:'露出モード',0xA403:'ホワイトバランス',0xA405:'35mm換算の焦点距離',0xA406:'撮影シーン',0xA420:'画像固有のID',0xA430:'カメラの所有者名',0xA431:'カメラ本体のシリアル番号',0xA432:'レンズの仕様',0xA433:'レンズのメーカー',0xA434:'レンズの機種',0xA435:'レンズのシリアル番号'},
+  gps:{0x0000:'GPSのバージョン',0x0001:'北緯・南緯',0x0002:'緯度',0x0003:'東経・西経',0x0004:'経度',0x0005:'高度の基準',0x0006:'高度',0x0007:'GPSの時刻（世界標準時）',
+    0x000C:'速さの単位',0x000D:'速さ',0x0010:'方角の基準',0x0011:'撮影した方角',0x0012:'測地系',0x001D:'GPSの日付（世界標準時）',0x001B:'測位の方法',0x001F:'水平方向の誤差（m）'},
+  ifd1:{0x0100:'縮小画像の幅',0x0101:'縮小画像の高さ',0x0103:'圧縮方式',0x0201:'縮小画像（サムネイル）の位置',0x0202:'縮小画像の大きさ'}
+};
+function ascii(u8,p,n){ let s=''; for(let i=0;i<n&&p+i<u8.length;i++) s+=String.fromCharCode(u8[p+i]); return s; }
+/* ファイルの種類を調べ、Exif（TIFF形式の部分）の場所を探す */
+function locateExif(u8){
+  const r={fmt:'不明', tiff:null, marks:[]};
+  if(u8.length>=4 && u8[0]===0xFF && u8[1]===0xD8){
+    r.fmt='JPEG'; r.marks.push(['soi',0,2]);
+    let p=2, guard=0;
+    while(p+4<=u8.length && guard++<500){
+      if(u8[p]!==0xFF){ r.broken=true; break; }
+      const m=u8[p+1];
+      if(m===0xFF){ p++; continue; }
+      if(m===0x01 || (m>=0xD0&&m<=0xD7)){ p+=2; continue; }
+      if(m===0xD9 || m===0xDA) break;           // 画像データの始まり（SOS）より後に Exif は無い
+      const len=(u8[p+2]<<8)|u8[p+3]; if(len<2) { r.broken=true; break; }
+      if(m===0xE1 && len>=8 && ascii(u8,p+4,6)==='Exif\0\0' && !r.tiff){
+        r.tiff={start:p+10, len:Math.min(len-8, u8.length-(p+10))};
+        r.marks.push(['app',p,p+2],['sig',p+4,p+8]);
+      }
+      p+=2+len;
+    }
+    return r;
+  }
+  if(u8.length>=8 && u8[0]===0x89 && ascii(u8,1,3)==='PNG'){
+    r.fmt='PNG'; let p=8, guard=0;
+    while(p+8<=u8.length && guard++<10000){
+      const len=((u8[p]<<24)>>>0)+(u8[p+1]<<16)+(u8[p+2]<<8)+u8[p+3], type=ascii(u8,p+4,4);
+      if(type==='eXIf'){ r.tiff={start:p+8,len:Math.min(len,u8.length-(p+8))}; break; }
+      if(type==='IEND') break; p+=12+len;
+    }
+    return r;
+  }
+  if(u8.length>=12 && ascii(u8,0,4)==='RIFF' && ascii(u8,8,4)==='WEBP'){
+    r.fmt='WebP'; let p=12, guard=0;
+    while(p+8<=u8.length && guard++<10000){
+      const type=ascii(u8,p,4), len=u8[p+4]+(u8[p+5]<<8)+(u8[p+6]<<16)+((u8[p+7]<<24)>>>0);
+      if(type==='EXIF'){ let s=p+8; if(ascii(u8,s,6)==='Exif\0\0') s+=6; r.tiff={start:s,len:Math.min(len-(s-p-8),u8.length-s)}; break; }
+      p+=8+len+(len&1);
+    }
+    return r;
+  }
+  if(u8.length>=12 && ascii(u8,4,4)==='ftyp'){
+    const brand=ascii(u8,8,4); r.fmt=/^(heic|heix|hevc|mif1|msf1|heis)$/.test(brand)?'HEIC':(brand==='avif'?'AVIF':'ftyp形式'); return r;
+  }
+  if(ascii(u8,0,3)==='GIF') r.fmt='GIF';
+  return r;
+}
+/* TIFF形式（Exifの中身）を読む：IFD（項目の一覧表）を順にたどる */
+function parseTiff(u8,start,len){
+  const dv=new DataView(u8.buffer,u8.byteOffset+start,len);
+  const bo=ascii(u8,start,2); if(bo!=='II' && bo!=='MM') return null;
+  const le= bo==='II';
+  const u16=o=>dv.getUint16(o,le), u32=o=>dv.getUint32(o,le), i32=o=>dv.getInt32(o,le);
+  if(len<8 || u16(2)!==42) return null;
+  const out={order: le?'リトルエンディアン（II）':'ビッグエンディアン（MM）', ifd0:new Map(), exif:new Map(), gps:new Map(), ifd1:new Map()};
+  const seen=new Set();
+  function readVal(type,count,off){
+    const sz=TYPESZ[type]||1; const vals=[];
+    if(type===2 || type===129){ const bytes=u8.subarray(start+off,start+off+count); let s; try{ s=new TextDecoder('utf-8').decode(bytes); }catch(e){ s=ascii(u8,start+off,count); } return s.replace(/\0+$/,'').replace(/\0/g,' ').trim(); }
+    if(type===7 || type===1 || type===6){ if(count>64) return {bytes:count}; for(let i=0;i<count;i++) vals.push(type===6? dv.getInt8(off+i) : dv.getUint8(off+i)); return type===7? {undef:vals} : vals; }
+    const n=Math.min(count,64);
+    for(let i=0;i<n;i++){ const o=off+i*sz;
+      if(type===3) vals.push(u16(o)); else if(type===8) vals.push(dv.getInt16(o,le));
+      else if(type===4) vals.push(u32(o)); else if(type===9) vals.push(i32(o));
+      else if(type===5) vals.push([u32(o),u32(o+4)]); else if(type===10) vals.push([i32(o),i32(o+4)]);
+      else if(type===11) vals.push(dv.getFloat32(o,le)); else if(type===12) vals.push(dv.getFloat64(o,le));
+    }
+    return vals;
+  }
+  function readIFD(off,map){
+    if(!off || off+2>len || seen.has(off)) return 0; seen.add(off);
+    const n=u16(off); if(n>1000 || off+2+n*12+4>len) return 0;
+    for(let i=0;i<n;i++){
+      const e=off+2+i*12, tag=u16(e), type=u16(e+2), count=u32(e+4);
+      const size=(TYPESZ[type]||1)*count; const voff= size<=4? e+8 : u32(e+8);
+      if(!TYPESZ[type] || voff+size>len) continue;
+      map.set(tag,{type,count,val:readVal(type,count,voff)});
+    }
+    return u32(off+2+n*12);
+  }
+  const next=readIFD(u32(4),out.ifd0);
+  const ex=out.ifd0.get(0x8769), gp=out.ifd0.get(0x8825);
+  if(ex && Array.isArray(ex.val)) readIFD(ex.val[0],out.exif);
+  if(gp && Array.isArray(gp.val)) readIFD(gp.val[0],out.gps);
+  if(next) readIFD(next,out.ifd1);
+  return out;
+}
+const rat=v=>Array.isArray(v)&&v.length===2 ? (v[1]? v[0]/v[1] : NaN) : NaN;
+function dmsToDeg(arr){ if(!Array.isArray(arr)||arr.length<3) return NaN; const [d,m,s]=arr.map(rat); return d+m/60+s/3600; }
+function fmtDate(s){ const m=/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(s||''); return m? `${+m[1]}年${+m[2]}月${+m[3]}日 ${+m[4]}:${m[5]}:${m[6]}` : (s||''); }
+function fmtDMS(deg,pos,neg){ const a=Math.abs(deg); const d=Math.floor(a), mf=(a-d)*60, m=Math.floor(mf), s=(mf-m)*60; return `${deg<0?neg:pos} ${d}°${m}′${s.toFixed(1)}″`; }
+const ORI={1:'そのまま',2:'左右反転',3:'180°回転',4:'上下反転',5:'反転して回転',6:'右に90°回転して表示',7:'反転して回転',8:'左に90°回転して表示'};
+function fmtVal(tag,ifd,e){
+  const v=e.val;
+  if(typeof v==='string') return v;
+  if(v && v.bytes) return `（${v.bytes}バイトのデータ）`;
+  if(v && v.undef){ const a=v.undef; if(tag===0x9000||tag===0xA000) return String.fromCharCode(...a); if(tag===0x9286 && a.length>8) return String.fromCharCode(...a.slice(8)).replace(/\0/g,'').trim()||'（空）'; return a.length>16? `（${a.length}バイトのデータ）` : a.join(' '); }
+  if(!Array.isArray(v)) return '';
+  if(ifd==='ifd0'&&tag===0x0112) return `${v[0]}（${ORI[v[0]]||'不明'}）`;
+  if(ifd==='gps'&&(tag===0x0002||tag===0x0004)) return v.map(x=>+rat(x).toFixed(4)).join(' / ')+'（度・分・秒）';
+  if(ifd==='gps'&&tag===0x0007) return v.map(x=>String(Math.floor(rat(x))).padStart(2,'0')).join(':');
+  return v.map(x=>Array.isArray(x)? (x[1]===1? String(x[0]) : (x[1]? `${x[0]}/${x[1]}（${+rat(x).toPrecision(5)}）` : `${x[0]}/0`)) : String(x)).join(', ');
+}
+function summarize(info){
+  const t=info.exif||null; const res={rows:[],gps:null,count:0,risky:[]};
+  if(!t) return res;
+  const g=(m,k)=>m.get(k);
+  const val=(m,k,ifd)=>{ const e=g(m,k); return e? fmtVal(k,ifd,e) : ''; };
+  const dto=val(t.exif,0x9003,'exif')||val(t.ifd0,0x0132,'ifd0'); const off=val(t.exif,0x9011,'exif');
+  res.rows.push(['撮影日時', dto? fmtDate(dto)+(off? `（時差 ${off}）`:'') : '記録なし']);
+  res.rows.push(['カメラのメーカー', val(t.ifd0,0x010F,'ifd0')||'記録なし']);
+  res.rows.push(['カメラの機種', val(t.ifd0,0x0110,'ifd0')||'記録なし']);
+  const sw=val(t.ifd0,0x0131,'ifd0'); if(sw) res.rows.push(['ソフトウェア',sw]);
+  const w=val(t.exif,0xA002,'exif'), h=val(t.exif,0xA003,'exif'); if(w&&h) res.rows.push(['記録された画像の大きさ',`${w} × ${h}`]);
+  const ori=val(t.ifd0,0x0112,'ifd0'); if(ori) res.rows.push(['画像の向き',ori]);
+  for(const [k,ifd,lab] of [[0x013B,'ifd0','撮影者'],[0x8298,'ifd0','著作権者'],[0xA430,'exif','カメラの所有者名'],[0xA431,'exif','カメラ本体のシリアル番号']]){
+    const s=val(ifd==='ifd0'?t.ifd0:t.exif,k,ifd); if(s){ res.rows.push([lab,s,true]); res.risky.push(lab); } }
+  const lat=g(t.gps,0x0002), lon=g(t.gps,0x0004);
+  if(lat&&lon){
+    let la=dmsToDeg(lat.val), lo=dmsToDeg(lon.val);
+    const lr=val(t.gps,0x0001,'gps'), or=val(t.gps,0x0003,'gps');
+    if(lr==='S') la=-la; if(or==='W') lo=-lo;
+    if(isFinite(la)&&isFinite(lo) && !(la===0&&lo===0)){
+      res.gps={lat:la,lon:lo};
+      res.rows.push(['緯度', `${fmtDMS(la,'北緯','南緯')}（${la.toFixed(6)}）`, true]);
+      res.rows.push(['経度', `${fmtDMS(lo,'東経','西経')}（${lo.toFixed(6)}）`, true]);
+      const alt=g(t.gps,0x0006); if(alt){ let a=rat(alt.val[0]); const ar=g(t.gps,0x0005); if(ar&&Array.isArray(ar.val)&&ar.val[0]===1) a=-a; if(isFinite(a)) res.rows.push(['高度',`${+a.toFixed(1)} m`,true]); }
+      const gd=val(t.gps,0x001D,'gps'), gt=val(t.gps,0x0007,'gps'); if(gd||gt) res.rows.push(['GPSの日時（世界標準時）',`${gd} ${gt}`.trim(),true]);
+    }
+  }
+  if(!res.gps) res.rows.push(['位置情報（GPS）','記録なし']);
+  if(t.ifd1.has(0x0201)) res.rows.push(['縮小画像（サムネイル）','入っている（撮影時の小さな画像）']);
+  res.count=t.ifd0.size+t.exif.size+t.gps.size+t.ifd1.size;
+  return res;
+}
+function kvRows(rows){ return rows.map(([k,v,w])=>`<tr class="${w?'warn':''}"><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join(''); }
+function hexView(u8,marks){
+  const n=Math.min(64,u8.length); let s='';
+  for(let i=0;i<n;i++){ let c=''; for(const [k,a,b] of marks) if(i>=a&&i<b) c=k; s+=`<span class="${c}">${u8[i].toString(16).toUpperCase().padStart(2,'0')}</span>`; }
+  return s;
+}
+function kb(n){ return n>=1048576? (n/1048576).toFixed(2)+' MB' : (n/1024).toFixed(1)+' KB'; }
+let xCurFile=null, xUrl1=null, xUrl2=null;
+async function analyzeBytes(u8){
+  const loc=locateExif(u8); const info={loc, exif:null};
+  if(loc.tiff){ try{ info.exif=parseTiff(u8,loc.tiff.start,loc.tiff.len); }catch(e){ info.exif=null; info.err=true; } }
+  return info;
+}
+async function handleFile(file){
+  if(!file) return;
+  xCurFile=file;
+  const u8=new Uint8Array(await file.arrayBuffer());
+  const info=await analyzeBytes(u8);
+  $('xOut').hidden=false; $('xStripOut').hidden=true;
+  if(xUrl1) URL.revokeObjectURL(xUrl1); xUrl1=URL.createObjectURL(file);
+  const img=$('xImg'); img.src=xUrl1;
+  img.onload=()=>{ $('xCap').textContent=`${file.name}（${kb(file.size)}、表示 ${img.naturalWidth} × ${img.naturalHeight}）`; };
+  img.onerror=()=>{ $('xCap').textContent=`${file.name}（${kb(file.size)}）：このブラウザでは画像を表示できません`; };
+  $('xCap').textContent=`${file.name}（${kb(file.size)}）`;
+  $('xHex').innerHTML=hexView(u8,info.loc.marks);
+  const sum=summarize(info);
+  const head=[['ファイルの形式',info.loc.fmt],['Exif', info.exif? `あり（${sum.count}項目、${info.exif.order}）` : 'なし']];
+  $('xTable').innerHTML=kvRows(head.concat(sum.rows));
+  // すべての項目
+  if(info.exif){
+    const groups=[['ifd0','基本の情報'],['exif','撮影の情報'],['gps','GPSの情報'],['ifd1','縮小画像の情報']];
+    let h='<tr><th>項目（タグ番号）</th><td><b>値</b></td></tr>';
+    for(const [k,lab] of groups){ const m=info.exif[k]; if(!m.size) continue; h+=`<tr><th colspan="2" style="background:var(--panel2);">${lab}</th></tr>`;
+      for(const [tag,e] of m){ const nm=(TAGNAME[k]||{})[tag]||'（その他）'; h+=`<tr class="${k==='gps'?'warn':''}"><th>${esc(nm)}<br><span style="font-family:var(--mono);font-weight:400;font-size:12px;">0x${tag.toString(16).toUpperCase().padStart(4,'0')}</span></th><td class="m">${esc(fmtVal(tag,k,e))}</td></tr>`; } }
+    $('xAll').innerHTML=h; $('xAllBox').hidden=false;
+  } else $('xAllBox').hidden=true;
+  // メッセージ
+  const m=$('xMsg');
+  if(info.loc.fmt==='HEIC'||info.loc.fmt==='AVIF'){ m.className='msg'; m.innerHTML=`<div class="t">${info.loc.fmt} 形式のファイルです</div>この教材は ${info.loc.fmt} 形式の中を読むことには対応していません。JPEG の画像で試してください。${info.loc.fmt} 形式にも、撮影日時や位置情報が記録されることがあります。`; return; }
+  if(info.loc.fmt==='不明'||info.loc.fmt==='GIF'||info.loc.fmt==='ftyp形式'){ m.className='msg'; m.innerHTML=`<div class="t">この形式のファイルの Exif は読めません</div>JPEG（.jpg）の写真で試してください。`; return; }
+  if(sum.gps){
+    const url=`https://maps.gsi.go.jp/#16/${sum.gps.lat.toFixed(6)}/${sum.gps.lon.toFixed(6)}/`;
+    m.className='msg ng';
+    m.innerHTML=`<div class="t">この写真には、撮影した場所（緯度・経度）が記録されています</div>このファイルをそのまま公開すると、見た人がこの場所を地図で調べられます。自宅や学校で撮った写真なら、住んでいる所や通っている所が分かってしまうおそれがあります。<br><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">地理院地図でこの場所を見る（外部のサイトが開きます。地図の中心が撮影地点です）</a>`+(sum.risky.length? `<br>ほかに、<b>${esc(sum.risky.join('・'))}</b>も記録されています。`:'');
+  } else if(info.exif){
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">位置情報は記録されていません</div>Exif には ${sum.count} 項目が記録されていますが、緯度・経度はありませんでした。撮影日時や機種などは残っているので、気になる場合は下で取り除けます。`+(sum.risky.length? `<br>なお、<b>${esc(sum.risky.join('・'))}</b>が記録されています。`:'');
+  } else {
+    m.className='msg ok';
+    m.innerHTML=`<div class="t">Exif は記録されていません</div>撮影日時や位置情報などの付加情報は見つかりませんでした。ただし、写っているもの（制服、名札、景色など）から場所が分かることはあります。`+(info.loc.fmt==='JPEG'?'':'（PNG・WebP は、Exif の区画がある場合だけ読み取ります）');
+  }
+}
+$('xFile').addEventListener('change',e=>{ handleFile(e.target.files[0]); });
+const drop=$('xDrop');
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) handleFile(f); });
+
+/* サンプル画像：canvasで絵を描いてJPEGにし、架空のExif（位置情報入り）を自作して差し込む */
+function buildTiffMM(w,h){
+  // 値は ビッグエンディアン（MM）で書く
+  const enc=s=>{ const a=[]; for(const c of s) a.push(c.charCodeAt(0)); a.push(0); return a; };
+  const r32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255];
+  const rats=list=>list.flatMap(([a,b])=>r32(a).concat(r32(b)));
+  const E=(tag,type,count,data)=>({tag,type,count,data});
+  const ifd0=[E(0x010F,2,0,enc('JOHOLAB')),E(0x0110,2,0,enc('SAMPLE CAM 1')),E(0x0112,3,1,[0,1]),E(0x0131,2,0,enc('joholab.net sample')),
+    E(0x0132,2,0,enc('2026:08:11 06:12:30')),E(0x8769,4,1,null),E(0x8825,4,1,null)];
+  const exif=[E(0x9000,7,4,[0x30,0x32,0x33,0x32]),E(0x9003,2,0,enc('2026:08:11 06:12:30')),E(0x9011,2,0,enc('+09:00')),E(0xA002,4,1,r32(w)),E(0xA003,4,1,r32(h))];
+  const gps=[E(0x0000,1,4,[2,3,0,0]),E(0x0001,2,0,enc('N')),E(0x0002,5,3,rats([[35,1],[21,1],[3800,100]])),
+    E(0x0003,2,0,enc('E')),E(0x0004,5,3,rats([[138,1],[43,1],[3900,100]])),E(0x0005,1,1,[0]),E(0x0006,5,1,rats([[3770,1]]))];
+  for(const L of [ifd0,exif,gps]) for(const e of L){ if(e.type===2) e.count=e.data.length; }
+  const sizeOf=L=>2+12*L.length+4+L.reduce((s,e)=>{ const n=e.data?e.data.length:4; return s+(n>4? n+(n&1):0); },0);
+  const o0=8, oE=o0+sizeOf(ifd0), oG=oE+sizeOf(exif), total=oG+sizeOf(gps);
+  ifd0[5].data=r32(oE); ifd0[6].data=r32(oG);
+  const buf=new Uint8Array(total); buf.set([0x4D,0x4D,0,42,0,0,0,8],0);
+  function write(L,off){
+    const dv=new DataView(buf.buffer); dv.setUint16(off,L.length); let extra=off+2+12*L.length+4;
+    L.forEach((e,i)=>{ const p=off+2+12*i; dv.setUint16(p,e.tag); dv.setUint16(p+2,e.type); dv.setUint32(p+4,e.count);
+      const d=e.data; if(d.length<=4){ buf.set(d,p+8); } else { dv.setUint32(p+8,extra); buf.set(d,extra); extra+=d.length+(d.length&1); } });
+    dv.setUint32(off+2+12*L.length,0);
+  }
+  write(ifd0,o0); write(exif,oE); write(gps,oG);
+  return buf;
+}
+function drawSample(){
+  const W=640,H=420, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  const sky=g.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#F6C38B'); sky.addColorStop(.55,'#FBE3C4'); sky.addColorStop(1,'#E8EEF7'); g.fillStyle=sky; g.fillRect(0,0,W,H);
+  g.fillStyle='#FFF3D6'; g.beginPath(); g.arc(470,120,34,0,Math.PI*2); g.fill();
+  g.fillStyle='#8A9BB8'; g.beginPath(); g.moveTo(0,H); g.lineTo(0,330); g.lineTo(150,250); g.lineTo(250,300); g.lineTo(320,140); g.lineTo(400,290); g.lineTo(520,230); g.lineTo(W,320); g.lineTo(W,H); g.closePath(); g.fill();
+  g.fillStyle='#5C6E91'; g.beginPath(); g.moveTo(0,H); g.lineTo(0,370); g.lineTo(200,320); g.lineTo(380,360); g.lineTo(W,330); g.lineTo(W,H); g.closePath(); g.fill();
+  g.fillStyle='#fff'; g.beginPath(); g.moveTo(320,140); g.lineTo(292,205); g.lineTo(306,198); g.lineTo(320,212); g.lineTo(334,196); g.lineTo(350,206); g.closePath(); g.fill();
+  g.fillStyle='rgba(31,56,100,.82)'; g.fillRect(16,16,300,64); g.fillStyle='#fff'; g.font='bold 22px sans-serif'; g.fillText('サンプル画像（架空）',30,46); g.font='15px sans-serif'; g.fillText('情報ラボ 個人情報とプライバシー',30,69);
+  return c;
+}
+$('xSample').addEventListener('click',()=>{
+  const c=drawSample();
+  c.toBlob(async b=>{
+    const jpg=new Uint8Array(await b.arrayBuffer());
+    const tiff=buildTiffMM(c.width,c.height);
+    const segLen=2+6+tiff.length;
+    const app1=new Uint8Array(4+6+tiff.length); app1.set([0xFF,0xE1,(segLen>>8)&255,segLen&255],0); app1.set([0x45,0x78,0x69,0x66,0,0],4); app1.set(tiff,10);
+    const out=new Uint8Array(jpg.length+app1.length); out.set(jpg.subarray(0,2),0); out.set(app1,2); out.set(jpg.subarray(2),2+app1.length);
+    const f=new File([out],'sample_fuji.jpg',{type:'image/jpeg'});
+    handleFile(f);
+  },'image/jpeg',0.9);
+});
+
+/* 位置情報などを取り除く：canvasに描き直してJPEGで保存し直す */
+$('xStrip').addEventListener('click',async()=>{
+  if(!xCurFile) return;
+  const btn=$('xStrip'); btn.disabled=true;
+  try{
+    const img=new Image(); img.src=xUrl1; await img.decode();
+    let w=img.naturalWidth, h=img.naturalHeight, note='';
+    const MAXPX=16000000; if(w*h>MAXPX){ const s=Math.sqrt(MAXPX/(w*h)); w=Math.floor(w*s); h=Math.floor(h*s); note='（大きすぎるので縮小しました）'; }
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+    g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.drawImage(img,0,0,w,h);
+    const blob=await new Promise(res=>c.toBlob(res,'image/jpeg',0.92));
+    const u8=new Uint8Array(await blob.arrayBuffer()); const info=await analyzeBytes(u8); const sum=summarize(info);
+    if(xUrl2) URL.revokeObjectURL(xUrl2); xUrl2=URL.createObjectURL(blob);
+    $('xImg2').src=xUrl2;
+    const base=(xCurFile.name||'photo').replace(/\.[^.]+$/,'');
+    $('xCap2').textContent=`${base}_no-exif.jpg（${kb(blob.size)}、${w} × ${h}）${note}`;
+    $('xSave').href=xUrl2; $('xSave').setAttribute('download',`${base}_no-exif.jpg`);
+    $('xTable2').innerHTML=kvRows([['ファイルの大きさ',`${kb(xCurFile.size)} → ${kb(blob.size)}`],['Exif', info.exif? `あり（${sum.count}項目）`:'なし'],['位置情報（GPS）', sum.gps? 'あり':'なし'],['撮影日時・機種', info.exif? 'あり':'なし']]);
+    $('xStripOut').hidden=false;
+  }catch(e){
+    $('xStripOut').hidden=false; $('xTable2').innerHTML=kvRows([['結果','このブラウザでは画像を描き直せませんでした',true]]);
+  }
+  btn.disabled=false;
+});
+
+/* ===================== 匿名にしたつもりでも…（k-匿名性） ===================== */
+const KDATA=[
+ ['高橋 健太','123-4511','2008-05-21','男','サッカー部','異常なし'],['伊藤 美咲','123-4523','2008-09-03','女','吹奏楽部','異常なし'],
+ ['渡辺 翔','123-4602','2008-11-30','男','バスケ部','要再検査'],['山本 結衣','123-4618','2008-07-12','女','美術部','異常なし'],
+ ['中村 陽菜','123-4567','2009-06-14','女','吹奏楽部','要再検査'],['小林 大輝','123-4530','2009-01-25','男','野球部','異常なし'],
+ ['加藤 さくら','123-4609','2009-10-08','女','テニス部','要再検査'],['吉田 蓮','123-4621','2009-04-17','男','サッカー部','異常なし'],
+ ['山田 葵','123-4544','2010-03-02','女','バレー部','異常なし'],['佐々木 湊','123-4515','2010-08-19','男','野球部','異常なし'],
+ ['松本 凛','123-4633','2010-12-05','女','吹奏楽部','異常なし'],['井上 美月','123-4605','2010-05-28','女','バスケ部','要再検査'],
+ ['木村 悠真','124-0112','2008-04-09','男','陸上部','異常なし'],['林 七海','124-0125','2008-10-22','女','陸上部','異常なし'],
+ ['清水 拓海','124-0207','2008-06-30','男','サッカー部','異常なし'],['山口 莉子','124-0219','2008-02-14','女','吹奏楽部','要再検査'],
+ ['森 颯太','124-0131','2009-09-11','男','バスケ部','異常なし'],['池田 心春','124-0104','2009-12-24','女','美術部','異常なし'],
+ ['橋本 陸','124-0226','2009-03-16','男','野球部','要再検査'],['阿部 楓','124-0211','2009-07-07','女','テニス部','異常なし'],
+ ['石川 奏太','124-0118','2010-01-13','男','陸上部','異常なし'],['前田 紬','124-0139','2010-11-01','女','バレー部','異常なし'],
+ ['藤田 結菜','124-0203','2010-06-26','女','吹奏楽部','異常なし'],['後藤 樹','124-0230','2010-09-18','男','サッカー部','要再検査'],
+];
+const KTARGET=4;
+const KCOLS=[
+ {key:'name',lab:'氏名',opts:['載せる','消す'],max:1},
+ {key:'zip',lab:'郵便番号',opts:['7けた','上5けた','上3けた','載せない'],max:3},
+ {key:'dob',lab:'生年月日',opts:['年月日','年月','生まれ年','載せない'],max:3},
+ {key:'sex',lab:'性別',opts:['載せる','載せない'],max:1},
+ {key:'club',lab:'部活動',opts:['載せる','載せない'],max:1},
+];
+let KL={name:1,zip:0,dob:0,sex:0,club:0}, kSorted=true;
+function genRow(r){
+  const z=[r[1], r[1].slice(0,6)+'**', r[1].slice(0,3)+'-****', null][KL.zip];
+  const d=[r[2], r[2].slice(0,7), r[2].slice(0,4)+'年', null][KL.dob];
+  return {name: KL.name===0? r[0]:null, zip:z, dob:d, sex: KL.sex===0? r[3]:null, club: KL.club===0? r[4]:null};
+}
+const gkey=g=>[g.name,g.zip,g.dob,g.sex,g.club].map(x=>x===null?'·':x).join('|');
+function kDraw(){
+  // 選択肢
+  $('kCtl').innerHTML=KCOLS.map(c=>`<div class="lab">${c.lab}</div><div class="row">${c.opts.map((o,i)=>`<button class="chip" data-kc="${c.key}" data-kv="${i}" aria-pressed="${KL[c.key]===i}">${o}</button>`).join('')}</div>`).join('');
+  $('kCtl').querySelectorAll('[data-kc]').forEach(b=>b.addEventListener('click',()=>{ KL[b.dataset.kc]=+b.dataset.kv; kDraw(); }));
+  const G=KDATA.map(genRow), keys=G.map(gkey); const cnt=new Map(); keys.forEach(k=>cnt.set(k,(cnt.get(k)||0)+1));
+  const ks=keys.map(k=>cnt.get(k)); const K=Math.min(...ks), U=ks.filter(x=>x===1).length;
+  const detail=(3-KL.zip)+(3-KL.dob)+(1-KL.sex)+(1-KL.club);
+  $('kK').textContent=K; $('kK').className='v '+(K>=3?'ok':K===1?'ng':'');
+  $('kU').textContent=U+' 人'; $('kU').className='v '+(U?'ng':'ok');
+  $('kG').textContent=cnt.size; $('kD').textContent=KL.name===0? '氏名あり' : `${detail} / 8`; $('kDm').style.width=(KL.name===0?100:detail/8*100)+'%';
+  const m=$('kMsg');
+  if(KL.name===0){ m.className='msg ng'; m.innerHTML='<div class="t">氏名が載っています</div>氏名があれば、全員がそのまま特定されます。まず氏名を「消す」にしてみましょう。'; }
+  else if(K===1){ m.className='msg ng'; m.innerHTML=`<div class="t">k ＝ 1：氏名がなくても、1人に絞り込める人が${U}人います</div>赤い行の人は、公開した列の組み合わせがほかのだれとも同じではありません。その人を知っている人が見れば、どの行がその人か分かってしまいます。郵便番号や生年月日をおおまかにする（一般化）か、列を載せないようにして、k を大きくしてみましょう。`; }
+  else if(K===2){ m.className='msg'; m.innerHTML=`<div class="t">k ＝ 2：どの組み合わせにも、少なくとも2人います</div>1人には絞り込めなくなりました。ただし、2人のうちどちらかまでは分かります。k を3以上にするには、さらに一般化が必要です。そのぶん、データから分かることは少なくなります。`; }
+  else { m.className='msg ok'; m.innerHTML=`<div class="t">k ＝ ${K}：どの組み合わせにも、少なくとも${K}人います</div>このデータは「${K}-匿名性」を満たしています。そのかわり、残した情報の細かさは 8 のうち ${detail} です。個人を守ることと、データを役立てることは、引きかえの関係になりやすいのです。`; }
+  // 攻撃する側
+  const tg=G[KTARGET], tk=keys[KTARGET]; const match=KDATA.map((r,i)=>i).filter(i=>keys[i]===tk);
+  const res=match.map(i=>KDATA[i][5]); const bad=res.filter(x=>x==='要再検査').length;
+  const a=$('kAtk');
+  if(KL.name===0){ a.className='msg ng'; a.innerHTML='<div class="t">氏名で、すぐに分かります</div>中村さんの健康診断の結果は「要再検査」です。健康診断の結果は、要配慮個人情報にあたります。'; }
+  else if(match.length===1){ a.className='msg ng'; a.innerHTML='<div class="t">中村さんの行が1つに絞り込めました</div>知っている情報と同じ組み合わせの行は1つだけです。中村さんの健康診断の結果は「要再検査」だと分かってしまいます。健康診断の結果は、要配慮個人情報にあたります。'; }
+  else if(bad===match.length || bad===0){ a.className='msg ng'; a.innerHTML=`<div class="t">候補は${match.length}人。でも、結果は分かってしまいます</div>中村さんと同じ組み合わせの${match.length}人は、全員が「${res[0]}」です。だれが中村さんか分からなくても、結果は「${res[0]}」だと分かります。k-匿名性を満たすだけでは防げない例です。`; }
+  else { a.className='msg ok'; a.innerHTML=`<div class="t">候補は${match.length}人。中村さんの結果は分かりません</div>同じ組み合わせの${match.length}人のうち、「要再検査」が${bad}人、「異常なし」が${match.length-bad}人です。どの行が中村さんか分からないので、結果も決められません。`; }
+  // 表
+  const cols=[['name','氏名'],['zip','郵便番号'],['dob','生年月日'],['sex','性別'],['club','部活動']].filter(([k])=>G[0][k]!==null);
+  let idx=KDATA.map((_,i)=>i);
+  if(kSorted) idx.sort((x,y)=> (ks[x]-ks[y]) || (keys[x]<keys[y]?-1:keys[x]>keys[y]?1:0) || x-y);
+  let h='<tr>'+cols.map(([,l])=>`<th>${l}</th>`).join('')+'<th>健康診断の結果</th><th>同じ組み合わせの人数</th></tr>';
+  for(const i of idx){ const g=G[i]; const k=ks[i];
+    h+=`<tr class="${k===1?'k1':k===2?'k2':''}${keys[i]===tk&&KL.name===1?' tg':''}">`+cols.map(([c])=>`<td class="${c==='zip'||c==='dob'?'m':''}">${esc(g[c])}</td>`).join('')+
+      `<td class="sens${KDATA[i][5]==='要再検査'?' bad':''}">${KDATA[i][5]}</td><td class="kc">${k}人</td></tr>`; }
+  if(!cols.length) h=h.replace('<tr><th>健康診断','<tr><th>（公開する列なし）</th><th>健康診断');
+  if(!cols.length) h=h.replace(/<tr class="([^"]*)"><td class="sens/g,'<tr class="$1"><td>—</td><td class="sens');
+  $('kTable').innerHTML=h;
+  $('kSort').setAttribute('aria-pressed',String(kSorted));
+}
+$('kPresetA').addEventListener('click',()=>{ KL={name:1,zip:0,dob:0,sex:0,club:0}; kDraw(); });
+$('kPresetB').addEventListener('click',()=>{ KL={name:1,zip:2,dob:2,sex:0,club:1}; kDraw(); });
+$('kSort').addEventListener('click',()=>{ kSorted=!kSorted; kDraw(); });
+kDraw();
+
+/* ===================== ネットに出した情報は消えない（モデル） ===================== */
+const SN={cx:320, cy:235};
+const NODES=[]; const EDGES=[];
+(function build(){
+  NODES.push({id:0, ring:0, x:SN.cx, y:SN.cy});
+  const ring=(n,r,ringNo,off)=>{ const ids=[]; for(let i=0;i<n;i++){ const a=-Math.PI/2+off+i*2*Math.PI/n; NODES.push({id:NODES.length, ring:ringNo, x:SN.cx+r*Math.cos(a), y:SN.cy+r*Math.sin(a)}); ids.push(NODES.length-1); } return ids; };
+  const f=ring(8,82,1,0), ff=ring(16,152,2,-Math.PI/16), st=ring(24,212,3,-Math.PI/24);
+  f.forEach(i=>EDGES.push([0,i]));
+  f.forEach((i,k)=>{ EDGES.push([i,ff[2*k]]); EDGES.push([i,ff[2*k+1]]); });
+  f.forEach((i,k)=>EDGES.push([i,f[(k+1)%8]]));
+  ff.forEach((i,k)=>{ const a=Math.floor(k*24/16); EDGES.push([i,st[a]]); EDGES.push([i,st[(a+1)%24]]); });
+  st.forEach((i,k)=>{ if(k%3===0) EDGES.push([i,st[(k+1)%24]]); });
+})();
+const NB=NODES.map(()=>[]); EDGES.forEach(([a,b])=>{ NB[a].push(b); NB[b].push(a); });
+let sScope='friends', sSeed=7, S;
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function sReset(){ S={t:0, alive:true, seen:NODES.map((_,i)=>i===0), copy:NODES.map(()=>false), decided:NODES.map((_,i)=>i===0), rnd:mulberry(sSeed), delAt:null}; sDraw(); }
+function sStep(){
+  if(S.t>=8) return;
+  S.t++;
+  const newly=[];
+  const see=i=>{ if(!S.seen[i]){ S.seen[i]=true; newly.push(i); } };
+  if(S.alive){
+    if(sScope!=='self') NODES.forEach(n=>{ if(n.ring===1) see(n.id); });
+    if(sScope==='public') NODES.forEach(n=>{ if(n.ring>=2 && S.rnd()<0.22) see(n.id); });
+  }
+  // コピーを持つ人の投稿は、その人のつながりに見える
+  NODES.forEach(n=>{ if(S.copy[n.id]) NB[n.id].forEach(j=>see(j)); });
+  if(sScope==='public') NODES.forEach(n=>{ if(S.copy[n.id] && S.rnd()<0.5){ const j=1+Math.floor(S.rnd()*(NODES.length-1)); see(j); } });
+  // 見た人のうち何人かは、保存して投稿し直す（1人につき1回だけ決める）
+  NODES.forEach(n=>{ const i=n.id; if(S.seen[i] && !S.decided[i]){ S.decided[i]=true; const p= n.ring===1? 0.3 : 0.2; if(S.rnd()<p) S.copy[i]=true; } });
+  sDraw(newly.length);
+}
+function sDraw(newCount){
+  let s='';
+  EDGES.forEach(([a,b])=>{ const A=NODES[a],B=NODES[b]; s+=`<line x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke="#DCE3EE" stroke-width="1.2"/>`; });
+  [82,152,212].forEach((r,i)=>{ s+=`<circle cx="${SN.cx}" cy="${SN.cy}" r="${r}" fill="none" stroke="#EEF2F8" stroke-dasharray="3 4"/>`; });
+  s+=`<text x="${SN.cx}" y="${SN.cy-82-14}" text-anchor="middle" font-size="12" fill="#5B6472">友だち</text>`;
+  s+=`<text x="${SN.cx+108}" y="${SN.cy-106}" text-anchor="start" font-size="12" fill="#5B6472">友だちの友だち</text>`;
+  s+=`<text x="${SN.cx+170}" y="${SN.cy-184}" text-anchor="start" font-size="12" fill="#5B6472">知らない人</text>`;
+  NODES.forEach(n=>{
+    if(n.id===0) return;
+    const r= n.ring===1?12 : n.ring===2?10 : 8;
+    const fill= S.copy[n.id]? '#C49A2B' : S.seen[n.id]? '#2F5496' : '#fff';
+    const st= S.copy[n.id]? '#8a6a14' : S.seen[n.id]? '#2F5496' : '#9AA6BC';
+    s+=`<circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${r}" fill="${fill}" stroke="${st}" stroke-width="1.5"/>`;
+  });
+  const me=NODES[0];
+  s+=`<circle cx="${me.x}" cy="${me.y}" r="26" fill="${S.alive?'#1F3864':'#fff'}" stroke="#1F3864" stroke-width="2.5" ${S.alive?'':'stroke-dasharray="4 3"'}/>`;
+  s+=`<text x="${me.x}" y="${me.y-2}" text-anchor="middle" font-size="13" font-weight="700" fill="${S.alive?'#fff':'#1F3864'}">自分</text>`;
+  s+=`<text x="${me.x}" y="${me.y+14}" text-anchor="middle" font-size="10" fill="${S.alive?'#cfd9ee':'#C00000'}">${S.alive?'投稿':'削除済み'}</text>`;
+  $('sSvg').innerHTML=s;
+  const seen=S.seen.filter((x,i)=>x&&i>0).length, copies=S.copy.filter(Boolean).length;
+  $('sT').textContent=S.t; $('sSeen').textContent=seen+' 人'; $('sCopy').textContent=copies+' 人'; $('sCopy').className='v '+(copies?'ng':'');
+  $('sOrig').textContent=S.alive?'あり':'削除済み';
+  $('sDel').disabled=!S.alive; $('sStep').disabled=S.t>=8;
+  const m=$('sMsg');
+  if(S.t===0){ m.className='msg'; m.innerHTML='<div class="t">「▶ 時間を進める」を押してみましょう</div>押すたびに、少し時間がたったようすを表示します。とちゅうで「元の投稿を削除する」も試してみましょう。'; return; }
+  if(sScope==='self'){ m.className='msg ok'; m.innerHTML='<div class="t">「自分だけ」なら、ほかの人には見えません</div>このモデルでは広がりません。ただし、公開範囲の設定のまちがいや、アカウントを他人に使われることがあれば見られてしまいます。インターネットに上げた時点で、自分の端末の外にデータがあることも忘れないようにしましょう。'; return; }
+  if(!S.alive){
+    m.className= copies? 'msg ng':'msg ok';
+    m.innerHTML= copies? `<div class="t">元の投稿は消えましたが、${copies}人がコピーを持っています</div>保存やスクリーンショットで作られたコピーは、元の投稿を削除しても消えません。コピーを持つ人の投稿を通して、${S.delAt!==null&&S.t>S.delAt?'削除したあとも':'これからも'}見る人がふえていきます。これが「デジタルタトゥー」と呼ばれる理由です。`
+      : '<div class="t">コピーが作られる前に削除できました</div>今回はだれもコピーを作っていなかったので、広がりは止まりました。ただし、見た人の記憶や、気づかないうちに作られたコピーまでは、確かめようがありません。';
+    return;
+  }
+  if(copies===0){ m.className='msg'; m.innerHTML=`<div class="t">${seen}人が見ました</div>${sScope==='friends'?'いまは友だちだけが見ています。':'全体に公開しているので、知らない人にも届いています。'}時間を進めてみましょう。`; }
+  else { m.className='msg ng'; m.innerHTML=`<div class="t">${copies}人が保存して、投稿し直しました</div>${sScope==='friends'?'公開範囲は「友だちまで」なのに、コピーを通して、友だちの友だちや知らない人にまで届いています。コピーの公開範囲は、自分では決められません。':'全体に公開しているので、コピーもどんどん作られます。'}「元の投稿を削除する」を押すと、どうなるでしょうか。`; }
+}
+document.querySelectorAll('[data-sc]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-sc]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); sScope=b.dataset.sc; sReset(); }));
+$('sStep').addEventListener('click',sStep);
+$('sDel').addEventListener('click',()=>{ if(!S.alive) return; S.alive=false; S.delAt=S.t; sDraw(); });
+$('sReset').addEventListener('click',sReset);
+$('sSeed').addEventListener('click',()=>{ sSeed=(sSeed*48271+11)%2147483647; sReset(); });
+sReset();
+</script>
+</body>
+</html>

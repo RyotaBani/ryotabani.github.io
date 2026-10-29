@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハッシュと電子署名のしくみ（SHA-256・改ざん検知・電子署名・二要素認証）｜情報ラボ</title>
+<meta name="description" content="文字やファイルのSHA-256ハッシュ値をその場で計算し、改ざんの検出、ECDSAによる電子署名と検証、ソルト付きのパスワード保存、30秒ごとに変わるワンタイムパスワード（TOTP）をブラウザの中で体験できる無料ツール。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/hash/">
+<meta property="og:title" content="ハッシュと電子署名のしくみ｜情報ラボ">
+<meta property="og:description" content="SHA-256、改ざん検知、電子署名、ソルト、ワンタイムパスワード。データが本物かを確かめるしくみを体験できる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/hash/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; min-width:0;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:14px 0 8px; color:var(--navy);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:8px 10px; flex-wrap:wrap; align-items:center;}
+  button.chip,label.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover,label.chip:hover{background:var(--panel2);}
+  label.chip{position:relative; overflow:hidden;}
+  label.chip:focus-within{outline:3px solid #7FA3E0; outline-offset:2px;}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button:disabled{opacity:.5; cursor:default;}
+  textarea.txt,input.txt{width:100%; font-family:inherit; font-size:16px; border:1px solid var(--line); border-radius:8px;
+    padding:9px 11px; background:#fff; color:#1c2430; resize:vertical;}
+  input.txt.mono,textarea.txt.mono{font-family:var(--mono);}
+  input.code{font-family:var(--mono); font-size:22px; letter-spacing:.15em; width:8.5em; max-width:100%; border:1px solid var(--line); border-radius:8px; padding:6px 10px; background:#fff;}
+  .lab{font-size:13px; color:var(--muted); margin:12px 0 4px; font-weight:700;}
+  .lab:first-child{margin-top:0;}
+
+  .hash{font-family:var(--mono); font-size:14.5px; line-height:1.65; background:#0f1a2e; color:#E6EDF7; border-radius:8px;
+    padding:10px 14px; overflow-wrap:anywhere; word-break:break-all; min-height:2.6em;}
+  .hash .d{color:#FFB4A9; font-weight:700;}
+  .hash .o{background:#C49A2B; color:#0f1a2e; border-radius:3px;}
+  .hash.small{font-size:13px;}
+  .hash.ok{box-shadow:inset 0 0 0 2px #5CB585;} .hash.ng{box-shadow:inset 0 0 0 2px #FF8A80;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  .msg a{color:#ffd97a;}
+  .msg button.chip{margin-top:10px;}
+
+  /* ビットの格子 */
+  .bitgrid{display:grid; grid-template-columns:repeat(32,minmax(0,1fr)); gap:2px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:6px;}
+  .bitgrid i{display:block; aspect-ratio:1/1; background:#E3E8F0; border-radius:2px;}
+  .bitgrid i.x{background:var(--ng);}
+
+  /* 流れの図 */
+  .flow{display:grid; grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr) 28px minmax(0,1fr); gap:10px; align-items:stretch;}
+  .flow>*{min-width:0;}
+  .flow .arr{align-self:center; text-align:center; font-size:24px; color:var(--muted); font-weight:700;}
+  .card{background:#fff; border:2px solid var(--line); border-radius:12px; padding:12px 14px; min-width:0;}
+  .card .nm{font-weight:700; color:var(--ink); font-size:15px; margin-bottom:6px;}
+  .card.bad{border-color:#E8B4B0; background:#FFF7F6;}
+  .card.bad .nm{color:var(--ng);}
+  .card.dim{opacity:.6;}
+  .card p{margin:4px 0; font-size:13.5px;}
+  .badge{display:inline-block; font-size:12px; font-weight:700; padding:2px 9px; border-radius:999px; background:var(--panel2); color:var(--ink);}
+  .badge.ok{background:#E3F2E9; color:var(--ok);} .badge.ng{background:#FBE5E3; color:var(--ng);} .badge.gold{background:#FFF3D6; color:#7A5A12;}
+  @media (max-width:760px){
+    .flow{grid-template-columns:minmax(0,1fr);}
+    .flow .arr{transform:rotate(90deg); justify-self:center; line-height:1;}
+  }
+
+  /* 処理の流れ（電子署名・証明書） */
+  .pipe{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; margin:6px 0 4px;}
+  .pipe .bx{background:#fff; border:1.5px solid var(--line); border-radius:9px; padding:6px 11px; font-size:13.5px; font-weight:700; color:var(--ink);}
+  .pipe .bx.k{border-color:var(--gold); background:#FFF8E7;}
+  .pipe .bx.s{border-color:var(--navy); background:#EAF1FB;}
+  .pipe .ar{color:var(--muted); font-weight:700;}
+  .pipe .who{font-size:12.5px; color:var(--muted); width:100%;}
+
+  .cert{background:#fff; border:2px solid var(--gold); border-radius:10px; padding:12px 14px; font-size:13.5px; min-width:0;}
+  .cert .h{font-weight:700; color:#7A5A12; margin-bottom:6px;}
+  .cert dl{margin:0; display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 10px;}
+  .cert dt{color:var(--muted);} .cert dd{margin:0; overflow-wrap:anywhere; font-family:var(--mono); font-size:12.5px;}
+  .cert dd.j{font-family:inherit; font-size:13.5px;}
+  .cert dd.bad{color:var(--ng); font-weight:700;}
+  ol.chk{margin:8px 0 0; padding-left:1.4em; font-size:14px;}
+  ol.chk li{margin:3px 0;}
+  .y{color:var(--ok); font-weight:700;} .n{color:var(--ng); font-weight:700;}
+
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top;}
+  table.tb th{background:var(--panel); color:var(--ink);}
+  table.tb td.m{font-family:var(--mono); font-size:12.5px; overflow-wrap:anywhere; word-break:break-all;}
+  table.tb input.txt{font-size:15px; padding:5px 8px; min-width:7em;}
+  table.tb tr.hit td{background:#FFF3F2;}
+  .scroll{overflow-x:auto; max-width:100%;}
+  @media (max-width:640px){
+    #pTable,#pTable tbody,#pTable tr,#pTable td{display:block; width:100%;}
+    #pTable{background:transparent;}
+    #pTable tr:first-child{display:none;}
+    #pTable tr{background:#fff; border:1px solid var(--line); border-radius:9px; margin-bottom:8px; overflow:hidden;}
+    #pTable td{border:none; border-top:1px solid var(--line);}
+    #pTable td:first-child{border-top:none; font-weight:700; color:var(--ink);}
+    #pTable td[data-h]::before{content:attr(data-h); display:block; font-size:11.5px; color:var(--muted); font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;}
+  }
+  .samemark{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px;}
+
+  /* ワンタイムパスワード */
+  .otp{text-align:center;}
+  .otp .big{font-family:var(--mono); font-size:clamp(34px,8vw,46px); font-weight:700; letter-spacing:.12em; color:var(--ink); line-height:1.2;}
+  .otp .sub{font-size:12.5px; color:var(--muted);}
+  .meter{height:8px; background:#E3E8F0; border-radius:99px; overflow:hidden; margin:8px 0 2px;}
+  .meter i{display:block; height:100%; background:var(--navy); transition:width .25s linear;}
+  .meter.low i{background:var(--ng);}
+  .sl{margin-top:10px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+  .calc{font-size:14px; line-height:1.85; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-top:12px; overflow-wrap:anywhere;}
+  .calc code{font-family:var(--mono); font-size:13px; word-break:break-all;}
+
+  .factors{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+  .factors>div{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:0;}
+  .factors b{display:block; color:var(--ink);}
+  .factors span{font-size:13px; color:var(--muted);}
+  @media (max-width:640px){ .factors{grid-template-columns:minmax(0,1fr);} }
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ ハッシュと電子署名</p>
+    <h1>ハッシュと電子署名のしくみ</h1>
+    <p class="lead">届いたデータは、途中で書きかえられていないか。送ってきたのは、本当にその人か。データの「指紋」を計算して確かめるしくみを、ブラウザの中で実際に動かして体験しましょう。</p>
+  </header>
+
+  <div class="msg ng" id="noCrypto" hidden><div class="t">このブラウザでは計算できません</div>このページは、ブラウザに組みこまれた暗号の機能（Web Crypto API）を使います。https で始まるアドレスで開くか、新しいブラウザで開いてください。</div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabHash" aria-selected="true" aria-controls="toolHash">ハッシュ値を作る</button>
+    <button class="tab" role="tab" id="tabTamper" aria-selected="false" aria-controls="toolTamper">改ざんを見つける</button>
+    <button class="tab" role="tab" id="tabSign" aria-selected="false" aria-controls="toolSign">電子署名</button>
+    <button class="tab" role="tab" id="tabAuth" aria-selected="false" aria-controls="toolAuth">パスワードの保存と二要素認証</button>
+  </div>
+
+  <!-- ===== ハッシュ値を作る ===== -->
+  <section class="tool show" id="toolHash" role="tabpanel" aria-labelledby="tabHash">
+    <div class="panel">
+      <h2>文字を入力すると、SHA-256 のハッシュ値をその場で計算します</h2>
+      <textarea class="txt" id="hA" rows="2" spellcheck="false" aria-label="ハッシュ値を計算する文字">情報ラボ</textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="chip" data-ha="abc">abc</button>
+        <button class="chip" data-ha="">空の文字（0文字）</button>
+        <button class="chip" data-ha="情報ラボ">情報ラボ</button>
+        <button class="chip" data-ha="@long">長い文（1000文字）</button>
+      </div>
+      <div class="lab">ハッシュ値（16進数）</div>
+      <div class="hash" id="hAout" aria-live="polite"></div>
+      <div class="stats">
+        <div class="stt"><div class="k">入力の大きさ（UTF-8）</div><div class="v" id="hAsize">–</div></div>
+        <div class="stt"><div class="k">ハッシュ値の大きさ</div><div class="v">256 ビット</div></div>
+        <div class="stt"><div class="k">16進数のけた数</div><div class="v" id="hAlen">–</div></div>
+      </div>
+      <p class="hint">「abc」の値は ba7816bf… で始まり、NIST が公開している SHA-256 の計算例と同じになります。入力が0文字でも1000文字でも、ハッシュ値はいつも256ビット（16進数1けた＝4ビットなので64けた）です。16進数は<a href="/binary/">2進数・16進数</a>、UTF-8 は<a href="/charcode/">文字コード</a>で確かめられます。</p>
+    </div>
+
+    <div class="panel">
+      <h2>1文字だけ変えると、ハッシュ値はどれくらい変わる？（雪崩効果）</h2>
+      <textarea class="txt" id="hB" rows="2" spellcheck="false" aria-label="比べる文字"></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="chip" id="hTweak">上の文の最後の1文字を変える</button>
+        <button class="chip" id="hCopy">上の文と同じにする</button>
+      </div>
+      <div class="lab">ハッシュ値（上とちがうけたを赤で表示）</div>
+      <div class="hash" id="hBout"></div>
+      <div class="lab">256ビットのうち、変わったビット（赤）</div>
+      <div class="bitgrid" id="hGrid" role="img" aria-label="変わったビットの図"></div>
+      <div class="stats">
+        <div class="stt"><div class="k">変わったビット数</div><div class="v" id="hBits">–</div></div>
+        <div class="stt"><div class="k">変わった割合</div><div class="v" id="hPct">–</div></div>
+        <div class="stt"><div class="k">変わった16進数のけた</div><div class="v" id="hHex">–</div></div>
+      </div>
+      <div class="msg" id="hMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ハッシュ値から、元の文字にもどせる？（一方向性）</h2>
+      <p style="margin:0 0 8px;font-size:14.5px;">ある4けたの数字（暗証番号を想定）のハッシュ値です。元の数字は何でしょう。</p>
+      <div class="hash small" id="rTarget"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" id="rRun">0000 から順に試す（総当たり）</button>
+        <button class="chip" id="rNew">問題を変える</button>
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">試した数</div><div class="v" id="rTries">0</div></div>
+        <div class="stt"><div class="k">かかった時間</div><div class="v" id="rTime">–</div></div>
+        <div class="stt"><div class="k">見つかった数字</div><div class="v" id="rFound">–</div></div>
+      </div>
+      <div class="msg" id="rMsg"><div class="t">ハッシュ値を逆算する式はありません</div>元の数字を知るには、候補を1つずつハッシュ値にして、同じ値が出るまで比べるしかありません。「0000 から順に試す」を押してみましょう。</div>
+    </div>
+
+    <div class="panel">
+      <h2>ファイルのハッシュ値を計算して、配布元の値と比べる</h2>
+      <div class="row">
+        <label class="chip" style="display:inline-block;">ファイルを選ぶ<input type="file" id="fFile" style="position:absolute;width:1px;height:1px;opacity:0;"></label>
+        <button class="chip" id="fDemo">練習用のファイルで試す</button>
+        <button class="chip" id="fDemoBad">書きかえられたファイルで試す</button>
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">ファイル名</div><div class="v" id="fName" style="font-size:15px;">–</div></div>
+        <div class="stt"><div class="k">大きさ</div><div class="v" id="fSize" style="font-size:15px;">–</div></div>
+        <div class="stt"><div class="k">計算時間</div><div class="v" id="fTime" style="font-size:15px;">–</div></div>
+      </div>
+      <div class="lab">このファイルの SHA-256</div>
+      <div class="hash" id="fOut">（ファイルを選ぶと表示されます）</div>
+      <div class="lab"><label for="fExpect">配布元が公開しているハッシュ値（貼りつける）</label></div>
+      <input class="txt mono" id="fExpect" type="text" spellcheck="false" autocomplete="off" placeholder="64けたの16進数">
+      <div class="msg" id="fMsg"><div class="t">ダウンロードしたファイルが本物か確かめる</div>配布元が公開しているハッシュ値と、手元のファイルから計算したハッシュ値が一致すれば、途中でこわれたり書きかえられたりしていないと分かります。</div>
+      <p class="hint">選んだファイルは、この端末のブラウザの中だけで計算し、どこにも送信しません。大きなファイルは時間がかかることがあります。</p>
+    </div>
+  </section>
+
+  <!-- ===== 改ざんを見つける ===== -->
+  <section class="tool" id="toolTamper" role="tabpanel" aria-labelledby="tabTamper">
+    <div class="panel">
+      <h2>送り手は、メッセージとそのハッシュ値をいっしょに送ります。途中で何が起きるかを選んでください</h2>
+      <div class="row" id="tScn">
+        <button class="chip" data-s="none" aria-pressed="true">そのまま届く</button>
+        <button class="chip" data-s="msg" aria-pressed="false">メッセージだけ書きかえる</button>
+        <button class="chip" data-s="both" aria-pressed="false">メッセージとハッシュ値をすり替える</button>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="card">
+        <div class="nm">① 送り手</div>
+        <div class="lab">メッセージ</div>
+        <textarea class="txt" id="tMsg" rows="3" spellcheck="false" aria-label="送り手のメッセージ">（架空の連絡）明日の集合は 9時、正門前です。</textarea>
+        <div class="lab">計算したハッシュ値（いっしょに送る）</div>
+        <div class="hash small" id="tH1"></div>
+      </div>
+      <div class="arr" aria-hidden="true">→</div>
+      <div class="card bad" id="tMid">
+        <div class="nm">② 通り道（書きかえる人）</div>
+        <div id="tMidBody"></div>
+        <div id="tEvilBox" hidden>
+          <div class="lab">書きかえたメッセージ（自由に変えられます）</div>
+          <textarea class="txt" id="tEvil" rows="3" spellcheck="false" aria-label="書きかえたメッセージ"></textarea>
+          <div class="lab">送るハッシュ値</div>
+          <div class="hash small" id="tH2"></div>
+        </div>
+      </div>
+      <div class="arr" aria-hidden="true">→</div>
+      <div class="card">
+        <div class="nm">③ 受け手</div>
+        <div class="lab">届いたメッセージ</div>
+        <p id="tRecv" style="font-size:15px;overflow-wrap:anywhere;background:var(--panel);border-radius:8px;padding:8px 10px;margin:0;"></p>
+        <div class="lab">届いたハッシュ値</div>
+        <div class="hash small" id="tH3"></div>
+        <div class="lab">届いたメッセージから計算し直したハッシュ値</div>
+        <div class="hash small" id="tH4"></div>
+      </div>
+    </div>
+    <div class="msg" id="tMsgOut"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>ハッシュ値を「別の道」で受け取れば、すり替えに気づける</h2>
+      <p style="margin:0;font-size:14.5px;">ソフトウェアの配布元は、ファイルとは別に、公式のWebページにハッシュ値を載せていることがあります。ファイルとハッシュ値を同じ道から受け取ると、両方まとめてすり替えられるおそれがありますが、信頼できる別の道で受け取ったハッシュ値と比べれば、すり替えに気づけます。ただし、その「信頼できる道」そのものが本物かどうかは、ハッシュ値だけでは確かめられません。そこで使われるのが、次の<b>電子署名</b>です。</p>
+      <p class="hint">パリティビットやチェックディジット（<a href="/parity/">パリティマジック</a>）も、まちがいを見つけるしくみです。ただし、こちらは通信や入力のうっかりしたまちがいを見つけるためのもので、わざと書きかえる相手は想定していません。</p>
+    </div>
+  </section>
+
+  <!-- ===== 電子署名 ===== -->
+  <section class="tool" id="toolSign" role="tabpanel" aria-labelledby="tabSign">
+    <div class="panel">
+      <h2>電子署名のしくみ：秘密鍵で署名を作り、公開鍵で確かめる</h2>
+      <div class="pipe"><span class="who">送り手（Aさん）</span><span class="bx">メッセージ</span><span class="ar">→</span><span class="bx s">SHA-256</span><span class="ar">→</span><span class="bx">ハッシュ値</span><span class="ar">→</span><span class="bx k">Aさんの秘密鍵で署名</span><span class="ar">→</span><span class="bx">署名</span></div>
+      <div class="pipe"><span class="who">受け手</span><span class="bx">届いたメッセージ</span><span class="ar">→</span><span class="bx s">SHA-256</span><span class="ar">→</span><span class="bx">ハッシュ値</span><span class="ar">＋</span><span class="bx">届いた署名</span><span class="ar">＋</span><span class="bx k">Aさんの公開鍵</span><span class="ar">→</span><span class="bx">検証：成功 か 失敗</span></div>
+      <p class="hint">このタブでは、ブラウザの Web Crypto API を使い、ECDSA（楕円曲線を使う電子署名、曲線は P-256、ハッシュは SHA-256）で、本物の鍵ペアを作って署名と検証をしています。</p>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <div class="nm">Aさん（本人）の鍵ペア</div>
+        <div class="lab">公開鍵（だれに見せてもよい）</div>
+        <div class="hash small" id="kA"></div>
+        <div class="lab">秘密鍵</div>
+        <p>●●●●●●●●（Aさんだけが持つ。画面には出しません）</p>
+      </div>
+      <div class="card">
+        <div class="nm">Bさん（別の人）の鍵ペア</div>
+        <div class="lab">公開鍵</div>
+        <div class="hash small" id="kB"></div>
+        <div class="lab">秘密鍵</div>
+        <p>●●●●●●●●（Bさんだけが持つ）</p>
+      </div>
+    </div>
+    <div class="row" style="margin:10px 0 16px;"><button class="chip" id="kNew">鍵ペアを作り直す</button><span class="hint" style="margin:0;">公開鍵は、楕円曲線の上の点の座標（x と y、それぞれ32バイト）を16進数で並べたものです。先頭の 04 は、座標をそのまま並べた形であることを表す印です。</span></div>
+
+    <div class="panel">
+      <h2>① 送り手が署名する</h2>
+      <textarea class="txt" id="sMsg" rows="2" spellcheck="false" aria-label="署名するメッセージ">（架空の連絡）部活動の練習は 16時 から体育館で行います。Aより</textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" id="sSign">Aさんの秘密鍵で署名する</button>
+        <button class="chip" id="sFake">BさんがAさんのふりをして署名する</button>
+      </div>
+      <div class="lab">メッセージのハッシュ値（SHA-256）</div>
+      <div class="hash small" id="sHash"></div>
+      <div class="lab" id="sSigLab">署名（64バイト）</div>
+      <div class="hash small" id="sSig">（まだ署名していません）</div>
+      <p class="hint" id="sNote">同じ文でも、もう一度署名すると署名の値が変わります。ECDSA は署名のたびに新しい秘密の乱数を使うからです。それでも、検証はきちんと成功します。</p>
+    </div>
+
+    <div class="panel">
+      <h2>② 受け手が検証する</h2>
+      <div class="lab">届いたメッセージ（書きかえて試せます）</div>
+      <textarea class="txt" id="vMsg" rows="2" spellcheck="false" aria-label="届いたメッセージ"></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="chip" id="vTweak">1文字変える</button>
+        <button class="chip" id="vReset">届いたときの文にもどす</button>
+      </div>
+      <div class="lab">検証に使う公開鍵</div>
+      <div class="row" id="vKey">
+        <button class="chip" data-k="A" aria-pressed="true">Aさんの公開鍵</button>
+        <button class="chip" data-k="B" aria-pressed="false">Bさんの公開鍵</button>
+      </div>
+      <div class="msg" id="vOut"></div>
+    </div>
+
+    <div class="panel">
+      <h2>③ その公開鍵は、本当にAさんのもの？ ― 電子証明書と認証局</h2>
+      <p style="margin:0 0 10px;font-size:14.5px;">Bさんが「これがAさんの公開鍵です」とうそをついて自分の公開鍵を配ったら、Bさんの署名がAさんの署名として通ってしまいます。そこで、信頼できる<b>認証局</b>が「この公開鍵はAさんのもの」という内容に電子署名をした<b>電子証明書</b>を使います。受け手は、OSやブラウザに組みこまれた認証局の公開鍵で、証明書を検証します。</p>
+      <div class="pipe"><span class="bx k">認証局（架空）</span><span class="ar">→ 名前と公開鍵に署名 →</span><span class="bx">電子証明書</span><span class="ar">→</span><span class="bx">受け手が認証局の公開鍵で検証</span><span class="ar">→</span><span class="bx">中の公開鍵を信頼して使う</span></div>
+      <div class="lab">受け手に届いた証明書</div>
+      <div class="row" id="cScn">
+        <button class="chip" data-c="good" aria-pressed="true">Aさんの本物の証明書</button>
+        <button class="chip" data-c="forged" aria-pressed="false">Bさんが中の公開鍵を自分のものに書きかえた</button>
+        <button class="chip" data-c="other" aria-pressed="false">Bさん自身の本物の証明書</button>
+      </div>
+      <div class="two" style="margin-top:12px;">
+        <div class="cert" id="cCard"></div>
+        <div class="card"><div class="nm">受け手のチェック</div><ol class="chk" id="cChk"></ol></div>
+      </div>
+      <div class="msg" id="cOut"></div>
+      <p class="hint">https のWebページでも、サーバは<b>サーバ証明書</b>を送り、ブラウザが認証局の電子署名を確かめてから暗号化した通信を始めます。流れは<a href="/web/">Webページが表示されるまで</a>で確かめられます。</p>
+    </div>
+  </section>
+
+  <!-- ===== パスワードの保存と二要素認証 ===== -->
+  <section class="tool" id="toolAuth" role="tabpanel" aria-labelledby="tabAuth">
+    <div class="panel">
+      <h2>サービスは、会員のパスワードをどう保存する？（架空の会員データ）</h2>
+      <div class="row" id="pMode">
+        <button class="chip" data-m="plain" aria-pressed="true">そのまま保存</button>
+        <button class="chip" data-m="hash" aria-pressed="false">ハッシュ値で保存</button>
+        <button class="chip" data-m="salt" aria-pressed="false">ハッシュ＋ソルトで保存</button>
+        <button class="chip" data-m="slow" aria-pressed="false">ソルト＋くり返し（PBKDF2）</button>
+      </div>
+      <div class="scroll" style="margin-top:12px;"><table class="tb" id="pTable"></table></div>
+      <div class="row" style="margin-top:10px;"><button class="chip" id="pResalt">ソルトを作り直す</button></div>
+      <p class="hint">本物のパスワードは入力しないでください。user01 と user02 は、わざと同じパスワードにしてあります。</p>
+      <h3>流出したデータを手に入れた攻撃者は、何が分かる？</h3>
+      <p style="margin:0 0 6px;font-size:14px;">攻撃者は、よく使われそうなパスワードのハッシュ値を前もって計算した表を持っているとします。</p>
+      <div class="scroll"><table class="tb" id="pDict"></table></div>
+      <div class="msg" id="pMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ワンタイムパスワード（TOTP）：30秒ごとに変わる6けたの数字</h2>
+      <p style="margin:0 0 10px;font-size:14.5px;">スマートフォンのアプリとサービス（サーバ）が同じ<b>共有鍵</b>を持ち、それぞれが「今の時刻」と鍵から同じ計算をします。ここでは共有鍵に、RFC 6238 の試験用の値 <code style="font-family:var(--mono);">12345678901234567890</code> を例として使っています。</p>
+      <div class="two">
+        <div class="card otp"><div class="nm">スマートフォン（アプリ）</div><div class="big" id="oPhone">------</div><div class="meter" id="oMeter"><i id="oBar" style="width:100%"></i></div><div class="sub" id="oLeft">あと – 秒</div></div>
+        <div class="card otp"><div class="nm">サーバ</div><div class="big" id="oServer">------</div><div class="sub" id="oSrvNote">サーバの時計で計算</div></div>
+      </div>
+      <div class="sl">
+        <div class="top"><label for="oSkew">スマートフォンの時計のずれ</label><span class="val" id="oSkewV">0 秒</span></div>
+        <input type="range" id="oSkew" min="-120" max="120" step="5" value="0">
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <label for="oIn" style="font-size:14px;font-weight:700;color:var(--ink);">アプリの数字を入力してログイン</label>
+        <input class="code" id="oIn" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="000000">
+        <button class="primary" id="oLogin">ログインする</button>
+      </div>
+      <div class="msg" id="oMsg"><div class="t">アプリに表示された6けたを入力してみましょう</div>時計のずれを大きくすると、アプリとサーバで数字が合わなくなります。</div>
+      <div class="calc" id="oCalc"></div>
+      <div class="row" style="margin-top:10px;"><button class="chip" id="oTest">RFC 6238 の試験値と照らし合わせる</button></div>
+      <div class="scroll" style="margin-top:10px;"><table class="tb" id="oTestT" hidden></table></div>
+    </div>
+
+    <div class="panel">
+      <h2>二要素認証：ちがう種類の要素を2つ組み合わせる</h2>
+      <div class="factors">
+        <div><b>知識情報</b><span>本人だけが知っていること<br>例：パスワード、暗証番号</span></div>
+        <div><b>所持情報</b><span>本人だけが持っているもの<br>例：スマートフォン、ICカード</span></div>
+        <div><b>生体情報</b><span>本人の体の特徴<br>例：指紋、顔、静脈</span></div>
+      </div>
+      <h3>この組み合わせは「二要素」？</h3>
+      <div class="row" id="qList">
+        <button class="chip" data-q="0">パスワード＋秘密の質問</button>
+        <button class="chip" data-q="1">パスワード＋アプリのワンタイムパスワード</button>
+        <button class="chip" data-q="2">キャッシュカード＋暗証番号</button>
+        <button class="chip" data-q="3">パスワード＋もう1つのパスワード</button>
+        <button class="chip" data-q="4">スマートフォン＋指紋</button>
+      </div>
+      <div class="msg" id="qOut"><div class="t">組み合わせを選んでください</div>3つの要素のうち、ちがう種類を2つ以上使うのが多要素認証です。</div>
+    </div>
+  </section>
+
+  <!-- ===== 解説 ===== -->
+  <section class="article">
+    <h2>ハッシュ関数とは</h2>
+    <p><strong>ハッシュ関数</strong>は、どんな長さのデータからも、決まった長さの値を計算する関数です。計算された値を<strong>ハッシュ値</strong>（メッセージダイジェスト）といいます。ハッシュ値は、データの「指紋」のようなものです。ファイルが1バイトでもちがえば、ハッシュ値はまったくちがうものになるので、2つのデータが同じかどうかを、短い値を比べるだけで確かめられます。<a href="/crypto/">暗号のしくみ</a>でも少しふれましたが、このページでは、そのしくみと使い道をくわしく見ていきます。</p>
+    <p>セキュリティに使うハッシュ関数（暗号学的ハッシュ関数）には、次の性質が求められます。</p>
+    <ul>
+      <li><strong>同じ入力からは、いつでも同じハッシュ値が出る。</strong>送り手と受け手が別々に計算しても、結果がそろいます。</li>
+      <li><strong>入力の長さに関係なく、ハッシュ値の長さは同じ。</strong>SHA-256 なら、いつも256ビットです。</li>
+      <li><strong>一方向性</strong>：ハッシュ値から、元のデータを計算で求めることが現実的にできない。</li>
+      <li><strong>衝突困難性</strong>：同じハッシュ値になる、ちがう2つのデータを見つけることが現実的にできない。</li>
+      <li><strong>雪崩効果</strong>：入力が少しちがうだけで、ハッシュ値の約半分のビットが変わり、まったく別の値に見える。</li>
+    </ul>
+    <p>アメリカ国立標準技術研究所（NIST）の規格 FIPS 180-4 は、安全なハッシュ関数の条件として、「あるハッシュ値になるメッセージを見つけること」と「同じハッシュ値になる2つのちがうメッセージを見つけること」が計算上困難であることを挙げています。前者が一方向性、後者が衝突困難性にあたります。</p>
+    <h3>「衝突が起きない」わけではない</h3>
+    <p>入力はいくらでも長くできるのに、出力は256ビットに決まっています。入力の種類のほうがはるかに多いので、同じハッシュ値になる入力の組（<strong>衝突</strong>）は、必ずどこかに存在します。大切なのは「存在しない」ことではなく、「見つける方法がない」ことです。SHA-256 のハッシュ値は 2<sup>256</sup> 通り（約 1.16×10<sup>77</sup> 通り）もあるので、でたらめに探して同じ値を見つけることは、現実には不可能です。</p>
+    <h3>一方向性と総当たり</h3>
+    <p>「ハッシュ値を作る」タブの3つめの実験のように、元のデータの候補が少なければ、候補を全部ハッシュ値にして比べることで、元のデータを見つけられてしまいます。4けたの数字なら1万通りなので、一瞬です。これはハッシュ関数の弱点ではなく、<strong>元のデータの種類が少なすぎる</strong>ことが原因です。短いパスワードをハッシュ値にして保存しても安全とはいえない理由は、ここにあります（<a href="/password/">パスワードの強さ</a>）。</p>
+
+    <h2>SHA-256</h2>
+    <p><strong>SHA-256</strong> は、NIST が FIPS 180-4「Secure Hash Standard」で定めているハッシュ関数の1つで、SHA-2 とよばれるグループに属します。2<sup>64</sup> ビット未満の長さのメッセージから、256ビットのハッシュ値を計算します。256ビットは16進数で64けたなので、上のツールでは64文字の値が表示されます。</p>
+    <p>計算では、まずメッセージの後ろに、決まった規則で「1のビット」と「0のビット」とメッセージの長さを付け足して、長さを512ビットの倍数にそろえます。そして512ビットずつのブロックに区切り、ブロックごとに、ビットの回転やシフト、排他的論理和（XOR）、足し算などを64回くり返して、中身を細かくかき混ぜていきます。前のブロックの結果が次のブロックの計算に入るので、どこか1ビットでも変わると、その影響が最後の値まで広がります。これが雪崩効果の正体です。XOR などの演算は、<a href="/logic/">論理回路</a>で確かめられます。</p>
+    <p>日本では、デジタル庁・総務省・経済産業省が「CRYPTREC暗号リスト」をまとめていて、政府の情報システムで使う暗号を選ぶときの基準にしています。SHA-256 は、その電子政府推奨暗号リストに載っています。</p>
+    <h3>MD5 と SHA-1 は、もう安全ではない</h3>
+    <p>ハッシュ関数も、研究が進むと弱点が見つかることがあります。<strong>MD5</strong> は128ビットのハッシュ値を作る関数ですが、衝突を短い時間で作る方法が次々に見つかり、2011年に公開された RFC 6151 では「電子署名のように衝突困難性が必要な用途には、もはや使えない」とされました。</p>
+    <p><strong>SHA-1</strong>（160ビット）についても、2017年2月に Google とオランダの研究機関 CWI が、同じ SHA-1 のハッシュ値になる、内容のちがう2つのPDFファイルを実際に作って公表しました。NIST は2022年12月、SHA-1 を使っている人はできるだけ早く SHA-2 か SHA-3 に移るようすすめ、NIST の規格の中で SHA-1 を使うのを2030年12月31日までに終える計画を発表しています。CRYPTREC暗号リストでも、SHA-1 は「互換性を保つため以外の目的では使うことをすすめない」運用監視暗号リストに入っています。安全とされていた方式も、時間がたつと見直されるのです。</p>
+
+    <h2>ハッシュ値で改ざんを見つける</h2>
+    <p>ハッシュ値は「データの指紋」なので、データが書きかえられていないか（<strong>完全性</strong>）を確かめるのに使えます。送り手はデータとハッシュ値をいっしょに送り、受け手は受け取ったデータからハッシュ値を計算し直して比べます。一致すれば途中で変わっていない、一致しなければ書きかえられたか、こわれたと判断できます。</p>
+    <h3>ダウンロードしたファイルの確認</h3>
+    <p>ソフトウェアの配布元が、ファイルのハッシュ値を公開していることがあります。たとえば Linux の一種である Ubuntu は、配布するファイルの SHA-256 のハッシュ値の一覧（SHA256SUMS というファイル）を公開しています。ダウンロードしたファイルのハッシュ値を計算して公開された値と比べれば、途中でこわれたり書きかえられたりしていないかが分かります。Windows では、PowerShell の <code>Get-FileHash</code> というコマンドで、ファイルの SHA-256 を計算できます。このページの「ハッシュ値を作る」タブでも、ブラウザの中だけで計算できます。</p>
+    <h3>ハッシュ値だけでは「すり替え」を防げない</h3>
+    <p>ただし、ハッシュ関数には鍵がなく、だれでも同じ計算ができます。攻撃者がデータを書きかえ、そのハッシュ値も計算し直してつけかえれば、受け手には見分けがつきません（「改ざんを見つける」タブの3つめの場合）。そこで、ハッシュ値はデータとは別の、信頼できる道で手に入れる必要があります。Ubuntu がハッシュ値の一覧とあわせて、その一覧に電子署名をつけたファイル（SHA256SUMS.gpg）を公開しているのは、一覧そのものが本物であることを確かめられるようにするためです。</p>
+    <h3>誤り検出とのちがい</h3>
+    <p>パリティビットやチェックディジット（<a href="/parity/">パリティマジック</a>）も、データのまちがいを見つけるしくみです。これらは、通信や入力のときの「うっかり」のまちがいを見つけるためのもので、わざと書きかえる相手は想定していません。たとえばパリティは、2か所のビットを同時に反転させると見のがしてしまいます。暗号学的ハッシュ関数は、悪意のある相手がいても、同じハッシュ値のまま中身を書きかえることが現実的にできないように作られている点がちがいます。</p>
+
+    <h2>電子署名 ― 本人にしか作れないしるし</h2>
+    <p>すり替えを防ぐには、「その人にしか作れないしるし」が必要です。それが<strong>電子署名</strong>で、<a href="/crypto/">公開鍵暗号</a>のしくみを応用しています。公開鍵暗号では、対になる<strong>秘密鍵</strong>と<strong>公開鍵</strong>を使います。電子署名では、送り手が自分の秘密鍵で署名を作り、受け手は送り手の公開鍵でその署名を検証します。秘密鍵は本人しか持っていないので、検証に成功すれば、本人が作ったこと（<strong>本人性</strong>）と、署名のあと内容が変わっていないこと（完全性）の両方を確かめられます。</p>
+    <p>実際には、長いデータそのものではなく、そのハッシュ値に対して署名します。公開鍵暗号の計算は時間がかかりますが、データがどれだけ大きくても、ハッシュ値なら256ビットで済むからです。ここで衝突困難性が重要になります。もし同じハッシュ値になる別のデータを作れたら、署名をそのまま別のデータに付けかえられてしまいます。MD5 や SHA-1 が電子署名に使えなくなったのは、このためです。</p>
+    <p>このページの「電子署名」タブでは、ブラウザに組みこまれた Web Crypto API を使い、<strong>ECDSA</strong>（楕円曲線を使う電子署名の方式、曲線は P-256）で、実際に鍵ペアを作って署名と検証をしています。ECDSA は NIST の電子署名の規格 FIPS 186-5 で定められている方式の1つで、CRYPTREC暗号リストの電子政府推奨暗号リストにも載っています。ECDSA では署名のたびに新しい秘密の乱数を使うため、同じ文に署名しても、署名の値は毎回変わります。</p>
+    <p>総務省の「国民のためのサイバーセキュリティサイト」の用語集では、電子署名によって、なりすましやメッセージの改ざんが行われていないことの検証と、<strong>否認防止</strong>ができると説明しています。否認防止とは、送った人が、あとから「自分は送っていない」と言い逃れできないようにすることです。</p>
+    <h3>法律での電子署名</h3>
+    <p>日本では「電子署名及び認証業務に関する法律」（電子署名法、平成12年法律第102号）が、電子署名を「その情報を作った人が行ったものであることを示す」ことと、「その情報が改変されていないかを確認できる」ことの2つを満たす措置と定めています。また第3条では、本人だけが行うことができる電子署名がされた電子データは、「真正に成立したもの」、つまり本人によって作られたものと推定すると定めています。紙の書類の印鑑や手書きのサインに近い役割を、法律の上でも持たせているのです。</p>
+
+    <h2>電子証明書と認証局（PKI）</h2>
+    <p>電子署名には、もう1つ問題が残っています。受け手が持っている「Aさんの公開鍵」は、本当にAさんのものでしょうか。もしBさんが「これがAさんの公開鍵です」と言って自分の公開鍵を配っていたら、Bさんの署名がAさんの署名として通ってしまいます。</p>
+    <p>そこで、信頼できる第三者である<strong>認証局</strong>（CA）が、「この公開鍵はこの人（このサーバ）のものです」という内容に電子署名をして、<strong>電子証明書</strong>を発行します。受け手は、認証局の公開鍵で電子証明書の署名を検証してから、その中に書かれた公開鍵を使います。証明書の中身を1文字でも書きかえれば、認証局の署名の検証に失敗するので、証明書の偽造は見抜けます。総務省の用語集では、認証局を「電子証明書の登録、発行および失効などを行う第三者認証機関」と説明しています。このように、認証局と電子証明書で公開鍵の持ち主を保証するしくみ全体を、<strong>公開鍵基盤（PKI）</strong>といいます。インターネットで使われる電子証明書の形式は、RFC 5280 で定められています。</p>
+    <p>では、認証局の公開鍵はどうやって信頼するのでしょうか。パソコンやスマートフォンのOSには、信頼できる認証局の証明書（<strong>ルート証明書</strong>）があらかじめ組みこまれています。たとえば Apple は、iPhone や Mac にあらかじめ入っているルート証明書の一覧を公開しています。認証局が別の認証局やサーバに証明書を出し、それをさらにたどっていくと、最後はこのルート証明書に行きつきます。こうして、信頼が鎖のようにつながっていきます。</p>
+    <h3>Webページの鍵マーク</h3>
+    <p>https のWebページを開くと、サーバはブラウザに<strong>サーバ証明書</strong>を送ります。ブラウザは認証局の電子署名を検証して、通信相手が本物のサーバかどうかを確かめてから、暗号化した通信を始めます。この流れは、<a href="/web/">Webページが表示されるまで</a>の「表示までの流れ」で、TLS の手順として確かめられます。</p>
+
+    <h2>パスワードの安全な保存</h2>
+    <p>ログインのとき、サービスは、入力されたパスワードが正しいかを確かめます。そのためにパスワードをそのまま保存していると、データが流出したときに、全員のパスワードがそのまま知られてしまいます。<a href="/password/">パスワードの強さ</a>で見たように、使い回しがあれば、ほかのサービスまで危険になります。</p>
+    <p>そこで、パスワードそのものではなく、ハッシュ値を保存します。ログインのときは、入力されたパスワードのハッシュ値を計算して、保存してある値と比べればよいのです。一方向性があるので、保存された値から計算でパスワードを求めることはできません。</p>
+    <h3>ソルト</h3>
+    <p>ただし、ハッシュ値だけで保存すると、弱点が2つあります。1つは、同じパスワードの人は同じハッシュ値になるので、流出したデータを見るだけで「この2人は同じパスワード」と分かってしまうことです。もう1つは、よく使われるパスワードのハッシュ値を前もって計算した表を用意しておけば、表と見比べるだけでパスワードが分かってしまうことです。</p>
+    <p>これを防ぐのが<strong>ソルト</strong>（salt、塩）です。ソルトは利用者ごとに作るランダムな値で、パスワードにソルトを加えてからハッシュ値を計算し、ソルトとハッシュ値の両方を保存します。同じパスワードでもソルトがちがえばハッシュ値は別の値になり、前もって作った表も使えなくなります。攻撃者は、利用者1人ずつ、そのソルトを使って候補を計算し直さなければなりません。NIST のデジタル認証の指針 SP 800-63B-4（2025年）は、パスワードをソルト付きでハッシュして保存すること、ソルトを32ビット以上の長さにすることを求めています。このページでは128ビットのソルトを使っています。</p>
+    <h3>わざと計算を遅くする</h3>
+    <p>SHA-256 は速く計算できるように作られているので、攻撃者も1秒間にたくさんの候補を試せます。そこで、パスワードの保存には、計算を何回もくり返して、わざと時間がかかるようにした方式を使います。SP 800-63B-4 は、パスワードとソルトに加えて、計算の手間を決める値（コスト）を入力にとる「パスワードハッシュ方式」を使うよう求めています。このページの4つめの保存方法では、その1つである <strong>PBKDF2</strong>（NIST SP 800-132 で定められている方式）を、10万回くり返す設定で計算しています。正しい利用者にとっては一瞬の待ち時間でも、何億もの候補を試したい攻撃者にとっては、大きな負担になります。</p>
+
+    <h2>二要素認証とワンタイムパスワード</h2>
+    <p><strong>認証</strong>とは、相手が本人かどうかを確かめることです。総務省の「国民のためのサイバーセキュリティサイト」では、認証に使う要素を次の3つに分けています。</p>
+    <table>
+      <tr><th>要素</th><th>内容</th><th>例</th></tr>
+      <tr><td>知識情報</td><td>本人だけが知っていること</td><td>パスワード、暗証番号</td></tr>
+      <tr><td>所持情報</td><td>本人だけが持っているもの</td><td>スマートフォン、ICカード</td></tr>
+      <tr><td>生体情報</td><td>本人の体の特徴</td><td>指紋、顔、静脈、虹彩</td></tr>
+    </table>
+    <p>このうち2つ以上を組み合わせて認証するのが<strong>多要素認証</strong>で、2つを使う場合を<strong>二要素認証</strong>といいます。パスワードが漏れても、攻撃者が利用者のスマートフォンを持っていなければログインできません。IPA（情報処理推進機構）も、不正ログイン対策として、長く複雑なパスワードを使い回さないことに加えて、多要素認証の設定をすすめています。</p>
+    <p>なお、認証を2回に分けて行うことを<strong>二段階認証</strong>といいます。パスワードと秘密の質問のように、同じ「知識情報」を2回使うものは、二段階ではあっても二要素ではありません。総務省の用語集でも、同じ要素を2回使うより、異なる要素を2回使うほうがセキュリティのレベルは高くなると説明しています。</p>
+    <h3>ワンタイムパスワード（TOTP）のしくみ</h3>
+    <p><strong>TOTP</strong>（Time-Based One-Time Password、RFC 6238）は、時刻をもとに、短い時間だけ使えるパスワード（ワンタイムパスワード）を作る方式です。利用を始めるとき、サービスとアプリの間で同じ秘密の鍵を共有します。RFC 6238 は、この鍵を利用者ごとに別のものにし、ランダムに作ることを求めています。そのあとは、アプリとサービスの両方が、次の計算をします。</p>
+    <ol>
+      <li>今の時刻（1970年1月1日0時からの秒数。Unix時刻という）を30で割り、小数点以下を切り捨てる。これが「何番めの30秒か」を表す数 T になる。</li>
+      <li>鍵と T から、HMAC-SHA1 を計算する。HMAC は、鍵とハッシュ関数を組み合わせて計算する方法で、結果は160ビット（20バイト）になる。</li>
+      <li>結果の最後の4ビットが表す数（0〜15）を位置として、そこから4バイトを取り出す（RFC 4226 の「動的切り捨て」）。</li>
+      <li>取り出した32ビットの先頭のビットを0にして整数とみなし、10<sup>6</sup>（100万）で割った余りを、6けたの数字にする。</li>
+    </ol>
+    <p>同じ鍵を持ち、時計が合っていれば、アプリとサービスは同じ数字を計算できます。数字は30秒ごとに変わるので、一度盗み見られても、しばらくすると使えなくなります。30秒という長さは、RFC 6238 が、安全性と使いやすさのバランスからすすめている値です。また RFC 6238 は、通信にかかる時間を考えて、1つ前の30秒の数字まで受け付けるくらいにとどめるようすすめています。上のツールのサーバも、この考え方で、今の数字と1つ前の数字を受け付けています。</p>
+    <h3>ワンタイムパスワードでも防げないこと</h3>
+    <p>ワンタイムパスワードも万能ではありません。偽のログイン画面（フィッシングサイト）に数字を入力してしまうと、攻撃者がその数字を、有効なうちに本物のサイトで使えてしまいます。NIST の SP 800-63B-4 も、ワンタイムパスワードによる認証はフィッシングへの耐性がない、としています。あやしいメールやサイトの見分け方は<a href="/phishing/">あやしいメールを見分ける</a>で、端末の中の秘密鍵を使い、パスワードを相手に渡さずに本人確認をするパスキーについては<a href="/password/">パスワードの強さ</a>で確かめましょう。パスキーも、このページの電子署名と同じく、秘密鍵と公開鍵の組を使うしくみです。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>ハッシュ値を作る</strong>：文字を入力すると、SHA-256 のハッシュ値をその場で表示します。2つめの欄で1文字だけ変えると、変わったビットが赤く表示されます。3つめの実験では、4けたの数字のハッシュ値から総当たりで元の数字を探します。4つめでは、手元のファイルのハッシュ値を計算し、配布元の値と比べられます。</li>
+      <li><strong>改ざんを見つける</strong>：「そのまま届く」「メッセージだけ書きかえる」「メッセージとハッシュ値をすり替える」の3つで、受け手が改ざんに気づけるかを比べます。書きかえる文は自由に変えられます。</li>
+      <li><strong>電子署名</strong>：Aさんの秘密鍵で署名し、受け手が公開鍵で検証します。メッセージを1文字変えたり、Bさんの公開鍵で検証したり、BさんがAさんのふりをして署名したりすると、検証に失敗することを確かめられます。下の証明書の実験では、認証局の署名で、公開鍵の持ち主を確かめます。</li>
+      <li><strong>パスワードの保存と二要素認証</strong>：4つの保存方法で、流出したときに攻撃者に何が分かるかを比べます。ワンタイムパスワードは、RFC 6238 の手順どおりに計算し、計算の途中の値も表示します。共有鍵は例示用の固定値なので、だれが開いても同じ数字になります。</li>
+    </ul>
+    <p>このページの計算は、すべてブラウザの中で行い、入力した文字やファイルはどこにも送信しません。</p>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L08">8. 認証とパスワード</a></li>
+      <li><a href="/lessons/#L37">37. ハッシュと電子署名</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>NIST, "Secure Hash Standard (SHS)," FIPS 180-4（2015）https://csrc.nist.gov/pubs/fips/180-4/upd1/final</li>
+      <li>NIST, "Examples with Intermediate Values: SHA-256" https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA256.pdf</li>
+      <li>NIST, "Digital Signature Standard (DSS)," FIPS 186-5（2023）https://csrc.nist.gov/pubs/fips/186-5/final</li>
+      <li>NIST「NIST Retires SHA-1 Cryptographic Algorithm」（2022年12月15日）https://www.nist.gov/news-events/news/2022/12/nist-retires-sha-1-cryptographic-algorithm</li>
+      <li>RFC 6151 "Updated Security Considerations for the MD5 Message-Digest and the HMAC-MD5 Algorithms"（2011）https://www.rfc-editor.org/rfc/rfc6151</li>
+      <li>Google Security Blog "Announcing the first SHA1 collision"（2017年2月23日）https://security.googleblog.com/2017/02/announcing-first-sha1-collision.html</li>
+      <li>デジタル庁・総務省・経済産業省「電子政府における調達のために参照すべき暗号のリスト（CRYPTREC暗号リスト）」https://www.cryptrec.go.jp/list.html</li>
+      <li>IPA「『ハッシュ関数安全性評価手法の開発』に関する報告書」（2008）https://www.ipa.go.jp/archive/security/reports/crypto/secure_hash_evaluation.html</li>
+      <li>IPA「不正ログイン対策特集ページ」https://www.ipa.go.jp/security/anshin/measures/account_security.html</li>
+      <li>総務省「国民のためのサイバーセキュリティサイト」安全なパスワードの設定・管理 https://www.soumu.go.jp/main_sosiki/cybersecurity/kokumin/security/business/staff/06/</li>
+      <li>総務省「国民のためのサイバーセキュリティサイト」推測できる簡単なパスワードを利用しないようにしよう https://www.soumu.go.jp/main_sosiki/cybersecurity/kokumin/security/end_user/general/01/</li>
+      <li>総務省「国民のためのサイバーセキュリティサイト」用語集（た行：電子署名）https://www.soumu.go.jp/main_sosiki/cybersecurity/kokumin/glossary/ja_04/</li>
+      <li>総務省「国民のためのサイバーセキュリティサイト」用語集（な行：二段階認証、認証局）https://www.soumu.go.jp/main_sosiki/cybersecurity/kokumin/glossary/ja_05/</li>
+      <li>総務省「国民のためのサイバーセキュリティサイト」用語集（さ行：サーバ証明書）https://www.soumu.go.jp/main_sosiki/cybersecurity/kokumin/glossary/ja_03/</li>
+      <li>e-Gov法令検索「電子署名及び認証業務に関する法律」（平成12年法律第102号）https://laws.e-gov.go.jp/law/412AC0000000102</li>
+      <li>NIST, "Digital Identity Guidelines: Authentication and Authenticator Management," SP 800-63B-4（2025）https://pages.nist.gov/800-63-4/sp800-63b.html</li>
+      <li>NIST, "Recommendation for Password-Based Key Derivation: Part 1: Storage Applications," SP 800-132（2010）https://csrc.nist.gov/pubs/sp/800/132/final</li>
+      <li>RFC 6238 "TOTP: Time-Based One-Time Password Algorithm"（2011）https://www.rfc-editor.org/rfc/rfc6238</li>
+      <li>RFC 4226 "HOTP: An HMAC-Based One-Time Password Algorithm"（2005）https://www.rfc-editor.org/rfc/rfc4226</li>
+      <li>RFC 2104 "HMAC: Keyed-Hashing for Message Authentication"（1997）https://www.rfc-editor.org/rfc/rfc2104</li>
+      <li>RFC 5280 "Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile"（2008）https://www.rfc-editor.org/rfc/rfc5280</li>
+      <li>RFC 8446 "The Transport Layer Security (TLS) Protocol Version 1.3"（2018）https://www.rfc-editor.org/rfc/rfc8446</li>
+      <li>W3C "Web Cryptography API"（2017）https://www.w3.org/TR/2017/REC-WebCryptoAPI-20170126/</li>
+      <li>Apple サポート「Appleオペレーティングシステムで利用できるルート証明書」https://support.apple.com/ja-jp/103272</li>
+      <li>Ubuntu "How to verify your Ubuntu download" https://ubuntu.com/tutorials/how-to-verify-ubuntu</li>
+      <li>Microsoft Learn「Get-FileHash」https://learn.microsoft.com/ja-jp/powershell/module/microsoft.powershell.utility/get-filehash</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const enc=new TextEncoder();
+const HAS=!!(window.crypto && window.crypto.subtle);
+if(!HAS) $('noCrypto').hidden=false;
+const subtle=HAS? crypto.subtle : null;
+
+const hex=buf=>[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
+async function sha(data){ const b= typeof data==='string'? enc.encode(data) : data; return new Uint8Array(await subtle.digest('SHA-256',b)); }
+async function shaHex(data){ return hex(await sha(data)); }
+const grp=h=>h.replace(/(.{8})(?=.)/g,'$1 ');                 // 8けたごとに区切る
+function diffHex(h,ref){ // ref とちがうけたを赤くして、8けたごとに区切る
+  let s=''; for(let i=0;i<h.length;i++){ if(i && i%8===0) s+=' '; s+= (ref && h[i]!==ref[i])? `<span class="d">${h[i]}</span>` : h[i]; } return s;
+}
+const popc=x=>{ let c=0; while(x){ c+=x&1; x>>=1; } return c; };
+const fmtBytes=n=> n<1024? `${n} バイト` : n<1048576? `${(n/1024).toFixed(1)} KB` : `${(n/1048576).toFixed(1)} MB`;
+// 最新の呼び出しだけを反映させる
+function latest(fn){ let seq=0; return async (...a)=>{ const my=++seq; return fn(()=>my===seq, ...a); }; }
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabHash','toolHash'],['tabTamper','toolTamper'],['tabSign','toolSign'],['tabAuth','toolAuth']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+function gotoTab(id){ $(id).click(); $(id).scrollIntoView({block:'nearest'}); }
+
+/* ===================== ハッシュ値を作る ===================== */
+const LONG='ハッシュ関数は、どんな長さのデータからも決まった長さの値を作ります。'.repeat(30).slice(0,1000);
+let hAhex='';
+const drawA=latest(async (isNow)=>{
+  const v=$('hA').value; const bytes=enc.encode(v); const h=await shaHex(bytes);
+  if(!isNow()) return;
+  hAhex=h; $('hAout').textContent=grp(h);
+  $('hAsize').textContent=`${bytes.length} バイト`; $('hAlen').textContent=`${h.length} けた`;
+  await drawB();
+});
+const drawB=latest(async (isNow)=>{
+  const v=$('hB').value; const h=await shaHex(v);
+  if(!isNow() || !hAhex) return;
+  $('hBout').innerHTML=diffHex(h,hAhex);
+  const a=unhex(hAhex), b=unhex(h); let bits=0, cells='';
+  for(let i=0;i<32;i++){ const x=a[i]^b[i]; bits+=popc(x); for(let k=7;k>=0;k--) cells+= (x>>k)&1? '<i class="x"></i>' : '<i></i>'; }
+  $('hGrid').innerHTML=cells;
+  let hd=0; for(let i=0;i<64;i++) if(h[i]!==hAhex[i]) hd++;
+  $('hBits').textContent=`${bits} / 256`; $('hPct').textContent=`${(bits/256*100).toFixed(1)} ％`; $('hHex').textContent=`${hd} / 64`;
+  const m=$('hMsg');
+  if(v===$('hA').value){ m.className='msg'; m.innerHTML='<div class="t">同じ文なので、ハッシュ値も完全に同じです</div>同じ入力からは、だれがいつ計算しても同じハッシュ値が出ます。だから、送り手と受け手が別々に計算して比べることができます。「上の文の最後の1文字を変える」を押してみましょう。'; }
+  else { m.className='msg'; m.innerHTML=`<div class="t">ちがう文なので、256ビットのうち ${bits} ビット（${(bits/256*100).toFixed(1)}％）が変わりました</div>入力が少しちがうだけで、ハッシュ値のおよそ半分のビットが変わり、まったく別の値になります。これを<b>雪崩効果</b>といいます。ハッシュ値を見ても、元の文がどれくらい似ているかは分かりません。`; }
+});
+function tweakLast(s){ const a=[...s]; if(!a.length) return 'a'; const c=a[a.length-1].codePointAt(0); a[a.length-1]=String.fromCodePoint(c===0x10FFFF? c-1 : c+1); return a.join(''); }
+$('hA').addEventListener('input',drawA);
+$('hB').addEventListener('input',drawB);
+document.querySelectorAll('[data-ha]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.ha==='@long'? LONG : b.dataset.ha; $('hA').value=v; $('hB').value=tweakLast(v); drawA(); }));
+$('hTweak').addEventListener('click',()=>{ $('hB').value=tweakLast($('hA').value); drawB(); });
+$('hCopy').addEventListener('click',()=>{ $('hB').value=$('hA').value; drawB(); });
+
+/* 一方向性：4けたの総当たり */
+let rSecret='', rTargetHex='', rBusy=false;
+async function rNew(){
+  const r=new Uint32Array(1); crypto.getRandomValues(r); rSecret=String(r[0]%10000).padStart(4,'0');
+  rTargetHex=await shaHex(rSecret); $('rTarget').textContent=grp(rTargetHex);
+  $('rTries').textContent='0'; $('rTime').textContent='–'; $('rFound').textContent='–';
+  $('rMsg').className='msg'; $('rMsg').innerHTML='<div class="t">ハッシュ値を逆算する式はありません</div>元の数字を知るには、候補を1つずつハッシュ値にして、同じ値が出るまで比べるしかありません。「0000 から順に試す」を押してみましょう。';
+}
+$('rNew').addEventListener('click',()=>{ if(!rBusy) rNew(); });
+$('rRun').addEventListener('click',async ()=>{
+  if(rBusy) return; rBusy=true; $('rRun').disabled=true; $('rNew').disabled=true;
+  const t0=performance.now(); let found=null, n=0;
+  for(let i=0;i<10000;i++){
+    const c=String(i).padStart(4,'0'); n++;
+    if(await shaHex(c)===rTargetHex){ found=c; break; }
+    if(i%250===0){ $('rTries').textContent=n.toLocaleString('ja-JP'); }
+  }
+  const ms=performance.now()-t0;
+  $('rTries').textContent=n.toLocaleString('ja-JP'); $('rTime').textContent= ms<1000? `${Math.round(ms)} ミリ秒` : `${(ms/1000).toFixed(2)} 秒`; $('rFound').textContent=found||'–';
+  $('rMsg').className='msg ng';
+  $('rMsg').innerHTML=`<div class="t">${n.toLocaleString('ja-JP')} 回試して、元の数字「${found}」が見つかりました</div>ハッシュ値から逆算したのではなく、0000 から順に候補をハッシュ値にして比べただけです。4けたの数字は1万通りしかないので、すぐに見つかります。<b>元のデータの種類が少ないと、一方向性があっても守れません。</b>候補がとても多い長い文や、長くてでたらめなパスワードでは、この方法は現実的ではなくなります（<a href="/password/">パスワードの強さ</a>）。`;
+  rBusy=false; $('rRun').disabled=false; $('rNew').disabled=false;
+});
+
+/* ファイル */
+const DEMO_OK='（練習用の架空の配布ファイル）\njoholab-sample-tool version 1.0\nこのファイルは、ハッシュ値の確かめ方を練習するためのものです。\n';
+const DEMO_BAD=DEMO_OK+'download("https://example.com/bad")  # 途中で書き足された命令（例）\n';
+let fHex='', demoOkHex='';
+async function hashFile(name,size,getBuf){
+  $('fName').textContent=name; $('fSize').textContent=fmtBytes(size); $('fOut').textContent='計算中…'; $('fTime').textContent='–';
+  const t0=performance.now(); const buf=await getBuf(); const h=await shaHex(buf); const ms=performance.now()-t0;
+  fHex=h; $('fOut').textContent=grp(h); $('fTime').textContent= ms<1000? `${Math.round(ms)} ミリ秒` : `${(ms/1000).toFixed(1)} 秒`;
+  compareFile();
+}
+function compareFile(){
+  const ex=$('fExpect').value.replace(/\s+/g,'').toLowerCase(), m=$('fMsg'), out=$('fOut');
+  out.classList.remove('ok','ng');
+  if(!fHex){ return; }
+  if(!ex){ m.className='msg'; m.innerHTML='<div class="t">ハッシュ値を計算しました</div>配布元が公開しているハッシュ値を下の欄に貼りつけると、一致するかどうかを判定します。'; out.innerHTML=grp(fHex); return; }
+  if(!/^[0-9a-f]{64}$/.test(ex)){ m.className='msg'; m.innerHTML=`<div class="t">64けたの16進数を入れてください</div>いま入っているのは ${ex.length} 文字です。SHA-256 のハッシュ値は、0〜9 と a〜f の64文字です。`; out.innerHTML=grp(fHex); return; }
+  out.innerHTML=diffHex(fHex,ex);
+  if(ex===fHex){ out.classList.add('ok'); m.className='msg ok'; m.innerHTML='<div class="t">一致しました：ファイルは公開されたものと同じです</div>1ビットでもちがえばハッシュ値は大きく変わるので、途中でこわれたり書きかえられたりしていないと判断できます。'; }
+  else { out.classList.add('ng'); m.className='msg ng'; m.innerHTML='<div class="t">一致しません：このファイルは公開されたものとちがいます</div>ダウンロードの途中でこわれたか、書きかえられたファイルかもしれません。開かずに、公式の配布元からダウンロードし直しましょう。赤いけたが、公開された値とちがうところです。'; }
+}
+$('fFile').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; hashFile(f.name,f.size,()=>f.arrayBuffer()); });
+$('fExpect').addEventListener('input',compareFile);
+$('fDemo').addEventListener('click',async ()=>{ demoOkHex=demoOkHex||await shaHex(DEMO_OK); $('fExpect').value=demoOkHex; const b=enc.encode(DEMO_OK); hashFile('sample-tool.txt（練習用）',b.length,async()=>b); });
+$('fDemoBad').addEventListener('click',async ()=>{ demoOkHex=demoOkHex||await shaHex(DEMO_OK); $('fExpect').value=demoOkHex; const b=enc.encode(DEMO_BAD); hashFile('sample-tool.txt（書きかえ版）',b.length,async()=>b); });
+
+/* ===================== 改ざんを見つける ===================== */
+let tScn='none', tEvilTouched=false;
+function tamperDefault(m){ if(m.includes('9時')) return m.replace('9時','10時'); return m+'（書きかえ）'; }
+const drawTamper=latest(async (isNow)=>{
+  const m=$('tMsg').value; const h1=await shaHex(m);
+  if(!tEvilTouched) $('tEvil').value=tamperDefault(m);
+  const ev=$('tEvil').value; const hEv=await shaHex(ev);
+  let rMsg, rHash;
+  if(tScn==='none'){ rMsg=m; rHash=h1; } else if(tScn==='msg'){ rMsg=ev; rHash=h1; } else { rMsg=ev; rHash=hEv; }
+  const hc=await shaHex(rMsg);
+  if(!isNow()) return;
+  $('tH1').textContent=grp(h1);
+  $('tEvilBox').hidden= tScn==='none';
+  $('tMid').classList.toggle('dim',tScn==='none');
+  $('tMidBody').innerHTML= tScn==='none'? '<p>何もしません。メッセージもハッシュ値も、そのまま通します。</p>'
+    : tScn==='msg'? '<p>メッセージを書きかえます。ハッシュ値は、送り手が付けたものをそのまま通します。</p>'
+    : '<p>メッセージを書きかえ、<b>そのハッシュ値も自分で計算し直して</b>付けかえます。ハッシュ関数はだれでも計算できます。</p>';
+  $('tH2').innerHTML= tScn==='both'? diffHex(hEv,h1) : grp(h1);
+  $('tRecv').textContent=rMsg;
+  $('tH3').innerHTML=diffHex(rHash,h1);
+  $('tH4').innerHTML=diffHex(hc,rHash);
+  const same=hc===rHash;
+  $('tH4').classList.toggle('ok',same); $('tH4').classList.toggle('ng',!same);
+  const o=$('tMsgOut');
+  if(tScn==='none'){ o.className='msg ok'; o.innerHTML='<div class="t">一致：書きかえられていない、と判断できます</div>受け手が計算し直したハッシュ値と、届いたハッシュ値が同じです。'; }
+  else if(tScn==='msg'){
+    if(same){ o.className='msg'; o.innerHTML='<div class="t">一致：メッセージが元のままです</div>書きかえたメッセージが元の文と同じになっています。1文字でも変えてみましょう。'; }
+    else { o.className='msg ok'; o.innerHTML='<div class="t">不一致：改ざんを見つけました</div>届いたメッセージから計算したハッシュ値が、いっしょに届いたハッシュ値とちがいます。だから、途中でメッセージが変わったと分かります。'; }
+  } else {
+    if(rMsg===m){ o.className='msg'; o.innerHTML='<div class="t">一致：メッセージが元のままです</div>書きかえたメッセージを、元の文とちがうものにしてみましょう。'; }
+    else { o.className='msg ng'; o.innerHTML='<div class="t">一致してしまった：すり替えを見抜けません</div>メッセージは書きかえられているのに、ハッシュ値も計算し直して付けかえられたため、受け手の確認では一致してしまいます。ハッシュ値は「だれでも作れる」ので、これだけでは<b>だれが作ったのか</b>を確かめられません。必要なのは、本人にしか作れないしるし ― <b>電子署名</b>です。<br><button class="chip" id="toSign">「電子署名」のタブへ進む</button>'; $('toSign').addEventListener('click',()=>gotoTab('tabSign')); }
+  }
+});
+document.querySelectorAll('#tScn [data-s]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#tScn [data-s]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); tScn=b.dataset.s; drawTamper(); }));
+$('tMsg').addEventListener('input',drawTamper);
+$('tEvil').addEventListener('input',()=>{ tEvilTouched=true; drawTamper(); });
+
+/* ===================== 電子署名 ===================== */
+const EC={name:'ECDSA',namedCurve:'P-256'}, SIGALG={name:'ECDSA',hash:'SHA-256'};
+const K={};
+let signed=null, vKey='A', cScn='good', certs=null;
+async function genPair(){ const kp=await subtle.generateKey(EC,true,['sign','verify']); const raw=await subtle.exportKey('raw',kp.publicKey); return {priv:kp.privateKey, pub:kp.publicKey, pubHex:hex(raw)}; }
+function shortKey(h){ return grp(h); }
+async function makeKeys(){
+  [K.A,K.B,K.CA]=await Promise.all([genPair(),genPair(),genPair()]);
+  $('kA').textContent=shortKey(K.A.pubHex); $('kB').textContent=shortKey(K.B.pubHex);
+  signed=null; $('sSig').textContent='（まだ署名していません）'; $('sSigLab').textContent='署名（64バイト）';
+  await makeCerts();
+  await doSign('A');
+}
+async function doSign(who){
+  const msg=$('sMsg').value;
+  const sig=await subtle.sign(SIGALG,K[who].priv,enc.encode(msg));
+  const prev=signed && signed.msg===msg && signed.by===who ? signed.sigHex : null;
+  signed={msg, sig, sigHex:hex(sig), by:who};
+  $('sSig').textContent=grp(signed.sigHex);
+  $('sSigLab').textContent= who==='A'? '署名（Aさんの秘密鍵で作成、64バイト）' : '署名（Bさんの秘密鍵で作成、64バイト。Aさんからと名乗っている）';
+  $('sNote').innerHTML= prev? `<b style="color:var(--ng)">同じ文なのに、さっきとはちがう署名になりました。</b>ECDSA は署名のたびに新しい秘密の乱数を使うからです。それでも、検証はきちんと成功します。` : '同じ文でも、もう一度署名すると署名の値が変わります。ECDSA は署名のたびに新しい秘密の乱数を使うからです。それでも、検証はきちんと成功します。';
+  $('vMsg').value=msg;
+  await doVerify();
+}
+async function drawSHash(){ $('sHash').textContent=grp(await shaHex($('sMsg').value)); }
+const doVerify=latest(async (isNow)=>{
+  const o=$('vOut');
+  if(!signed){ o.className='msg'; o.innerHTML='<div class="t">まだ署名がありません</div>①で署名してください。'; return; }
+  const msg=$('vMsg').value;
+  const ok=await subtle.verify(SIGALG,K[vKey].pub,signed.sig,enc.encode(msg));
+  if(!isNow()) return;
+  const kName= vKey==='A'? 'Aさん' : 'Bさん';
+  if(ok){
+    if(signed.by==='B' && vKey==='B'){ o.className='msg'; o.innerHTML='<div class="t">Bさんの公開鍵では、検証に成功</div>この署名はBさんの秘密鍵で作られています。つまり、「Aより」と書いてあっても、作ったのはBさんだと分かります。Aさんの公開鍵で検証すると、どうなるでしょう。'; }
+    else { o.className='msg ok'; o.innerHTML=`<div class="t">検証に成功：${kName}が署名したもので、署名のあと1文字も変わっていません</div>${kName}の公開鍵と対になる秘密鍵を持つのは${kName}だけなので、作ったのが${kName}であること（本人性）と、内容が変わっていないこと（完全性）の両方を確かめられました。`; }
+  } else {
+    let why;
+    if(msg!==signed.msg) why='届いたメッセージが、署名されたときとちがいます。メッセージのハッシュ値が変わるので、署名と合わなくなります。ハッシュ値をつけかえることもできません。署名は秘密鍵がないと作り直せないからです。';
+    else if(signed.by!==vKey) why= signed.by==='B'? 'この署名は、Bさんが自分の秘密鍵で作ったものです。Aさんの公開鍵とは対になっていないので、「Aより」と書いても、なりすましはすぐに分かります。' : 'この署名はAさんの秘密鍵で作られたので、Bさんの公開鍵では確かめられません。公開鍵は、対になる秘密鍵で作った署名にしか合いません。';
+    else why='署名とメッセージが合いません。';
+    o.className='msg ng'; o.innerHTML=`<div class="t">検証に失敗：この署名は信用できません</div>${why}`;
+  }
+});
+$('kNew').addEventListener('click',makeKeys);
+$('sSign').addEventListener('click',()=>doSign('A'));
+$('sFake').addEventListener('click',()=>doSign('B'));
+$('sMsg').addEventListener('input',drawSHash);
+$('vMsg').addEventListener('input',doVerify);
+$('vTweak').addEventListener('click',()=>{ const v=$('vMsg').value; $('vMsg').value=v.includes('16時')? v.replace('16時','18時') : tweakLast(v); doVerify(); });
+$('vReset').addEventListener('click',()=>{ if(signed) $('vMsg').value=signed.msg; doVerify(); });
+document.querySelectorAll('#vKey [data-k]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#vKey [data-k]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); vKey=b.dataset.k; doVerify(); }));
+
+/* 電子証明書（架空の認証局） */
+const ISSUER='情報ラボ練習用認証局（架空）', VALID='2026/04/01〜2027/03/31（架空）';
+const certText=c=>JSON.stringify([c.subject,c.pub,c.issuer,c.valid]);
+async function makeCerts(){
+  const mk=async (subject,pub)=>{ const c={subject,pub,issuer:ISSUER,valid:VALID}; c.sig=await subtle.sign(SIGALG,K.CA.priv,enc.encode(certText(c))); return c; };
+  certs={A:await mk('Aさん',K.A.pubHex), B:await mk('Bさん',K.B.pubHex)};
+  await drawCert();
+}
+const drawCert=latest(async (isNow)=>{
+  if(!certs) return;
+  let c, label;
+  if(cScn==='good'){ c=certs.A; }
+  else if(cScn==='forged'){ c={...certs.A, pub:K.B.pubHex}; }
+  else { c=certs.B; }
+  const caOk=await subtle.verify(SIGALG,K.CA.pub,c.sig,enc.encode(certText(c)));
+  if(!isNow()) return;
+  const nameOk=c.subject==='Aさん';
+  $('cCard').innerHTML=`<div class="h">電子証明書</div><dl>
+    <dt>持ち主</dt><dd class="j">${esc(c.subject)}</dd>
+    <dt>公開鍵</dt><dd class="${cScn==='forged'?'bad':''}">${esc(c.pub.slice(0,24))}…${cScn==='forged'?'（Bさんの公開鍵）':''}</dd>
+    <dt>発行者</dt><dd class="j">${esc(c.issuer)}</dd>
+    <dt>有効期間</dt><dd class="j">${esc(c.valid)}</dd>
+    <dt>認証局の署名</dt><dd>${hex(c.sig).slice(0,24)}…</dd></dl>`;
+  const steps=[
+    [caOk, '認証局の公開鍵で、証明書の署名を検証する', caOk? '成功：認証局が発行したとおりの内容' : '失敗：発行されたあとで中身が書きかえられている'],
+  ];
+  if(caOk) steps.push([nameOk,'持ち主が、相手として考えている「Aさん」か', nameOk? 'Aさん' : `ちがう：持ち主は「${c.subject}」`]);
+  $('cChk').innerHTML=steps.map(([ok,t,r])=>`<li>${t}<br><span class="${ok?'y':'n'}">${ok?'○':'×'} ${r}</span></li>`).join('');
+  const o=$('cOut');
+  if(caOk && nameOk){ o.className='msg ok'; o.innerHTML='<div class="t">この公開鍵は、Aさんのものだと信頼できます</div>認証局の署名が正しく、持ち主もAさんです。この中の公開鍵で、Aさんの電子署名を検証すればよいと分かります。'; }
+  else if(!caOk){ o.className='msg ng'; o.innerHTML='<div class="t">にせの証明書です：使ってはいけません</div>Bさんは、Aさんの証明書の公開鍵を自分のものに書きかえました。しかし、認証局の秘密鍵を持っていないので、署名を作り直せません。中身が1文字でも変わると、認証局の署名の検証に失敗します。'; }
+  else { o.className='msg ng'; o.innerHTML='<div class="t">本物の証明書ですが、Aさんのものではありません</div>認証局の署名は正しいものの、持ち主はBさんです。「Aさんの公開鍵です」と言われても、証明書の持ち主を確かめれば、うそだと分かります。'; }
+});
+document.querySelectorAll('#cScn [data-c]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#cScn [data-c]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); cScn=b.dataset.c; drawCert(); }));
+
+/* ===================== パスワードの保存 ===================== */
+const users=[{id:'user01',pw:'hana2026'},{id:'user02',pw:'hana2026'},{id:'user03',pw:'123456'},{id:'user04',pw:'Sora-no-iro-42'}];
+const DICT=['123456','password','12345678','qwerty','111111','abc123'];
+const ITER=100000;
+let pModeV='plain', dictHex=null;
+function newSalt(){ const s=new Uint8Array(16); crypto.getRandomValues(s); return s; }
+users.forEach(u=>u.salt=newSalt());
+function cat(a,b){ const r=new Uint8Array(a.length+b.length); r.set(a,0); r.set(b,a.length); return r; }
+async function pbkdf2(pw,salt){ const k=await subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']); return new Uint8Array(await subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:ITER},k,256)); }
+function buildTable(){
+  $('pTable').innerHTML=`<tr><th>ID</th><th>パスワード</th><th id="pStoredH">保存される値</th><th>気づくこと</th></tr>`+
+    users.map((u,i)=>`<tr id="pRow${i}"><td>${u.id}</td><td data-h="パスワード"><input class="txt" data-u="${i}" value="${esc(u.pw)}" spellcheck="false" autocomplete="off" aria-label="${u.id}のパスワード"></td><td class="m" id="pS${i}" data-h="保存される値"></td><td id="pN${i}" data-h="気づくこと" style="font-size:13px;"></td></tr>`).join('');
+  $('pTable').querySelectorAll('input[data-u]').forEach(inp=>inp.addEventListener('input',()=>{ users[+inp.dataset.u].pw=inp.value; drawPw(); }));
+}
+const SAMEC=['#C49A2B','#6B3FA0','#2E7D4F','#C00000'];
+const drawPw=latest(async (isNow)=>{
+  if(!dictHex) dictHex=await Promise.all(DICT.map(d=>shaHex(d)));
+  const mode=pModeV; const rows=[]; let ms=0;
+  for(const u of users){
+    let shown, key, extra='';
+    if(mode==='plain'){ shown=esc(u.pw); key=u.pw; }
+    else if(mode==='hash'){ const h=await shaHex(u.pw); shown=h; key=h; }
+    else if(mode==='salt'){ const h=await shaHex(cat(u.salt,enc.encode(u.pw))); shown=`<span style="color:var(--gold)">ソルト ${hex(u.salt)}</span><br>${h}`; key=h; }
+    else { const t0=performance.now(); const h=hex(await pbkdf2(u.pw,u.salt)); ms+=performance.now()-t0; shown=`<span style="color:var(--gold)">ソルト ${hex(u.salt)}</span><br>${h}`; key=h; }
+    if(!isNow()) return;
+    rows.push({u,shown,key});
+  }
+  if(!isNow()) return;
+  $('pStoredH').textContent= {plain:'保存される値（パスワードそのもの）',hash:'保存される値（SHA-256）',salt:'保存される値（ソルト＋SHA-256）',slow:`保存される値（ソルト＋PBKDF2 ${ITER.toLocaleString('ja-JP')}回）`}[mode];
+  // 同じ値どうしに色をつける
+  const groups={}; rows.forEach((r,i)=>{ (groups[r.key]=groups[r.key]||[]).push(i); });
+  let gi=0; const color={}; Object.values(groups).forEach(g=>{ if(g.length>1){ g.forEach(i=>color[i]=SAMEC[gi%SAMEC.length]); gi++; } });
+  let hits=0, sames=Object.values(groups).filter(g=>g.length>1).length;
+  rows.forEach((r,i)=>{
+    $('pS'+i).innerHTML=r.shown;
+    const notes=[];
+    if(color[i]) notes.push(`<span class="samemark" style="background:${color[i]}"></span>ほかの人と同じ値`);
+    if(mode==='plain') notes.push('<span class="n">パスワードがそのまま読める</span>');
+    if(mode==='hash'){ const k=dictHex.indexOf(r.key); if(k>=0){ notes.push(`<span class="n">表と一致 → パスワードは「${esc(DICT[k])}」</span>`); hits++; } }
+    $('pN'+i).innerHTML=notes.join('<br>')||'—';
+    $('pRow'+i).classList.toggle('hit', mode==='plain' || (mode==='hash' && dictHex.includes(r.key)));
+  });
+  $('pDict').innerHTML='<tr><th>よく使われそうなパスワード</th><th>SHA-256（前もって計算）</th></tr>'+DICT.map((d,i)=>`<tr${mode==='hash'&&rows.some(r=>r.key===dictHex[i])?' class="hit"':''}><td>${esc(d)}</td><td class="m">${dictHex[i]}</td></tr>`).join('');
+  const m=$('pMsg');
+  if(mode==='plain'){ m.className='msg ng'; m.innerHTML='<div class="t">流出したら、全員のパスワードがそのまま知られてしまいます</div>使い回していれば、ほかのサービスにもログインされてしまいます。パスワードをそのまま保存してはいけません。'; }
+  else if(mode==='hash'){ m.className='msg ng'; m.innerHTML=`<div class="t">ハッシュ値だけでは、まだ弱点があります</div>${sames? '同じパスワードの人は同じハッシュ値になるので、<b>だれとだれが同じパスワードか</b>が流出データから分かってしまいます。':''}${hits? `また、前もって作った表と見比べるだけで、<b>${hits}人分のパスワード</b>が分かってしまいました。`:'表にのっているパスワードを入れると、表と見比べるだけで分かってしまいます。'}`; }
+  else if(mode==='salt'){ m.className='msg ok'; m.innerHTML='<div class="t">ソルトのおかげで、同じパスワードでも別の値になりました</div>ソルトは利用者ごとに作るランダムな値です。パスワードにソルトを加えてからハッシュ値を計算し、ソルトとハッシュ値の両方を保存します。前もって作った表は使えず、攻撃者は1人ずつ、そのソルトで計算し直さなければなりません。「ソルトを作り直す」を押すと、保存される値がすべて変わります。'; }
+  else { m.className='msg ok'; m.innerHTML=`<div class="t">4人分の計算に ${Math.round(ms)} ミリ秒かかりました</div>PBKDF2 は、ソルトを使った計算を ${ITER.toLocaleString('ja-JP')} 回くり返して、わざと時間がかかるようにした方式です。ログインする本人には一瞬ですが、何億もの候補を試したい攻撃者には、候補1つごとにこの手間がかかります。実際のサービスでは、このような「パスワードハッシュ方式」を使います。`; }
+});
+document.querySelectorAll('#pMode [data-m]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#pMode [data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); pModeV=b.dataset.m; drawPw(); }));
+$('pResalt').addEventListener('click',()=>{ users.forEach(u=>u.salt=newSalt()); drawPw(); });
+
+/* ===================== TOTP ===================== */
+const TOTP_KEY=enc.encode('12345678901234567890');
+let hmacKey=null;
+async function totp(tSec,digits=6){
+  if(!hmacKey) hmacKey=await subtle.importKey('raw',TOTP_KEY,{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  const T=Math.floor(tSec/30);
+  const c=new Uint8Array(8); const dv=new DataView(c.buffer); dv.setUint32(0,Math.floor(T/2**32)); dv.setUint32(4,T>>>0);
+  const mac=new Uint8Array(await subtle.sign('HMAC',hmacKey,c));
+  const off=mac[19]&0x0f;
+  const bin=((mac[off]&0x7f)<<24)|(mac[off+1]<<16)|(mac[off+2]<<8)|mac[off+3];
+  const code=String(bin%(10**digits)).padStart(digits,'0');
+  return {T,c,mac,off,bin,code};
+}
+let oSkewV=0, lastKey='';
+async function tick(){
+  const now=Date.now()/1000, ph=now+oSkewV;
+  const left=30-(ph%30); $('oBar').style.width=(left/30*100)+'%'; $('oMeter').classList.toggle('low',left<6);
+  $('oLeft').textContent=`あと ${Math.ceil(left)} 秒で変わる`;
+  if($('oUnix')) $('oUnix').textContent=Math.floor(ph).toLocaleString('ja-JP');
+  const key=Math.floor(ph/30)+'/'+Math.floor(now/30);
+  if(key===lastKey) return; lastKey=key;
+  const [p,s]=await Promise.all([totp(ph),totp(now)]);
+  $('oPhone').textContent=p.code; $('oServer').textContent=s.code;
+  $('oSrvNote').textContent= p.code===s.code? 'サーバの時計で計算（アプリと一致）' : 'サーバの時計で計算（アプリとちがう）';
+  const macHex=hex(p.mac);
+  const macShown=[...macHex].map((ch,i)=>{ const byte=Math.floor(i/2); return (byte>=p.off && byte<p.off+4)? `<span style="background:#FFE7A8;">${ch}</span>` : (byte===19 && i%2===1)? `<span style="color:var(--ng);font-weight:700;">${ch}</span>` : ch; }).join('');
+  $('oCalc').innerHTML=`<b>アプリの計算の中身</b><br>
+    ① Unix時刻（いま <span id="oUnix">${Math.floor(ph).toLocaleString('ja-JP')}</span> 秒）÷ 30 を切り捨て → T = <code>${p.T.toLocaleString('ja-JP')}</code>（8バイトで <code>${hex(p.c)}</code>）<br>
+    ② HMAC-SHA1（共有鍵, T）＝ <code>${macShown}</code><br>
+    ③ 最後の4ビット（赤）＝ ${p.off} → 先頭を0番として ${p.off} 番のバイトから4バイト（黄）＝ <code>${macHex.slice(p.off*2,p.off*2+8)}</code><br>
+    ④ 先頭のビットを0にして10進数 ${p.bin.toLocaleString('ja-JP')} → 1,000,000 で割った余り ＝ <b>${p.code}</b>`;
+}
+setInterval(tick,250);
+$('oSkew').addEventListener('input',()=>{ oSkewV=+$('oSkew').value; $('oSkewV').textContent=(oSkewV>0?'+':oSkewV<0?'−':'')+Math.abs(oSkewV)+' 秒'; lastKey=''; tick(); });
+$('oLogin').addEventListener('click',async ()=>{
+  const v=$('oIn').value.replace(/\D/g,''); const now=Date.now()/1000;
+  const [cur,prev]=await Promise.all([totp(now),totp(now-30)]);
+  const m=$('oMsg');
+  if(v.length!==6){ m.className='msg'; m.innerHTML='<div class="t">6けたの数字を入れてください</div>'; return; }
+  if(v===cur.code){ m.className='msg ok'; m.innerHTML='<div class="t">ログインできました</div>サーバが今の時刻で計算した数字と一致しました。鍵を持っている人（そのスマートフォンを持っている人）にしか、この数字は作れません。'; }
+  else if(v===prev.code){ m.className='msg ok'; m.innerHTML='<div class="t">ログインできました（1つ前の30秒の数字）</div>入力している間に30秒の区切りをまたいでも困らないように、このサーバは1つ前の数字まで受け付けます。RFC 6238 は、受け付けるのは1つ前くらいまでにとどめるようすすめています。'; }
+  else { m.className='msg ng'; m.innerHTML=`<div class="t">ログインできません</div>サーバが計算した数字（今：${cur.code}、1つ前：${prev.code}）と合いません。${oSkewV? 'スマートフォンの時計がずれていると、ちがう時刻で計算するので数字が合わなくなります。':'数字は30秒ごとに変わるので、古い数字はすぐに使えなくなります。'}`; }
+});
+$('oIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('oLogin').click(); });
+$('oTest').addEventListener('click',async ()=>{
+  const V=[[59,'94287082'],[1111111109,'07081804'],[1111111111,'14050471'],[1234567890,'89005924'],[2000000000,'69279037'],[20000000000,'65353130']];
+  const rows=await Promise.all(V.map(async ([t,e])=>{ const r=await totp(t,8); return [t,e,r.code]; }));
+  const t=$('oTestT'); t.hidden=false;
+  t.innerHTML='<tr><th>時刻（Unix時刻）</th><th>RFC 6238 の値（8けた）</th><th>このページの計算</th><th>判定</th></tr>'+rows.map(([tt,e,c])=>`<tr><td class="m">${tt}</td><td class="m">${e}</td><td class="m">${c}</td><td class="${e===c?'y':'n'}">${e===c?'○ 一致':'× 不一致'}</td></tr>`).join('');
+});
+
+/* 二要素の判定 */
+const Q=[
+  ['二要素ではありません（二段階認証）','パスワードも秘密の質問の答えも、どちらも「知っていること」（知識情報）です。認証を2回に分けているので二段階認証ではありますが、同じ種類の要素なので、パスワードと同じように盗まれたり推測されたりするおそれがあります。',false],
+  ['二要素認証です（知識＋所持）','パスワードは知識情報、アプリのワンタイムパスワードは、鍵が入ったスマートフォンを持っていることの証明（所持情報）です。パスワードが漏れても、スマートフォンがなければログインできません。',true],
+  ['二要素認証です（所持＋知識）','キャッシュカードは所持情報、暗証番号は知識情報です。カードだけ、暗証番号だけを手に入れても、お金は引き出せません。',true],
+  ['二要素ではありません','2つとも知識情報です。どれだけ数を増やしても、同じ種類の要素だけでは、まとめて盗まれる（たとえばフィッシングで両方入力させられる）おそれが残ります。',false],
+  ['二要素認証です（所持＋生体）','スマートフォンは所持情報、指紋は生体情報です。スマートフォンを落としても、指紋が合わなければ使えません。',true],
+];
+document.querySelectorAll('#qList [data-q]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#qList [data-q]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  const [t,d,ok]=Q[+b.dataset.q]; $('qOut').className='msg '+(ok?'ok':'ng'); $('qOut').innerHTML=`<div class="t">${t}</div>${d}`;
+}));
+
+/* ===== 初期化 ===== */
+if(HAS){
+  $('hB').value=tweakLast($('hA').value);
+  drawA(); rNew(); drawTamper(); drawSHash(); makeKeys(); buildTable(); drawPw(); tick();
+}
+</script>
+</body>
+</html>

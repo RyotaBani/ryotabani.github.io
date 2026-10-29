@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情報デザインを体験しよう（色覚・コントラスト・レイアウト・伝え方）｜情報ラボ</title>
+<meta name="description" content="情報デザインを手を動かして確かめられる無料ツール。色覚の多様性のシミュレーション、WCAGの式による文字と背景のコントラスト比の計算、レイアウトの4原則（近接・整列・反復・対比）、抽象化・可視化・構造化の比べ方を体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/design/">
+<meta property="og:title" content="情報デザインを体験しよう｜情報ラボ">
+<meta property="og:description" content="色の見え方のちがい、コントラスト比、レイアウトの4原則、抽象化・可視化・構造化。伝わるデザインを体験で学ぶ無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/design/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .row + .row{margin-top:10px;}
+  .rl{font-size:13px; font-weight:700; color:var(--ink); min-width:4.5em;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  label.chip{display:inline-block; border:1px dashed var(--navy); background:#fff; color:var(--navy);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer;}
+  label.chip:hover{background:var(--panel2);}
+  label.chip input{position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;}
+  label.chip:focus-within{outline:3px solid #7FA3E0; outline-offset:2px;}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  .sl{margin-top:12px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  @media (max-width:760px){ .two{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 140px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+  details.ans{margin-top:10px; font-size:14px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 12px;}
+  details.ans summary{cursor:pointer; font-weight:700; color:var(--navy);}
+
+  /* ===== 色の見え方 ===== */
+  .figs{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;}
+  .fig{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; min-width:0; margin:0;}
+  .fig[hidden]{display:none;}
+  .fig canvas{display:block; width:100%; height:auto; border-radius:6px;}
+  .fig figcaption{font-size:13px; font-weight:700; color:var(--ink); margin:0 0 6px; line-height:1.4;}
+  .fig figcaption small{font-weight:400; color:var(--muted);}
+  @media (max-width:560px){ .figs{grid-template-columns:minmax(0,1fr);} }
+
+  /* ===== コントラスト ===== */
+  .cpick{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .cpick input[type=color]{width:52px; height:42px; border:1px solid var(--line); border-radius:8px; padding:2px; background:#fff; cursor:pointer;}
+  .cpick input.hex{font-family:var(--mono); font-size:16px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:7.5em; background:#fff;}
+  .cpick .lab{font-weight:700; font-size:14px; color:var(--ink); width:4.5em;}
+  .sample{border-radius:10px; padding:18px 18px; border:1px solid var(--line); overflow-wrap:anywhere; line-height:1.5; margin-top:12px;}
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:6px 10px; text-align:left;}
+  table.tb th{background:var(--panel); color:var(--ink);}
+  table.tb td.m{font-family:var(--mono); overflow-wrap:anywhere;}
+  table.tb tr.cur td{background:#FFF8E7; font-weight:700;}
+  .pass{color:var(--ok); font-weight:700;} .fail{color:var(--ng); font-weight:700;}
+  .scroll{overflow-x:auto; max-width:100%;}
+  .calc{font-size:14px; line-height:1.9; background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-top:12px; overflow-x:auto;}
+  .calc code{font-family:var(--mono);}
+  .simrow{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px;}
+  .simrow>div{min-width:0; border:1px solid var(--line); border-radius:9px; overflow:hidden; background:#fff;}
+  .simrow .sw{padding:12px 8px; font-weight:700; text-align:center; font-size:15px; overflow-wrap:anywhere;}
+  .simrow .k{font-size:12px; color:var(--muted); text-align:center; padding:4px 4px 6px; line-height:1.4;}
+  .simrow .k b{font-family:var(--mono); color:var(--ink);}
+
+  /* ===== チラシ ===== */
+  .flywrap{position:relative; background:#E9EDF3; border-radius:12px; padding:16px; border:1px solid var(--line);}
+  .flyer{background:#FFFDF8; border:1px solid #D9D2C3; border-radius:6px; padding:22px 24px; max-width:440px; margin:0 auto; position:relative;
+    font-size:15px; color:#2a2a2a; line-height:1.55; box-shadow:0 2px 8px rgba(31,56,100,.12);}
+  .flyer *{transition:all .25s;}
+  .flyer ul{list-style:none; margin:0; padding:0;}
+  .flyer .f-title,.flyer .f-sub,.flyer .f-h,.flyer .f-b,.flyer li,.flyer .f-note{margin:0 0 14px;}
+  .flyer .f-title{font-size:17px; font-weight:400;}
+  .flyer .f-sub{font-size:15px;}
+  .flyer .f-note{font-size:15px;}
+  /* 整列（悪い例） */
+  .flyer .f-title{text-align:center;} .flyer .f-sub{text-align:right;}
+  .flyer .f-when{text-align:center;} .flyer .f-where{text-align:right;}
+  .flyer .f-what{padding-left:38px;} .flyer .f-fee{text-align:center;} .flyer .f-note{text-align:right;}
+  /* 反復（悪い例） */
+  .flyer .f-when .f-h{color:#C00000; font-weight:700; text-decoration:underline;}
+  .flyer .f-where .f-h{font-style:italic; color:#777; border:1px solid #999; display:inline-block; padding:0 6px;}
+  .flyer .f-what .f-h{color:#1E88E5; font-size:18px; font-family:serif;}
+  .flyer .f-fee .f-h{color:#2E7D4F; font-size:13px;}
+  .flyer .f-fee .f-h::before{content:"★ ";}
+  .flyer li:nth-child(1)::before{content:"・";} .flyer li:nth-child(2)::before{content:"★ ";} .flyer li:nth-child(3)::before{content:"→ ";}
+  /* 近接（良い例） */
+  .flyer[data-prox="1"] .f-title{margin-bottom:2px;}
+  .flyer[data-prox="1"] .f-sub{margin-bottom:22px;}
+  .flyer[data-prox="1"] .f-h{margin-bottom:3px;}
+  .flyer[data-prox="1"] .f-b,.flyer[data-prox="1"] li{margin-bottom:0;}
+  .flyer[data-prox="1"] .f-group{margin-bottom:20px;}
+  .flyer[data-prox="1"] .f-note{margin:24px 0 0;}
+  /* 整列（良い例） */
+  .flyer[data-align="1"] .f-title,.flyer[data-align="1"] .f-sub,.flyer[data-align="1"] .f-group,.flyer[data-align="1"] .f-note{text-align:left; padding-left:0;}
+  /* 反復（良い例） */
+  .flyer[data-rep="1"] .f-group .f-h{display:inline-block; color:#fff; background:#2F5496; font-size:13px; font-weight:700; font-style:normal; font-family:inherit;
+    text-decoration:none; border:none; padding:1px 10px; border-radius:4px;}
+  .flyer[data-rep="1"] .f-fee .f-h::before{content:"";}
+  .flyer[data-rep="1"] li::before{content:"■ " !important; color:#C49A2B;}
+  /* 対比（良い例） */
+  .flyer[data-con="1"] .f-title{font-size:30px; font-weight:800; color:#1F3864; line-height:1.25;}
+  .flyer[data-con="1"] .f-sub{font-size:13.5px; color:#5B6472;}
+  .flyer[data-con="1"] .f-when .f-big{font-size:22px; font-weight:800; color:#1F3864;}
+  .flyer[data-con="1"] .f-note{font-size:12px; color:#5B6472;}
+  /* 補助線 */
+  .flyer[data-guide="1"][data-prox="1"] .f-group{outline:2px dashed rgba(196,154,43,.9); outline-offset:5px;}
+  .flyer[data-guide="1"][data-align="1"]::before{content:""; position:absolute; left:20px; top:8px; bottom:8px; border-left:2px dashed #C00000;}
+  .flyer[data-guide="1"][data-rep="1"] .f-group .f-h{box-shadow:0 0 0 3px #7FBF9B;}
+  .flyer[data-guide="1"][data-con="1"] .f-title,.flyer[data-guide="1"][data-con="1"] .f-big{background:rgba(127,163,224,.25);}
+  .guidekey[hidden]{display:none;}
+  #lStat .stt{flex-basis:90px;}
+  .guidekey{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--muted); margin-top:10px;}
+  .guidekey span::before{content:""; display:inline-block; width:18px; height:0; vertical-align:middle; margin-right:5px; border-top:2px dashed;}
+  .guidekey .g1::before{border-color:#C49A2B;} .guidekey .g2::before{border-color:#C00000;}
+  .guidekey .g3::before{border-top:3px solid #7FBF9B;} .guidekey .g4::before{border-top:8px solid rgba(127,163,224,.45);}
+  .cover{position:absolute; inset:0; background:rgba(27,44,77,.96); color:#fff; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; gap:12px;}
+  .cover[hidden]{display:none;}
+  .cover .q{font-size:17px; font-weight:700;}
+  .cover .q small{display:block; font-size:13.5px; font-weight:400; color:#cfd9ee; margin-top:6px;}
+
+  /* ===== 伝え方 ===== */
+  .pics{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;}
+  .pic{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; min-width:0;}
+  .pic .box{height:150px; display:flex; align-items:center; justify-content:center;}
+  .pic svg{width:130px; max-width:100%; height:auto; transition:width .2s, filter .2s;}
+  .pic .k{font-size:13px; font-weight:700; color:var(--ink); line-height:1.4;}
+  .pic .k small{display:block; font-weight:400; color:var(--muted); font-size:11.5px;}
+  .stage{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0;}
+  .stage svg{display:block; width:100%; height:auto;}
+  .svgw{overflow-x:auto; max-width:100%;}
+  .svgw svg{min-width:560px;}
+  .swipe{display:none; font-size:12px; color:var(--muted); margin:4px 0 0;}
+  @media (max-width:600px){ .swipe{display:block;} }
+  .article table.ud td:first-child{min-width:9.5em;} .article table.ud td:nth-child(2){min-width:8.5em;} .article table.ud td:nth-child(3){min-width:15em;}
+  .stage p{margin:0; font-size:15px; line-height:1.95;}
+  .stage ul,.stage ol{margin:0; padding-left:1.4em; font-size:15px; line-height:1.9;}
+  .qbox{background:#FFF8E7; border:1px solid #E6D3A1; border-radius:10px; padding:10px 14px; font-size:14.5px; margin-top:12px;}
+  .qbox b{color:#7A5A12;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px; overflow-x:auto; line-height:1.9;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (max-width:520px){
+    .panel{padding:14px;}
+    .flywrap{padding:10px;}
+    .flyer{padding:18px 16px;}
+    .flyer[data-guide="1"][data-align="1"]::before{left:12px;}
+    .flyer .f-what{padding-left:26px;}
+    .pic .box{height:120px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 情報デザイン</p>
+    <h1>情報デザインを体験しよう</h1>
+    <p class="lead">同じ内容でも、色・文字・配置・表し方しだいで、伝わり方は大きく変わります。だれにでも伝わる工夫を、切りかえて比べながら確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabCvd" aria-selected="true" aria-controls="toolCvd">色の見え方のちがい</button>
+    <button class="tab" role="tab" id="tabCon" aria-selected="false" aria-controls="toolCon">読みやすさを測る</button>
+    <button class="tab" role="tab" id="tabLay" aria-selected="false" aria-controls="toolLay">レイアウトの4原則</button>
+    <button class="tab" role="tab" id="tabWay" aria-selected="false" aria-controls="toolWay">伝え方を選ぶ</button>
+  </div>
+
+  <!-- ===== 色の見え方 ===== -->
+  <section class="tool show" id="toolCvd" role="tabpanel" aria-labelledby="tabCvd">
+    <div class="panel">
+      <h2>同じ図を、色の感じ方がちがう人が見たときの見え方（近似）に変換して並べます</h2>
+      <div class="row">
+        <span class="rl">見本</span>
+        <button class="chip" data-smp="route" aria-pressed="true">路線図</button>
+        <button class="chip" data-smp="graph" aria-pressed="false">折れ線グラフ</button>
+        <button class="chip" data-smp="signal" aria-pressed="false">信号・ランプ</button>
+        <button class="chip" data-smp="seat" aria-pressed="false">座席の空き状況</button>
+        <label class="chip">自分の画像を選ぶ<input type="file" id="cvdFile" accept="image/*"></label>
+      </div>
+      <div class="row">
+        <span class="rl">工夫</span>
+        <button class="chip" data-aid="0" aria-pressed="true">色だけで区別する</button>
+        <button class="chip" data-aid="1" aria-pressed="false">形・模様・文字でも区別する</button>
+      </div>
+      <div class="row">
+        <span class="rl">並べ方</span>
+        <button class="chip" data-view="all" aria-pressed="true">4つ並べる</button>
+        <button class="chip" data-view="p" aria-pressed="false">元の図と1型</button>
+        <button class="chip" data-view="d" aria-pressed="false">元の図と2型</button>
+        <button class="chip" data-view="t" aria-pressed="false">元の図と3型</button>
+      </div>
+      <p class="hint" id="cvdNote">選んだ画像は、このブラウザの中だけで変換します。どこにも送信・保存されません。</p>
+    </div>
+    <div class="figs" id="cvdFigs">
+      <figure class="fig" data-k="o"><figcaption>元の図<small>（一般的な色覚）</small></figcaption><canvas id="cvO" width="480" height="320"></canvas></figure>
+      <figure class="fig" data-k="p"><figcaption>1型色覚の近似<small>（L錐体がはたらかない場合）</small></figcaption><canvas id="cvP" width="480" height="320" role="img" aria-label="1型色覚の近似"></canvas></figure>
+      <figure class="fig" data-k="d"><figcaption>2型色覚の近似<small>（M錐体がはたらかない場合）</small></figcaption><canvas id="cvD" width="480" height="320" role="img" aria-label="2型色覚の近似"></canvas></figure>
+      <figure class="fig" data-k="t"><figcaption>3型色覚の近似<small>（S錐体がはたらかない場合）</small></figcaption><canvas id="cvT" width="480" height="320" role="img" aria-label="3型色覚の近似"></canvas></figure>
+    </div>
+    <div class="qbox" id="cvdQ"></div>
+    <div class="msg" id="cvdMsg"></div>
+  </section>
+
+  <!-- ===== コントラスト ===== -->
+  <section class="tool" id="toolCon" role="tabpanel" aria-labelledby="tabCon">
+    <div class="two">
+      <div class="panel" style="margin-bottom:0;">
+        <h2>文字の色と背景の色を選ぶと、コントラスト比を計算して基準と比べます</h2>
+        <div class="cpick"><span class="lab">文字の色</span><input type="color" id="cFg" value="#767676" aria-label="文字の色"><input class="hex" id="cFgH" value="#767676" aria-label="文字の色（16進数）" spellcheck="false"></div>
+        <div class="cpick" style="margin-top:8px;"><span class="lab">背景の色</span><input type="color" id="cBg" value="#ffffff" aria-label="背景の色"><input class="hex" id="cBgH" value="#FFFFFF" aria-label="背景の色（16進数）" spellcheck="false"></div>
+        <div class="row" style="margin-top:10px;"><button class="chip" id="cSwap">文字と背景を入れかえる</button></div>
+        <div class="row" style="margin-top:10px;">
+          <button class="chip" data-pre="#000000,#FFFFFF">黒と白</button>
+          <button class="chip" data-pre="#767676,#FFFFFF">灰色の文字</button>
+          <button class="chip" data-pre="#AAAAAA,#FFFFFF">うすい灰色</button>
+          <button class="chip" data-pre="#F2C200,#FFFFFF">白地に黄色</button>
+          <button class="chip" data-pre="#E53935,#43A047">赤と緑</button>
+          <button class="chip" data-pre="#FFFFFF,#2F5496">紺地に白</button>
+          <button class="chip" data-pre="#FFFFFF,#F08C00">オレンジ地に白</button>
+        </div>
+        <div class="sl"><div class="top"><label for="cSize">文字の大きさ</label><span class="val" id="cSizeV">16px</span></div>
+          <input type="range" id="cSize" min="12" max="48" step="1" value="16"></div>
+        <div class="row"><button class="chip" id="cBold" aria-pressed="false">太字にする</button></div>
+      </div>
+      <div style="min-width:0;">
+        <div class="sample" id="cSample" style="margin-top:0;"><div id="cSampleT">情報デザインを体験しよう。<br>Information Design 0123456789</div></div>
+        <div class="stats">
+          <div class="stt"><div class="k">コントラスト比</div><div class="v" id="cRatio">–</div></div>
+          <div class="stt"><div class="k">この大きさの文字の分類</div><div class="v" id="cKind" style="font-size:15px;">–</div></div>
+        </div>
+        <div class="scroll" style="margin-top:12px;"><table class="tb" id="cJudge"></table></div>
+      </div>
+    </div>
+    <div class="msg" id="cMsg"></div>
+    <div class="calc" id="cCalc"></div>
+    <div class="panel" style="margin-top:16px;">
+      <h2>色の感じ方がちがっても読める？（「色の見え方のちがい」と同じ変換で近似）</h2>
+      <div class="simrow" id="cSim"></div>
+      <p class="hint">色あいが変わって見えても、明るさの差（コントラスト）が十分にあれば文字は読めます。赤と緑のように明るさが近い組み合わせは、色あいの差がなくなると読めなくなります。</p>
+    </div>
+  </section>
+
+  <!-- ===== レイアウト ===== -->
+  <section class="tool" id="toolLay" role="tabpanel" aria-labelledby="tabLay">
+    <div class="panel">
+      <h2>同じ内容のチラシ（架空のイベント）を、4つの原則ごとに「悪い例」と「良い例」で切りかえます</h2>
+      <div class="row">
+        <button class="chip" data-pr="prox" aria-pressed="false">近接</button>
+        <button class="chip" data-pr="align" aria-pressed="false">整列</button>
+        <button class="chip" data-pr="rep" aria-pressed="false">反復</button>
+        <button class="chip" data-pr="con" aria-pressed="false">対比</button>
+      </div>
+      <div class="row">
+        <button class="chip" id="lAllOff">すべて悪い例</button>
+        <button class="chip" id="lAllOn">すべて良い例</button>
+        <button class="chip" id="lGuide" aria-pressed="false">補助線を表示</button>
+        <button class="primary" id="lFlash">3秒だけ見て覚える</button>
+      </div>
+      <p class="hint">押して色がついている原則が「良い例」になります。1つずつ切りかえて、どこが変わるか見てみましょう。</p>
+    </div>
+    <div class="two">
+      <div class="flywrap" id="flyWrap">
+        <div class="flyer" id="fly" data-prox="0" data-align="0" data-rep="0" data-con="0" data-guide="0">
+          <div class="f-title">公開実験ショー</div>
+          <div class="f-sub">情報ラボ高校 科学部（架空）</div>
+          <div class="f-group f-when"><div class="f-h">日時</div><div class="f-b f-big">11月15日（土）</div><div class="f-b">13:00〜15:00（出入り自由）</div></div>
+          <div class="f-group f-where"><div class="f-h">場所</div><div class="f-b">理科棟2階 化学室</div></div>
+          <div class="f-group f-what"><div class="f-h">内容</div><ul><li>スライムを作ろう</li><li>液体窒素で花をこおらせる</li><li>静電気で髪の毛が立つ？</li></ul></div>
+          <div class="f-group f-fee"><div class="f-h">参加</div><div class="f-b">参加費無料・申し込み不要</div></div>
+          <div class="f-note">問い合わせ：科学部（これは練習用の架空のチラシです）</div>
+        </div>
+        <div class="cover" id="flyCover" hidden>
+          <div class="q">イベントは、何月何日の何時から？<br>場所はどこ？<small>声に出すか、メモに書いてから見直しましょう。悪い例と良い例で、覚えやすさを比べてみてください。</small></div>
+          <button class="primary" id="flyBack">チラシをもう一度見る</button>
+        </div>
+      </div>
+      <div style="min-width:0;">
+        <div class="guidekey" id="guideKey" hidden><span class="g1">近接：ひとまとまり</span><span class="g2">整列：そろえた線</span><span class="g3">反復：くり返した見出し</span><span class="g4">対比：目立たせた所</span></div>
+        <div class="msg" id="lMsg" style="margin-top:0;"></div>
+        <div class="stats" id="lStat"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 伝え方 ===== -->
+  <section class="tool" id="toolWay" role="tabpanel" aria-labelledby="tabWay">
+    <div class="row" style="margin-bottom:14px;">
+      <button class="chip" data-way="abs" aria-pressed="true">抽象化（ピクトグラム）</button>
+      <button class="chip" data-way="vis" aria-pressed="false">可視化（表→グラフ）</button>
+      <button class="chip" data-way="str" aria-pressed="false">構造化（文章・箇条書き・表・図解）</button>
+    </div>
+
+    <div id="wayAbs">
+      <div class="panel">
+        <h2>くわしい絵を、伝えたいことだけ残して単純にしていくと、遠くからでも分かりやすくなります</h2>
+        <div class="row">
+          <button class="chip" data-pic="cup" aria-pressed="true">カフェ</button>
+          <button class="chip" data-pic="bus" aria-pressed="false">バスのりば</button>
+          <button class="chip" data-pic="book" aria-pressed="false">図書室</button>
+        </div>
+        <div class="sl"><div class="top"><label for="aDist">見る距離（遠いほど小さく、ぼやけて見える）</label><span class="val" id="aDistV">近い</span></div>
+          <input type="range" id="aDist" min="1" max="5" step="1" value="1"></div>
+      </div>
+      <div class="pics" id="aPics"></div>
+      <div class="msg" id="aMsg"></div>
+    </div>
+
+    <div id="wayVis" hidden>
+      <div class="panel">
+        <h2>同じデータを、表とグラフで見比べます（データは架空です）</h2>
+        <div class="row"><span class="rl">データ</span>
+          <button class="chip" data-ds="month" aria-pressed="true">月ごとの貸出冊数</button>
+          <button class="chip" data-ds="like" aria-pressed="false">好きな教科のアンケート</button>
+        </div>
+        <div class="row"><span class="rl">表し方</span>
+          <button class="chip" data-vt="table" aria-pressed="true">表</button>
+          <button class="chip" data-vt="bar" aria-pressed="false">棒グラフ</button>
+          <button class="chip" data-vt="line" aria-pressed="false">折れ線グラフ</button>
+          <button class="chip" data-vt="band" aria-pressed="false">帯グラフ</button>
+          <button class="chip" id="vSort" aria-pressed="false">大きい順に並べかえる</button>
+        </div>
+      </div>
+      <div class="stage" id="vStage"></div>
+      <div class="qbox" id="vQ"></div>
+      <div class="msg" id="vMsg"></div>
+    </div>
+
+    <div id="wayStr" hidden>
+      <div class="panel">
+        <h2>同じ情報を、文章・箇条書き・表・図解で見比べます（内容は架空です）</h2>
+        <div class="row"><span class="rl">内容</span>
+          <button class="chip" data-st="bus" aria-pressed="true">バスの時刻表</button>
+          <button class="chip" data-st="lib" aria-pressed="false">本を借りる手順</button>
+        </div>
+        <div class="row"><span class="rl">表し方</span>
+          <button class="chip" data-sf="text" aria-pressed="true">文章</button>
+          <button class="chip" data-sf="list" aria-pressed="false">箇条書き</button>
+          <button class="chip" data-sf="table" aria-pressed="false">表</button>
+          <button class="chip" data-sf="fig" aria-pressed="false">図解</button>
+        </div>
+      </div>
+      <div class="qbox" id="sQ"></div>
+      <div class="stage" id="sStage" style="margin-top:12px;"></div>
+      <details class="ans" id="sAns"><summary>答えを見る</summary><div id="sAnsT"></div></details>
+      <div class="msg" id="sMsg"></div>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>情報デザインとは</h2>
+    <p><strong>情報デザイン</strong>とは、伝えたい情報を、受け手が正しく、すばやく、迷わずに受け取れるように、色や形、文字、配置、表し方を工夫することです。ポスターやWebページ、駅の案内表示、家電の操作ボタン、アプリの画面など、身の回りの多くのものが情報デザインの対象になります。目的は、見た目を美しくすることだけではありません。「だれが」「どんな場面で」「何のために」その情報を使うのかを考え、目的に合った伝え方を選ぶことが中心になります。</p>
+    <p>同じ内容でも、伝え方によって伝わりやすさは大きく変わります。たとえば、色だけで区別した路線図は、色の感じ方がちがう人には読み取りにくくなります。文字と背景の明るさが近いと、だれにとっても読みにくくなります。このページの4つのタブでは、色の見え方、文字の読みやすさ、配置のしかた、表し方の選び方を、実際に切りかえて比べられます。</p>
+
+    <h2>ユニバーサルデザインの7原則</h2>
+    <p><strong>ユニバーサルデザイン</strong>とは、年齢や障害の有無、体格、使う言語などにかかわらず、できるだけ多くの人が使いやすいように、はじめから設計する考え方です。すでにある段差や障壁（バリア）を後から取り除く「バリアフリー」に対して、最初から多様な人が使うことを前提に作る点が特徴です。</p>
+    <p>1997年に、アメリカのノースカロライナ州立大学ユニバーサルデザインセンター（The Center for Universal Design）の建築家、デザイナー、技術者らのグループが、次の7つの原則をまとめました（日本語は、このページで訳したものです）。</p>
+    <table class="ud">
+      <tr><th>原則</th><th>英語の名前</th><th>意味</th></tr>
+      <tr><td>1 だれでも公平に使える</td><td>Equitable Use</td><td>さまざまな能力をもつ人にとって役に立ち、受け入れられる</td></tr>
+      <tr><td>2 使い方を選べる</td><td>Flexibility in Use</td><td>一人ひとりの好みや能力の幅広さに対応できる</td></tr>
+      <tr><td>3 簡単で直感的に使える</td><td>Simple and Intuitive Use</td><td>使う人の経験や知識、言語の力、そのときの集中の度合いにかかわらず、使い方が分かりやすい</td></tr>
+      <tr><td>4 必要な情報が伝わる</td><td>Perceptible Information</td><td>周りの状況や、使う人の感覚の能力にかかわらず、必要な情報が効果的に伝わる</td></tr>
+      <tr><td>5 まちがえても危険が少ない</td><td>Tolerance for Error</td><td>うっかりした操作や意図しない操作による危険や悪い結果を、できるだけ小さくする</td></tr>
+      <tr><td>6 少ない力で使える</td><td>Low Physical Effort</td><td>効率よく、楽に、疲れにくく使える</td></tr>
+      <tr><td>7 使いやすい大きさと広さ</td><td>Size and Space for Approach and Use</td><td>体の大きさや姿勢、動きやすさにかかわらず、近づく・手を伸ばす・操作するのに十分な大きさと空間がある</td></tr>
+    </table>
+    <p>情報デザインと特に関係が深いのは、原則3と原則4です。たとえば、音だけでなく光や文字でも知らせる案内は、周りがうるさいときや、耳が聞こえにくい人にも情報が伝わります（原則4）。操作を取り消せる画面は、押しまちがえても困りません（原則5）。</p>
+
+    <h2>アクセシビリティとユーザビリティ</h2>
+    <p><strong>アクセシビリティ</strong>は、障害のある人や高齢の人をふくめて、だれもが情報やサービスを利用できるかどうか、またその度合いを表すことばです。Webページについては、Webの技術の標準を定める国際的な団体 W3C が <strong>WCAG</strong>（Web Content Accessibility Guidelines）というガイドラインを公開しています。WCAG 2.0 は国際規格 ISO/IEC 40500:2012 にもなり、日本の JIS X 8341-3 も、2016年の改正でこの国際規格と内容を一致させました。総務省は、国や地方公共団体のWebサイト向けに「みんなの公共サイト運用ガイドライン」を公開しています。</p>
+    <p><strong>ユーザビリティ</strong>は「使いやすさ」のことです。国際規格 ISO 9241-11 では、ユーザビリティを「特定の利用者が、特定の利用状況で、特定の目標を達成するために、効果的に、効率よく、満足して使える度合い」と定めています。つまり、目的を正しく果たせるか（有効さ）、むだな手間や時間がかからないか（効率）、使っていていやな思いをしないか（満足）の3つの面から考えます。</p>
+    <p>W3C は、アクセシビリティとユーザビリティには大きな重なりがあると説明しています。たとえば、文字と背景のコントラストを十分にとることは、視力の弱い人のためだけでなく、明るい日差しの下でスマートフォンを見る人の役にも立ちます。アクセシビリティを高める工夫の多くは、だれにとっての使いやすさも高めるのです。</p>
+
+    <h2>色の見え方の多様性</h2>
+    <p>目の奥の網膜には、色を感じとる<strong>錐体（すいたい）</strong>という細胞があり、反応しやすい光の波長によって、L錐体（長い波長）、M錐体（中くらいの波長）、S錐体（短い波長）の3種類があります。脳は、この3種類の反応の大きさの比から色を感じています。そのため、どれかの錐体がはたらかなかったり、反応のしかたがちがったりすると、色の感じ方が変わります。</p>
+    <p>日本眼科学会によると、生まれつきの色覚のちがい（先天色覚異常）は、日本人の男性の約5％、女性の約0.2％にみられます。かかわる錐体の種類によって<strong>1型色覚・2型色覚・3型色覚</strong>に分けられ、程度によっても分類されます。1型色覚と2型色覚をあわせて先天赤緑色覚異常ともいい、3型色覚は非常にまれです。男性の約5％は20人に1人にあたるので、男子が20人いるクラスなら1人いてもふしぎではない割合です。だれかに見分けにくい色があることは、特別なことではありません。</p>
+    <h3>シミュレーションのしくみと限界</h3>
+    <p>「色の見え方のちがい」タブは、G. M. Machado（マシャード）らが2009年に発表した論文の変換行列を使っています。この論文は、錐体の反応のしかたのモデルにもとづいて、ある色が、それぞれの色覚でどんな色として感じられるかを近似する3行3列の行列を示しています。このページでは、程度を表すパラメータのうち最も強い1.0（2色覚に相当）の行列を使い、画面の色（sRGB）をいったん光の強さに比例する値（線形RGB）にもどしてから行列を掛け、もとの形式にもどして表示しています。同じ目的の方法には、Brettel（ブレッテル）らが1997年に発表したものなどもあり、方法によって結果は少しずつちがいます。</p>
+    <p>ここで表示されるのは、あくまで近似です。実際の見え方には程度の差や個人差があり、ディスプレイの設定によっても変わります。「この人にはこう見えている」と決めつけるための道具ではなく、<strong>見分けにくくなりやすい色の組み合わせを、作る側が前もって確かめるための道具</strong>として使ってください。</p>
+
+    <h2>カラーユニバーサルデザイン ― 色だけで区別しない</h2>
+    <p>色の感じ方が人によってちがうことを前提に、だれにでも情報が正しく伝わるように色づかいを工夫することを<strong>カラーユニバーサルデザイン</strong>といいます。基本は「<strong>色だけで区別しない</strong>」ことです。WCAG にも、色を、情報を伝えたり、操作を示したり、反応を求めたりするための唯一の視覚的な手段にしてはならない、という達成基準（1.4.1 色の使用、レベルA）があります。</p>
+    <ul>
+      <li><strong>形や模様を変える</strong>：グラフの線を実線・破線・点線にし、点の形を●▲■のように変える。</li>
+      <li><strong>文字で直接書く</strong>：凡例（色と意味の対応表）を離れた場所に置かず、線や区域のすぐそばに名前を書く。</li>
+      <li><strong>明るさの差をつける</strong>：色あいが似て見えても、明るさがちがえば区別できる。</li>
+      <li><strong>位置で区別する</strong>：信号機は、色だけでなく、光っている位置でも意味が分かる。</li>
+    </ul>
+    <p>シミュレーションで路線図を見ると、赤・緑・オレンジ・茶色の線が、1型や2型の近似では似た色になります。「形・模様・文字でも区別する」に切りかえると、線の模様と記号、名前で区別できるようになることが確かめられます。</p>
+
+    <h2>文字の読みやすさとコントラスト</h2>
+    <p>文字の読みやすさに大きくかかわるのが、文字と背景の明るさの差（<strong>コントラスト</strong>）です。WCAG では、まず色ごとに<strong>相対輝度</strong>（その色を、黒を0、白を1としたときの明るさで表したもの）を求め、そこからコントラスト比を計算します。</p>
+    <div class="formula">① 8ビットの値を 255 で割って 0〜1 にする（これを C とする）<br>② 線形の値にもどす：C ≦ 0.04045 なら C ÷ 12.92、それより大きければ ((C ＋ 0.055) ÷ 1.055)<sup>2.4</sup><br>③ 相対輝度 L ＝ 0.2126 × R ＋ 0.7152 × G ＋ 0.0722 × B<br>④ コントラスト比 ＝ (L<sub>明るい方</sub> ＋ 0.05) ÷ (L<sub>暗い方</sub> ＋ 0.05)</div>
+    <p>②は、画面の色の値が光の強さに比例していない（暗い部分に多くの段階を割り当てている）ので、比例する値にもどす計算です。③で G の係数がいちばん大きいのは、人の目が同じ強さの光でも緑をいちばん明るく感じるからです。コントラスト比は、同じ色どうしの 1:1 から、黒と白の 21:1 までの値になります。たとえば白地に #767676 の灰色は、L ＝ 約0.181 なので、(1 ＋ 0.05) ÷ (0.181 ＋ 0.05) ≒ 4.54 です。</p>
+    <table>
+      <tr><th>基準</th><th>通常の文字</th><th>大きな文字</th></tr>
+      <tr><td>1.4.3 コントラスト（最低限）レベルAA</td><td>4.5:1 以上</td><td>3:1 以上</td></tr>
+      <tr><td>1.4.6 コントラスト（高度）レベルAAA</td><td>7:1 以上</td><td>4.5:1 以上</td></tr>
+    </table>
+    <p>「大きな文字」は、18ポイント以上、または14ポイント以上の太字です。CSSの単位では、1pt が約1.333px なので、およそ 24px 以上、または約18.7px 以上の太字にあたります。WCAG は日本語などについては「同等の大きさ」を求めており、このページでは欧文の値を目安として使っています。基準値は切り上げずに判定します（4.48 は 4.5 未満）。</p>
+    <p>4.5:1 という値には根拠があります。W3C の解説によると、通常の視力の人向けに推奨されてきた最低限の値が 3:1 で、視力が 20/40（日本式でおよそ0.5）程度に下がるとコントラストの感じ方がおよそ1.5倍分弱くなることから、3 × 1.5 ＝ 4.5 とされています。高齢になると、この程度の視力の人が増えます。</p>
+
+    <h2>レイアウトの4原則</h2>
+    <p>デザイナーのロビン・ウィリアムズ（Robin Williams）は、著書『The Non-Designer's Design Book』で、デザインを学んだことがない人でも使える4つの原則として、<strong>近接・整列・反復・対比</strong>を挙げています。</p>
+    <ul>
+      <li><strong>近接</strong>：関係のある情報どうしを近づけ、関係のない情報との間をあける。読み手は、近くにあるものを「ひとまとまり」と感じる。</li>
+      <li><strong>整列</strong>：文字や図の端を、見えない線にそろえる。そろっていると、ページ全体につながりが生まれ、目の動きが迷わない。</li>
+      <li><strong>反復</strong>：見出しの形、色、記号などを、同じ役割のところでくり返し使う。読み手は「この形は見出し」と一度覚えれば、あとはすぐ見つけられる。</li>
+      <li><strong>対比</strong>：大事な情報と、そうでない情報の差をはっきりつける。大きさや太さを「少しだけ」変えると、かえってまちがいに見えるので、変えるなら大きく変える。</li>
+    </ul>
+    <p>「レイアウトの4原則」タブでは、文字の内容をまったく変えずに、配置と見た目だけを切りかえています。「3秒だけ見て覚える」で、悪い例と良い例のどちらが日時と場所を覚えやすいか、比べてみましょう。</p>
+
+    <h2>抽象化・可視化・構造化</h2>
+    <p>情報を伝わりやすくする方法は、大きく3つに整理できます。</p>
+    <h3>抽象化とピクトグラム</h3>
+    <p><strong>抽象化</strong>とは、伝えたいことに関係のない細かい部分を取り除き、本質だけを残すことです。その代表が<strong>ピクトグラム</strong>（絵文字・図記号）です。国土交通省は、案内用図記号を「文字・言語によらず対象物、概念または状態に関する情報を提供する図形」と説明しており、高齢者や障害のある人、外国人観光客などにも分かりやすい案内に役立つとしています。日本では、公共の場所の案内用図記号が JIS Z 8210 として定められています。くわしい絵は近くで見れば情報が多いのですが、遠くから見たり小さく表示したりすると、細かい部分がつぶれて何の絵か分かりにくくなります。</p>
+    <h3>可視化</h3>
+    <p><strong>可視化</strong>とは、数値のように目に見えにくい情報を、グラフや図にして見えるようにすることです。グラフには得意なことがあります。時間による変化は折れ線グラフ、量の大小の比較は棒グラフ、全体に占める割合は帯グラフや円グラフが向いています。正確な値を読みたいときは、表のほうがよいこともあります。目的に合わないグラフを選ぶと、かえって誤解を生みます。</p>
+    <h3>構造化</h3>
+    <p><strong>構造化</strong>とは、情報どうしの関係（順番、並列、分類、分かれ道など）をはっきりさせて整理することです。並列の情報は箇条書き、2つの観点で整理できる情報は表、順番や分かれ道のある手順は番号付きの箇条書きやフローチャートのような図解が向いています。時刻表を文章で書くと、目的の時刻を探すのに時間がかかりますが、表にすれば「時」と「分」の2つの観点ですぐに探せます。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>色の見え方のちがい</strong>：見本の図を選ぶと、元の図と、1型・2型・3型色覚の近似を並べて表示します。「形・模様・文字でも区別する」に切りかえると、色以外の工夫を入れた図になります。「自分の画像を選ぶ」で、自分で作ったポスターやスライドの画像も確かめられます（画像はブラウザの中だけで処理し、送信しません）。</li>
+      <li><strong>読みやすさを測る</strong>：文字の色と背景の色を選ぶと、WCAG 2.x の式でコントラスト比を計算し、AA・AAA の基準と比べます。計算の途中の値も表示するので、手計算で確かめられます。</li>
+      <li><strong>レイアウトの4原則</strong>：近接・整列・反復・対比のボタンを1つずつ押して、チラシの見え方の変化を比べます。「補助線を表示」で、どこに原則が使われているかを確かめられます。</li>
+      <li><strong>伝え方を選ぶ</strong>：抽象化では見る距離を変えて、可視化と構造化では表し方を切りかえて、どれがいちばん伝わりやすいかを考えます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L18">18. 情報デザイン（伝わる見せ方）</a></li>
+      <li><a href="/lessons/#L19">19. 抽象化・可視化・構造化</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>W3C「Web Content Accessibility Guidelines (WCAG) 2.2」（2023）https://www.w3.org/TR/WCAG22/</li>
+      <li>W3C WAI「Understanding SC 1.4.3: Contrast (Minimum)」https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html</li>
+      <li>W3C WAI「Relative luminance（MathML version of the relative luminance definition）」https://www.w3.org/WAI/WCAG22/Understanding/relative-luminance.html</li>
+      <li>W3C WAI「Accessibility, Usability, and Inclusion」https://www.w3.org/WAI/fundamentals/accessibility-usability-inclusion/</li>
+      <li>G. M. Machado, M. M. Oliveira, L. A. F. Fernandes, "A Physiologically-based Model for Simulation of Color Vision Deficiency," IEEE Transactions on Visualization and Computer Graphics, 15(6), pp.1291–1298, 2009 https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html</li>
+      <li>H. Brettel, F. Viénot, J. D. Mollon, "Computerized simulation of color appearance for dichromats," Journal of the Optical Society of America A, 14(10), p.2647, 1997 https://doi.org/10.1364/JOSAA.14.002647</li>
+      <li>日本眼科学会「先天色覚異常」https://www.nichigan.or.jp/public/disease/name.html?pdid=33</li>
+      <li>NC State University, The Center for Universal Design, "The Principles of Universal Design," Version 2.0（1997）https://design.ncsu.edu/wp-content/uploads/2022/11/principles-of-universal-design.pdf</li>
+      <li>ISO 9241-11:2018 Ergonomics of human-system interaction — Part 11: Usability: Definitions and concepts https://www.iso.org/standard/63500.html</li>
+      <li>総務省「みんなの公共サイト運用ガイドライン」https://www.soumu.go.jp/info-accessibility-portal/webaccessibility/guideline/index.html</li>
+      <li>国立国会図書館 カレントアウェアネス・ポータル「ウェブコンテンツのアクセシビリティに関するJISの改正版『JIS X 8341-3:2016』が公示」（2016）https://current.ndl.go.jp/car/31070</li>
+      <li>国土交通省「案内用図記号（JIS Z 8210）」https://www.mlit.go.jp/sogoseisaku/barrierfree/sosei_barrierfree_tk_000145.html</li>
+      <li>Robin Williams, The Non-Designer's Design Book, 4th Edition, Peachpit Press（2014）https://www.oreilly.com/library/view/the-non-designers-design/9780133966350/</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FONT='"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif';
+function pressGroup(attr,btn){ document.querySelectorAll(`[${attr}]`).forEach(x=>x.setAttribute('aria-pressed',String(x===btn))); }
+
+/* ===== タブ ===== */
+(() => {
+  const tabs=[['tabCvd','toolCvd'],['tabCon','toolCon'],['tabLay','toolLay'],['tabWay','toolWay']];
+  tabs.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+    tabs.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  }));
+})();
+
+/* ===================== 色の変換（共通） ===================== */
+// sRGB の8ビット値 ⇔ 線形RGB（WCAG 2.x / IEC 61966-2-1 と同じ式）
+const DEC=new Float64Array(256);
+for(let i=0;i<256;i++){ const c=i/255; DEC[i]= c<=0.04045? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+function encOne(v){ v=v<0?0:v>1?1:v; const c= v<=0.0031308? 12.92*v : 1.055*Math.pow(v,1/2.4)-0.055; return Math.round(c*255); }
+const ENC=new Uint8Array(4096); for(let i=0;i<4096;i++) ENC[i]=encOne(i/4095);
+const enc=v=>ENC[Math.round((v<0?0:v>1?1:v)*4095)];
+// Machado, Oliveira, Fernandes (2009) Table 1, severity 1.0（2色覚に相当）
+const CVD={
+  p:[[0.152286,1.052583,-0.204868],[0.114503,0.786281,0.099216],[-0.003882,-0.048116,1.051998]],
+  d:[[0.367322,0.860646,-0.227968],[0.280085,0.672501,0.047413],[-0.011820,0.042940,0.968881]],
+  t:[[1.255528,-0.076749,-0.178779],[-0.078411,0.930809,0.147602],[0.004733,0.691367,0.303900]],
+};
+function simRGB(r,g,b,M){ const R=DEC[r],G=DEC[g],B=DEC[b];
+  return [enc(M[0][0]*R+M[0][1]*G+M[0][2]*B), enc(M[1][0]*R+M[1][1]*G+M[1][2]*B), enc(M[2][0]*R+M[2][1]*G+M[2][2]*B)]; }
+function simImage(src,M){
+  const out=new ImageData(src.width,src.height), s=src.data, o=out.data;
+  for(let i=0;i<s.length;i+=4){ const R=DEC[s[i]],G=DEC[s[i+1]],B=DEC[s[i+2]];
+    o[i]=enc(M[0][0]*R+M[0][1]*G+M[0][2]*B); o[i+1]=enc(M[1][0]*R+M[1][1]*G+M[1][2]*B); o[i+2]=enc(M[2][0]*R+M[2][1]*G+M[2][2]*B); o[i+3]=s[i+3]; }
+  return out;
+}
+const hex2rgb=h=>{ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); };
+const rgb2hex=a=>'#'+a.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+const simHex=(h,k)=>rgb2hex(simRGB(...hex2rgb(h),CVD[k]));
+
+/* ===================== 色の見え方のちがい ===================== */
+let smp='route', aid=false, view='all', upImg=null;
+const C={red:'#E53935',green:'#43A047',orange:'#FB8C00',brown:'#8D6E63',blue:'#1E88E5',yellow:'#FDD835'};
+function txt(ctx,s,x,y,size,color,opt={}){ ctx.font=`${opt.bold?'700 ':''}${size}px ${FONT}`; ctx.fillStyle=color; ctx.textAlign=opt.align||'left'; ctx.textBaseline=opt.base||'alphabetic'; ctx.fillText(s,x,y); }
+function strokePath(ctx,pts,col,w,dash){ ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.lineJoin='round'; ctx.lineCap= dash&&dash.length? 'butt':'round'; ctx.setLineDash(dash||[]);
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); ctx.restore(); }
+function badge(ctx,x,y,ch,col){ ctx.save(); ctx.beginPath(); ctx.arc(x,y,9.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle=col; ctx.stroke(); ctx.restore(); txt(ctx,ch,x,y+0.5,11.5,'#1c2430',{bold:true,align:'center',base:'middle'}); }
+const LINES=[
+  {id:'A',name:'うみ線',col:C.red,pts:[[20,160],[330,160]],st:[[40,160,'港'],[100,160,'市場'],[245,160,'公園'],[310,160,'東町']],dash:[],bp:[70,160]},
+  {id:'B',name:'もり線',col:C.green,pts:[[170,34],[170,300]],st:[[170,45,'北山'],[170,100,'学校前'],[170,225,'南口'],[170,288,'運動場']],dash:[14,7],bp:[170,72]},
+  {id:'C',name:'そら線',col:C.orange,pts:[[45,52],[300,270]],st:[[55,61,'西が丘'],[110,108,'図書館'],[235,214,'病院'],[290,262,'美術館']],dash:[2,6],bp:[263,238]},
+  {id:'D',name:'かわ線',col:C.brown,pts:[[25,265],[105,265],[250,95],[318,95]],st:[[30,265,'西町'],[105,265,'川辺','b'],[250,95,'駅前'],[312,95,'北町']],dash:'double',bp:[65,265]},
+  {id:'E',name:'ほし線',col:C.blue,pts:[[250,95],[250,32]],st:[[250,36,'空港']],dash:[10,4,2,4],bp:[250,64]},
+];
+function drawRoute(ctx){
+  txt(ctx,'みなと市 鉄道路線図（架空）',12,22,13,'#1F3864',{bold:true});
+  LINES.forEach(L=>{
+    if(aid && L.dash==='double'){ strokePath(ctx,L.pts,L.col,8,[]); strokePath(ctx,L.pts,'#fff',2.6,[]); }
+    else strokePath(ctx,L.pts,L.col,6, aid? L.dash : []);
+  });
+  // 乗りかえ駅
+  ctx.save(); ctx.beginPath(); ctx.arc(170,160,8,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle='#333'; ctx.stroke(); ctx.restore();
+  txt(ctx,'中央',178,152,11,'#1c2430',{bold:true});
+  LINES.forEach(L=>L.st.forEach(([x,y,n,pos])=>{ ctx.save(); ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle= x===250&&y===95? '#333':L.col; ctx.stroke(); ctx.restore();
+    if(pos==='b') txt(ctx,n,x+6,y+18,10.5,'#333'); else txt(ctx,n,x+7,y-7,10.5,'#333'); }));
+  if(aid) LINES.forEach(L=>badge(ctx,L.bp[0],L.bp[1],L.id,L.col));
+  // 凡例
+  ctx.fillStyle='#F7F9FC'; ctx.fillRect(352,40,120,270); ctx.strokeStyle='#C9D2E0'; ctx.lineWidth=1; ctx.strokeRect(352.5,40.5,119,269);
+  txt(ctx,'路線',362,60,12,'#1F3864',{bold:true});
+  LINES.forEach((L,i)=>{ const y=90+i*44;
+    if(aid){ if(L.dash==='double'){ strokePath(ctx,[[362,y],[394,y]],L.col,8,[]); strokePath(ctx,[[362,y],[394,y]],'#fff',2.6,[]); } else strokePath(ctx,[[362,y],[394,y]],L.col,6,L.dash);
+      badge(ctx,408,y,L.id,L.col); txt(ctx,L.name,422,y+4,12,'#1c2430'); }
+    else { strokePath(ctx,[[362,y],[394,y]],L.col,6,[]); txt(ctx,L.name,406,y+4,12,'#1c2430'); }
+  });
+}
+const GR=[{n:'A組',col:C.red,v:[62,65,70,68,74,78],mk:'c',dash:[]},{n:'B組',col:C.green,v:[60,66,64,71,70,75],mk:'t',dash:[10,5]},{n:'C組',col:C.blue,v:[55,58,57,60,63,61],mk:'s',dash:[3,4]}];
+function marker(ctx,x,y,mk,col){ ctx.save(); ctx.fillStyle=col; ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.beginPath();
+  if(mk==='c') ctx.arc(x,y,6,0,Math.PI*2); else if(mk==='t'){ ctx.moveTo(x,y-7); ctx.lineTo(x+7,y+5); ctx.lineTo(x-7,y+5); ctx.closePath(); } else ctx.rect(x-5.5,y-5.5,11,11);
+  ctx.fill(); ctx.stroke(); ctx.restore(); }
+function drawGraph(ctx){
+  txt(ctx,'小テストの平均点（架空の3クラス）',12,22,13,'#1F3864',{bold:true});
+  const l=52,r=aid?400:360,t=54,b=278, X=i=>l+i*(r-l)/5, Y=v=>b-(v-50)*(b-t)/30;
+  for(let v=50;v<=80;v+=5){ ctx.strokeStyle=v===50?'#9AA6BC':'#E3E8F0'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(l,Y(v)); ctx.lineTo(r,Y(v)); ctx.stroke(); txt(ctx,String(v),l-8,Y(v)+4,11,'#5B6472',{align:'right'}); }
+  for(let i=0;i<6;i++) txt(ctx,`${i+1}回`,X(i),b+18,11,'#5B6472',{align:'center'});
+  txt(ctx,'（点）',l-6,t-14,10.5,'#5B6472',{align:'right'});
+  GR.forEach(s=>{ const pts=s.v.map((v,i)=>[X(i),Y(v)]); strokePath(ctx,pts,s.col,3.2,aid?s.dash:[]);
+    if(aid){ pts.forEach(p=>marker(ctx,p[0],p[1],s.mk,s.col)); txt(ctx,s.n,X(5)+12,Y(s.v[5])+5,12.5,'#1c2430',{bold:true}); } });
+  if(!aid){ ctx.fillStyle='#F7F9FC'; ctx.fillRect(374,60,96,96); ctx.strokeStyle='#C9D2E0'; ctx.strokeRect(374.5,60.5,95,95);
+    GR.forEach((s,i)=>{ const y=84+i*26; ctx.fillStyle=s.col; ctx.fillRect(386,y-8,16,12); txt(ctx,s.n,410,y+3,12,'#1c2430'); }); }
+}
+const SIG=[{c:C.red,pos:2,sym:'×',w:'止まれ'},{c:C.green,pos:0,sym:'✓',w:'進め'},{c:C.yellow,pos:1,sym:'!',w:'注意'}];
+function drawSignal(ctx){
+  txt(ctx,aid?'光る位置・記号・文字でも区別するランプ':'色だけで区別するランプ（架空の装置）',12,22,13,'#1F3864',{bold:true});
+  SIG.forEach((s,i)=>{ const cx=80+i*160, cy=140;
+    txt(ctx,['①','②','③'][i],cx,64,16,'#1F3864',{bold:true,align:'center'});
+    ctx.save(); ctx.fillStyle='#2B2F36';
+    if(aid){ roundRect(ctx,cx-68,cy-30,136,60,14); ctx.fill();
+      for(let k=0;k<3;k++){ const x=cx-44+k*44; ctx.beginPath(); ctx.arc(x,cy,17,0,Math.PI*2); ctx.fillStyle= k===s.pos? s.c : '#4A4F57'; ctx.fill();
+        if(k===s.pos) txt(ctx,s.sym,x,cy+1,20,s.c===C.yellow?'#1c2430':'#fff',{bold:true,align:'center',base:'middle'}); }
+      ctx.restore(); txt(ctx,s.w,cx,cy+62,18,'#1c2430',{bold:true,align:'center'});
+    } else { roundRect(ctx,cx-42,cy-42,84,84,18); ctx.fill(); ctx.beginPath(); ctx.arc(cx,cy,30,0,Math.PI*2); ctx.fillStyle=s.c; ctx.fill(); ctx.restore(); }
+  });
+  if(aid){ txt(ctx,'左：進め　中：注意　右：止まれ（光る位置で決まる）',240,290,12.5,'#1c2430',{align:'center'}); }
+  else { const items=[[C.red,'止まれ'],[C.yellow,'注意'],[C.green,'進め']]; let x=96;
+    txt(ctx,'凡例',40,292,12.5,'#1c2430',{bold:true});
+    items.forEach(([c,w])=>{ ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,288,8,0,Math.PI*2); ctx.fill(); txt(ctx,w,x+14,292,12.5,'#1c2430'); x+=104; }); }
+}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+const SEATS=['11010011','01101100','10011011','00110101'];
+function drawSeat(ctx){
+  txt(ctx,'自習室の空席状況（架空）',12,22,13,'#1F3864',{bold:true});
+  ctx.fillStyle='#E7ECF5'; ctx.fillRect(60,38,360,22); txt(ctx,'前（ホワイトボード）',240,53,11.5,'#5B6472',{align:'center'});
+  SEATS.forEach((row,j)=>[...row].forEach((u,i)=>{ const x=60+i*45+(i>=4?6:0), y=76+j*48; const used=u==='1';
+    ctx.save(); roundRect(ctx,x,y,38,36,7);
+    if(aid){ ctx.fillStyle= used? C.red : '#E8F5E9'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle= used? C.red : C.green; ctx.stroke(); ctx.restore();
+      txt(ctx,used?'×':'○',x+19,y+19,20,used?'#fff':'#1B5E20',{bold:true,align:'center',base:'middle'}); }
+    else { ctx.fillStyle= used? C.red : C.green; ctx.fill(); ctx.restore(); }
+  }));
+  const ly=290; txt(ctx,'凡例',60,ly+4,12.5,'#1c2430',{bold:true});
+  [[false,'空き'],[true,'使用中']].forEach(([used,w],k)=>{ const x=110+k*110; ctx.save(); roundRect(ctx,x,ly-11,22,20,4);
+    if(aid){ ctx.fillStyle= used? C.red:'#E8F5E9'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle= used? C.red:C.green; ctx.stroke(); ctx.restore(); txt(ctx,used?'×':'○',x+11,ly,13,used?'#fff':'#1B5E20',{bold:true,align:'center',base:'middle'}); }
+    else { ctx.fillStyle= used? C.red:C.green; ctx.fill(); ctx.restore(); }
+    txt(ctx,w,x+30,ly+4,12.5,'#1c2430'); });
+}
+const QS={
+  route:['「港」から「美術館」へ行きます。何線から何線に乗りかえればよいでしょう？','うみ線（港→中央）に乗り、中央で、そら線に乗りかえます（中央→美術館）。'],
+  graph:['6回目に、平均点がいちばん高かったのはどのクラスでしょう？','A組（78点）です。B組は75点、C組は61点です。'],
+  signal:['①〜③のランプは、それぞれ何を表しているでしょう？','①止まれ（赤）、②進め（緑）、③注意（黄）です。'],
+  seat:['空いている席はいくつあるでしょう？','14席です（32席のうち18席が使用中）。'],
+};
+const MSG={
+  route:['5本の線を色だけで区別しています','1型・2型の近似では、赤（うみ線）・緑（もり線）・オレンジ（そら線）・茶色（かわ線）の区別がつきにくくなります。3型の近似では、青や緑のあたりの見え方が変わります。凡例と線の色を見くらべる方法では、どの線か分からなくなってしまいます。','線の模様・記号・名前でも区別しています','線を実線・破線・点線・二重線などに変え、A〜Eの記号を線の上と凡例の両方に付けました。色が似て見えても、模様と記号で線を追えます。駅の名前の近くに記号を付けるのも、実際によく使われる工夫です。'],
+  graph:['3本の線を色だけで区別しています','1型・2型の近似では、A組（赤）とB組（緑）の線がほとんど同じ色に見えます。凡例が線から離れているので、どちらがどちらかを確かめる手がかりがありません。','点の形・線の種類・名前でも区別しています','●▲■の点、実線・破線・点線、線の右はしの名前で区別しています。凡例を見に行かなくても、線のそばで答えが分かります。'],
+  signal:['ランプの色だけで意味を区別しています','1型・2型の近似では、赤・黄・緑のちがいが分かりにくくなります。同じ場所が光るランプでは、色以外に手がかりがありません。','光る位置・記号・文字でも区別しています','3つの位置のうちどこが光るかで意味が決まり、記号（✓ ! ×）と文字も付けました。信号機のように、色が分かりにくくても位置で意味が伝わります。'],
+  seat:['空き・使用中を色だけで区別しています','1型・2型の近似では、緑（空き）と赤（使用中）が似た色に見え、空いている席を数えられません。','記号と塗り方でも区別しています','空きは「○」でうすい塗り、使用中は「×」で濃い塗りにしました。記号と明るさの差があるので、色あいが分からなくても数えられます。'],
+};
+function renderCvd(){
+  const cO=$('cvO'); let ctx=cO.getContext('2d');
+  if(smp==='upload' && upImg){
+    const maxS=900, sc=Math.min(1,maxS/Math.max(upImg.width,upImg.height));
+    const w=Math.max(1,Math.round(upImg.width*sc)), h=Math.max(1,Math.round(upImg.height*sc));
+    [cO,$('cvP'),$('cvD'),$('cvT')].forEach(c=>{ c.width=w; c.height=h; });
+    ctx=cO.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(upImg,0,0,w,h);
+  } else {
+    [cO,$('cvP'),$('cvD'),$('cvT')].forEach(c=>{ c.width=480; c.height=320; });
+    ctx=cO.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,480,320);
+    ({route:drawRoute,graph:drawGraph,signal:drawSignal,seat:drawSeat})[smp](ctx);
+  }
+  const src=ctx.getImageData(0,0,cO.width,cO.height);
+  [['cvP','p'],['cvD','d'],['cvT','t']].forEach(([id,k])=>$(id).getContext('2d').putImageData(simImage(src,CVD[k]),0,0));
+  const q=$('cvdQ'), m=$('cvdMsg');
+  if(smp==='upload'){
+    q.innerHTML='<b>考えよう</b>：元の画像で色によって区別していたところは、1型・2型・3型の近似でも区別できるでしょうか。区別できないところには、どんな工夫を足せばよいでしょう。';
+    m.className='msg'; m.innerHTML='<div class="t">選んだ画像を変換しました</div>画像は、このブラウザの中だけで処理しています。大きな画像は、長い辺が900ピクセルになるように縮小しています。ポスターやスライドを作ったら、画像として保存して確かめてみましょう。';
+  } else {
+    q.innerHTML=`<b>問い</b>：${esc(QS[smp][0])}　1型・2型の近似の図だけを見て、答えられるか試してみましょう。<details class="ans"><summary>答えを見る</summary>${esc(QS[smp][1])}</details>`;
+    const mm=MSG[smp]; m.className= aid? 'msg ok':'msg'; m.innerHTML= aid? `<div class="t">${mm[2]}</div>${mm[3]}` : `<div class="t">${mm[0]}</div>${mm[1]}　「形・模様・文字でも区別する」に切りかえて比べてみましょう。`;
+  }
+}
+function applyView(){
+  document.querySelectorAll('#cvdFigs .fig').forEach(f=>{ const k=f.dataset.k; f.hidden= !(view==='all' || k==='o' || k===view); });
+  }
+document.querySelectorAll('[data-smp]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-smp',b); smp=b.dataset.smp; document.querySelectorAll('[data-aid]').forEach(x=>x.disabled=false); renderCvd(); }));
+document.querySelectorAll('[data-aid]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-aid',b); aid=b.dataset.aid==='1'; renderCvd(); }));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-view',b); view=b.dataset.view; applyView(); }));
+$('cvdFile').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const url=URL.createObjectURL(f); const img=new Image();
+  img.onload=()=>{ upImg=img; smp='upload'; pressGroup('data-smp',null); document.querySelectorAll('[data-aid]').forEach(x=>x.disabled=true); renderCvd(); URL.revokeObjectURL(url); };
+  img.onerror=()=>{ URL.revokeObjectURL(url); const m=$('cvdMsg'); m.className='msg ng'; m.innerHTML='<div class="t">画像を読み込めませんでした</div>PNG や JPEG などの画像ファイルを選んでください。'; };
+  img.src=url; e.target.value='';
+});
+
+/* ===================== コントラスト ===================== */
+let fg='#767676', bg='#FFFFFF', cSize=16, cBold=false;
+const lin8=v=>DEC[v];
+function relLum(h){ const [r,g,b]=hex2rgb(h); return 0.2126*lin8(r)+0.7152*lin8(g)+0.0722*lin8(b); }
+function cRatio(a,b){ const L1=relLum(a), L2=relLum(b); const hi=Math.max(L1,L2), lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
+const fmtR=r=>(Math.floor(r*100)/100).toFixed(2); // 切り上げない（4.499→4.49）
+function normHex(s){ s=String(s).trim().replace(/^＃/,'#'); if(!s.startsWith('#')) s='#'+s; return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s)? rgb2hex(hex2rgb(s)) : null; }
+function renderCon(){
+  const r=cRatio(fg,bg), large= cSize>=24 || (cBold && cSize>=18.66);
+  $('cSample').style.background=bg; $('cSample').style.color=fg;
+  $('cSampleT').style.fontSize=cSize+'px'; $('cSampleT').style.fontWeight=cBold?'700':'400';
+  $('cSizeV').textContent=cSize+'px'+(cBold?'・太字':'');
+  $('cRatio').textContent=fmtR(r)+' : 1';
+  $('cKind').textContent= large? '大きな文字' : '通常の文字';
+  const rows=[['AA','通常の文字',4.5,false],['AA','大きな文字',3,true],['AAA','通常の文字',7,false],['AAA','大きな文字',4.5,true]];
+  $('cJudge').innerHTML='<tr><th>レベル</th><th>文字</th><th>基準</th><th>判定</th></tr>'+rows.map(([lv,k,th,lg])=>`<tr class="${lg===large?'cur':''}"><td>${lv}</td><td>${k}</td><td>${th}:1 以上</td><td class="${r>=th?'pass':'fail'}">${r>=th?'合格':'不合格'}</td></tr>`).join('');
+  const aa= r>=(large?3:4.5), aaa= r>=(large?4.5:7), m=$('cMsg');
+  const kind= large?'大きな文字':'通常の文字';
+  if(aaa){ m.className='msg ok'; m.innerHTML=`<div class="t">${fmtR(r)} : 1　${kind}として AA・AAA の両方を満たします</div>多くの人にとって読みやすい組み合わせです。`; }
+  else if(aa){ m.className='msg ok'; m.innerHTML=`<div class="t">${fmtR(r)} : 1　${kind}として AA を満たします（AAA は ${large?4.5:7}:1 が必要）</div>WCAG で多くの場合に目標とされるのは AA です。長い文章や、小さな文字が多いときは、さらに差を大きくするとより読みやすくなります。`; }
+  else { m.className='msg ng'; m.innerHTML=`<div class="t">${fmtR(r)} : 1　${kind}として AA の基準（${large?3:4.5}:1）に届きません</div>${!large&&r>=3?'文字を大きく（24px以上、または太字で18.7px以上）すれば、AA の「大きな文字」の基準 3:1 は満たします。':'文字か背景の明るさを変えて、差を大きくしましょう。'}`; }
+  // 計算の過程
+  const step=h=>{ const [R,G,B]=hex2rgb(h); const l=[R,G,B].map(lin8); const L=0.2126*l[0]+0.7152*l[1]+0.0722*l[2];
+    return {R,G,B,l,L,s:`<code>${h}</code>：R=${R}, G=${G}, B=${B} → 255で割る → ${[R,G,B].map(v=>(v/255).toFixed(4)).join(', ')} → 線形にもどす → ${l.map(v=>v.toFixed(4)).join(', ')}<br>　L = 0.2126×${l[0].toFixed(4)} + 0.7152×${l[1].toFixed(4)} + 0.0722×${l[2].toFixed(4)} = <b>${L.toFixed(4)}</b>`}; };
+  const a=step(fg), b=step(bg), hi=Math.max(a.L,b.L), lo=Math.min(a.L,b.L);
+  $('cCalc').innerHTML=`<b>計算の過程</b>（WCAG 2.x の相対輝度の式）<br>文字 ${a.s}<br>背景 ${b.s}<br>コントラスト比 = (${hi.toFixed(4)} + 0.05) ÷ (${lo.toFixed(4)} + 0.05) = <b>${r.toFixed(4)}</b>　→ 小数第3位以下を切り捨てて <b>${fmtR(r)} : 1</b>`;
+  $('cSim').innerHTML=[['p','1型色覚の近似'],['d','2型色覚の近似'],['t','3型色覚の近似']].map(([k,n])=>{ const f2=simHex(fg,k), b2=simHex(bg,k), r2=cRatio(f2,b2);
+    return `<div><div class="sw" style="background:${b2};color:${f2};">文字 Aa</div><div class="k">${n}<br>コントラスト比 <b>${fmtR(r2)}</b></div></div>`; }).join('');
+}
+function setColors(f,b,from){ fg=f; bg=b; $('cFg').value=f.toLowerCase(); $('cBg').value=b.toLowerCase(); if(from!=='fh') $('cFgH').value=f; if(from!=='bh') $('cBgH').value=b; renderCon(); }
+$('cFg').addEventListener('input',e=>setColors(e.target.value.toUpperCase(),bg));
+$('cBg').addEventListener('input',e=>setColors(fg,e.target.value.toUpperCase()));
+$('cFgH').addEventListener('input',e=>{ const h=normHex(e.target.value); if(h) setColors(h,bg,'fh'); });
+$('cBgH').addEventListener('input',e=>{ const h=normHex(e.target.value); if(h) setColors(fg,h,'bh'); });
+$('cSwap').addEventListener('click',()=>setColors(bg,fg));
+document.querySelectorAll('[data-pre]').forEach(b=>b.addEventListener('click',()=>{ const [f,g]=b.dataset.pre.split(','); setColors(f,g); }));
+$('cSize').addEventListener('input',e=>{ cSize=+e.target.value; renderCon(); });
+$('cBold').addEventListener('click',()=>{ cBold=!cBold; $('cBold').setAttribute('aria-pressed',String(cBold)); renderCon(); });
+
+/* ===================== レイアウトの4原則 ===================== */
+const PR={
+  prox:{n:'近接',good:'関係のある情報どうしを近づけ、まとまりとまとまりの間をあけています。「日時」の見出しと日付・時刻がひとかたまりに見えるので、どこに何が書いてあるかが一目で分かります。',bad:'すべての行が同じ間かくで並んでいます。見出しと、その中身との距離が、ほかのまとまりとの距離と同じなので、どの行がどの見出しに属するのか分かりにくくなっています。'},
+  align:{n:'整列',good:'すべての文字の左はしを、1本の見えない線にそろえています。目は上から下へまっすぐ動けばよく、全体がまとまって見えます。',bad:'中央そろえ、右そろえ、字下げがばらばらに混ざっています。行ごとに読み始める位置が変わるので、目が左右に行ったり来たりします。'},
+  rep:{n:'反復',good:'4つの見出しを同じ形（紺色の帯に白い文字）にそろえ、箇条書きの記号も同じにしています。一度「これが見出し」と分かれば、ほかの見出しもすぐに見つかります。',bad:'見出しごとに、色・書体・大きさ・飾りがちがいます。同じ役割なのに見た目がちがうので、読み手は「何か意味のちがいがあるのか」と迷います。'},
+  con:{n:'対比',good:'タイトルと日付を大きく太くし、問い合わせなどの補足は小さくしています。いちばん伝えたいことが最初に目に入り、読む順番が自然に決まります。',bad:'タイトルも本文も、ほとんど同じ大きさと太さです。どこから読めばよいか、何がいちばん大事なのかが分かりません。'},
+};
+let lLast='prox';
+function renderLay(){
+  const fly=$('fly');
+  Object.keys(PR).forEach(k=>document.querySelector(`[data-pr="${k}"]`).setAttribute('aria-pressed',String(fly.dataset[k]==='1')));
+  const on=fly.dataset[lLast]==='1', p=PR[lLast];
+  $('lMsg').className='msg'+(on?' ok':'');
+  $('lMsg').innerHTML=`<div class="t">${p.n}：${on?'良い例':'悪い例'}</div>${on?p.good:p.bad}`;
+  const n=Object.keys(PR).filter(k=>fly.dataset[k]==='1').length;
+  $('lStat').innerHTML=Object.keys(PR).map(k=>`<div class="stt"><div class="k">${PR[k].n}</div><div class="v ${fly.dataset[k]==='1'?'ok':'ng'}" style="font-size:16px;">${fly.dataset[k]==='1'?'良い例':'悪い例'}</div></div>`).join('')
+    +`<div class="stt" style="flex-basis:100%;"><div class="k">使っている原則の数</div><div class="v">${n} / 4</div></div>`;
+  $('guideKey').hidden= fly.dataset.guide!=='1';
+}
+document.querySelectorAll('[data-pr]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.pr, fly=$('fly'); fly.dataset[k]= fly.dataset[k]==='1'?'0':'1'; lLast=k; renderLay(); }));
+$('lAllOff').addEventListener('click',()=>{ Object.keys(PR).forEach(k=>$('fly').dataset[k]='0'); renderLay(); });
+$('lAllOn').addEventListener('click',()=>{ Object.keys(PR).forEach(k=>$('fly').dataset[k]='1'); renderLay(); });
+$('lGuide').addEventListener('click',()=>{ const fly=$('fly'); fly.dataset.guide= fly.dataset.guide==='1'?'0':'1'; $('lGuide').setAttribute('aria-pressed',String(fly.dataset.guide==='1')); renderLay(); });
+let flashT=null;
+$('lFlash').addEventListener('click',()=>{ clearTimeout(flashT); $('flyCover').hidden=true; $('lFlash').disabled=true; $('lFlash').textContent='見て覚えよう…';
+  flashT=setTimeout(()=>{ $('flyCover').hidden=false; $('lFlash').disabled=false; $('lFlash').textContent='3秒だけ見て覚える'; $('flyBack').focus(); },3000); });
+$('flyBack').addEventListener('click',()=>{ $('flyCover').hidden=true; });
+
+/* ===================== 伝え方を選ぶ ===================== */
+document.querySelectorAll('[data-way]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-way',b); const w=b.dataset.way;
+  $('wayAbs').hidden=w!=='abs'; $('wayVis').hidden=w!=='vis'; $('wayStr').hidden=w!=='str'; }));
+
+/* --- 抽象化 --- */
+const PIC={
+  cup:{n:'カフェ',lv:[
+`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="cg1" x1="0" x2="1"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#EDE6D9"/><stop offset="1" stop-color="#C8BBA5"/></linearGradient><radialGradient id="cg2"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#D9D0C0"/></radialGradient></defs>
+<path d="M44 30c-4-6 4-9 0-15M60 28c-4-7 5-10 0-17M76 30c-4-6 4-9 0-15" stroke="#B9B2A8" stroke-width="2" fill="none" opacity=".8"/>
+<ellipse cx="60" cy="98" rx="50" ry="12" fill="url(#cg2)" stroke="#9A8F80"/><ellipse cx="60" cy="96" rx="30" ry="6" fill="#E8E0D2"/>
+<path d="M88 56c18-2 18 24-2 24" stroke="#B9AE9C" stroke-width="6" fill="none"/><path d="M88 56c18-2 18 24-2 24" stroke="#F3EEE6" stroke-width="2" fill="none"/>
+<path d="M28 48h64l-6 40q-26 12-52 0z" fill="url(#cg1)" stroke="#8C8273"/>
+<ellipse cx="60" cy="48" rx="32" ry="7" fill="#F7F3EC" stroke="#8C8273"/><ellipse cx="60" cy="49" rx="28" ry="5" fill="#5A3418"/><ellipse cx="54" cy="48" rx="9" ry="1.6" fill="#8A5A33"/>
+<g fill="#C0504D" opacity=".85"><circle cx="45" cy="66" r="3"/><circle cx="60" cy="72" r="3"/><circle cx="75" cy="66" r="3"/></g><g fill="#4F8A5B"><circle cx="49" cy="70" r="1.6"/><circle cx="64" cy="76" r="1.6"/><circle cx="79" cy="70" r="1.6"/></g>
+<path d="M36 56q2 18 6 28" stroke="#fff" stroke-width="3" fill="none" opacity=".9"/><path d="M84 96l22-8" stroke="#A9A9A9" stroke-width="3" stroke-linecap="round"/><ellipse cx="108" cy="87" rx="5" ry="3" fill="#BDBDBD"/></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke="#333" stroke-width="2.5" stroke-linejoin="round"><path d="M46 30c-3-5 3-8 0-13M60 28c-3-6 3-9 0-15M74 30c-3-5 3-8 0-13"/><ellipse cx="60" cy="98" rx="46" ry="10" fill="#fff"/><path d="M88 56c18-2 18 24-2 24"/><path d="M28 48h64l-6 40q-26 12-52 0z" fill="#fff"/><ellipse cx="60" cy="48" rx="32" ry="7" fill="#fff"/></g></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="#1F3864"><path d="M24 44h66l-6 44H30z"/><rect x="16" y="94" width="88" height="9" rx="4"/></g><path d="M88 54c20 0 20 26 0 26" stroke="#1F3864" stroke-width="9" fill="none"/><g stroke="#1F3864" stroke-width="7" stroke-linecap="round"><path d="M42 16v14M57 12v18M72 16v14"/></g></svg>`]},
+  bus:{n:'バスのりば',lv:[
+`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FAFAFA"/><stop offset="1" stop-color="#D5D9DE"/></linearGradient></defs>
+<rect x="6" y="34" width="108" height="56" rx="8" fill="url(#bg1)" stroke="#7A8088"/><rect x="6" y="72" width="108" height="6" fill="#2E7D32"/><rect x="6" y="78" width="108" height="3" fill="#FBC02D"/>
+<rect x="12" y="38" width="40" height="7" rx="2" fill="#263238"/><text x="32" y="44" font-size="6" fill="#FFB300" text-anchor="middle" font-family="${FONT}">駅前 行</text>
+<g fill="#9FC7E6" stroke="#5B6A78" stroke-width="1"><rect x="12" y="48" width="14" height="18" rx="2"/><rect x="29" y="48" width="14" height="18" rx="2"/><rect x="46" y="48" width="14" height="18" rx="2"/><rect x="63" y="48" width="14" height="18" rx="2"/><rect x="96" y="40" width="14" height="26" rx="2"/></g>
+<rect x="80" y="44" width="13" height="38" fill="#B0BEC5" stroke="#5B6A78"/><line x1="86.5" y1="44" x2="86.5" y2="82" stroke="#5B6A78"/><rect x="108" y="78" width="6" height="5" fill="#FFF59D" stroke="#999"/><path d="M114 44h4v10" stroke="#555" stroke-width="2" fill="none"/>
+<g><circle cx="28" cy="90" r="11" fill="#333"/><circle cx="28" cy="90" r="5" fill="#B0B0B0"/><circle cx="92" cy="90" r="11" fill="#333"/><circle cx="92" cy="90" r="5" fill="#B0B0B0"/></g>
+<path d="M14 50l8 14" stroke="#fff" stroke-width="2" opacity=".7"/></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="none" stroke="#333" stroke-width="2.5" stroke-linejoin="round"><rect x="8" y="36" width="104" height="52" rx="8" fill="#fff"/><rect x="16" y="46" width="18" height="16"/><rect x="40" y="46" width="18" height="16"/><rect x="64" y="46" width="18" height="16"/><rect x="90" y="46" width="14" height="34"/><circle cx="30" cy="90" r="9" fill="#fff"/><circle cx="90" cy="90" r="9" fill="#fff"/></g></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><path fill="#1F3864" fill-rule="evenodd" d="M30 18h60a10 10 0 0 1 10 10v62H20V28a10 10 0 0 1 10-10zM30 32v26h60V32zM32 72a5 5 0 1 0 10 0a5 5 0 1 0-10 0zM78 72a5 5 0 1 0 10 0a5 5 0 1 0-10 0z"/><rect x="24" y="90" width="16" height="12" rx="3" fill="#1F3864"/><rect x="80" y="90" width="16" height="12" rx="3" fill="#1F3864"/><rect x="12" y="34" width="6" height="16" rx="2" fill="#1F3864"/><rect x="102" y="34" width="6" height="16" rx="2" fill="#1F3864"/></svg>`]},
+  book:{n:'図書室',lv:[
+`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="kg1" x1="0" x2="1"><stop offset="0" stop-color="#F3EBDD"/><stop offset=".9" stop-color="#FFFDF7"/><stop offset="1" stop-color="#D8CDB8"/></linearGradient><linearGradient id="kg2" x1="1" x2="0"><stop offset="0" stop-color="#F3EBDD"/><stop offset=".9" stop-color="#FFFDF7"/><stop offset="1" stop-color="#D8CDB8"/></linearGradient></defs>
+<path d="M6 34q27-6 54 4q27-10 54-4v62q-27-6-54 4q-27-10-54-4z" fill="#7B4A2A"/>
+<path d="M10 30q25-6 50 4v60q-25-10-50-4z" fill="url(#kg1)" stroke="#A89B84"/><path d="M110 30q-25-6-50 4v60q25-10 50-4z" fill="url(#kg2)" stroke="#A89B84"/>
+<g stroke="#9E9E9E" stroke-width="1.2"><path d="M16 42q20-4 38 2M16 49q20-4 38 2M16 56q20-4 38 2M16 63q20-4 38 2M16 70q20-4 38 2M16 77q20-4 38 2M66 44q18-6 38-2M66 51q18-6 38-2M66 58q18-6 38-2M66 65q18-6 38-2M66 72q18-6 38-2M66 79q18-6 38-2"/></g>
+<rect x="56" y="34" width="8" height="62" fill="#000" opacity=".08"/><path d="M84 30v24l5-5 5 5V28" fill="#C62828"/></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="#fff" stroke="#333" stroke-width="2.5" stroke-linejoin="round"><path d="M10 32q25-6 50 4v58q-25-10-50-4z"/><path d="M110 32q-25-6-50 4v58q25-10 50-4z"/></g><g stroke="#333" stroke-width="2"><path d="M20 50q16-3 30 2M20 62q16-3 30 2M70 52q14-5 30-2M70 64q14-5 30-2"/></g></svg>`,
+`<svg viewBox="0 0 120 120" aria-hidden="true"><g fill="#1F3864"><path d="M8 30q26-6 49 5v62q-23-11-49-5z"/><path d="M112 30q-26-6-49 5v62q23-11 49-5z"/></g></svg>`]},
+};
+let pic='cup', dist=1;
+function renderAbs(){
+  const P=PIC[pic], lvN=[['くわしい絵','色・模様・影までかく'],['単純にした絵','輪郭だけを残す'],['ピクトグラム','形の特徴だけを残す']];
+  const sz=Math.round(130/(1+(dist-1)*0.4)), blur=((dist-1)*0.45).toFixed(2);
+  $('aPics').innerHTML=P.lv.map((s,i)=>`<div class="pic"><div class="box">${s.replace('<svg ',`<svg style="width:${sz}px;filter:blur(${blur}px)" `)}</div><div class="k">${lvN[i][0]}<small>${lvN[i][1]}</small></div></div>`).join('');
+  $('aDistV').textContent=['近い','少し離れる','離れる','遠い','とても遠い'][dist-1];
+  const m=$('aMsg');
+  if(dist<=2){ m.className='msg'; m.innerHTML=`<div class="t">「${P.n}」の案内を、3つのかき方で比べます</div>近くで見ると、くわしい絵がいちばん情報が多く見えます。スライダーで「見る距離」を遠くしていくと、どれが最後まで「${P.n}」だと分かるでしょうか。`; }
+  else { m.className='msg ok'; m.innerHTML=`<div class="t">遠くから見ると、ピクトグラムがいちばん分かりやすい</div>小さく、ぼやけて見えると、くわしい絵の細かい模様や影はつぶれて、かえって何の絵か分かりにくくなります。ピクトグラムは、伝えたいことに関係のない部分を取り除き（<b>抽象化</b>）、形の特徴だけを、背景との明るさの差を大きくしてかいているので、離れても、言葉が分からなくても伝わります。`; }
+}
+document.querySelectorAll('[data-pic]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-pic',b); pic=b.dataset.pic; renderAbs(); }));
+$('aDist').addEventListener('input',e=>{ dist=+e.target.value; renderAbs(); });
+
+/* --- 可視化 --- */
+const DS={
+  month:{title:'図書室の月ごとの貸出冊数（架空）',unit:'冊',lab:['4月','5月','6月','7月','8月','9月','10月','11月','12月','1月','2月','3月'],val:[312,285,240,198,120,260,305,330,280,210,350,180],
+    q:'貸出冊数がいちばん少ないのは何月でしょう？ また、9月から11月にかけて、増えている？ 減っている？'},
+  like:{title:'いちばん好きな教科（架空のアンケート、200人）',unit:'人',lab:['情報','体育','数学','英語','国語','その他'],val:[52,46,38,30,20,14],
+    q:'「情報」と答えた人は、全体のおよそ何分の1でしょう？ 2番目に多い教科は？'},
+};
+const PAL=['#2F5496','#C49A2B','#2E7D4F','#8E4B8E','#5B6472','#B5523B','#3E8EBF','#7A9A2E','#A0522D','#4B6C8F','#9C6B30','#666'];
+let ds='month', vt='table', vSort=false;
+function vData(){ const d=DS[ds]; let idx=d.lab.map((_,i)=>i); if(vSort && vt!=='line') idx.sort((a,b)=>d.val[b]-d.val[a]); return {d,lab:idx.map(i=>d.lab[i]),val:idx.map(i=>d.val[i])}; }
+function renderVis(){
+  const {d,lab,val}=vData(), tot=val.reduce((a,b)=>a+b,0), st=$('vStage');
+  $('vSort').disabled= vt==='line'; if(vt==='line') $('vSort').setAttribute('aria-pressed','false');
+  if(vt==='table'){
+    st.innerHTML=`<div style="font-weight:700;color:var(--ink);margin-bottom:8px;">${d.title}</div><div class="scroll"><table class="tb"><tr><th>${ds==='month'?'月':'教科'}</th>${lab.map(l=>`<th>${l}</th>`).join('')}<th>合計</th></tr><tr><td>${d.unit==='冊'?'冊数':'人数'}</td>${val.map(v=>`<td class="m">${v}</td>`).join('')}<td class="m">${tot}</td></tr></table></div>`;
+  } else {
+    const W=640,H=300,l=56,r=16,t=36,b=46; let s=`<text x="${l}" y="20" font-size="14" font-weight="700" fill="#1F3864">${d.title}</text>`;
+    if(vt==='band'){
+      let x=l; const bw=W-l-r, y=64, h=70;
+      val.forEach((v,i)=>{ const w=v/tot*bw, pct=v/tot*100; s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${PAL[i%PAL.length]}" stroke="#fff" stroke-width="1.5"/>`;
+        if(w>34) s+=`<text x="${x+w/2}" y="${y+h/2-3}" font-size="12.5" fill="#fff" text-anchor="middle" font-weight="700">${lab[i]}</text><text x="${x+w/2}" y="${y+h/2+14}" font-size="11.5" fill="#fff" text-anchor="middle">${pct.toFixed(1)}%</text>`;
+        else s+=`<text x="${x+w/2}" y="${y-8}" font-size="10.5" fill="#1c2430" text-anchor="middle">${lab[i]}</text>`;
+        x+=w; });
+      s+=`<text x="${l}" y="${y+h+26}" font-size="12" fill="#5B6472">0%</text><text x="${W-r}" y="${y+h+26}" font-size="12" fill="#5B6472" text-anchor="end">100%（合計 ${tot}${d.unit}）</text>`;
+    } else {
+      const step=Math.max(...val)>150?50:10, max=Math.ceil(Math.max(...val)/step)*step, n=val.length, X=i=>l+(i+0.5)*(W-l-r)/n, Y=v=>H-b-(v/max)*(H-t-b);
+      for(let v=0;v<=max;v+=step){ s+=`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v?'#E3E8F0':'#9AA6BC'}"/><text x="${l-6}" y="${Y(v)+4}" font-size="11" fill="#5B6472" text-anchor="end">${v}</text>`; }
+      s+=`<text x="${l-6}" y="${t-8}" font-size="11" fill="#5B6472" text-anchor="end">（${d.unit}）</text>`;
+      lab.forEach((lb,i)=>{ s+=`<text x="${X(i)}" y="${H-b+18}" font-size="12" fill="#1c2430" text-anchor="middle">${lb}</text>`; });
+      if(vt==='bar'){ const bw=(W-l-r)/n*0.62; val.forEach((v,i)=>{ s+=`<rect x="${X(i)-bw/2}" y="${Y(v)}" width="${bw}" height="${Y(0)-Y(v)}" fill="#2F5496" rx="2"/><text x="${X(i)}" y="${Y(v)-5}" font-size="11" fill="#1c2430" text-anchor="middle">${v}</text>`; }); }
+      else { s+=`<path d="${val.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('')}" fill="none" stroke="#2F5496" stroke-width="3"/>`;
+        val.forEach((v,i)=>{ const nb=[val[i-1],val[i+1]].filter(x=>x!==undefined), low=v<=Math.min(...nb); s+=`<circle cx="${X(i)}" cy="${Y(v)}" r="4.5" fill="#2F5496" stroke="#fff" stroke-width="1.5"/><text x="${X(i)}" y="${low?Y(v)+20:Y(v)-10}" font-size="11" fill="#1c2430" text-anchor="middle">${v}</text>`; }); }
+    }
+    st.innerHTML=`<div class="svgw"><svg viewBox="0 0 640 ${vt==='band'?180:300}" role="img" aria-label="${esc(d.title)}">${s}</svg></div><p class="swipe">図は横にスクロールできます。</p>`;
+  }
+  $('vQ').innerHTML=`<b>問い</b>：${d.q}`;
+  const M={
+    month:{table:['表：正確な数は分かるが、変化はつかみにくい','12個の数を1つずつ読みくらべないと、いつ多くていつ少ないかが分かりません。正確な値を知りたいときには表が向いています。',''],
+      bar:['棒グラフ：月ごとの多い・少ないがすぐ分かる','棒の高さで大小をくらべられます。いちばん少ない8月がすぐに見つかります。',' ok'],
+      line:['折れ線グラフ：時間による変化がいちばん分かりやすい','線のかたむきで、増えているか減っているかが一目で分かります。8月にいちばん少なくなり、9月から11月にかけて増えていく流れが見えます。時間の順に並んだデータには、折れ線グラフが向いています。',' ok'],
+      band:['帯グラフ：このデータには向いていない','帯グラフは「全体の中の割合」を見るためのグラフです。月ごとの冊数を1年間の合計に対する割合にしても、変化の様子は読み取れません。目的に合わないグラフは、かえって分かりにくくなります。',' ng']},
+    like:{table:['表：正確な人数は分かる','人数を正確に読めます。ただ、全体に対する割合は、自分で計算しないと分かりません。',''],
+      bar:['棒グラフ：教科どうしの大小がすぐ分かる','棒の高さで、どの教科が多いかをくらべられます。「大きい順に並べかえる」を押すと、順位がさらに分かりやすくなります。',' ok'],
+      line:['折れ線グラフ：このデータには向いていない','折れ線グラフは、線でつながった点の間に「連続した変化」があるように見せてしまいます。教科は順番のない分類なので、線でつなぐと意味のない「増減」が見えてしまいます。',' ng'],
+      band:['帯グラフ：全体に占める割合がいちばん分かりやすい','合計200人を100％として、それぞれの教科が占める割合を、帯の長さで表しています。「情報」が全体のおよそ4分の1（26％）だと分かります。',' ok']},
+  }[ds][vt];
+  $('vMsg').className='msg'+M[2]; $('vMsg').innerHTML=`<div class="t">${M[0]}</div>${M[1]}`;
+}
+document.querySelectorAll('[data-ds]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-ds',b); ds=b.dataset.ds; renderVis(); }));
+document.querySelectorAll('[data-vt]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-vt',b); vt=b.dataset.vt; renderVis(); }));
+$('vSort').addEventListener('click',()=>{ vSort=!vSort; $('vSort').setAttribute('aria-pressed',String(vSort)); renderVis(); });
+
+/* --- 構造化 --- */
+const BUS=[[7,5],[7,25],[7,45],[8,0],[8,15],[8,30],[8,50],[9,20],[9,50],[10,20],[11,20],[12,20]];
+const hm=(h,m)=>`${h}:${String(m).padStart(2,'0')}`;
+let st='bus', sf='text';
+function busByHour(){ const g={}; BUS.forEach(([h,m])=>(g[h]=g[h]||[]).push(m)); return g; }
+function renderStr(){
+  const S=$('sStage'); let html='';
+  if(st==='bus'){
+    const g=busByHour();
+    if(sf==='text') html=`<p>情報ラボ高校前から駅前行きのバスは、7時台は5分、25分、45分に出発します。8時台は0分、15分、30分、50分に出発します。9時台は20分と50分に出発し、10時台、11時台、12時台は、それぞれ20分に1本ずつ出発します。駅前までは、およそ20分かかります。</p>`;
+    else if(sf==='list') html=`<ul>${Object.keys(g).map(h=>`<li>${h}時台：${g[h].map(m=>m+'分').join('、')}</li>`).join('')}<li>駅前までの時間：約20分</li></ul>`;
+    else if(sf==='table') html=`<div style="font-weight:700;color:var(--ink);margin-bottom:6px;">情報ラボ高校前 → 駅前（平日・架空）</div><div class="scroll"><table class="tb" style="max-width:420px;"><tr><th>時</th><th>分</th></tr>${Object.keys(g).map(h=>`<tr><td class="m">${h}</td><td class="m">${g[h].map(m=>String(m).padStart(2,'0')).join('　')}</td></tr>`).join('')}</table></div><p style="font-size:13px;color:var(--muted);margin-top:6px;">駅前までの時間：約20分</p>`;
+    else { const l=40,r=620,X=t=>l+(t-420)/(780-420)*(r-l); let s=`<line x1="${l}" x2="${r}" y1="110" y2="110" stroke="#9AA6BC" stroke-width="2"/>`;
+      for(let h=7;h<=13;h++){ s+=`<line x1="${X(h*60)}" x2="${X(h*60)}" y1="104" y2="116" stroke="#5B6472"/><text x="${X(h*60)}" y="134" font-size="13" fill="#1c2430" text-anchor="middle">${h}:00</text>`; }
+      BUS.forEach(([h,m],i)=>{ const x=X(h*60+m); s+=`<rect x="${x-3}" y="62" width="6" height="48" fill="#2F5496" rx="2"/><text x="${x}" y="${i%2?52:40}" font-size="11.5" fill="#1F3864" text-anchor="middle">${hm(h,m)}</text>`; });
+      s+=`<rect x="${X(425)}" y="150" width="${X(530)-X(425)}" height="8" fill="#C49A2B" opacity=".6" rx="3"/><text x="${X(477)}" y="176" font-size="12" fill="#7A5A12" text-anchor="middle">本数が多い</text>`;
+      s+=`<rect x="${X(620)}" y="150" width="${X(740)-X(620)}" height="8" fill="#9AA6BC" opacity=".6" rx="3"/><text x="${X(680)}" y="176" font-size="12" fill="#5B6472" text-anchor="middle">1時間に1本</text>`;
+      html=`<div style="font-weight:700;color:var(--ink);margin-bottom:4px;">出発時刻を時間の線の上に並べた図</div><div class="svgw"><svg viewBox="0 0 640 186" role="img" aria-label="出発時刻のタイムライン">${s}</svg></div><p class="swipe">図は横にスクロールできます。</p>`; }
+    $('sQ').innerHTML='<b>問い</b>：駅前に <b>9:00 まで</b>に着きたいとき、乗れるいちばん遅いバスは何時何分の便でしょう？（駅前までは約20分）';
+    $('sAnsT').innerHTML='8:30 の便です。8:30 ＋ 20分 ＝ 8:50 に着きます。次の 8:50 の便では 9:10 になり、間に合いません。';
+    const M={text:['文章：すべての情報はあるが、探しにくい','目的の時刻を見つけるには、文を最初から読んでいく必要があります。数字が文の中にうもれているので、読みまちがえも起きやすくなります。',''],
+      list:['箇条書き：時間ごとに分かれて、少し探しやすい','「何時台」で区切ったので、目的の時間帯の行を探せば済みます。',' ok'],
+      table:['表：「時」と「分」の2つの観点ですぐ探せる','時刻表のように、2つの観点（何時台か・何分か）で整理できる情報は、表にすると探しやすくなります。実際の時刻表の多くがこの形です。',' ok'],
+      fig:['図解：本数の多い時間帯と、間があく時間帯が見える','時間の線の上に並べると、7〜8時台は本数が多く、10時以降は1時間に1本になることが一目で分かります。正確な時刻を読むなら表、全体の様子をつかむなら図、と使い分けます。',' ok']}[sf];
+    $('sMsg').className='msg'+M[2]; $('sMsg').innerHTML=`<div class="t">${M[0]}</div>${M[1]}`;
+  } else {
+    if(sf==='text') html=`<p>本を借りるときは、まず借りたい本を選んで、カウンターに持っていきます。生徒証を持っているときは、本といっしょに生徒証を係の人に渡しますが、生徒証を忘れたときは、カウンターにある用紙に組・番号・名前を書いて、本といっしょに渡します。係の人が本のバーコードを読み取ったら、返却日が書かれた紙を受け取ります。返却日は、借りた日の2週間後です。</p>`;
+    else if(sf==='list') html=`<ol><li>借りたい本を選ぶ</li><li>カウンターに持っていく</li><li>本と生徒証を係の人に渡す<br><span style="color:var(--muted);font-size:14px;">※ 生徒証を忘れたときは、用紙に組・番号・名前を書いて、本といっしょに渡す</span></li><li>本のバーコードを読み取ってもらう</li><li>返却日の紙を受け取る（借りた日の2週間後）</li></ol>`;
+    else if(sf==='table') html=`<div class="scroll"><table class="tb"><tr><th>順番</th><th>すること</th><th>注意</th></tr><tr><td class="m">1</td><td>借りたい本を選ぶ</td><td></td></tr><tr><td class="m">2</td><td>カウンターに持っていく</td><td></td></tr><tr><td class="m">3</td><td>本と生徒証を渡す</td><td>生徒証がないときは、用紙に組・番号・名前を書く</td></tr><tr><td class="m">4</td><td>バーコードを読み取ってもらう</td><td></td></tr><tr><td class="m">5</td><td>返却日の紙を受け取る</td><td>返却日は2週間後</td></tr></table></div>`;
+    else {
+      const box=(x,y,w,t1,t2)=>`<rect x="${x-w/2}" y="${y-20}" width="${w}" height="40" rx="9" fill="#fff" stroke="#2F5496" stroke-width="2"/><text x="${x}" y="${t2?y-3:y+5}" font-size="13.5" text-anchor="middle" fill="#1c2430">${t1}</text>${t2?`<text x="${x}" y="${y+14}" font-size="11.5" text-anchor="middle" fill="#5B6472">${t2}</text>`:''}`;
+      const arr=(x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#5B6472" stroke-width="2" marker-end="url(#ah)"/>`;
+      let s=`<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5B6472"/></marker></defs>`;
+      s+=box(240,30,220,'借りたい本を選ぶ')+arr(240,50,240,78)+box(240,98,220,'カウンターに持っていく')+arr(240,118,240,140);
+      s+=`<path d="M240 142L322 177L240 212L158 177z" fill="#FFF8E7" stroke="#C49A2B" stroke-width="2"/><text x="240" y="182" font-size="13.5" text-anchor="middle" fill="#1c2430">生徒証がある？</text>`;
+      s+=`<path d="M158 177H110V232" fill="none" stroke="#5B6472" stroke-width="2" marker-end="url(#ah)"/><text x="132" y="169" font-size="12.5" fill="#2E7D4F" text-anchor="middle" font-weight="700">はい</text>`;
+      s+=`<path d="M322 177H370V232" fill="none" stroke="#5B6472" stroke-width="2" marker-end="url(#ah)"/><text x="348" y="169" font-size="12.5" fill="#C00000" text-anchor="middle" font-weight="700">いいえ</text>`;
+      s+=box(110,254,196,'本と生徒証を渡す')+box(370,254,212,'用紙に組・番号・名前を書き','本といっしょに渡す');
+      s+=`<path d="M110 274V300H240V318" fill="none" stroke="#5B6472" stroke-width="2" marker-end="url(#ah)"/><path d="M370 274V300H240" fill="none" stroke="#5B6472" stroke-width="2"/>`;
+      s+=box(240,340,250,'バーコードを読み取ってもらう')+arr(240,360,240,388)+box(240,410,250,'返却日の紙を受け取る','返却日は2週間後');
+      html=`<svg viewBox="0 0 480 440" role="img" aria-label="本を借りる手順のフローチャート" style="max-width:560px;margin:0 auto;">${s}</svg>`;
+    }
+    $('sQ').innerHTML='<b>問い</b>：生徒証を忘れたときは、何をすればよいでしょう？ また、そのあとは何をしてもらうでしょう？';
+    $('sAnsT').innerHTML='カウンターにある用紙に組・番号・名前を書いて、本といっしょに渡します。そのあと、本のバーコードを読み取ってもらい、返却日の紙を受け取ります。';
+    const M={text:['文章：手順の順番と分かれ道が、文の中にうもれている','「〜ときは〜ですが、〜ときは〜」のように、条件による分かれ道が1つの文に入っているので、自分がどちらの場合かを読み分ける必要があります。',''],
+      list:['番号付きの箇条書き：順番がはっきりする','手順に番号があるので、いまどこまで進んだかが分かります。順番に意味がある情報には、番号付きの箇条書きが向いています。',' ok'],
+      table:['表：「すること」と「注意」を分けて整理できる','観点ごとに列を分けたので、注意すべき点だけを拾い読みできます。',' ok'],
+      fig:['図解（フローチャート）：分かれ道がいちばん分かりやすい','「生徒証がある？」という条件で道が2つに分かれ、また1つにもどる様子が見えます。条件によって手順が変わる情報は、図解にすると、自分が進む道を目で追えます。',' ok']}[sf];
+    $('sMsg').className='msg'+M[2]; $('sMsg').innerHTML=`<div class="t">${M[0]}</div>${M[1]}`;
+  }
+  S.innerHTML=html; $('sAns').open=false;
+}
+document.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-st',b); st=b.dataset.st; renderStr(); }));
+document.querySelectorAll('[data-sf]').forEach(b=>b.addEventListener('click',()=>{ pressGroup('data-sf',b); sf=b.dataset.sf; renderStr(); }));
+
+/* ===== 初期化 ===== */
+renderCvd(); applyView(); renderCon(); renderLay(); renderAbs(); renderVis(); renderStr();
+</script>
+</body>
+</html>

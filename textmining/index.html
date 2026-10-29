@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>テキストマイニングとオープンデータ（頻度・共起・データクレンジング・CSVとJSON）｜情報ラボ</title>
+<meta name="description" content="自由記述のアンケートを単語に分けて数え、出現回数のグラフやワードクラウド、共起ネットワークを作れる無料ツール。表記ゆれ・欠損値・外れ値を整えるデータクレンジングや、オープンデータとCSV・JSONの違いも体験できます。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/textmining/">
+<meta property="og:title" content="テキストマイニングとオープンデータ｜情報ラボ">
+<meta property="og:description" content="文章を単語に分けて数える、いっしょに出る語を線で結ぶ、データを整える、オープンデータを使う。データ活用の流れを体験できる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/textmining/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; min-width:0;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14.5px; margin:14px 0 8px; color:var(--navy);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  .sl{margin-top:10px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl label{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+
+  .two{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
+  .two>*{min-width:0;}
+  .two.kgrid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);}
+  @media (max-width:760px){ .two,.two.kgrid{grid-template-columns:minmax(0,1fr);} }
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+  .stt .v.ok{color:var(--ok);} .stt .v.ng{color:var(--ng);}
+  .stt .was{font-size:11.5px; color:var(--muted); font-family:var(--mono);}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d); overflow-wrap:anywhere;}
+  .msg b{color:#ffd97a;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  textarea.ta{width:100%; min-height:190px; font-family:inherit; font-size:15px; line-height:1.7; border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; background:#fff; resize:vertical; color:#1c2430; display:block;}
+  textarea.small{min-height:110px; font-size:14px;}
+  textarea.code{font-family:var(--mono); font-size:13.5px; line-height:1.55; white-space:pre; overflow-wrap:normal; overflow-x:auto;}
+  .opts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:6px 18px;}
+  .ck{display:flex; gap:8px; align-items:flex-start; font-size:14px; cursor:pointer;}
+  .ck input{width:18px; height:18px; margin:4px 0 0; accent-color:var(--navy); flex:0 0 auto;}
+  .ck select{font-family:inherit; font-size:14px; border:1px solid var(--line); border-radius:6px; padding:1px 4px; background:#fff;}
+  .lists{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-top:12px;}
+  .lists>*{min-width:0;}
+  @media (max-width:760px){ .lists{grid-template-columns:minmax(0,1fr);} }
+  .lists label{display:block; font-weight:700; font-size:13.5px; color:var(--ink); margin-bottom:4px;}
+
+  .seg{line-height:2.2; font-size:15px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px; overflow-wrap:anywhere;}
+  .seg .ln{padding:4px 0; border-bottom:1px dashed var(--panel2);}
+  .seg .ln:last-child{border-bottom:none;}
+  .seg .no{display:inline-block; min-width:2.2em; font-family:var(--mono); font-size:12px; color:var(--muted);}
+  .tk{display:inline-block; border:1px solid #9DB0D6; background:#EEF3FB; border-radius:5px; padding:0 5px; margin:1px 2px; line-height:1.65;}
+  .tk.rm{border-style:dashed; border-color:#C9D2E0; background:#fff; color:#8A94A6; text-decoration:line-through;}
+  .tk.dc{border-color:var(--gold); background:#FFF8E7;}
+  .tk .to{font-size:11px; color:#8a6a10; margin-left:2px; text-decoration:none;}
+  .pun{color:#8A94A6; margin:0 1px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; margin-top:8px; color:var(--muted);}
+  .legend .tk{font-size:12px;}
+
+  .bars{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .br{display:grid; grid-template-columns:minmax(0,7.5em) minmax(0,1fr) 2.4em; gap:8px; align-items:center; font-size:14px; padding:3px 4px; cursor:pointer; border-radius:6px;
+    background:none; border:none; width:100%; font-family:inherit; color:#1c2430; text-align:left;}
+  .br:hover{background:var(--panel);}
+  .br .lb{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right;}
+  .br .bt{height:16px;}
+  .br .bf{height:100%; background:var(--navy); border-radius:0 4px 4px 0; min-width:2px;}
+  .br .vl{font-family:var(--mono); text-align:right;}
+  .br.sel{background:#FFF8E7;} .br.sel .lb{font-weight:700; color:var(--ink);} .br.sel .bf{background:var(--gold);}
+
+  .cloud,.net{background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; min-height:120px;}
+  .cloud svg,.net svg{display:block; width:100%; height:auto;}
+  .cloud text{cursor:pointer;}
+  .net svg{touch-action:none; user-select:none; -webkit-user-select:none;}
+  .net .nd{cursor:grab;}
+  .net .nd circle{fill:#DCE5F5; stroke:#2F5496; stroke-width:1.5;}
+  .net .nd text{fill:#1F3864; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:4px; stroke-linejoin:round; pointer-events:none;}
+  .net .nd.on circle{fill:#FFE7A3; stroke:#C49A2B; stroke-width:2.5;}
+  .net .ed .vis{stroke:#8FA1C2; stroke-linecap:round;}
+  .net .ed .hit{stroke:transparent; stroke-width:16; cursor:pointer;}
+  .net .ed.on .vis{stroke:#C49A2B;}
+  .net.dim .ed:not(.on) .vis{stroke:#DCE2EC;}
+  .net.dim .nd:not(.on):not(.nb) circle{fill:#F1F4F9; stroke:#B7C2D6;}
+  .net.dim .nd:not(.on):not(.nb) text{fill:#8A94A6;}
+
+  .ctx{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px; max-height:300px; overflow:auto; font-size:14.5px;}
+  .ctx ol{margin:0; padding-left:1.6em;}
+  .ctx li{margin:3px 0;}
+  .ctx mark{background:#FFE7A3; color:inherit; padding:0 2px; border-radius:3px;}
+  .ctx .who{font-family:var(--mono); font-size:12px; color:var(--muted); margin-right:4px;}
+
+  table.tb{border-collapse:collapse; width:100%; font-size:14px; background:#fff;}
+  table.tb th,table.tb td{border:1px solid var(--line); padding:5px 10px; text-align:left;}
+  table.tb th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+  table.tb td.m{font-family:var(--mono); text-align:right;}
+  table.tb tr.click{cursor:pointer;}
+  table.tb tr.click:hover td{background:var(--panel);}
+  table.tb tr.sel td{background:#FFF8E7;}
+  .scroll{overflow-x:auto; max-width:100%;}
+  .tbox{max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:10px;}
+  .tbox table.tb{border-style:hidden;}
+  .tbox th{position:sticky; top:0;}
+
+  /* データを整える */
+  .steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr)); gap:10px;}
+  .step{border:2px solid var(--line); background:#fff; border-radius:12px; padding:10px 12px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430;}
+  .step b{display:block; color:var(--ink); font-size:14.5px;}
+  .step span{font-size:12.5px; color:var(--muted);}
+  .step[aria-pressed=true]{border-color:var(--gold); background:#FFF8E7;}
+  table.dt th,table.dt td{white-space:nowrap;}
+  table.dt td.chg{background:#FFF0C2;}
+  table.dt tr.gone td{color:#9AA6BC; text-decoration:line-through;}
+  table.dt tr.gone td.memo{text-decoration:none;}
+  table.dt td.memo{font-size:12.5px; color:var(--ng); min-width:11em; white-space:normal;}
+  table.dt td.memo.fl{color:#8a6a10;}
+  table.dt .sp{background:#FBE3E1; color:var(--ng); border-radius:3px; padding:0 2px;}
+  table.dt .emp{color:var(--ng); font-size:12.5px;}
+
+  /* オープンデータ */
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:10px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-width:0;}
+  .card b{color:var(--ink);}
+  .card .n{display:inline-block; width:24px; height:24px; border-radius:50%; background:var(--navy); color:#fff; text-align:center; line-height:24px; font-size:13px; font-weight:700; margin-right:6px;}
+  .stars{display:flex; flex-direction:column; gap:6px;}
+  .star{display:grid; grid-template-columns:6.2em minmax(0,1fr); gap:10px; align-items:center; border:2px solid var(--line); background:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; text-align:left; font-family:inherit; color:#1c2430; font-size:14px;}
+  .star .s{color:var(--gold); font-size:16px; letter-spacing:1px; white-space:nowrap;}
+  .star[aria-pressed=true]{border-color:var(--gold); background:#FFF8E7;}
+  .fmts{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:12px;}
+  .fmt{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; min-width:0; display:flex; flex-direction:column; gap:8px;}
+  .fmt h3{margin:0; font-size:15px; color:var(--ink);}
+  .fmt .sub{font-size:12.5px; color:var(--muted); margin:0;}
+  .fmt .res{font-size:14px; border-radius:8px; padding:8px 10px; background:var(--panel); min-height:3.2em;}
+  .fmt .res.ok{background:#E6F2EA; color:#1e5235;} .fmt .res.ng{background:#FBE9E7; color:#8E2B22;}
+  .fmt .grow{flex:1 1 auto;}
+  pre.code{font-family:var(--mono); font-size:13px; line-height:1.5; background:#0f1a2e; color:#E6EDF7; border-radius:8px; padding:10px 12px; white-space:pre; overflow-x:auto; margin:0; max-height:260px;}
+  canvas.img{width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:6px; user-select:none; -webkit-user-select:none; background:#fff;}
+  .links{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:10px;}
+  .links a{display:block; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 14px; color:var(--navy); text-decoration:none; overflow-wrap:anywhere;}
+  .links a:hover{background:var(--panel2);}
+  .links a b{display:block; font-size:15px;}
+  .links a span{display:block; font-size:12.5px; color:var(--muted);}
+  .links a small{display:block; font-family:var(--mono); font-size:11.5px; color:var(--muted);}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left;}
+  .article th{background:var(--panel); color:var(--ink);}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px; overflow-wrap:anywhere;}
+  .formula{background:var(--panel); border-left:4px solid var(--navy); padding:12px 16px; margin:0 0 14px; font-size:15px; overflow-x:auto;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ テキストマイニングとオープンデータ</p>
+    <h1>テキストマイニングとオープンデータ</h1>
+    <p class="lead">アンケートの自由記述のような文章も、単語に分けて数えれば、データとして分析できます。集めたデータを整え、公開されているデータを使うところまで、手を動かして確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabCount" aria-selected="true" aria-controls="toolCount">ことばを数える</button>
+    <button class="tab" role="tab" id="tabCo" aria-selected="false" aria-controls="toolCo">いっしょに出ることば</button>
+    <button class="tab" role="tab" id="tabClean" aria-selected="false" aria-controls="toolClean">データを整える</button>
+    <button class="tab" role="tab" id="tabOpen" aria-selected="false" aria-controls="toolOpen">オープンデータ</button>
+  </div>
+
+  <!-- ===== ことばを数える ===== -->
+  <section class="tool show" id="toolCount" role="tabpanel" aria-labelledby="tabCount">
+    <div class="panel">
+      <h2>分析する文章（1行に1人分の回答）。例を選ぶか、自分で書いたり貼り付けたりします</h2>
+      <div class="row" id="cSamples">
+        <button class="chip" data-s="fes" aria-pressed="true">文化祭の感想</button>
+        <button class="chip" data-s="lunch" aria-pressed="false">学食への要望</button>
+        <button class="chip" data-s="phone" aria-pressed="false">家での勉強とスマホ</button>
+        <button class="chip" id="cClear">空にする</button>
+      </div>
+      <p class="hint" style="margin:8px 0;">例の回答は、この教材のために作った<b>架空のもの</b>です。入力した文章は、このページの中だけで処理され、どこにも送られません。</p>
+      <textarea class="ta" id="cText" aria-label="分析する文章" spellcheck="false"></textarea>
+    </div>
+
+    <div class="panel">
+      <h2>数えない語（ストップワード）の設定と、単語のつなぎ方</h2>
+      <div class="opts">
+        <label class="ck"><input type="checkbox" id="oNfkc" checked><span>全角・半角をそろえる（ｽﾏﾎ → スマホ、１２０ → 120）</span></label>
+        <label class="ck"><input type="checkbox" id="oNum" checked><span>数字・記号だけの語を除く</span></label>
+        <label class="ck"><input type="checkbox" id="oHira" checked><span>ひらがなだけの短い語を除く（<select id="oHiraN" aria-label="除く文字数"><option value="1">1文字</option><option value="2" selected>2文字以下</option><option value="3">3文字以下</option></select>）</span></label>
+        <label class="ck"><input type="checkbox" id="oOne"><span>1文字の語をすべて除く（「列」「席」のような語も消えます）</span></label>
+        <label class="ck"><input type="checkbox" id="oStop" checked><span>下のストップワードを除く</span></label>
+        <label class="ck"><input type="checkbox" id="oDict" checked><span>下のユーザー辞書を使う</span></label>
+      </div>
+      <div class="lists">
+        <div>
+          <label for="cStop">ストップワード（空白か改行で区切る）</label>
+          <textarea class="ta small" id="cStop" spellcheck="false"></textarea>
+        </div>
+        <div>
+          <label for="cDict">ユーザー辞書（1行に1語。「元の語=まとめる語」と書くと1つの語にまとめます）</label>
+          <textarea class="ta small" id="cDict" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <p class="hint" id="cSegNote">このページは、ブラウザに組み込まれた単語の区切り機能（Intl.Segmenter）で文章を区切っています。品詞を調べたり、「楽しかった」を「楽しい」に直したりはしないので、辞書で補います。</p>
+    </div>
+
+    <div class="stats" id="cStats" style="margin-top:0;"></div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>単語に分けた結果</h2>
+      <div class="seg" id="cSeg"></div>
+      <div class="legend"><span><span class="tk">数える語</span></span><span><span class="tk rm">除いた語</span></span><span><span class="tk dc">辞書でつないだ語</span></span><span>（語にふれると理由が出ます）</span></div>
+      <div class="row" style="margin-top:10px;"><button class="chip" id="cSegAll" aria-pressed="false">すべての回答を表示する</button></div>
+    </div>
+
+    <div class="two">
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;">出現回数の多い語（上位15語）</h2>
+        <div class="bars" id="cBars"></div>
+      </div>
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;">出現回数の表（語を押すと、使われた文が出ます）</h2>
+        <div class="tbox"><table class="tb" id="cTable"></table></div>
+      </div>
+    </div>
+
+    <h2 style="font-size:15px;color:var(--ink);margin:18px 0 8px;">ワードクラウド（出現回数が多いほど大きく、濃く表示。位置には意味がありません）</h2>
+    <div class="cloud" id="cCloud"></div>
+    <p class="hint" id="cCloudNote"></p>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2 id="cCtxT">語を選ぶと、その語が使われた文をすべて表示します</h2>
+      <div class="ctx" id="cCtx"><span class="hint" style="margin:0;">グラフ・表・ワードクラウドの語を押してください。</span></div>
+    </div>
+    <div class="msg" id="cMsg"></div>
+  </section>
+
+  <!-- ===== いっしょに出ることば ===== -->
+  <section class="tool" id="toolCo" role="tabpanel" aria-labelledby="tabCo">
+    <div class="panel">
+      <h2>同じ文の中に一緒に出てくる語（共起）を数えて、線で結びます</h2>
+      <p class="hint" style="margin:0 0 10px;" id="coSrc"></p>
+      <div class="row">
+        <span style="font-size:14px;font-weight:700;color:var(--ink);">まとまりの単位</span>
+        <button class="chip" data-u="sent" aria-pressed="true">1つの文</button>
+        <button class="chip" data-u="doc" aria-pressed="false">1人分の回答</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <span style="font-size:14px;font-weight:700;color:var(--ink);">線の太さ</span>
+        <button class="chip" data-m="count" aria-pressed="true">一緒に出た回数</button>
+        <button class="chip" data-m="jac" aria-pressed="false">Jaccard係数（結びつきの強さ）</button>
+      </div>
+      <div class="two" style="margin-top:4px;">
+        <div class="sl"><div class="top"><label for="coN">使う語の数（出現回数の上位）</label><span class="val" id="coNv">15</span></div><input type="range" id="coN" min="6" max="30" value="15"></div>
+        <div class="sl"><div class="top"><label for="coMin">線を引く最小の回数</label><span class="val" id="coMinv">1</span></div><input type="range" id="coMin" min="1" max="5" value="1"></div>
+      </div>
+      <div class="row" style="margin-top:8px;"><button class="chip" id="coRe">配置をやり直す</button><span class="hint" style="margin:0;">語は指でドラッグして動かせます。</span></div>
+    </div>
+    <div class="net" id="coNet"></div>
+    <p class="hint" id="coNote"></p>
+    <div class="two" style="margin-top:14px;">
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;">一緒に出た語の組（押すと文を表示）</h2>
+        <div class="tbox"><table class="tb" id="coTable"></table></div>
+      </div>
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;" id="coCtxT">語か線を選んでください</h2>
+        <div class="ctx" id="coCtx"><span class="hint" style="margin:0;">図の語（丸）や線、左の表を押すと、その語が出てくる文を表示します。</span></div>
+      </div>
+    </div>
+    <div class="msg" id="coMsg"></div>
+  </section>
+
+  <!-- ===== データを整える ===== -->
+  <section class="tool" id="toolClean" role="tabpanel" aria-labelledby="tabClean">
+    <div class="panel">
+      <h2>アンケート「平日に、主に使う端末と1日の利用時間」の回答（架空のデータ）を集計します。そのままでは、正しく集計できません</h2>
+      <div class="steps" id="kSteps">
+        <button class="step" data-k="nfkc" aria-pressed="false"><b>① 全角・半角をそろえる</b><span>ｽﾏﾎ → スマホ、１５０ → 150、前後の空白を取る</span></button>
+        <button class="step" data-k="yure" aria-pressed="false"><b>② 表記ゆれをまとめる</b><span>スマホ → スマートフォン、PC → パソコン</span></button>
+        <button class="step" data-k="num" aria-pressed="false"><b>③ 数値に直す</b><span>「90分」の「分」を取って数にする</span></button>
+        <button class="step" data-k="dup" aria-pressed="false"><b>④ 重複を取り除く</b><span>同じ回答番号の、同じ回答が2回ある</span></button>
+        <button class="step" data-k="out" aria-pressed="false"><b>⑤ 外れ値を確かめる</b><span>ありえない値を除き、大きすぎる値に印をつける</span></button>
+        <button class="step" data-k="drop" aria-pressed="false"><b>⑥ 欠損値：その行を除く</b><span>空欄がある回答を集計に入れない</span></button>
+        <button class="step" data-k="fill" aria-pressed="false"><b>⑥ 欠損値：平均で補う</b><span>空欄の時間を平均値で埋める</span></button>
+      </div>
+      <div class="row" style="margin-top:12px;"><button class="primary" id="kAll">①〜⑥をまとめて行う</button><button class="chip" id="kReset">はじめにもどす</button></div>
+    </div>
+    <div class="stats" id="kStats" style="margin-top:0;"></div>
+    <div class="msg" id="kMsg"></div>
+    <div class="two kgrid" style="margin-top:16px;">
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;">データ（変わったところは黄色、除いた行は線で消しています）</h2>
+        <div class="tbox" style="max-height:none;"><table class="tb dt" id="kTable"></table></div>
+      </div>
+      <div>
+        <h2 style="font-size:15px;color:var(--ink);margin:0 0 8px;">端末ごとの人数</h2>
+        <div class="bars" id="kBars"></div>
+        <p class="hint">はじめは、同じ端末が別々の書き方で数えられています。表計算ソフトの集計でも、同じことが起こります。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== オープンデータ ===== -->
+  <section class="tool" id="toolOpen" role="tabpanel" aria-labelledby="tabOpen">
+    <div class="panel">
+      <h2>オープンデータとは：次の3つすべてに当てはまる形で公開されたデータ（オープンデータ基本指針による定義）</h2>
+      <div class="cards">
+        <div class="card"><span class="n">1</span><b>二次利用できるルールがある</b><br><span style="font-size:13.5px;">営利目的でも非営利目的でも、加工したり配ったりしてよいという利用ルールがついている。</span></div>
+        <div class="card"><span class="n">2</span><b>機械判読に適している</b><br><span style="font-size:13.5px;">コンピュータのプログラムが、自動でデータを加工・編集できる形になっている。</span></div>
+        <div class="card"><span class="n">3</span><b>無償で使える</b><br><span style="font-size:13.5px;">お金を払わずに利用できる。</span></div>
+      </div>
+      <h3>5つ星オープンデータ（使いやすさの段階）</h3>
+      <div class="stars" id="oStars"></div>
+      <div class="msg" id="oStarMsg" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>同じ表を、3つの形で公開しました。「合計と平均を計算する」を押して、コンピュータで集計できるかを比べます</h2>
+      <p class="hint" style="margin:0 0 10px;">データは架空の「情報ラボ市立図書館」の、月ごとの貸出冊数です。</p>
+      <div class="fmts">
+        <div class="fmt">
+          <h3>PDFに貼った表の画像</h3><p class="sub">人が見るには分かりやすい形</p>
+          <div class="grow"><canvas class="img" id="oCanvas" width="560" height="330" role="img" aria-label="貸出冊数の表の画像"></canvas></div>
+          <button class="primary" data-calc="img">合計と平均を計算する</button>
+          <div class="res" id="oResImg">まだ計算していません</div>
+        </div>
+        <div class="fmt">
+          <h3>CSV形式</h3><p class="sub">値をカンマ（,）で区切ったテキスト</p>
+          <div class="grow"><pre class="code" id="oCsv"></pre></div>
+          <button class="primary" data-calc="csv">合計と平均を計算する</button>
+          <div class="res" id="oResCsv">まだ計算していません</div>
+        </div>
+        <div class="fmt">
+          <h3>JSON形式</h3><p class="sub">名前と値の組を { } や [ ] で表したテキスト</p>
+          <div class="grow"><pre class="code" id="oJson"></pre></div>
+          <button class="primary" data-calc="json">合計と平均を計算する</button>
+          <div class="res" id="oResJson">まだ計算していません</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>CSV と JSON を相互に変換する</h2>
+      <div class="row">
+        <button class="chip" id="vEx1">図書館のデータ</button>
+        <button class="chip" id="vEx2">カンマや「"」を含むデータ</button>
+      </div>
+      <div class="two" style="margin-top:12px;">
+        <div><label for="vCsv" style="font-weight:700;font-size:14px;color:var(--ink);">CSV（1行目は項目名）</label><textarea class="ta code" id="vCsv" spellcheck="false"></textarea></div>
+        <div><label for="vJson" style="font-weight:700;font-size:14px;color:var(--ink);">JSON（オブジェクトの配列）</label><textarea class="ta code" id="vJson" spellcheck="false"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:10px;"><button class="primary" id="vToJson">CSV → JSON</button><button class="primary" id="vToCsv">JSON → CSV</button></div>
+      <div class="msg" id="vMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>公的なオープンデータの入手先（外部のサイトが開きます）</h2>
+      <div class="links">
+        <a href="https://www.e-stat.go.jp/" target="_blank" rel="noopener"><b>e-Stat（政府統計の総合窓口）</b><span>国の統計を、分野や省庁から探して見られる。</span><small>https://www.e-stat.go.jp/</small></a>
+        <a href="https://resas.go.jp/" target="_blank" rel="noopener"><b>RESAS（地域経済分析システム）</b><span>人口や産業などの地域のデータを、地図やグラフで見られる。</span><small>https://resas.go.jp/</small></a>
+        <a href="https://data.e-gov.go.jp/info/ja" target="_blank" rel="noopener"><b>e-Govデータポータル</b><span>行政機関が公開しているオープンデータをまとめて検索できる。</span><small>https://data.e-gov.go.jp/info/ja</small></a>
+        <a href="https://www.stat.go.jp/" target="_blank" rel="noopener"><b>総務省統計局</b><span>国勢調査などの統計と、その解説。</span><small>https://www.stat.go.jp/</small></a>
+      </div>
+      <p class="hint">住んでいる都道府県や市区町村のWebサイトにも、オープンデータのページがあることが多いです。このページは外部のデータを読み込みません。ダウンロードしたCSVは、表計算ソフトで開いたり、上の変換ツールに貼り付けたりして使えます。</p>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>データを活用する流れ</h2>
+    <p>データを活用するときは、「何を知りたいか」を決め、データを<strong>集め</strong>、使える形に<strong>整え</strong>、<strong>分析</strong>して、結果を読み取るという流れで進めます。大量のデータの中から、役に立つ規則やパターンを見つけ出すことを<strong>データマイニング</strong>といいます。マイニング（mining）は「採掘」という意味で、データの山から価値のあるものを掘り出すイメージです。このページでは、文章を対象にしたデータマイニングである<strong>テキストマイニング</strong>と、データの集め方・整え方、そして公開されているデータ（オープンデータ）の使い方を体験します。</p>
+
+    <h2>テキストマイニングとは</h2>
+    <p>アンケートの選択式の質問なら、「はい」が何人、「いいえ」が何人と、すぐに数えられます。しかし、「文化祭の感想を自由に書いてください」のような<strong>自由記述</strong>の回答は、一人ひとり書き方がちがうので、そのままでは数えられません。何百人分もあれば、全部を読んでまとめるのも大変です。</p>
+    <p>そこで、文章を単語に分け、どの語が何回出てくるか、どの語とどの語が一緒に出てくるかを数えて、文章全体の傾向をつかみます。これがテキストマイニングです。お店の口コミ、問い合わせの内容、SNSの投稿、授業の振り返りなど、文章のデータはたくさんあり、さまざまな場面で使われています。</p>
+
+    <h3>文章を単語に分ける（形態素解析）</h3>
+    <p>英語は単語と単語の間に空白があるので、空白で区切れば単語に分けられます。日本語は単語の間に空白を入れないので、どこで区切るかをコンピュータが判断しなければなりません。文章を、意味を持つ最小の単位である<strong>形態素</strong>に分けることを<strong>形態素解析</strong>といいます。形態素解析のソフトウェアは、大きな辞書を使って文章を区切り、それぞれの語の<strong>品詞</strong>（名詞・動詞など）を判定し、「楽しかっ」を「楽しい」のように<strong>もとの形（原形）</strong>に直すこともできます。実際のテキストマイニングでは、名詞・動詞・形容詞だけを数える、といった使い方をします。</p>
+    <p><strong>このページの単語の区切りは、形態素解析ではありません。</strong>ブラウザに組み込まれている Intl.Segmenter という機能を使った、簡易的な区切りです。Intl.Segmenter は、JavaScript の国際化機能の仕様（ECMA-402）で定められていますが、どこで区切るかの具体的な方法は、ブラウザなどの実装に任されています。そのため、使うブラウザによって結果が少し変わることがあります。また、品詞は分からず、原形にも直しません。「楽しかった」が「楽」「しか」「っ」「た」のように細かく分かれることもあります。</p>
+    <p>そこで、このページでは2つの工夫で補っています。1つは<strong>ストップワード</strong>です。「の」「が」「て」のような短いひらがなの語や、「する」「こと」のように、どの文章にも出てきて内容を表さない語を、数えない語として除きます。もう1つは<strong>ユーザー辞書</strong>です。「模擬店」のように分かれてほしくない語を登録したり、「楽しかった=楽しい」のように、ちがう形を1つの語にまとめたりできます。本格的な形態素解析のソフトウェアにも、利用者が語を登録できる辞書の機能があります。</p>
+
+    <h3>出現回数とワードクラウド</h3>
+    <p>単語に分けたら、それぞれの語が何回出てくるか（<strong>出現頻度</strong>）を数えます。回数の多い語を棒グラフにすると、回答の中でよく話題にされていることが分かります。<strong>ワードクラウド</strong>は、出現回数の多い語ほど文字を大きくして並べた図です。全体の印象を一目でつかめますが、文字の位置には意味がなく、長い語ほど目立ちやすいという弱点もあります。正確に比べたいときは、棒グラフや表を見ましょう。</p>
+
+    <h3>多い＝重要とは限らない</h3>
+    <p>出現回数を読むときには、いくつか注意が必要です。</p>
+    <ul>
+      <li><strong>言い方のくせが数えられる</strong>：要望を聞くアンケートでは、「〜してほしい」の「ほしい」が上位に来ます。これは内容ではなく、要望を書くときの言い方です。</li>
+      <li><strong>少数の意見が見えなくなる</strong>：1人しか書いていないことでも、大切な意見があります。たとえば食べ物のアレルギーの表示を求める声は、人数が少なくても、安全に関わる重要な意見です。</li>
+      <li><strong>文脈が分からない</strong>：「楽しく」という語が数えられていても、元の文が「楽しくなかった」なら意味は逆です。気になる語は、必ず元の文を読んで確かめます。このページで語を押すと、その語が使われた文を表示するのはそのためです。</li>
+      <li><strong>設定で結果が変わる</strong>：どの語をストップワードにするか、どの語を辞書でまとめるかは、分析する人が決めます。設定によって上位の語が入れかわるので、どんな設定で分析したかを結果と一緒に示すことが大切です。</li>
+    </ul>
+
+    <h3>共起と共起ネットワーク</h3>
+    <p>同じ文の中に、2つの語が一緒に出てくることを<strong>共起</strong>といいます。「模擬店」と「待ち時間」がよく一緒に出てくるなら、「模擬店の待ち時間」が話題になっていると考えられます。語を丸（ノード）、共起を線で表し、一緒に出た回数が多いほど線を太くした図を<strong>共起ネットワーク</strong>といいます。</p>
+    <p>ただし、出現回数の多い語は、どの語とも一緒に出やすくなります。そこで、結びつきの強さを表す指標として<strong>Jaccard（ジャッカード）係数</strong>がよく使われます。</p>
+    <div class="formula">Jaccard係数 ＝ AとBが一緒に出た文の数 ÷ AかBの少なくとも一方が出た文の数</div>
+    <p>値は0から1で、AとBがいつも一緒に出るなら1、一度も一緒に出ないなら0になります。このページの図は、線でつながった語どうしが近づき、すべての語が互いに離れようとする力を計算して並べています（力学モデルによる配置）。そのため、図の上での位置や線の長さには、はっきりした意味はありません。読み取るのは「どの語とどの語が線で結ばれているか」と「線の太さ」です。また、共起は「一緒に出た」ことを示すだけで、原因と結果の関係を示すものではありません。</p>
+
+    <h2>データの集め方</h2>
+    <p>分析に使うデータは、さまざまな方法で集めます。</p>
+    <ul>
+      <li><strong>アンケート・インタビュー</strong>：知りたいことを直接たずねます。選択式は集計しやすく、自由記述は思いがけない意見を拾えます。質問の書き方で答えが変わることがあるので、かたよった聞き方をしないようにします。</li>
+      <li><strong>センサー</strong>：温度・明るさ・加速度などを、機器が自動で計測し続けます。さまざまな「もの」がインターネットにつながる IoT によって、大量のデータが集まるようになりました。</li>
+      <li><strong>ログ</strong>：Webサイトのアクセスの記録や、お店のレジ（POSシステム）の販売記録のように、システムを使ったときに自動で残る記録です。</li>
+      <li><strong>オープンデータ</strong>：国や自治体などが公開しているデータを使います。自分では集められない規模のデータも使えます。</li>
+    </ul>
+    <p>Webページから情報を自動で集めるプログラム（Webスクレイピング）もありますが、そのサイトの利用規約を確かめ、相手のサーバーに負担をかけないようにする必要があります。また、自由記述の回答には、名前など個人を特定できる情報が書かれていることがあります。結果を発表したりデータを共有したりする前に、そうした部分を取り除きます。</p>
+
+    <h2>データを整える（データクレンジング）</h2>
+    <p>集めたばかりのデータには、まちがいや書き方のばらつきがあります。分析の前にそれを直す作業を<strong>データクレンジング</strong>（データクリーニング）といいます。分析にかかる時間の多くは、この作業に使われるともいわれます。主な作業は次のとおりです。</p>
+    <h3>表記ゆれ・全角と半角</h3>
+    <p>「スマホ」「スマートフォン」「ｽﾏﾎ」は、人が読めば同じ意味ですが、コンピュータは別の文字列として数えます。全角と半角のちがいや、前後に入った空白も同じです。全角・半角をそろえ、同じ意味の書き方を1つにまとめる必要があります。「データを整える」のタブで、②の表記ゆれをまとめる前に①の全角・半角をそろえないと、「ｽﾏﾎ」がまとめられずに残ることを確かめてみましょう。整える順番にも意味があるのです。</p>
+    <h3>数値として読めないデータ</h3>
+    <p>「90分」のように単位がついていたり、全角の数字で書かれていたりすると、表計算ソフトやプログラムは数値として扱わず、平均などの計算から黙って外してしまうことがあります。計算結果がおかしいときは、数値として読めているかを確かめます。</p>
+    <h3>重複</h3>
+    <p>同じ人の回答が2回送信されるなど、同じデータが重なって入っていることがあります。そのままでは、その人の回答を2人分として数えてしまいます。ただし、内容が同じでも別の人の回答なら重複ではありません。回答番号のように、一人ひとりを区別できる項目で判断します。</p>
+    <h3>欠損値</h3>
+    <p>答えが空欄になっているなど、値がないことを<strong>欠損値</strong>といいます。扱い方には、その行を集計から除く方法と、平均値などで補う方法があります。除くとデータの数が減り、補うとデータの数は保てますが、平均で補った値は実際に答えられた値ではないので、ばらつきが実際より小さく見えます。どちらを選んだかを記録しておくことが大切です。</p>
+    <h3>外れ値</h3>
+    <p>ほかの値から大きく離れた値を<strong>外れ値</strong>といいます。目安としては、箱ひげ図で使う「第3四分位数＋四分位範囲×1.5より大きい、または第1四分位数−四分位範囲×1.5より小さい」という基準がよく使われます。外れ値には、「1日の利用時間が1500分」のように、ありえない値（入力のまちがいなど）と、めずらしいけれど本当にある値があります。ありえない値は除きますが、本当の値かもしれないものは、すぐに消さずに確かめます。都合の悪い値を消すと、分析結果をゆがめてしまいます。</p>
+
+    <h2>データの形式：CSV と JSON</h2>
+    <p>データを保存したり受け渡したりするときは、決まった形式を使います。代表的なのが CSV と JSON です。どちらも文字だけで書かれたテキストのファイルなので、特定のソフトウェアがなくても読めます。</p>
+    <h3>CSV</h3>
+    <p>CSV（Comma-Separated Values）は、表の1行を1行に書き、値をカンマで区切る形式です。RFC 4180 という文書で、よく使われる書き方がまとめられています。値の中にカンマや改行、ダブルクォーテーション（"）が入るときは、値全体を " で囲み、値の中の " は "" のように2つ重ねて書きます。表計算ソフトで開けるので、表の形のデータによく使われます。文字コードがちがうと文字化けすることがあるので注意します（<a href="/charcode/">文字コード</a>）。</p>
+    <h3>JSON</h3>
+    <p>JSON（JavaScript Object Notation）は、<code>{"月": "4月", "貸出冊数": 8421}</code> のように、名前と値の組をまとめた「オブジェクト」と、値を並べた「配列」<code>[ ]</code>を組み合わせてデータを表す形式です。RFC 8259 で定められています。表の形でなくても、入れ子になったデータを表せるので、Webのサービスとプログラムの間でデータをやり取りするときによく使われます。数値と文字列が区別されるのも特徴です。</p>
+
+    <h2>オープンデータ</h2>
+    <p>国や自治体、企業が持っているデータのうち、だれでも自由に使えるように公開されたものを<strong>オープンデータ</strong>といいます。政府の「オープンデータ基本指針」では、次のいずれにも当てはまる形で公開されたデータをオープンデータと定義しています。</p>
+    <ol>
+      <li>営利目的、非営利目的を問わず二次利用可能なルールが適用されたもの</li>
+      <li>機械判読に適したもの</li>
+      <li>無償で利用できるもの</li>
+    </ol>
+    <p>「機械判読」とは、コンピュータのプログラムが自動的にデータを加工、編集などできることを指します。指針では、機械が読みやすい形式の例として、CSV、XML、JSON、RDF、Markdown などを挙げています。日本では、官民データ活用推進基本法（平成28年法律第103号）によって、国と地方公共団体はオープンデータに取り組むことが義務づけられました。公開されたデータを使うことで、地域の課題の解決や新しいサービスづくり、行政の効率化などが期待されています。</p>
+    <h3>PDF や画像の表は、なぜ使いにくいのか</h3>
+    <p>PDF や画像は、印刷したときの見た目のまま閲覧できる一方で、プログラムでデータを読むのには向いていません。画像の中の表は、コンピュータにとっては色の点の集まりで、どこに何の数字が書いてあるかは分かりません。集計するには、人が数字を打ち直すか、文字を読み取る技術（OCR）を使い、まちがいがないかを確かめる必要があります。同じ表でも、CSV で公開されていれば、そのまま集計やグラフづくりに使えます。</p>
+    <h3>5つ星オープンデータ</h3>
+    <p>Webを発明したティム・バーナーズ＝リーは、オープンデータの使いやすさを5つの段階で表す「5つ星」の考え方を提案しています。★1つは「形式は問わず、オープンなライセンスでWebに公開する」、★2つは「構造化されたデータ（表の画像ではなく表計算ソフトのファイルなど）で公開する」、★3つは「特定のソフトウェアに縛られない形式（CSVなど）を使う」、★4つは「データの一つ一つを URI で示し、ほかの人がリンクできるようにする」、★5つは「ほかのデータにリンクして、データのつながりを示す」です。星が増えるほど、公開する側の手間は増えますが、使う側はデータを組み合わせやすくなります。</p>
+    <h3>オープンデータの入手先</h3>
+    <p>国の統計は、政府統計の総合窓口「e-Stat」で探せます。「RESAS（地域経済分析システム）」は、人口や産業構造などの地域経済に関するデータを、地図やグラフで分かりやすく見られるシステムで、経済産業省と内閣官房が提供しています。行政機関のオープンデータをまとめて検索できる「e-Govデータポータル」もあります。データを使うときは、利用規約を確かめ、出典を示しましょう。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>ことばを数える</strong>：例の文章を選ぶか、1行に1人分ずつ文章を入力します。単語に分けた結果、出現回数の棒グラフと表、ワードクラウドがすぐに更新されます。ストップワードや辞書を書きかえたり、チェックを外したりして、結果がどう変わるかを比べましょう。語を押すと、その語が使われた文がすべて表示されます。</li>
+      <li><strong>いっしょに出ることば</strong>：「ことばを数える」の文章と設定を使って、共起ネットワークを描きます。まとまりの単位（1つの文／1人分の回答）や線の太さ（回数／Jaccard係数）を切りかえて、図がどう変わるかを見ましょう。丸や線、表を押すと、その語が出てくる文を表示します。</li>
+      <li><strong>データを整える</strong>：①〜⑥のボタンを押して、データを1つずつ整えます。押すたびに、端末ごとの人数や利用時間の平均・中央値が再計算されます。ボタンはもう一度押すと取り消せます。どの順番で押しても、結果は①から⑥の順に処理した場合と同じになります。</li>
+      <li><strong>オープンデータ</strong>：同じ表を画像・CSV・JSON で見比べ、集計できるかを確かめます。CSV と JSON の変換ツールには、自分で用意したデータも貼り付けられます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L41">41. テキストマイニングとデータの整理</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>デジタル庁「オープンデータ」https://www.digital.go.jp/resources/open_data</li>
+      <li>デジタル庁「オープンデータ基本指針」（平成29年5月30日決定、令和6年7月5日改正）https://www.digital.go.jp/assets/contents/node/basic_page/field_ref_resources/f7fde41d-ffca-4b2a-9b25-94b8a701a037/f1e42cee/20240705_resources_data_guideline_01.pdf</li>
+      <li>デジタル庁「オープンデータ研修テキスト お手軽導入編」https://digital.go.jp/assets/contents/node/basic_page/field_ref_resources/651e3f74-9a8e-4797-98e9-97f17b0dcce7/a4ba69c0/20240527_resources_open_data_materials-for-learning_text_02.pdf</li>
+      <li>総務省「地方公共団体のオープンデータの推進」https://www.soumu.go.jp/menu_seisaku/ictseisaku/ictriyou/opendata/</li>
+      <li>5つ星オープンデータ https://5stardata.info/ja/</li>
+      <li>政府統計の総合窓口（e-Stat）https://www.e-stat.go.jp/</li>
+      <li>経済産業省「国内最大級のオープンデータプラットフォームである地域経済分析システム（RESAS）の新システムの提供を開始しました」（2025年3月7日）https://www.meti.go.jp/press/2024/03/20250307002/20250307002.html</li>
+      <li>e-Govデータポータル https://data.e-gov.go.jp/info/ja</li>
+      <li>Ecma International, "ECMAScript Internationalization API Specification（ECMA-402）," Segmenter Objects https://tc39.es/ecma402/#segmenter-objects</li>
+      <li>MDN Web Docs「Intl.Segmenter」https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter</li>
+      <li>Unicode, "Unicode Standard Annex #29: Unicode Text Segmentation" https://www.unicode.org/reports/tr29/</li>
+      <li>Y. Shafranovich, "Common Format and MIME Type for Comma-Separated Values (CSV) Files," RFC 4180（2005）https://www.rfc-editor.org/rfc/rfc4180</li>
+      <li>T. Bray, Ed., "The JavaScript Object Notation (JSON) Data Interchange Format," RFC 8259（2017）https://www.rfc-editor.org/rfc/rfc8259</li>
+      <li>文部科学省「高等学校情報科『情報Ⅰ』教員研修用教材」（第4章 情報通信ネットワークとデータの活用）https://www.mext.go.jp/a_menu/shotou/zyouhou/detail/1416756.htm</li>
+    </ul>
+  </section>
+
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const FONT='"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif';
+const fmt=(v,d=1)=>{ const r=Math.round(v*10**d)/10**d; return r.toLocaleString('ja-JP',{maximumFractionDigits:d}); };
+
+/* ===== タブ ===== */
+const TABS=[['tabCount','toolCount'],['tabCo','toolCo'],['tabClean','toolClean'],['tabOpen','toolOpen']];
+TABS.forEach(([tid])=>$(tid).addEventListener('click',()=>{
+  TABS.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  if(tid==='tabCount') drawCloud();
+  if(tid==='tabCo') drawCo(true);
+  if(tid==='tabOpen') drawCanvas();
+}));
+
+/* ===================== ことばを数える ===================== */
+const SAMPLES={
+  fes:{name:'文化祭の感想', text:`クラス展示の準備は大変だったけど、当日はとても楽しかった。
+模擬店の待ち時間が長くて、食べたいものが買えなかった。
+ステージ発表の音響が聞き取りにくかった。来年は改善してほしい。
+準備の時間がもっと欲しかった。放課後だけでは足りない。
+クラスのみんなと協力できて楽しかった。
+模擬店の焼きそばがおいしかった。また食べたい。
+展示の説明を聞いてくれる人が多くてうれしかった。
+待ち時間が長い模擬店には、整理券があるとよいと思う。
+ステージ発表は楽しかったが、席が足りなくて立って見た。
+準備期間が短く、クラス展示の完成がぎりぎりだった。
+写真をたくさん撮った。最高の思い出になった。
+案内の地図がわかりにくく、展示の場所を探すのに時間がかかった。
+部活の発表を家族に見てもらえてうれしかった。
+暑くて疲れた。休憩できる場所がもっとあるとよい。
+来年もクラスで協力して、もっと良い展示を作りたい。
+ゴミ箱が少なくて困った。`, dict:`模擬店
+整理券
+楽しかった=楽しい
+うれしかった=うれしい
+おいしかった=おいしい
+欲しかった=欲しい`},
+  lunch:{name:'学食への要望', text:`人気のメニューがすぐに売り切れるので、数を増やしてほしい。
+昼休みは列が長くて、食べる時間が短くなる。
+カレーの量をもう少し増やしてほしい。
+値段がもう少し安いとうれしい。
+野菜の多いメニューを増やしてほしい。
+列が長いので、食券を前もって買えるようにしてほしい。
+席が足りなくて、座れないことがある。
+日替わりメニューがあると楽しみが増える。
+アレルギーの表示をメニューにのせてほしい。
+売り切れたメニューがわかる表示があるとよい。
+量が多くて値段も安いので満足している。
+列に並ぶ時間を減らしたい。
+席を増やしてほしい。外の席もあるとよい。
+カレーとラーメンが好き。メニューはこのままでよい。
+季節のメニューがあるとうれしい。`, dict:`増やして=増やす
+売り切れる=売り切れ
+売り切れた=売り切れ`},
+  phone:{name:'家での勉強とスマホ', text:`勉強中に通知が来ると、ついスマホを見てしまう。
+動画を見ていると、時間がすぐに過ぎてしまう。
+寝る前にスマホを見て、寝る時間が遅くなる。
+通知を切ると勉強に集中できた。
+調べものにはスマホが便利だが、ほかのアプリを開いてしまう。
+友達へのメッセージの返信が気になって不安になる。
+勉強の時間を記録するアプリを使っている。
+スマホを別の部屋に置くと集中できる。
+動画で授業の復習ができるので助かっている。
+夜はスマホの画面が明るくて目が疲れる。
+メッセージの返信で勉強が止まってしまう。
+使う時間を決めるようにしている。
+寝る前は通知を切るようにしている。
+ゲームの時間が長くなりがちで、睡眠時間が減った。`, dict:`スマホ`},
+};
+const STOP_DEFAULT='する した して します いる ある なる なり こと もの よう ため とても もっと また すぐ つい ほか できる ので けど だけ では だが です ます しまう もう少し 思う 思い';
+$('cStop').value=STOP_DEFAULT;
+
+const SEG=(typeof Intl!=='undefined' && Intl.Segmenter) ? new Intl.Segmenter('ja',{granularity:'word'}) : null;
+if(!SEG) $('cSegNote').innerHTML='<b style="color:var(--ng)">このブラウザは Intl.Segmenter に対応していないため、文字の種類（漢字・カタカナ・ひらがな）が変わるところで区切る、さらに簡単な方法を使っています。</b>';
+function segRaw(s){
+  if(SEG) return [...SEG.segment(s)].map(g=>({t:g.segment, wl:!!g.isWordLike}));
+  return (s.match(/[一-鿿々〆ヵヶ]+|[ァ-ヺー]+|[ぁ-ゟ]+|[A-Za-z0-9]+|[\s\S]/gu)||[]).map(t=>({t, wl:!/^[\s\p{P}\p{S}]+$/u.test(t)}));
+}
+function readOpts(){
+  const nf=$('oNfkc').checked, N=s=>nf? s.normalize('NFKC') : s;
+  const dictList=N($('cDict').value).split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{ const p=l.split(/\s*[=＝→]\s*/); return {from:p[0], to:(p[1]||p[0])}; }).filter(e=>e.from);
+  return { nfkc:nf, dict:$('oDict').checked, hira:$('oHira').checked, hiraN:+$('oHiraN').value, one:$('oOne').checked, num:$('oNum').checked, stop:$('oStop').checked,
+    dictList, stopSet:new Set(N($('cStop').value).split(/[\s、,，]+/).filter(Boolean)) };
+}
+function judge(k,o){
+  const w=k.w, len=[...w].length; let r='';
+  if(o.num && /^[\p{N}\p{P}\p{S}]+$/u.test(w)) r='数字・記号だけの語';
+  else if(!k.dict && o.hira && /^[ぁ-ゟー]+$/.test(w) && len<=o.hiraN) r='ひらがなだけの短い語';
+  else if(!k.dict && o.one && len===1) r='1文字の語';
+  else if(o.stop && o.stopSet.has(w)) r='ストップワード';
+  k.keep=!r; k.why=r; return k;
+}
+function tokenize(sent,o){
+  let parts=[{t:sent}];
+  if(o.dict && o.dictList.length){
+    const map=new Map(o.dictList.map(e=>[e.from,e.to]));
+    const re=new RegExp([...map.keys()].sort((a,b)=>b.length-a.length).map(reEsc).join('|'),'g');
+    parts=[]; let last=0, m;
+    while((m=re.exec(sent))){ if(!m[0]){ re.lastIndex++; continue; } if(m.index>last) parts.push({t:sent.slice(last,m.index)}); parts.push({t:m[0], d:map.get(m[0])}); last=m.index+m[0].length; }
+    if(last<sent.length) parts.push({t:sent.slice(last)});
+  }
+  const out=[];
+  for(const p of parts){
+    if(p.d!==undefined){ out.push(judge({raw:p.t, w:p.d, wl:true, dict:true},o)); continue; }
+    for(const g of segRaw(p.t)) out.push(g.wl? judge({raw:g.t, w:g.t, wl:true},o) : {raw:g.t, w:g.t, wl:false, keep:false});
+  }
+  return out;
+}
+let AN=null;
+function analyze(){
+  const o=readOpts();
+  let text=$('cText').value; if(o.nfkc) text=text.normalize('NFKC');
+  const docs=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(line=>({line,
+    sents:(line.match(/[^。！？!?]+[。！？!?]*|[。！？!?]+/g)||[line]).map(s=>({text:s, toks:tokenize(s,o)}))}));
+  const freq=new Map(), dfreq=new Map(); let total=0, kept=0;
+  docs.forEach(d=>{ const seen=new Set(); d.sents.forEach(s=>s.toks.forEach(t=>{ if(!t.wl) return; total++; if(t.keep){ kept++; freq.set(t.w,(freq.get(t.w)||0)+1); seen.add(t.w); } })); seen.forEach(w=>dfreq.set(w,(dfreq.get(w)||0)+1)); });
+  const list=[...freq].map(([w,c])=>({w,c,d:dfreq.get(w)})).sort((a,b)=>b.c-a.c||b.d-a.d||a.w.localeCompare(b.w,'ja'));
+  AN={docs,list,total,kept,freq,nsent:docs.reduce((a,d)=>a+d.sents.length,0)};
+}
+function tokHtml(t){
+  if(!t.wl) return `<span class="pun">${esc(t.raw)}</span>`;
+  const merged=t.dict && t.w!==t.raw;
+  const tip=t.keep? (t.dict? (merged?`辞書で「${t.w}」にまとめて数える`:'辞書の語として数える') : '数える') : `除く：${t.why}`;
+  return `<span class="tk${t.keep?'':' rm'}${t.dict?' dc':''}" title="${esc(tip)}">${esc(t.raw)}${merged&&t.keep?`<span class="to">→${esc(t.w)}</span>`:''}</span>`;
+}
+function ctxSentence(s,words){
+  return s.toks.map(t=> t.keep && words.has(t.w) ? `<mark>${esc(t.raw)}</mark>` : esc(t.raw)).join('');
+}
+let selWord=null, segAll=false;
+function drawCount(){
+  analyze();
+  const A=AN;
+  $('cStats').innerHTML=`<div class="stt"><div class="k">回答の数</div><div class="v">${A.docs.length}</div></div>
+    <div class="stt"><div class="k">文の数</div><div class="v">${A.nsent}</div></div>
+    <div class="stt"><div class="k">区切った語の数</div><div class="v">${A.total}</div></div>
+    <div class="stt"><div class="k">数えた語（のべ）</div><div class="v ok">${A.kept}</div></div>
+    <div class="stt"><div class="k">異なる語の数</div><div class="v">${A.list.length}</div></div>`;
+  const shown=segAll? A.docs : A.docs.slice(0,5);
+  $('cSeg').innerHTML= shown.length? shown.map((d,i)=>`<div class="ln"><span class="no">${i+1}</span>${d.sents.map(s=>s.toks.map(tokHtml).join('')).join('')}</div>`).join('')
+    + (!segAll && A.docs.length>5? `<div class="ln hint" style="margin:0;">ほか ${A.docs.length-5} 件</div>`:'') : '<span class="hint">文章を入力してください。</span>';
+  if(selWord && !A.freq.has(selWord)) selWord=null;
+  const top=A.list.slice(0,15), max=top.length? top[0].c : 1;
+  $('cBars').innerHTML= top.length? top.map(o=>`<button class="br${o.w===selWord?' sel':''}" data-w="${esc(o.w)}" title="${esc(o.w)}：${o.c}回（${o.d}件の回答）"><span class="lb">${esc(o.w)}</span><span class="bt"><span class="bf" style="display:block;width:${(o.c/max*100).toFixed(1)}%"></span></span><span class="vl">${o.c}</span></button>`).join('') : '<span class="hint">数える語がありません。</span>';
+  $('cTable').innerHTML=`<tr><th>順位</th><th>語</th><th>回数</th><th>回答数</th></tr>`+ A.list.slice(0,60).map((o,i)=>{
+    const rank= i>0 && A.list[i-1].c===o.c ? '' : (i+1);
+    return `<tr class="click${o.w===selWord?' sel':''}" data-w="${esc(o.w)}"><td class="m">${rank}</td><td>${esc(o.w)}</td><td class="m">${o.c}</td><td class="m">${o.d}</td></tr>`; }).join('')
+    + (A.list.length>60? `<tr><td colspan="4" class="hint">ほか ${A.list.length-60} 語（すべて1〜${A.list[60].c}回）</td></tr>`:'');
+  drawCloud(); drawCtx();
+  const m=$('cMsg');
+  if(!A.list.length){ m.className='msg'; m.innerHTML='<div class="t">数える語がありません</div>文章を入力するか、例を選んでください。'; return; }
+  const once=A.list.filter(o=>o.c===1).length, t0=A.list[0];
+  const hiraTop=A.list.slice(0,5).find(o=>/^[ぁ-ゟー]+$/.test(o.w));
+  m.className='msg';
+  m.innerHTML=`<div class="t">いちばん多いのは「${esc(t0.w)}」（${t0.c}回、${t0.d}件の回答）</div>${A.docs.length}件の回答を ${A.total} 語に区切り、そのうち ${A.kept} 語を数えました。1回しか出てこない語が <b>${once}語</b> あります。回数が少なくても大切な意見があるかもしれません。表の下のほうや、元の文章も読んでみましょう。`
+    + (hiraTop? `<br>上位に、ひらがなだけの語「<b>${esc(hiraTop.w)}</b>」があります。内容ではなく言い方を表す語なら、ストップワードに加えると、結果がどう変わるか試してみましょう。`:'');
+}
+function drawCtx(){
+  if(!selWord){ $('cCtxT').textContent='語を選ぶと、その語が使われた文をすべて表示します'; $('cCtx').innerHTML='<span class="hint" style="margin:0;">グラフ・表・ワードクラウドの語を押してください。</span>'; return; }
+  const set=new Set([selWord]), items=[];
+  AN.docs.forEach((d,di)=>d.sents.forEach(s=>{ if(s.toks.some(t=>t.keep&&t.w===selWord)) items.push(`<li><span class="who">回答${di+1}</span>${ctxSentence(s,set)}</li>`); }));
+  $('cCtxT').textContent=`「${selWord}」が使われた文（${items.length}文）`;
+  $('cCtx').innerHTML=`<ol style="list-style:none;padding-left:0;">${items.join('')}</ol>`;
+}
+function pickWord(w){ selWord= selWord===w? null : w; drawCount(); }
+['cBars','cTable'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('[data-w]'); if(b) pickWord(b.dataset.w); }));
+$('cCloud').addEventListener('click',e=>{ const b=e.target.closest('[data-w]'); if(b) pickWord(b.getAttribute('data-w')); });
+
+const mctx=document.createElement('canvas').getContext('2d');
+function drawCloud(){
+  const box=$('cCloud'); const W=box.clientWidth; if(!W||!AN) return;
+  const words=AN.list.slice(0,40);
+  if(!words.length){ box.innerHTML='<p class="hint" style="padding:12px;margin:0;">数える語がありません。</p>'; $('cCloudNote').textContent=''; return; }
+  const H=Math.round(Math.min(400,Math.max(240,W*0.46)));
+  const cmax=words[0].c, cmin=words[words.length-1].c;
+  const fmax=Math.min(58,W/7), fmin=Math.max(12,Math.min(15,W/28));
+  const placed=[]; let s='', miss=0;
+  const tone=r=> r>=0.66?'#1F3864': r>=0.33?'#2F5496': r>=0.12?'#4A6BA8':'#5F78A8';
+  words.forEach(o=>{
+    const r= cmax===cmin? 0.5 : (o.c-cmin)/(cmax-cmin);
+    const f=fmin+(fmax-fmin)*r;
+    mctx.font=`700 ${f}px ${FONT}`;
+    const w=mctx.measureText(o.w).width+6, h=f*1.18;
+    for(let a=0;a<70*Math.PI;a+=0.1){
+      const rr=1.4*a*(W/400), x=W/2+rr*Math.cos(a)*1.7-w/2, y=H/2+rr*Math.sin(a)*0.75-h/2;
+      if(x<4||y<4||x+w>W-4||y+h>H-4) continue;
+      if(placed.some(p=>x<p.x+p.w&&x+w>p.x&&y<p.y+p.h&&y+h>p.y)) continue;
+      placed.push({x,y,w,h});
+      const sel=o.w===selWord;
+      s+=`<text data-w="${esc(o.w)}" x="${(x+w/2).toFixed(1)}" y="${(y+h*0.8).toFixed(1)}" text-anchor="middle" font-size="${f.toFixed(1)}" font-weight="700" fill="${sel?'#C49A2B':tone(r)}" font-family='${FONT}'${sel?' text-decoration="underline"':''}><title>${esc(o.w)}：${o.c}回</title>${esc(o.w)}</text>`;
+      return;
+    }
+    miss++;
+  });
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="ワードクラウド">${s}</svg>`;
+  $('cCloudNote').textContent=`出現回数の上位 ${words.length} 語を表示しています。`+(miss?`（場所が足りず ${miss} 語は表示できませんでした）`:'')+'出現回数が多いほど文字を大きくしています。長い語ほど面積が大きく目立つことに注意しましょう。';
+}
+
+function setSample(k){
+  document.querySelectorAll('[data-s]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===k)));
+  if(SAMPLES[k]){ $('cText').value=SAMPLES[k].text; $('cDict').value=SAMPLES[k].dict; }
+  selWord=null; drawCount();
+}
+document.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>setSample(b.dataset.s)));
+$('cClear').addEventListener('click',()=>{ document.querySelectorAll('[data-s]').forEach(b=>b.setAttribute('aria-pressed','false')); $('cText').value=''; $('cDict').value=''; selWord=null; drawCount(); $('cText').focus(); });
+let cTimer=0;
+const cLater=()=>{ clearTimeout(cTimer); cTimer=setTimeout(drawCount,250); };
+['cText','cStop','cDict'].forEach(id=>$(id).addEventListener('input',()=>{ if(id==='cText') document.querySelectorAll('[data-s]').forEach(b=>{ if(b.getAttribute('aria-pressed')==='true' && $('cText').value!==SAMPLES[b.dataset.s].text) b.setAttribute('aria-pressed','false'); }); cLater(); }));
+['oNfkc','oNum','oHira','oHiraN','oOne','oStop','oDict'].forEach(id=>$(id).addEventListener('change',drawCount));
+$('cSegAll').addEventListener('click',()=>{ segAll=!segAll; $('cSegAll').setAttribute('aria-pressed',String(segAll)); drawCount(); });
+
+/* ===================== いっしょに出ることば ===================== */
+let coUnit='sent', coMetric='count', coSeed=1, CO=null, coSel=null, coPos=[];
+function coCompute(){
+  const N=+$('coN').value, minC=+$('coMin').value;
+  const top=AN.list.slice(0,N).map(o=>o.w), idx=new Map(top.map((w,i)=>[w,i]));
+  const units=[];
+  AN.docs.forEach((d,di)=>{
+    if(coUnit==='doc'){ const set=new Set(); d.sents.forEach(s=>s.toks.forEach(t=>{ if(t.keep&&idx.has(t.w)) set.add(t.w); })); units.push({set,di,sents:d.sents}); }
+    else d.sents.forEach(s=>{ const set=new Set(); s.toks.forEach(t=>{ if(t.keep&&idx.has(t.w)) set.add(t.w); }); units.push({set,di,sents:[s]}); });
+  });
+  const uc=new Map(top.map(w=>[w,0])), pc=new Map();
+  units.forEach(u=>{ const a=[...u.set].sort((x,y)=>idx.get(x)-idx.get(y)); a.forEach(w=>uc.set(w,uc.get(w)+1));
+    for(let i=0;i<a.length;i++) for(let j=i+1;j<a.length;j++){ const k=a[i]+'\t'+a[j]; pc.set(k,(pc.get(k)||0)+1); } });
+  const pairs=[...pc].map(([k,c])=>{ const [a,b]=k.split('\t'); return {a,b,c,j:c/(uc.get(a)+uc.get(b)-c)}; })
+    .sort((p,q)=> coMetric==='jac'? (q.j-p.j||q.c-p.c) : (q.c-p.c||q.j-p.j));
+  const fpairs=pairs.filter(p=>p.c>=minC);
+  const edges=fpairs.slice(0,45);
+  const used=new Set(); edges.forEach(e=>{ used.add(e.a); used.add(e.b); });
+  const nodes=top.filter(w=>used.has(w));
+  return {top,uc,pairs,fpairs,edges,nodes,units,minC};
+}
+function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function coLayout(W,H){
+  const n=CO.nodes.length, rnd=mulberry(coSeed*7919+n), cx=W/2, cy=H/2;
+  const id=new Map(CO.nodes.map((w,i)=>[w,i]));
+  const P=CO.nodes.map((w,i)=>{ const a=2*Math.PI*i/n+rnd()*0.5; const r=Math.min(W,H)*0.33*(0.6+0.4*rnd()); return {x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}; });
+  const E=CO.edges.map(e=>({s:id.get(e.a), t:id.get(e.b)}));
+  const k=Math.sqrt(W*H/Math.max(1,n))*0.35; let temp=W/6;
+  for(let it=0;it<450;it++){
+    const D=P.map(()=>({x:0,y:0}));
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      let dx=P[i].x-P[j].x, dy=P[i].y-P[j].y, d=Math.hypot(dx,dy)||0.01; const f=k*k/d;
+      D[i].x+=dx/d*f; D[i].y+=dy/d*f; D[j].x-=dx/d*f; D[j].y-=dy/d*f; }
+    E.forEach(e=>{ const dx=P[e.s].x-P[e.t].x, dy=P[e.s].y-P[e.t].y, d=Math.hypot(dx,dy)||0.01, f=d*d/k;
+      D[e.s].x-=dx/d*f; D[e.s].y-=dy/d*f; D[e.t].x+=dx/d*f; D[e.t].y+=dy/d*f; });
+    for(let i=0;i<n;i++){
+      const gx=cx-P[i].x, gy=cy-P[i].y, gd=Math.hypot(gx,gy); D[i].x+=gx*0.25*gd/k; D[i].y+=gy*0.25*gd/k;
+      const d=Math.hypot(D[i].x,D[i].y)||1, m=Math.min(d,temp);
+      P[i].x+=D[i].x/d*m; P[i].y+=D[i].y/d*m;
+    }
+    temp=Math.max(0.5,temp*0.985);
+  }
+  // fit the drawing to the box: positions carry no meaning, so stretching is harmless
+  const mx=Math.min(70,W*0.12), my=34;
+  const xs=P.map(p=>p.x), ys=P.map(p=>p.y), x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  P.forEach(p=>{ p.x= x1-x0<1? cx : mx+(p.x-x0)/(x1-x0)*(W-2*mx); p.y= y1-y0<1? cy : my+(p.y-y0)/(y1-y0)*(H-2*my); });
+  return P;
+}
+function nodeR(w,maxc,W){ const sm=W<600; return (sm?7:9)+(sm?10:15)*Math.sqrt((AN.freq.get(w)||1)/maxc); }
+function clampPos(i,W,H){
+  const w=CO.nodes[i]; mctx.font=`700 ${CO.fs}px ${FONT}`;
+  const hw=Math.max(mctx.measureText(w).width/2+8, CO.r[i]+4);
+  coPos[i].x=Math.min(W-hw,Math.max(hw,coPos[i].x)); coPos[i].y=Math.min(H-CO.r[i]-4,Math.max(CO.r[i]+4,coPos[i].y));
+}
+function drawCo(relayout){
+  if(!AN) return;
+  const box=$('coNet'); const W=box.clientWidth; if(!W) return;
+  const H=Math.round(W<600? Math.max(340,W*1.1) : Math.min(560,W*0.62));
+  CO=coCompute(); CO.W=W; CO.H=H; CO.fs=W<500?12.5:14;
+  $('coSrc').innerHTML=`「ことばを数える」タブの文章（${AN.docs.length}件の回答・${AN.nsent}文）と、ストップワード・辞書の設定を使います。`;
+  if(coSel && coSel.type==='node' && !CO.nodes.includes(coSel.w)) coSel=null;
+  if(coSel && coSel.type==='pair' && !CO.pairs.some(p=>p.a===coSel.a&&p.b===coSel.b)) coSel=null;
+  if(!CO.nodes.length){
+    box.innerHTML=`<p class="hint" style="padding:14px;margin:0;">線を引ける語の組がありません。「線を引く最小の回数」を小さくするか、まとまりの単位を「1人分の回答」にしてみましょう。</p>`;
+    $('coNote').textContent=''; drawCoTable(); drawCoCtx(); coMessage(); return;
+  }
+  const maxc=Math.max(...CO.nodes.map(w=>AN.freq.get(w)));
+  CO.r=CO.nodes.map(w=>nodeR(w,maxc,W));
+  coPos=coLayout(W,H); coPos.forEach((_,i)=>clampPos(i,W,H));
+  // push apart nodes whose labels overlap, so every word stays readable
+  mctx.font=`700 ${CO.fs}px ${FONT}`;
+  const bw=CO.nodes.map((w,i)=>Math.max(mctx.measureText(w).width+8, CO.r[i]*2+4)), bh=CO.nodes.map((w,i)=>Math.max(CO.fs+8, CO.r[i]*2+4));
+  for(let it=0;it<80;it++){ let moved=false;
+    for(let i=0;i<coPos.length;i++) for(let j=i+1;j<coPos.length;j++){
+      const dx=coPos[j].x-coPos[i].x, dy=coPos[j].y-coPos[i].y, ox=(bw[i]+bw[j])/2-Math.abs(dx), oy=(bh[i]+bh[j])/2-Math.abs(dy);
+      if(ox>0&&oy>0){ moved=true; if(ox<oy){ const m=ox/2*(dx<0?-1:1); coPos[i].x-=m; coPos[j].x+=m; } else { const m=oy/2*(dy<0?-1:1); coPos[i].y-=m; coPos[j].y+=m; } }
+    }
+    coPos.forEach((_,i)=>clampPos(i,W,H)); if(!moved) break; }
+  const vals=CO.edges.map(e=>coMetric==='jac'?e.j:e.c), vmax=Math.max(...vals), vmin=Math.min(...vals);
+  CO.ew=vals.map(v=> vmax===vmin? 3.5 : 1.5+7*(v-vmin)/(vmax-vmin));
+  const id=new Map(CO.nodes.map((w,i)=>[w,i]));
+  let s='<g class="eds">';
+  CO.edges.forEach((e,k)=>{ const a=coPos[id.get(e.a)], b=coPos[id.get(e.b)];
+    s+=`<g class="ed" data-e="${k}"><line class="vis" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke-width="${CO.ew[k].toFixed(2)}"/><line class="hit" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"><title>${esc(e.a)} − ${esc(e.b)}：${e.c}回、Jaccard ${e.j.toFixed(2)}</title></line></g>`; });
+  s+='</g><g class="nds">';
+  CO.nodes.forEach((w,i)=>{ s+=`<g class="nd" data-n="${i}" transform="translate(${coPos[i].x.toFixed(1)},${coPos[i].y.toFixed(1)})"><circle r="${CO.r[i].toFixed(1)}"><title>${esc(w)}：${AN.freq.get(w)}回</title></circle><text text-anchor="middle" y="${(CO.fs*0.36).toFixed(1)}" font-size="${CO.fs}">${esc(w)}</text></g>`; });
+  s+='</g>';
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="共起ネットワーク">${s}</svg>`;
+  const iso=CO.top.filter(w=>!CO.nodes.includes(w));
+  $('coNote').textContent=`丸の大きさは出現回数、線の太さは${coMetric==='jac'?'Jaccard係数':'一緒に出た回数'}を表します（線は強い順に最大45本）。`+(iso.length?`ほかの語と${CO.minC}回以上一緒に出なかった語（${iso.join('、')}）は表示していません。`:'');
+  applyCoSel(); drawCoTable(); drawCoCtx(); coMessage();
+}
+function applyCoSel(){
+  const svg=$('coNet').querySelector('svg'); if(!svg) return;
+  const nb=new Set(), onE=new Set();
+  if(coSel&&coSel.type==='node') CO.edges.forEach((e,k)=>{ if(e.a===coSel.w||e.b===coSel.w){ onE.add(k); nb.add(e.a); nb.add(e.b); } });
+  if(coSel&&coSel.type==='pair') CO.edges.forEach((e,k)=>{ if(e.a===coSel.a&&e.b===coSel.b) onE.add(k); });
+  $('coNet').classList.toggle('dim',!!coSel);
+  svg.querySelectorAll('.ed').forEach(g=>g.classList.toggle('on',onE.has(+g.dataset.e)));
+  svg.querySelectorAll('.nd').forEach(g=>{ const w=CO.nodes[+g.dataset.n];
+    const on= coSel&&(coSel.type==='node'? w===coSel.w : (w===coSel.a||w===coSel.b));
+    g.classList.toggle('on',!!on); g.classList.toggle('nb',nb.has(w)); });
+}
+function drawCoTable(){
+  const L=CO.fpairs.slice(0,30);
+  $('coTable').innerHTML=`<tr><th>語A</th><th>語B</th><th>回数</th><th>Jaccard</th></tr>`+(L.length? L.map((p,i)=>{
+    const sel=coSel&&coSel.type==='pair'&&coSel.a===p.a&&coSel.b===p.b;
+    return `<tr class="click${sel?' sel':''}" data-p="${i}"><td>${esc(p.a)}</td><td>${esc(p.b)}</td><td class="m">${p.c}</td><td class="m">${p.j.toFixed(2)}</td></tr>`; }).join('') : `<tr><td colspan="4" class="hint">${CO.minC}回以上一緒に出た組はありません。</td></tr>`);
+}
+function drawCoCtx(){
+  const T=$('coCtxT'), C=$('coCtx');
+  if(!coSel){ T.textContent='語か線を選んでください'; C.innerHTML='<span class="hint" style="margin:0;">図の語（丸）や線、左の表を押すと、その語が出てくる文を表示します。</span>'; return; }
+  const words= coSel.type==='node'? [coSel.w] : [coSel.a,coSel.b], set=new Set(words);
+  const hit=CO.units.filter(u=>words.every(w=>u.set.has(w)));
+  const unitName= coUnit==='doc'?'回答':'文';
+  let head='';
+  if(coSel.type==='node'){
+    const part=CO.edges.filter(e=>e.a===coSel.w||e.b===coSel.w).map(e=>({w:e.a===coSel.w?e.b:e.a, c:e.c, j:e.j})).sort((a,b)=>coMetric==='jac'?b.j-a.j:b.c-a.c);
+    T.textContent=`「${coSel.w}」が出てくる${unitName}（${hit.length}）`;
+    head= part.length? `<p style="margin:0 0 6px;font-size:13.5px;">線で結ばれた語：${part.map(p=>`<b>${esc(p.w)}</b>（${p.c}回）`).join('、')}</p>` : '';
+  } else {
+    const p=CO.pairs.find(q=>q.a===coSel.a&&q.b===coSel.b);
+    T.textContent=`「${coSel.a}」と「${coSel.b}」が一緒に出た${unitName}（${hit.length}）`;
+    head=`<p style="margin:0 0 6px;font-size:13.5px;">「${esc(coSel.a)}」が出た${unitName}：${CO.uc.get(coSel.a)}、「${esc(coSel.b)}」が出た${unitName}：${CO.uc.get(coSel.b)}、一緒に出た${unitName}：${p.c}<br>Jaccard係数 ＝ ${p.c} ÷ (${CO.uc.get(coSel.a)} ＋ ${CO.uc.get(coSel.b)} − ${p.c}) ＝ <b>${p.j.toFixed(3)}</b></p>`;
+  }
+  C.innerHTML=head+`<ol style="list-style:none;padding-left:0;">${hit.map(u=>`<li><span class="who">回答${u.di+1}</span>${u.sents.map(s=>ctxSentence(s,set)).join('')}</li>`).join('')}</ol>`;
+}
+function coMessage(){
+  const m=$('coMsg');
+  if(!CO.edges.length){ m.className='msg'; m.innerHTML='<div class="t">線を引ける組がありません</div>語が少ないか、一緒に出る回数が少ないためです。条件をゆるめてみましょう。'; return; }
+  const e=CO.edges[0];
+  m.className='msg';
+  m.innerHTML=`<div class="t">${coMetric==='jac'?'結びつきがいちばん強い':'いちばん多く一緒に出た'}のは「${esc(e.a)}」と「${esc(e.b)}」（${e.c}回、Jaccard ${e.j.toFixed(2)}）</div>`
+    + (coMetric==='count'
+      ? '回数で線の太さを決めると、出現回数の多い語ほど、いろいろな語と太い線で結ばれやすくなります。「Jaccard係数」に切りかえて、どの線が残るかを比べてみましょう。'
+      : 'Jaccard係数は「一緒に出た数 ÷ どちらかが出た数」です。出現回数の多い語でも、いつも一緒に出るわけでなければ値は小さくなります。ただし、1回ずつしか出ない語どうしが1回一緒に出ただけでも 1.00 になるので、回数もあわせて見ましょう。')
+    + ' 図の位置や線の長さには意味がありません。';
+}
+// 操作
+document.querySelectorAll('[data-u]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-u]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); coUnit=b.dataset.u; drawCo(true); }));
+document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); coMetric=b.dataset.m; drawCo(true); }));
+$('coN').addEventListener('input',()=>{ $('coNv').textContent=$('coN').value; drawCo(true); });
+$('coMin').addEventListener('input',()=>{ $('coMinv').textContent=$('coMin').value; drawCo(true); });
+$('coRe').addEventListener('click',()=>{ coSeed++; drawCo(true); });
+$('coTable').addEventListener('click',e=>{ const r=e.target.closest('[data-p]'); if(!r) return; const p=CO.fpairs[+r.dataset.p];
+  coSel= coSel&&coSel.type==='pair'&&coSel.a===p.a&&coSel.b===p.b ? null : {type:'pair',a:p.a,b:p.b}; applyCoSel(); drawCoTable(); drawCoCtx(); });
+(()=>{
+  const box=$('coNet'); let drag=null;
+  const toSvg=(svg,e)=>{ const r=svg.getBoundingClientRect(); return {x:(e.clientX-r.left)*CO.W/r.width, y:(e.clientY-r.top)*CO.H/r.height}; };
+  box.addEventListener('pointerdown',e=>{
+    const svg=box.querySelector('svg'); if(!svg) return;
+    const g=e.target.closest('.nd');
+    if(g){ const p=toSvg(svg,e), i=+g.dataset.n; drag={i,ox:coPos[i].x-p.x,oy:coPos[i].y-p.y,sx:e.clientX,sy:e.clientY,moved:false,svg,g,pid:e.pointerId}; svg.setPointerCapture(e.pointerId); e.preventDefault(); return; }
+    const ed=e.target.closest('.ed');
+    if(ed){ const x=CO.edges[+ed.dataset.e]; coSel= coSel&&coSel.type==='pair'&&coSel.a===x.a&&coSel.b===x.b ? null : {type:'pair',a:x.a,b:x.b}; }
+    else coSel=null;
+    applyCoSel(); drawCoTable(); drawCoCtx();
+  });
+  box.addEventListener('pointermove',e=>{
+    if(!drag) return;
+    if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>4) drag.moved=true;
+    if(!drag.moved) return;
+    const p=toSvg(drag.svg,e), i=drag.i; coPos[i].x=p.x+drag.ox; coPos[i].y=p.y+drag.oy; clampPos(i,CO.W,CO.H);
+    drag.g.setAttribute('transform',`translate(${coPos[i].x.toFixed(1)},${coPos[i].y.toFixed(1)})`);
+    const w=CO.nodes[i], id=new Map(CO.nodes.map((x,j)=>[x,j]));
+    drag.svg.querySelectorAll('.ed').forEach(g=>{ const ed=CO.edges[+g.dataset.e]; if(ed.a!==w&&ed.b!==w) return;
+      const a=coPos[id.get(ed.a)], b=coPos[id.get(ed.b)];
+      g.querySelectorAll('line').forEach(l=>{ l.setAttribute('x1',a.x); l.setAttribute('y1',a.y); l.setAttribute('x2',b.x); l.setAttribute('y2',b.y); }); });
+  });
+  const end=e=>{
+    if(!drag) return;
+    if(!drag.moved){ const w=CO.nodes[drag.i]; coSel= coSel&&coSel.type==='node'&&coSel.w===w ? null : {type:'node',w}; applyCoSel(); drawCoTable(); drawCoCtx(); }
+    try{ drag.svg.releasePointerCapture(drag.pid); }catch(_){}
+    drag=null;
+  };
+  box.addEventListener('pointerup',end); box.addEventListener('pointercancel',end);
+})();
+
+/* ===================== データを整える ===================== */
+const KCOLS=['回答番号','学年','主に使う端末','利用時間（分）'];
+const RAW=[
+  ['1','1年','スマートフォン','120'],['2','1年','スマホ','90分'],['3','２年','ｽﾏﾎ','１５０'],['4','2年','タブレット','60'],
+  ['5','1年','スマホ','180'],['6','3年','パソコン','45'],['7','2年','スマートフォン',''],['8','1年','PC','30'],
+  ['9','3年','スマホ','1500'],['10','2年','ＰＣ','75'],['11','1年','','100'],['12','3年','スマートフォン','200'],
+  ['12','3年','スマートフォン','200'],['13','2年','タブレット','600'],['14','1年','スマホ','140'],['15','3年','ﾀﾌﾞﾚｯﾄ','50'],
+  ['16','2年','タブレット','60'],['5','1年','ｽﾏﾎ','180'],['17','1年','パソコン','９０'],['18','3年',' スマホ','130'],
+];
+const KON={nfkc:false,yure:false,num:false,dup:false,out:false,miss:''};
+let kLast='';
+const isNum=s=>/^\d+(\.\d+)?$/.test(s);
+function quart(a){ const s=[...a].sort((x,y)=>x-y), n=s.length; const med=v=>{ const m=v.length; return m%2? v[(m-1)/2] : (v[m/2-1]+v[m/2])/2; };
+  const lo=s.slice(0,Math.floor(n/2)), hi=s.slice(Math.ceil(n/2)); return {q1:med(lo), q2:med(s), q3:med(hi)}; }
+function pipeline(on){
+  const rows=RAW.map((r,i)=>({i, v:[...r], chg:[0,0,0,0], gone:'', flag:''})), L={};
+  const live=()=>rows.filter(r=>!r.gone);
+  if(on.nfkc){ let n=0; live().forEach(r=>{ r.v=r.v.map((x,j)=>{ const y=x.normalize('NFKC').trim(); if(y!==x){ r.chg[j]=1; n++; } return y; }); }); L.nfkc=n; }
+  if(on.yure){ const M={'スマホ':'スマートフォン','PC':'パソコン'}, OK=new Set(['スマートフォン','タブレット','パソコン','']); let n=0; const left=new Set();
+    live().forEach(r=>{ const x=r.v[2]; if(M[x]){ r.v[2]=M[x]; r.chg[2]=1; n++; } else if(!OK.has(x)) left.add(x); }); L.yure=n; L.yureLeft=[...left]; }
+  if(on.num){ let n=0; const left=new Set(); live().forEach(r=>{ const x=r.v[3]; const y=x.replace(/\s*分\s*$/,'').trim(); if(y!==x&&isNum(y)){ r.v[3]=y; r.chg[3]=1; n++; } if(r.v[3]!==''&&!isNum(r.v[3])) left.add(r.v[3]); }); L.num=n; L.numLeft=[...left]; }
+  if(on.dup){ const seen=new Map(); let n=0; live().forEach(r=>{ const k=r.v.join('\u0001'); if(seen.has(k)){ r.gone=`重複（上の回答番号${r.v[0]}と同じ）`; n++; } else seen.set(k,r); }); L.dup=n;
+    if(!on.nfkc){ const s2=new Set(); let m=0; rows.filter(r=>!r.gone).forEach(r=>{ const k=r.v.map(x=>x.normalize('NFKC').trim()).join('\u0001'); if(s2.has(k)) m++; else s2.add(k); }); L.dupHidden=m; } }
+  if(on.out){ const nums=live().filter(r=>isNum(r.v[3])).map(r=>+r.v[3]);
+    if(nums.length>=4){ const q=quart(nums), iqr=q.q3-q.q1, hiF=q.q3+1.5*iqr, loF=q.q1-1.5*iqr; L.q=q; L.hiF=hiF; L.loF=loF; let n=0, f=0;
+      live().forEach(r=>{ if(!isNum(r.v[3])) return; const t=+r.v[3];
+        if(t>1440){ r.gone='ありえない値（1日は1440分）'; n++; }
+        else if(t>hiF||t<loF){ r.flag='外れ値：本当の値か確かめる'; f++; } }); L.out=n; L.flag=f; } }
+  if(on.miss==='drop'){ let n=0; live().forEach(r=>{ if(r.v[2]===''||r.v[3]===''){ r.gone='欠損値のある行'; n++; } }); L.miss=n; }
+  if(on.miss==='fill'){ const nums=live().filter(r=>isNum(r.v[3])).map(r=>+r.v[3]); const mean=nums.length? Math.round(nums.reduce((a,b)=>a+b,0)/nums.length) : 0; let n=0;
+    live().forEach(r=>{ if(r.v[3]===''){ r.v[3]=String(mean); r.chg[3]=1; n++; } if(r.v[2]===''){ r.v[2]='不明'; r.chg[2]=1; n++; } }); L.miss=n; L.mean=mean; }
+  return {rows,L};
+}
+function kStatsOf(rows){
+  const lv=rows.filter(r=>!r.gone), nums=lv.filter(r=>isNum(r.v[3])).map(r=>+r.v[3]);
+  const dev=new Map(); lv.forEach(r=>dev.set(r.v[2],(dev.get(r.v[2])||0)+1));
+  const s=[...nums].sort((a,b)=>a-b), n=s.length;
+  return {rows:lv.length, nnum:n, mean:n? nums.reduce((a,b)=>a+b,0)/n : NaN, med:n? (n%2? s[(n-1)/2] : (s[n/2-1]+s[n/2])/2) : NaN, max:n? s[n-1]:NaN, dev, ndev:dev.size};
+}
+const K0=kStatsOf(pipeline({}).rows);
+const showCell=x=> x===''? '<span class="emp">（空欄）</span>' : esc(x).replace(/^ +| +$/g,m=>`<span class="sp" title="空白">${'␣'.repeat(m.length)}</span>`);
+function drawClean(){
+  const {rows,L}=pipeline(KON), S=kStatsOf(rows);
+  document.querySelectorAll('[data-k]').forEach(b=>{ const k=b.dataset.k; b.setAttribute('aria-pressed',String(k==='drop'||k==='fill'? KON.miss===k : KON[k])); });
+  const tile=(k,v,was,cls='')=>`<div class="stt"><div class="k">${k}</div><div class="v ${cls}">${v}</div><div class="was">はじめ：${was}</div></div>`;
+  $('kStats').innerHTML=tile('集計する行の数',S.rows,K0.rows)+tile('端末の書き方の種類',S.ndev,K0.ndev)+tile('時間を数値として読めた行',S.nnum,K0.nnum)
+    +tile('利用時間の平均（分）',fmt(S.mean),fmt(K0.mean),'ok')+tile('中央値（分）',fmt(S.med),fmt(K0.med))+tile('最大値（分）',fmt(S.max,0),fmt(K0.max,0));
+  $('kTable').innerHTML=`<tr>${KCOLS.map(c=>`<th>${c}</th>`).join('')}<th>メモ</th></tr>`+rows.map(r=>`<tr class="${r.gone?'gone':''}">${r.v.map((x,j)=>`<td class="${r.chg[j]?'chg':''}${j===0||j===3?' m':''}"${r.chg[j]?` title="もとの値：${esc(RAW[r.i][j]||'（空欄）')}"`:''}>${showCell(x)}</td>`).join('')}<td class="memo${!r.gone&&r.flag?' fl':''}">${esc(r.gone||r.flag)}</td></tr>`).join('');
+  const dv=[...S.dev].sort((a,b)=>b[1]-a[1]), mx=dv.length? dv[0][1]:1;
+  $('kBars').innerHTML=dv.map(([d,c])=>`<div class="br" style="cursor:default" title="${esc(d||'（空欄）')}：${c}人"><span class="lb">${d===''?'（空欄）':esc(d).replace(/^ +| +$/g,m=>'␣'.repeat(m.length))}</span><span class="bt"><span class="bf" style="display:block;width:${(c/mx*100).toFixed(1)}%"></span></span><span class="vl">${c}</span></div>`).join('');
+  const m=$('kMsg'); const avg=`利用時間の平均は ${fmt(K0.mean)} 分 → <b>${fmt(S.mean)} 分</b>、中央値は ${fmt(K0.med)} 分 → <b>${fmt(S.med)} 分</b>になりました。`;
+  const T={
+    '':()=>`<div class="t">①〜⑥のボタンで、データを1つずつ整えましょう</div>いまの平均 ${fmt(K0.mean)} 分は、数値として読めた ${K0.nnum} 行だけで計算されています。「90分」や全角の「１５０」、空欄は、計算から黙って外されています。端末の人数も、同じ端末が ${K0.ndev} 種類の書き方に分かれています。`,
+    nfkc:()=>`<div class="t">① ${L.nfkc} か所の全角・半角や空白をそろえました</div>「ｽﾏﾎ」が「スマホ」に、全角の「１５０」が「150」になり、数として読めるようになりました。「 スマホ」の前の空白も取りました。空白があるだけで、コンピュータは別の文字列として扱います。`,
+    yure:()=>`<div class="t">② ${L.yure} 件の表記ゆれをまとめました</div>「スマホ」を「スマートフォン」に、「PC」を「パソコン」にそろえました。`+(L.yureLeft.length? `<br><b>まだ ${L.yureLeft.map(x=>'「'+esc(x)+'」').join('')} が残っています。</b>全角・半角がちがうため、同じ語だと判定できませんでした。①もしてみましょう。` : ' 端末の書き方が3種類（と空欄）になりました。'),
+    num:()=>`<div class="t">③ ${L.num} 件を数値に直しました</div>「90分」の「分」を取って、90 という数にしました。`+(L.numLeft.length? `<br><b>${L.numLeft.map(x=>'「'+esc(x)+'」').join('')} は、まだ数として読めません。</b>全角の数字は、①でそろえる必要があります。` : ''),
+    dup:()=>`<div class="t">④ 重複していた ${L.dup} 行を取り除きました</div>同じ回答番号で、内容もまったく同じ行は、同じ回答が2回送られたものと考えられます。回答番号4と16は内容が同じですが、番号がちがうので、別の人の回答として残しています。`+(L.dupHidden? `<br><b>全角・半角がそろっていないため、見つけられなかった重複があと ${L.dupHidden} 行あります。</b>①もしてみましょう。` : ''),
+    out:()=> L.q? `<div class="t">⑤ ありえない値を ${L.out} 行除き、${L.flag} 件に印をつけました</div>四分位数は 第1：${fmt(L.q.q1)}、第3：${fmt(L.q.q3)} 分なので、${fmt(L.hiF)} 分より大きい値が外れ値の目安です（第3四分位数 ＋ 四分位範囲 × 1.5）。1500分は、1日（1440分）をこえるので入力のまちがいと考えて除きました。600分（10時間）は外れ値ですが、ありえない値ではないので、消さずに印をつけています。本当かどうかは、回答した人に確かめるなどして判断します。` : `<div class="t">⑤ 数値として読める値が少なすぎます</div>先に①や③をしましょう。`,
+    drop:()=>`<div class="t">⑥ 空欄のある ${L.miss} 行を集計から除きました</div>データの数は減りますが、答えられていない値を想像で埋めることはしません。`,
+    fill:()=>`<div class="t">⑥ 空欄 ${L.miss} か所を補いました</div>空欄の時間を、ほかの回答の平均 ${L.mean} 分で埋め、空欄の端末は「不明」にしました。平均で補っても平均値はほとんど変わりませんが、実際には答えられていない値なので、ばらつきが小さく見えます。どの方法で補ったかを記録しておきましょう。`,
+    all:()=>`<div class="t">①〜⑥をまとめて行いました</div>集計する行は ${K0.rows} → ${S.rows} 行、端末の書き方は ${K0.ndev} → ${S.ndev} 種類になりました。`,
+  };
+  m.className='msg'+(kLast===''?'':' ok'); m.innerHTML=(T[kLast]||T[''])()+(kLast?'<br>'+avg:'');
+}
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.k;
+  if(k==='drop'||k==='fill'){ KON.miss= KON.miss===k? '' : k; kLast= KON.miss? k : ''; }
+  else { KON[k]=!KON[k]; kLast= KON[k]? k : ''; }
+  drawClean();
+}));
+$('kAll').addEventListener('click',()=>{ Object.assign(KON,{nfkc:true,yure:true,num:true,dup:true,out:true,miss:KON.miss||'drop'}); kLast='all'; drawClean(); });
+$('kReset').addEventListener('click',()=>{ Object.assign(KON,{nfkc:false,yure:false,num:false,dup:false,out:false,miss:''}); kLast=''; drawClean(); });
+
+/* ===================== オープンデータ ===================== */
+const STARS=[
+  ['★','形式は問わず、オープンなライセンスでWebに公開する','例：表を画像やPDFにして公開。人が見て、印刷して、保存できます。でも、データを取り出すのは大変です。'],
+  ['★★','構造化されたデータとして公開する','例：表の画像ではなく、表計算ソフトのファイルで公開。そのソフトがあれば、集計やグラフづくりができます。'],
+  ['★★★','特定のソフトウェアに縛られない形式を使う','例：表計算ソフトの独自の形式ではなく CSV で公開。どのソフトやプログラムでも、好きな方法で扱えます。'],
+  ['★★★★','データの一つ一つを URI で示し、ほかの人がリンクできるようにする','例：RDF という形式などで、「この図書館の、この月の貸出冊数」のような一つ一つのデータにWeb上の住所（URI）をつけます。'],
+  ['★★★★★','ほかのデータへリンクして、データのつながりを示す','例：図書館のデータを、市の人口のデータや地図のデータにリンクします。データを組み合わせて、新しいことが分かるようになります。'],
+];
+let oStar=2;
+function drawStars(){
+  $('oStars').innerHTML=STARS.map((s,i)=>`<button class="star" data-st="${i}" aria-pressed="${i===oStar}"><span class="s">${s[0]}</span><span>${s[1]}</span></button>`).join('');
+  $('oStarMsg').innerHTML=`<div class="t">${STARS[oStar][0]}　${STARS[oStar][1]}</div>${STARS[oStar][2]}<br><span style="font-size:13px;opacity:.85">Webを発明したティム・バーナーズ＝リーが提案した段階づけです。星が増えるほど、公開する手間は増えますが、使う側はデータを組み合わせやすくなります。</span>`;
+}
+$('oStars').addEventListener('click',e=>{ const b=e.target.closest('[data-st]'); if(b){ oStar=+b.dataset.st; drawStars(); } });
+
+const LIB=[['4月',8421,26],['5月',9105,25],['6月',8760,26],['7月',10234,27],['8月',11872,27],['9月',9348,25]];
+const LIB_H=['月','貸出冊数','開館日数'];
+const LIB_CSV=[LIB_H.join(','),...LIB.map(r=>r.join(','))].join('\n');
+const LIB_JSON=JSON.stringify(LIB.map(r=>({[LIB_H[0]]:r[0],[LIB_H[1]]:r[1],[LIB_H[2]]:r[2]})),null,2);
+$('oCsv').textContent=LIB_CSV; $('oJson').textContent=LIB_JSON;
+function drawCanvas(){
+  const c=$('oCanvas'), g=c.getContext('2d'), W=560, H=330, dpr=Math.min(2,window.devicePixelRatio||1);
+  if(c.dataset.done==String(dpr)) return; c.dataset.done=String(dpr);
+  c.width=W*dpr; c.height=H*dpr; g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle='#fdfcf8'; g.fillRect(0,0,W,H);
+  g.save(); g.translate(W/2,H/2); g.rotate(-0.012); g.translate(-W/2,-H/2);
+  g.fillStyle='#222'; g.font=`700 22px ${FONT}`; g.textAlign='center'; g.fillText('情報ラボ市立図書館　月別貸出冊数（架空）',W/2,36);
+  g.font=`13px ${FONT}`; g.fillStyle='#555'; g.fillText('2025年度 上半期',W/2,58);
+  const x0=40, cw=[130,190,160], y0=76, rh=36;
+  g.strokeStyle='#444'; g.lineWidth=1.2;
+  const rowsAll=[LIB_H,...LIB.map(r=>[r[0],r[1].toLocaleString('ja-JP')+' 冊',r[2]+' 日'])];
+  rowsAll.forEach((r,i)=>{ const y=y0+i*rh; if(i===0){ g.fillStyle='#e9e9e4'; g.fillRect(x0,y,cw[0]+cw[1]+cw[2],rh); }
+    let x=x0; r.forEach((v,j)=>{ g.strokeRect(x,y,cw[j],rh); g.fillStyle='#222'; g.font=(i===0?'700 ':'')+`19px ${FONT}`; g.textAlign=j===0?'center':'right'; g.fillText(String(v), j===0? x+cw[j]/2 : x+cw[j]-12, y+25); x+=cw[j]; }); });
+  g.restore();
+  const img=g.getImageData(0,0,c.width,c.height), d=img.data, rnd=mulberry(42);
+  for(let i=0;i<d.length;i+=4){ const n=(rnd()-0.5)*18; d[i]+=n; d[i+1]+=n; d[i+2]+=n; }
+  g.putImageData(img,0,0);
+}
+function sumRes(rows,label){
+  const v=rows.map(r=>r[1]), sum=v.reduce((a,b)=>a+b,0), mx=rows.reduce((a,b)=>b[1]>a[1]?b:a);
+  return `<b>${label}</b><br>合計 ${sum.toLocaleString('ja-JP')} 冊、1か月の平均 ${fmt(sum/v.length)} 冊、いちばん多いのは ${esc(mx[0])}（${mx[1].toLocaleString('ja-JP')} 冊）`;
+}
+document.querySelectorAll('[data-calc]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.calc;
+  if(k==='img'){ const r=$('oResImg'); r.className='res ng'; r.innerHTML='<b>計算できません</b><br>画像の中の文字は、コンピュータにとっては色のついた点の集まりです。どこに何の数字があるかは分かりません。人が打ち直すか、文字を読み取る技術（OCR）を使い、まちがいがないか確かめる必要があります。'; }
+  if(k==='csv'){ const r=$('oResCsv'); try{ const rows=parseCSV($('oCsv').textContent); const h=rows[0], ci=h.indexOf('貸出冊数'); const data=rows.slice(1).map(x=>[x[0],Number(x[ci])]);
+    r.className='res ok'; r.innerHTML=sumRes(data,`すぐに計算できました（${data.length}行を読み取り）`); }catch(err){ r.className='res ng'; r.textContent=err.message; } }
+  if(k==='json'){ const r=$('oResJson'); try{ const arr=JSON.parse($('oJson').textContent); const data=arr.map(o=>[o['月'],o['貸出冊数']]);
+    r.className='res ok'; r.innerHTML=sumRes(data,`すぐに計算できました（${data.length}件を読み取り）`); }catch(err){ r.className='res ng'; r.textContent=err.message; } }
+}));
+
+/* CSV ⇄ JSON */
+function parseCSV(s){
+  s=s.replace(/^﻿/,''); const rows=[]; let row=[], f='', q=false, i=0, line=1, started=false;
+  while(i<s.length){ const c=s[i];
+    if(q){ if(c==='"'){ if(s[i+1]==='"'){ f+='"'; i+=2; continue; } q=false; i++; continue; } if(c==='\n') line++; f+=c; i++; continue; }
+    if(c==='"' && f===''){ q=true; started=true; i++; continue; }
+    if(c===','){ row.push(f); f=''; started=false; i++; continue; }
+    if(c==='\r'||c==='\n'){ row.push(f); rows.push(row); row=[]; f=''; started=false; if(c==='\r'&&s[i+1]==='\n') i++; i++; line++; continue; }
+    f+=c; i++;
+  }
+  if(q) throw new Error(`「"」で始まった値が閉じられていません（${line}行目のあたり）。`);
+  if(f!==''||row.length||started){ row.push(f); rows.push(row); }
+  return rows.filter(r=>!(r.length===1&&r[0]===''));
+}
+function csvToJson(s){
+  const rows=parseCSV(s); if(rows.length<1) throw new Error('CSVが空です。');
+  const h=rows[0].map(x=>x.trim());
+  if(h.some(x=>x==='')) throw new Error('1行目（項目名）に空の項目があります。');
+  if(new Set(h).size!==h.length) throw new Error('1行目（項目名）に同じ名前があります。JSONでは同じ名前を区別できません。');
+  const out=rows.slice(1).map((r,i)=>{ if(r.length!==h.length) throw new Error(`${i+2}行目の値の数（${r.length}）が、項目名の数（${h.length}）と合いません。`);
+    const o={}; h.forEach((k,j)=>{ const v=r[j]; o[k]= /^-?(0|[1-9]\d*)(\.\d+)?$/.test(v)? Number(v) : v; }); return o; });
+  return {text:JSON.stringify(out,null,2), n:out.length, cols:h.length};
+}
+function csvCell(v){ let s= v===null||v===undefined? '' : typeof v==='object'? JSON.stringify(v) : String(v); return /[",\r\n]|^\s|\s$/.test(s)? '"'+s.replace(/"/g,'""')+'"' : s; }
+function jsonToCsv(s){
+  let a; try{ a=JSON.parse(s); }catch(e){ throw new Error('JSONとして読めません。カッコの対応や「"」、カンマを確かめましょう。（'+e.message+'）'); }
+  if(!Array.isArray(a)) throw new Error('全体を [ ] で囲んだ配列にしてください。表の1行が、配列の中の { } 1つになります。');
+  if(a.some(o=>!o||typeof o!=='object'||Array.isArray(o))) throw new Error('配列の中身は、すべて { } のオブジェクトにしてください。');
+  const keys=[]; a.forEach(o=>Object.keys(o).forEach(k=>{ if(!keys.includes(k)) keys.push(k); }));
+  return {text:[keys.map(csvCell).join(','),...a.map(o=>keys.map(k=>csvCell(o[k])).join(','))].join('\n'), n:a.length, cols:keys.length, miss:a.some(o=>keys.some(k=>!(k in o)))};
+}
+const EX2=`名前,住所,メモ
+図書館A,"情報ラボ市,中央1-1",駅から近い
+図書館B,情報ラボ市北町2-3,"愛称は""北の本棚"""
+図書館C,情報ラボ市南町4-5,"2行の
+メモ"`;
+$('vEx1').addEventListener('click',()=>{ $('vCsv').value=LIB_CSV; $('vJson').value=''; vRun('toJson'); });
+$('vEx2').addEventListener('click',()=>{ $('vCsv').value=EX2; $('vJson').value=''; vRun('toJson'); });
+function vRun(dir){
+  const m=$('vMsg');
+  try{
+    if(dir==='toJson'){ const r=csvToJson($('vCsv').value); $('vJson').value=r.text; m.className='msg ok';
+      m.innerHTML=`<div class="t">CSV の ${r.n} 行を、JSON の ${r.n} 個のオブジェクトにしました</div>1行目の項目名が、それぞれの値の「名前」になります。数字だけの値は数値（" で囲まない）に、それ以外は文字列にしました。ただし「0123」のように 0 で始まる値は、数値にすると 0 が消えてしまうので、文字列のままにしています。`
+        + ($('vCsv').value.includes('"')? '<br>CSV で " に囲まれた値は、中のカンマや改行も値の一部です。"" は「"」1文字を表します。':''); }
+    else { const r=jsonToCsv($('vJson').value); $('vCsv').value=r.text; m.className='msg ok';
+      m.innerHTML=`<div class="t">JSON の ${r.n} 個のオブジェクトを、CSV の ${r.n} 行（項目 ${r.cols} 個）にしました</div>カンマ・改行・「"」を含む値は、" で囲み、中の " は "" にしています（RFC 4180 の書き方）。`+(r.miss?'<br><b>名前がそろっていないオブジェクトがあったので、ない項目は空欄にしました。</b>':''); }
+  }catch(err){ m.className='msg ng'; m.innerHTML=`<div class="t">変換できませんでした</div>${esc(err.message)}`; }
+}
+$('vToJson').addEventListener('click',()=>vRun('toJson'));
+$('vToCsv').addEventListener('click',()=>vRun('toCsv'));
+
+/* ===== 初期化 ===== */
+let rzT=0, lastW=window.innerWidth;
+window.addEventListener('resize',()=>{ if(window.innerWidth===lastW) return; lastW=window.innerWidth; clearTimeout(rzT); rzT=setTimeout(()=>{ drawCloud(); if($('toolCo').classList.contains('show')) drawCo(true); },200); });
+setSample('fes'); drawClean(); drawStars(); $('vCsv').value=LIB_CSV; vRun('toJson');
+$('vMsg').className='msg'; $('vMsg').innerHTML='<div class="t">左のCSVを右のJSONに変換しました</div>どちらかを書きかえて、ボタンで変換してみましょう。自分で用意したデータも貼り付けられます。';
+</script>
+</body>
+</html>

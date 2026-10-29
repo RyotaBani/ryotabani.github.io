@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTMLとCSSでWebページを作ろう（タグ・セレクタ・ボックスモデル）｜情報ラボ</title>
+<meta name="description" content="HTMLとCSSを書くと、その場で結果が表示される無料のWebページ作成ツール。見本を書きかえて試し、タグの入れ子を木の形で確かめ、セレクタやボックスモデル、display:flex をスライダーで体験できます。HTMLファイルとして保存も可能。高校の情報Iに対応。">
+<link rel="canonical" href="https://joholab.net/html/">
+<meta property="og:title" content="HTMLとCSSでWebページを作ろう｜情報ラボ">
+<meta property="og:description" content="書いてすぐ見る、タグの構造を見る、CSSを試す。HTMLとCSSのしくみを手を動かして学べる無料教材。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/html/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+    --lh:21px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:15px; margin:0 0 12px; color:var(--ink);}
+  .panel h3{font-size:14px; margin:14px 0 8px; color:var(--ink);}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:7px 13px; border-radius:999px; font-size:13.5px; cursor:pointer; font-family:inherit;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  button.chip:disabled{opacity:.45; cursor:not-allowed;}
+  button.chip.mono{font-family:var(--mono);}
+  button.primary{background:var(--navy); color:#fff; border:none; padding:10px 20px;
+    border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit;}
+  button.primary:hover{background:#3a63ad;}
+  button.primary:disabled{background:#9AA6BC; cursor:not-allowed;}
+  label.ck{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--ink); cursor:pointer;}
+  label.ck input{width:18px; height:18px; accent-color:var(--navy);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 120px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center; min-width:0;}
+  .stt .k{font-size:11.5px; color:var(--muted);}
+  .stt .v{font-size:19px; font-weight:700; font-family:var(--mono); color:var(--ink); overflow-wrap:anywhere;}
+
+  .msg{border-radius:12px; padding:16px 20px; margin-top:16px; font-size:15px; color:#fff;
+    background:linear-gradient(180deg,#22345a,#1b2c4d);}
+  .msg b{color:#ffd97a;}
+  .msg code,.panel .msg code{font-family:var(--mono); background:rgba(255,255,255,.14); color:#fff; padding:0 4px; border-radius:4px;}
+  .msg .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .msg.ok{background:linear-gradient(180deg,#2E6B4A,#22513a);}
+  .msg.ng{background:linear-gradient(180deg,#8E2B22,#6d1f18);}
+
+  /* ===== エディタ ===== */
+  .ide{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; align-items:start;}
+  .ide>*{min-width:0;}
+  @media (max-width:860px){ .ide{grid-template-columns:minmax(0,1fr);} }
+  .edhead{display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; color:var(--ink); margin:0 0 4px;}
+  .edhead b{font-family:var(--mono); font-size:14px;}
+  .edhead small{color:var(--muted);}
+  .editor{position:relative; display:flex; border:1px solid var(--line); border-radius:10px; background:#fff; overflow:hidden; height:330px; margin-bottom:12px;}
+  .editor.css{height:210px;}
+  .gutter{flex:0 0 auto; min-width:38px; padding:10px 0 60px; background:var(--panel); border-right:1px solid var(--line);
+    font-family:var(--mono); font-size:13.5px; line-height:var(--lh); color:#8A93A3; text-align:right; overflow:hidden; user-select:none;}
+  .gutter div{padding:0 7px 0 5px; height:var(--lh);}
+  .editor textarea{flex:1; min-width:0; width:100%; height:100%; border:none; outline:none; resize:none; margin:0;
+    padding:10px 12px; font-family:var(--mono); font-size:13.5px; line-height:var(--lh); color:#1c2430;
+    background:transparent; white-space:pre; overflow:auto; tab-size:2;}
+  .editor:focus-within{box-shadow:0 0 0 2px #7FA3E0;}
+  .keys{display:flex; gap:5px; flex-wrap:wrap; margin:0 0 6px;}
+  .keys button{font-family:var(--mono); font-size:14px; min-width:36px; padding:5px 9px; border:1px solid var(--line);
+    border-radius:8px; background:#fff; cursor:pointer; color:var(--ink);}
+  .keys button:hover{background:var(--panel2);}
+  .pvhead{display:flex; justify-content:space-between; gap:8px; font-size:13px; color:var(--ink); margin:0 0 4px; flex-wrap:wrap;}
+  .pvhead b{font-size:14px;}
+  .pvhead span{color:var(--muted);}
+  iframe.pv{display:block; width:100%; height:552px; border:1px solid var(--line); border-radius:10px; background:#fff;}
+  iframe.pv.sm{height:380px;}
+  @media (max-width:860px){ iframe.pv{height:420px;} }
+  .pvnotes{list-style:none; margin:10px 0 0; padding:0; font-size:13.5px;}
+  .pvnotes li{background:#fff; border:1px solid var(--line); border-left:4px solid var(--navy); border-radius:8px; padding:7px 10px; margin-bottom:6px; overflow-wrap:anywhere;}
+  .pvnotes li.w{border-left-color:#7A5A12; background:#FFF8E7;}
+  .pvnotes code,.issues code,.hint code,.panel code{font-family:var(--mono); background:var(--panel2); padding:0 4px; border-radius:4px; overflow-wrap:anywhere;}
+  .files{display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; align-items:start; margin-top:12px; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .files pre{margin:0; font-family:var(--mono); font-size:13px; line-height:1.7; color:var(--ink); white-space:pre;}
+  .imgs{display:flex; flex-wrap:wrap; gap:8px;}
+  .imgs button{display:flex; flex-direction:column; align-items:center; gap:2px; border:1px solid var(--line); background:var(--panel); border-radius:8px; padding:6px 8px; cursor:pointer; font-family:var(--mono); font-size:11.5px; color:var(--ink);}
+  .imgs button:hover{background:var(--panel2);}
+  .imgs img{width:40px; height:40px;}
+  @media (max-width:520px){ .files{grid-template-columns:minmax(0,1fr);} }
+
+  /* ===== 木 ===== */
+  .two{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:16px; align-items:start;}
+  .two>*{min-width:0;}
+  @media (max-width:860px){ .two{grid-template-columns:minmax(0,1fr);} }
+  .treebox{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; max-height:620px; overflow:auto;}
+  .treebox ul{list-style:none; margin:0; padding:0 0 0 16px; border-left:1px dashed #B9C3D3;}
+  .treebox>ul{padding-left:0; border-left:none;}
+  .treebox li{margin:2px 0;}
+  .tn{font-family:var(--mono); font-size:13px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:1px 7px; cursor:pointer; text-align:left; color:#1c2430; max-width:100%; overflow-wrap:anywhere; line-height:1.6;}
+  .tn:hover{background:var(--panel);}
+  .tn.sel{background:#FFF3D6; border-color:var(--gold); box-shadow:0 0 0 1px var(--gold);}
+  .tn.hd{border-style:dashed;}
+  .tn .tg{color:var(--navy); font-weight:700;}
+  .tn .an{color:#7A5A12;}
+  .tn .av{color:var(--ok);}
+  .tx{font-size:12.5px; color:var(--muted); overflow-wrap:anywhere;}
+  .issues{list-style:none; margin:0; padding:0;}
+  .issues li{display:grid; grid-template-columns:auto minmax(0,1fr); gap:8px; align-items:start; background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 10px; margin-bottom:6px; font-size:14px;}
+  .lv{display:inline-block; font-size:11.5px; font-weight:700; padding:1px 8px; border-radius:999px; color:#fff; white-space:nowrap; margin-top:2px;}
+  .lv.ng{background:var(--ng);} .lv.warn{background:#7A5A12;} .lv.info{background:var(--navy);}
+  .lnk{border:none; background:none; padding:0; color:var(--navy); text-decoration:underline; cursor:pointer; font-family:inherit; font-size:inherit;}
+  .issues .okline{display:block; border-color:var(--ok); background:#EAF5EE; color:var(--ok); font-weight:700;}
+
+  /* ===== CSSを試す ===== */
+  .c3{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start;}
+  .c3>*{min-width:0;}
+  @media (max-width:860px){ .c3{grid-template-columns:minmax(0,1fr);} }
+  .prow{display:grid; grid-template-columns:150px minmax(0,1fr); gap:6px 10px; align-items:center; padding:7px 0; border-top:1px dashed #D5DBE5;}
+  .prow:first-child{border-top:none;}
+  @media (max-width:520px){ .prow{grid-template-columns:minmax(0,1fr);} }
+  .pname{font-family:var(--mono); font-size:13.5px; font-weight:700; color:var(--ink);}
+  .pname small{display:block; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif; font-weight:400; font-size:11.5px; color:var(--muted);}
+  .pctl{display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0;}
+  .pctl input[type=range]{flex:1 1 140px; min-width:0; accent-color:var(--navy);}
+  .pctl output{font-family:var(--mono); font-size:13.5px; min-width:4.2em; color:var(--ink);}
+  .pctl .chip{padding:4px 10px; font-size:12.5px; font-family:var(--mono);}
+  .sw{width:28px; height:28px; border-radius:50%; border:2px solid var(--line); cursor:pointer; padding:0;}
+  .sw[aria-pressed=true]{box-shadow:0 0 0 3px var(--navy);}
+  .pctl input[type=color]{width:34px; height:30px; padding:0; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer;}
+  pre.code{font-family:var(--mono); font-size:13.5px; line-height:1.65; background:#0f1a2e; color:#E6EDF7; border-radius:10px; padding:10px 14px; margin:0; overflow:auto; white-space:pre;}
+  pre.code .sel{color:#ffd97a;} pre.code .pr{color:#9fd3ff;} pre.code .vl{color:#b8f0c8;} pre.code .cm{color:#8fa3c2;}
+  pre.code .cur{display:inline-block; min-width:100%; background:rgba(196,154,43,.22); border-radius:4px;}
+  pre.code .hit{display:inline-block; min-width:100%; background:rgba(192,0,0,.35); border-radius:4px;}
+  .boxsvg{background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px;}
+  .boxsvg svg{display:block; width:100%; height:auto;}
+  details.base{margin-top:10px; font-size:13.5px;}
+  details.base summary{cursor:pointer; color:var(--navy);}
+
+  /* ===== クイズ ===== */
+  .qhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .qno{font-size:13px; color:var(--muted); font-weight:700;}
+  .score{font-size:13.5px; color:var(--ink);}
+  .score b{font-family:var(--mono); font-size:16px;}
+  .qtx{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; font-size:16.5px; line-height:1.8;}
+  .qtx pre{font-family:var(--mono); font-size:14px; background:var(--panel); border-radius:8px; padding:8px 12px; margin:8px 0 0; overflow:auto; white-space:pre;}
+  .choices{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:14px;}
+  @media (max-width:640px){ .choices{grid-template-columns:minmax(0,1fr);} }
+  .choice{border:2px solid var(--line); background:#fff; border-radius:12px; padding:12px 12px; cursor:pointer; font-family:inherit;
+    font-size:15px; font-weight:700; color:var(--ink); text-align:left; transition:all .15s; overflow-wrap:anywhere;}
+  .choice code{font-family:var(--mono);}
+  .choice:hover{border-color:var(--navy);}
+  .choice.right{border-color:var(--ok); background:#EAF5EE; color:var(--ok);}
+  .choice.wrong{border-color:var(--ng); background:#FBEDEC; color:var(--ng);}
+  .choice:disabled{cursor:default;}
+  .dots{display:flex; gap:5px; flex-wrap:wrap; margin-top:12px;}
+  .dot{width:28px; height:28px; border-radius:50%; border:2px solid var(--line); background:#fff; font-size:11.5px; font-weight:700; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; font-family:inherit;}
+  .dot.cur{border-color:var(--navy); color:var(--navy);}
+  .dot.r{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .dot.w{background:var(--ng); border-color:var(--ng); color:#fff;}
+
+  /* ===== 記事 ===== */
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .article table{border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; max-width:100%; overflow-x:auto;}
+  .article th,.article td{border:1px solid var(--line); padding:6px 14px; text-align:left; vertical-align:top;}
+  .article th{background:var(--panel); color:var(--ink); white-space:nowrap;}
+  .article code{font-family:var(--mono); background:var(--panel); padding:1px 5px; border-radius:4px; overflow-wrap:anywhere;}
+  .article pre{font-family:var(--mono); font-size:14px; line-height:1.65; background:#0f1a2e; color:#E6EDF7; border-radius:10px; padding:12px 16px; margin:0 0 16px; overflow:auto; white-space:pre;}
+  .article pre .cm{color:#8fa3c2;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8;}
+  .src li{margin-bottom:2px; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ HTMLとCSSでWebページを作ろう</p>
+    <h1>HTMLとCSSでWebページを作ろう</h1>
+    <p class="lead">Webページは、文書の組み立てを表す HTML と、見た目を決める CSS でできています。書いたらすぐに結果を見ながら、そのしくみを確かめましょう。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabEdit" aria-selected="true" aria-controls="toolEdit">書いてすぐ見る</button>
+    <button class="tab" role="tab" id="tabTree" aria-selected="false" aria-controls="toolTree">タグの構造を見る</button>
+    <button class="tab" role="tab" id="tabCss" aria-selected="false" aria-controls="toolCss">CSSを試す</button>
+    <button class="tab" role="tab" id="tabQuiz" aria-selected="false" aria-controls="toolQuiz">クイズ</button>
+  </div>
+
+  <!-- ===== 書いてすぐ見る ===== -->
+  <section class="tool show" id="toolEdit" role="tabpanel" aria-labelledby="tabEdit">
+    <div class="panel">
+      <h2>見本を選んで書きかえるか、自分で書いてみましょう。書くと、少し待ってからプレビューが変わります</h2>
+      <div class="row" id="samples" aria-label="見本"></div>
+      <div class="row" style="margin-top:12px;">
+        <label class="ck"><input type="checkbox" id="optAuto" checked>自動で更新</label>
+        <button class="chip" id="btnRender">⟳ プレビューを更新</button>
+        <button class="chip" id="btnOpen">ファイルを読み込む</button>
+        <input type="file" id="fileIn" accept=".html,.htm,.css,.txt,text/html,text/css,text/plain" multiple hidden>
+        <button class="chip" id="btnSave">1つのHTMLファイルにまとめて保存</button>
+        <button class="chip" id="btnSaveHtml">index.html を保存</button>
+        <button class="chip" id="btnSaveCss">style.css を保存</button>
+      </div>
+      <p class="hint">見本の学校・人物・町などは、すべて説明のための架空のものです。書いた内容はこのページの中だけで使われ、どこにも送られません（ページを閉じると消えるので、残したいときは保存してください）。</p>
+    </div>
+
+    <div class="ide">
+      <div>
+        <div class="edhead"><b>index.html</b><small>HTML（文書の組み立て）</small></div>
+        <div class="editor" id="edHtml">
+          <div class="gutter" id="gHtml" aria-hidden="true"></div>
+          <textarea id="taHtml" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="HTML（index.html）"></textarea>
+        </div>
+        <div class="edhead"><b>style.css</b><small>CSS（見た目）</small></div>
+        <div class="editor css" id="edCss">
+          <div class="gutter" id="gCss" aria-hidden="true"></div>
+          <textarea id="taCss" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="CSS（style.css）"></textarea>
+        </div>
+        <div class="keys" id="keys" aria-label="記号の入力">
+          <button data-ins="<">&lt;</button><button data-ins=">">&gt;</button><button data-ins="/">/</button>
+          <button data-ins='=""' data-back="1">=""</button><button data-ins="{  }" data-back="2">{ }</button>
+          <button data-ins=": ">:</button><button data-ins=";">;</button><button data-ins="#">#</button><button data-ins=".">.</button>
+          <button data-ins="  ">字下げ</button>
+        </div>
+        <p class="hint">Tab キーで字下げできます。エディタの外へ移るときは Esc を押してから Tab を押します。</p>
+      </div>
+      <div>
+        <div class="pvhead"><b>プレビュー</b><span id="pvState">表示しました</span></div>
+        <iframe class="pv" id="pv" sandbox="" title="書いたHTMLとCSSのプレビュー"></iframe>
+        <ul class="pvnotes" id="pvNotes" aria-live="polite"></ul>
+        <div class="files">
+          <pre aria-label="このページで使えるファイルの構成">mysite/
+├─ index.html
+├─ style.css
+└─ images/
+    ├─ ball.svg
+    ├─ flower.svg
+    ├─ camera.svg
+    └─ star.svg</pre>
+          <div>
+            <div style="font-size:13px;color:var(--ink);margin-bottom:6px;">images フォルダの画像（押すと、カーソルの位置に img タグを入れます）</div>
+            <div class="imgs" id="imgs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== タグの構造を見る ===== -->
+  <section class="tool" id="toolTree" role="tabpanel" aria-labelledby="tabTree">
+    <div class="panel">
+      <h2>「書いてすぐ見る」の index.html を、ブラウザと同じしくみで解析し、要素の入れ子を木の形で表します</h2>
+      <div class="row">
+        <button class="primary" id="btnParse">いまの内容で解析する</button>
+        <button class="chip" id="btnBuggy">まちがいをふくむ見本で試す</button>
+      </div>
+      <p class="hint">木の中の要素を押すと、下のプレビューでその要素に金色の枠がつきます（head の中は画面に表示されない部分です）。注意点の「〜行目」を押すと、エディタのその行へ移ります。</p>
+    </div>
+    <div class="two">
+      <div>
+        <h3 style="color:var(--ink);font-size:15px;margin:0 0 8px;">ブラウザが作った要素の木</h3>
+        <div class="treebox" id="tree" aria-label="要素の木"></div>
+        <div class="stats">
+          <div class="stt"><div class="k">要素の数</div><div class="v" id="tCount">0</div></div>
+          <div class="stt"><div class="k">いちばん深い入れ子</div><div class="v" id="tDepth">0</div></div>
+          <div class="stt"><div class="k">見つかった注意点</div><div class="v" id="tIssues">0</div></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="color:var(--ink);font-size:15px;margin:0 0 8px;">よくあるまちがいのチェック</h3>
+        <ul class="issues" id="issues"></ul>
+        <h3 style="color:var(--ink);font-size:15px;margin:16px 0 8px;">style.css のチェック</h3>
+        <ul class="issues" id="cssIssues"></ul>
+        <p class="hint">このチェックは、授業でよく見かける間違いを簡単に調べるだけのものです。HTMLの仕様にそっているかを正式に確かめる W3C の <a href="https://validator.w3.org/nu/" target="_blank" rel="noopener">Nu Html Checker</a> の代わりにはなりません。公開する前には、そちらでも確かめましょう。</p>
+      </div>
+    </div>
+    <div class="pvhead" style="margin-top:16px;"><b>プレビュー</b><span id="treeSel">要素を選ぶと枠がつきます</span></div>
+    <iframe class="pv sm" id="pvTree" sandbox="" title="選んだ要素に枠をつけたプレビュー"></iframe>
+  </section>
+
+  <!-- ===== CSSを試す ===== -->
+  <section class="tool" id="toolCss" role="tabpanel" aria-labelledby="tabCss">
+    <div class="panel">
+      <h2>① セレクタを選びます（CSSを当てる相手を決める）</h2>
+      <div class="row" id="c3Sels"></div>
+      <div class="msg" id="c3SelMsg" style="margin-top:12px;"></div>
+      <label class="ck" style="margin-top:10px;"><input type="checkbox" id="c3Mark" checked>選ばれた要素に赤い点線の印をつける（印は outline で描くので、大きさは変わりません）</label>
+    </div>
+    <div class="c3">
+      <div>
+        <div class="panel">
+          <h2>② プロパティと値を変えます</h2>
+          <h3 style="margin-top:0;">文字と色</h3>
+          <div id="c3Text"></div>
+          <h3>ボックス（余白と枠線）</h3>
+          <div id="c3Box"></div>
+          <p class="hint">左のチェックを外すと、そのプロパティは指定しない（ブラウザの初期の見た目）に戻ります。</p>
+        </div>
+        <div class="panel">
+          <h2>③ 並べ方を変えます（<code>.cards</code> の <code>display:flex</code>）</h2>
+          <div id="c3Flex"></div>
+        </div>
+      </div>
+      <div>
+        <div class="pvhead"><b>できあがった CSS</b><span>選んでいるルールは金色</span></div>
+        <pre class="code" id="c3Css" aria-live="polite"></pre>
+        <div class="pvhead" style="margin-top:12px;"><b>プレビュー</b></div>
+        <iframe class="pv sm" id="pvCss" sandbox="" title="CSSを試すプレビュー"></iframe>
+        <div class="pvhead" style="margin-top:12px;"><b>HTML</b><span>選ばれる要素の行は赤</span></div>
+        <pre class="code" id="c3Html"></pre>
+        <details class="base"><summary>もとから書いてある CSS を見る</summary><pre class="code" id="c3Base" style="margin-top:6px;"></pre></details>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px;">
+      <h2>④ ボックスモデル：選んでいる要素の大きさの内わけ（左右方向）</h2>
+      <div class="boxsvg"><svg id="c3Svg" viewBox="0 0 600 270" role="img" aria-label="margin、border、padding、content の関係を表す図"></svg></div>
+      <div class="stats">
+        <div class="stt"><div class="k">内容（content）の幅</div><div class="v" id="bxC">–</div></div>
+        <div class="stt"><div class="k">枠線の外側までの幅</div><div class="v" id="bxB">–</div></div>
+        <div class="stt"><div class="k">外側の余白までふくめた幅</div><div class="v" id="bxM">–</div></div>
+      </div>
+      <p class="hint" id="bxNote"></p>
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="c3Open">この HTML と CSS を「書いてすぐ見る」で開く</button>
+        <button class="chip" id="c3Reset">すべて元に戻す</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== クイズ ===== -->
+  <section class="tool" id="toolQuiz" role="tabpanel" aria-labelledby="tabQuiz">
+    <div class="panel">
+      <div class="qhead">
+        <span class="qno" id="qNo">第1問</span>
+        <span class="score">正解 <b id="qScore">0</b> / <span id="qDone">0</span> 問（全 <span id="qAll"></span> 問）</span>
+      </div>
+      <div class="qtx" id="qTx"></div>
+      <div class="choices" id="qCh"></div>
+      <div class="msg" id="qMsg" hidden></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="chip" id="qPrev">◀ 前の問題</button>
+        <button class="primary" id="qNext">次の問題 ▶</button>
+        <button class="chip" id="qReset">最初から</button>
+      </div>
+      <div class="dots" id="qDots"></div>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>Webページのしくみ：HTML・CSS・JavaScript の役割分担</h2>
+    <p>ふだん見ているWebページは、ほとんどが3種類の言語を組み合わせて作られています。</p>
+    <table>
+      <tr><th>言語</th><th>受け持つこと</th><th>例</th></tr>
+      <tr><td>HTML</td><td>文書の組み立て（どこが見出しで、どこが段落か）</td><td>見出し、段落、リスト、表、画像、リンク</td></tr>
+      <tr><td>CSS</td><td>見た目（色・大きさ・余白・配置）</td><td>文字を紺色にする、カードを横に並べる</td></tr>
+      <tr><td>JavaScript</td><td>動き（操作に応じて内容を変える処理）</td><td>ボタンを押したらメニューを開く</td></tr>
+    </table>
+    <p><strong>HTML</strong>（HyperText Markup Language）は、文章に「ここは見出し」「ここは段落」といった<strong>意味の印</strong>をつける言語です。印をつけることを<strong>マークアップ</strong>といいます。<strong>CSS</strong>（Cascading Style Sheets）は、その印を手がかりに「見出しは紺色で大きく」と見た目を指定する言語です。<strong>JavaScript</strong> は、ブラウザの中で動くプログラミング言語です。</p>
+    <p>役割を分けておくと、同じHTMLのままCSSだけを取りかえてデザインを変えたり、画面の大きなパソコンと小さなスマートフォンで並べ方を変えたりできます。また、文書の組み立てがHTMLに正しく書かれていれば、画面を見られない人が使う読み上げソフトなども、ページの内容を正しく伝えやすくなります。</p>
+    <p>HTMLの仕様は、WHATWG という団体が「HTML Living Standard」として公開し、いつも最新の状態に更新しています。2019年に W3C（World Wide Web Consortium）と WHATWG が結んだ覚え書きで、HTMLは主に WHATWG で作っていくことが決まりました。CSSの仕様は、W3C がボックスモデル、色、セレクタなどの<strong>モジュール</strong>（部品）ごとに作っています。JavaScript の中心となる言語仕様は、Ecma International という団体が ECMA-262（ECMAScript）として定めています。作ったページがサーバからブラウザに届くまでの流れは、<a href="/web/">Webページが表示されるまで</a>で確かめられます。</p>
+
+    <h2>HTMLの基本</h2>
+    <h3>要素・タグ・属性</h3>
+    <p>HTMLでは、内容を<strong>開始タグ</strong> <code>&lt;p&gt;</code> と<strong>終了タグ</strong> <code>&lt;/p&gt;</code> ではさみます。開始タグから終了タグまでのまとまりを<strong>要素</strong>といいます。<code>&lt;p&gt;ようこそ&lt;/p&gt;</code> は「ようこそ」という内容をもつ p 要素（段落）です。</p>
+    <p>開始タグの中には、要素についての追加の情報である<strong>属性</strong>を「属性名="値"」の形で書けます。たとえば <code>&lt;a href="https://www.example.com/"&gt;</code> の href はリンク先、<code>&lt;img src="images/ball.svg" alt="バスケットボール"&gt;</code> の src は画像ファイルの場所、alt は画像の代わりになる文章です。</p>
+    <p>改行の <code>&lt;br&gt;</code> や画像の <code>&lt;img&gt;</code> のように、内容をもたず、終了タグを書かない要素もあります。仕様ではこれを<strong>空要素</strong>（void elements）とよび、area、base、br、col、embed、hr、img、input、link、meta、source、track、wbr が決められています。空要素に <code>&lt;/br&gt;</code> のような終了タグを書いてはいけません。</p>
+    <h3>入れ子は「あとから開いたものを先に閉じる」</h3>
+    <p>要素の中には、別の要素を入れられます。これを<strong>入れ子</strong>といいます。入れ子にしたときは、あとから開いたタグを先に閉じます。</p>
+    <pre>&lt;p&gt;集合は &lt;b&gt;8時30分&lt;/b&gt; です。&lt;/p&gt;   <span class="cm">← 正しい</span>
+&lt;p&gt;集合は &lt;b&gt;8時30分&lt;/p&gt;&lt;/b&gt; です。   <span class="cm">← b を閉じる前に p を閉じている</span></pre>
+    <p>ブラウザは、間違いがあってもできるだけ表示しようとして、決められた手順で自動的に直します。そのため、見た目では気づきにくいのですが、直された結果が書いた人の意図とちがうことがあります。たとえば p 要素の中に ul 要素（リスト）は入れられないので、<code>&lt;p&gt;</code> のあとに <code>&lt;ul&gt;</code> を書くと、その時点で段落は終わったものとして扱われます。「タグの構造を見る」では、ブラウザが実際に作った入れ子の形（<strong>DOMツリー</strong>）を木の形で確かめられます。</p>
+    <h3>文書の基本の形</h3>
+    <pre>&lt;!DOCTYPE html&gt;
+&lt;html lang="ja"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;              <span class="cm">← 文字コード</span>
+  &lt;title&gt;写真部の紹介&lt;/title&gt;          <span class="cm">← タブや検索結果に出る題名</span>
+  &lt;link rel="stylesheet" href="style.css"&gt;  <span class="cm">← CSSファイルを読みこむ</span>
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;写真部へようこそ&lt;/h1&gt;              <span class="cm">← ここから下が画面に表示される</span>
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+    <p>1行目の <code>&lt;!DOCTYPE html&gt;</code> は、このファイルが今のHTMLの決まりで書かれていることを示します。仕様には、DOCTYPE を省くとブラウザが一部の仕様と合わない別の表示方式を使うことがあると書かれています。html 要素の <code>lang="ja"</code> はページの言語が日本語であることを表し、読み上げソフトなどが正しい読み方を選ぶ手がかりになります。<strong>head</strong> には、文字コードや題名など、ページについての情報を書きます。<strong>body</strong> には、画面に表示する内容を書きます。</p>
+    <h3>見出しは順番に使う</h3>
+    <p>見出しには h1 から h6 までの6段階があり、数字が小さいほど上の階層です。仕様では、見出しの次に来る見出しは「同じ階層」「より上の階層」「1段だけ下の階層」のどれかでなければならないとされています。h1 の次にいきなり h3 を使うのは、この決まりに反します。</p>
+    <p>見出しを選ぶときは、文字の大きさではなく文書の階層で決めます。大きな文字にしたいだけなら、CSSで font-size を指定します。見出しの並びは、ページの目次を作るのにも使われます。</p>
+    <h3>alt 属性とアクセシビリティ</h3>
+    <p><strong>アクセシビリティ</strong>とは、障害の有無や年齢、使っている機器にかかわらず、だれもが情報を利用できることです。W3C の「Web Content Accessibility Guidelines（WCAG）2.2」は、画像のような文字でない内容には、同じ目的を果たす代わりの文章（テキストによる代替）を用意することを求めています。</p>
+    <p>img 要素では、その代わりの文章を <strong>alt 属性</strong>に書きます。alt の文章は、読み上げソフトで読まれるほか、画像が読みこめなかったときに画像の代わりに表示されます。見本の「画像」では、わざとファイル名を間違えた画像の場所に alt の文章が出ることを確かめられます。</p>
+    <p>alt には「画像」「写真」と書くのではなく、その画像が伝えている内容を書きます。一方、飾りのための画像で、なくても情報が減らないものは、仕様で <code>alt=""</code>（空の文字列）と書くことになっています。alt 属性そのものを省くのとはちがう、という点に注意しましょう。</p>
+
+    <h2>CSSの基本</h2>
+    <h3>セレクタ・プロパティ・値</h3>
+    <pre>h1 {                    <span class="cm">← セレクタ（どの要素に）</span>
+  color: #2F5496;       <span class="cm">← プロパティ: 値;（何を・どうする）</span>
+  font-size: 28px;
+}</pre>
+    <p>CSSは「どの要素に」「何を」「どうする」を書いたルールの集まりです。<strong>セレクタ</strong>で相手を選び、<code>{ }</code> の中に「<strong>プロパティ</strong>: <strong>値</strong>;」を並べます。1つの指定（宣言）の終わりにはセミコロン「;」をつけます。「;」を忘れると、次の行の指定までまとめて読めなくなることがあります。</p>
+    <h3>セレクタの種類</h3>
+    <table>
+      <tr><th>種類</th><th>書き方</th><th>選ばれる要素</th></tr>
+      <tr><td>要素（型）セレクタ</td><td><code>p</code></td><td>すべての p 要素</td></tr>
+      <tr><td>クラスセレクタ</td><td><code>.note</code></td><td>class="note" がついた要素（いくつあってもよい）</td></tr>
+      <tr><td>IDセレクタ</td><td><code>#title</code></td><td>id="title" がついた要素</td></tr>
+    </table>
+    <p>class は同じ名前をいくつの要素につけてもかまいません。id は、HTMLの仕様で文書の中で重ならない名前（ただ1つの名前）にすることになっています。「CSSを試す」で、セレクタを切りかえると選ばれる要素の数が変わることを確かめましょう。</p>
+    <h3>どの指定が使われるか（カスケード）</h3>
+    <p>1つの要素に、いくつかのルールが同時に当てはまることがあります。そのときどれを使うかを決めるしくみを<strong>カスケード</strong>といい、CSSの名前の由来にもなっています。セレクタには<strong>詳細度</strong>という強さがあり、IDセレクタの数、クラスセレクタなどの数、要素セレクタの数の順に比べて、強いほうが使われます。詳細度が同じなら、あとに書いたほうが使われます。</p>
+    <h3>ボックスモデル</h3>
+    <p>CSSでは、すべての要素を四角い箱（ボックス）として扱います。箱は内側から順に、内容（<strong>content</strong>）、内側の余白（<strong>padding</strong>）、枠線（<strong>border</strong>）、外側の余白（<strong>margin</strong>）の4つの領域でできています。背景の色は content・padding・border の部分に塗られ、margin には塗られません。</p>
+    <p>width で指定した幅は、初期の設定（<code>box-sizing: content-box</code>）では content の幅を表します。たとえば <code>width: 200px; padding: 10px; border: 2px solid;</code> のとき、枠線の外側までの幅は 200＋10×2＋2×2＝224px になり、<code>margin: 20px;</code> も加えると、まわりの余白をふくめて 264px の場所を使います。<code>box-sizing: border-box</code> にすると、width は枠線の外側までの幅を表すようになり、content の幅は 200−10×2−2×2＝176px になります。「CSSを試す」の④で、数字を変えて計算を確かめられます。</p>
+    <h3>色の指定</h3>
+    <p>色は、<code>red</code> のような色の名前、<code>#FF0000</code> のような16進数、<code>rgb(255 0 0)</code> のような数値で指定できます。16進数の書き方では、# のあとの6けたを2けたずつ区切り、赤・緑・青の強さを 00〜FF（0〜255）で表します。3けたの <code>#F00</code> は、各けたを2回くり返した <code>#FF0000</code> と同じ意味です。英字は大文字でも小文字でもかまいません。光の三原色と16進数のしくみは<a href="/color/">色の表し方</a>でくわしく体験できます。</p>
+    <h3>横に並べる（display: flex）</h3>
+    <p>親の要素に <code>display: flex</code> を指定すると、その子の要素が<strong>フレックスアイテム</strong>として、ふつうは横一列に並びます。並ぶ向き（主軸）にそったそろえ方を <code>justify-content</code>、それと直角の向きのそろえ方を <code>align-items</code> で指定します。部活紹介のカードのように、同じ形のものを並べるときに便利です。</p>
+
+    <h2>相対パスと絶対パス</h2>
+    <p>リンク先や画像の場所の書き方には、大きく2つあります。</p>
+    <ul>
+      <li><strong>絶対パス（絶対URL）</strong>：<code>https://www.example.com/images/ball.svg</code> のように、スキームやホスト名から全部書く方法。どのページから使っても同じ場所を指します。</li>
+      <li><strong>相対パス</strong>：<code>images/ball.svg</code> のように、<strong>いま書いているファイルのある場所</strong>を基準にして書く方法。</li>
+    </ul>
+    <pre>mysite/
+├─ index.html          <span class="cm">← ここから見ると images/ball.svg</span>
+├─ images/
+│   └─ ball.svg
+└─ club/
+    └─ photo.html      <span class="cm">← ここから見ると ../images/ball.svg</span></pre>
+    <p><code>../</code> は「1つ上のフォルダ」を表します。相対パスを使うと、フォルダごとほかのサーバへ移しても、ファイルどうしのつながりがそのまま保たれます。一方、<code>C:\Users\…</code> のような自分のパソコンの中の場所を書くと、ほかの人のパソコンやWebサーバには同じ場所がないので、画像が表示されません。また、URLのパスは大文字と小文字を区別するものとして扱われるので、<code>Images/Ball.svg</code> と <code>images/ball.svg</code> は別のファイルを指すことがあります。ファイル名は半角の小文字・数字でそろえておくと安全です。</p>
+
+    <h2>文字コードと meta charset</h2>
+    <p>コンピュータの中では、文字は番号（数値）として記録されています。どの文字に何番を割り当てるかの決まりが<strong>文字コード</strong>です。ブラウザが、ファイルを作ったときとちがう文字コードで読んでしまうと、意味のない文字の並びが表示されます。これが<strong>文字化け</strong>です。文字と番号の対応は<a href="/charcode/">文字コード</a>で確かめられます。</p>
+    <p>HTMLの仕様では、文書の文字コードは UTF-8 でなければならないとされています。また、<code>&lt;meta charset="UTF-8"&gt;</code> の宣言は、ファイルの先頭から 1024 バイト以内に書き終わっていなければなりません。そのため、head の中のいちばん最初に書くのが一般的です。テキストエディタで保存するときも、文字コードに UTF-8 を選びましょう。このページの「保存」ボタンは UTF-8 でファイルを作ります。</p>
+
+    <h2>Webページを公開するときの注意</h2>
+    <p>作ったページをインターネットに公開すると、世界中のだれでも見られるようになります。公開する前に、次のことを確かめましょう。</p>
+    <ul>
+      <li><strong>著作権</strong>：他人が作った写真・イラスト・文章・音楽は、作った人の許可なく載せられないのが原則です。引用などの例外にも守るべき条件があります。くわしくは<a href="/copyright/">著作権と知的財産</a>で確かめましょう。</li>
+      <li><strong>個人情報</strong>：氏名・住所・学校名・顔写真などは、組み合わせると個人を特定できます。一度公開した情報は、コピーされて広がると完全に消すことが難しくなります。</li>
+      <li><strong>肖像権</strong>：人が写っている写真を載せるときは、写っている人に載せてよいかを確かめます。</li>
+    </ul>
+    <p>見本の「自己紹介ページ」が架空の名前と学校で作ってあるのは、このためです。授業で作ったページを公開するときは、先生の指示にしたがいましょう。</p>
+
+    <h2>このページのプレビューのしくみ</h2>
+    <p>プレビューは、ページの中に別のページを表示する <strong>iframe</strong> 要素の中に、書いたHTMLを表示しています。iframe には <strong>sandbox</strong> 属性をつけてあり、仕様では、sandbox に allow-scripts の指定がないとスクリプトは動かず、allow-forms の指定がないとフォームの送信もできません。また、iframe の中の文書は、このページとは別の出所（オリジン）として扱われ、このページの中身にさわれません。そのため、JavaScript（<code>&lt;script&gt;</code> や onclick など）を書いても、プレビューでは実行されません。</p>
+    <p>あわせて、プレビューでは外部のサイトから画像やCSSを読みこまないようにしてあり、プレビューの中のリンクを押してもページは移動しません。使える画像は images フォルダの4つの画像だけです。保存したファイルをブラウザで直接開くと、リンクも動きます。</p>
+
+    <h2>使い方</h2>
+    <ul>
+      <li><strong>書いてすぐ見る</strong>：見本を選ぶと、index.html と style.css に例が入ります。書きかえると、少し待ってからプレビューが変わります。HTMLに <code>&lt;link rel="stylesheet" href="style.css"&gt;</code> があるときだけ style.css が使われるのは、実際のWebページと同じです。自分のパソコンにあるHTMLファイルやCSSファイルを読みこんだり、作ったページをファイルとして保存したりできます。</li>
+      <li><strong>タグの構造を見る</strong>：書いたHTMLを解析して、要素の入れ子を木の形で表示します。閉じ忘れ・入れ子の誤り・alt 属性の書き忘れ・見出しの順序など、よくある間違いを日本語で知らせます。「まちがいをふくむ見本で試す」で、どんな間違いがどう知らされるかを確かめましょう。</li>
+      <li><strong>CSSを試す</strong>：セレクタを選び、色・文字の大きさ・余白・枠線をスライダーなどで変えると、CSSの文とプレビューが同時に変わります。④の図と数字で、ボックスモデルの幅の計算を確かめられます。</li>
+      <li><strong>クイズ</strong>：タグとCSSの基本を12問で確かめます。</li>
+    </ul>
+    <!-- lessons:start -->
+    <h2>この教材を使う授業</h2>
+    <p><a href="/lessons/">情報Ⅰ 授業の進め方ガイド</a>では、この教材を次の授業で使います。ねらい・導入の問い・50分の流れ・確認問題をまとめています。</p>
+    <ul>
+      <li><a href="/lessons/#L20">20. Webページを作る（HTMLとCSS）</a></li>
+    </ul>
+    <!-- lessons:end -->
+
+    <h3>出典</h3>
+    <ul class="src">
+      <li>WHATWG "HTML Living Standard"（4.2.5.4 文書の文字コードの指定、4.3.11 見出しとアウトライン、4.8.4.4 画像の代替テキスト、4.8.5 iframe 要素、13.1 HTML文書の書き方 ほか）https://html.spec.whatwg.org/</li>
+      <li>W3C "Memorandum of Understanding Between W3C and WHATWG"（2019）https://www.w3.org/2019/04/WHATWG-W3C-MOU.html</li>
+      <li>W3C "CSS Box Model Module Level 3" https://www.w3.org/TR/css-box-3/</li>
+      <li>W3C "CSS Box Sizing Module Level 3"（box-sizing）https://www.w3.org/TR/css-sizing-3/</li>
+      <li>W3C "Selectors Level 4"（詳細度の計算）https://www.w3.org/TR/selectors-4/</li>
+      <li>W3C "CSS Cascading and Inheritance Level 5" https://www.w3.org/TR/css-cascade-5/</li>
+      <li>W3C "CSS Color Module Level 4"（16進数の色の書き方）https://www.w3.org/TR/css-color-4/</li>
+      <li>W3C "CSS Flexible Box Layout Module Level 1" https://www.w3.org/TR/css-flexbox-1/</li>
+      <li>W3C "Web Content Accessibility Guidelines (WCAG) 2.2"（1.1.1 Non-text Content）https://www.w3.org/TR/WCAG22/</li>
+      <li>RFC 3986 "Uniform Resource Identifier (URI): Generic Syntax"（相対参照、大文字と小文字の区別）https://www.rfc-editor.org/rfc/rfc3986</li>
+      <li>Ecma International "ECMA-262 ECMAScript Language Specification" https://ecma-international.org/publications-and-standards/standards/ecma-262/</li>
+      <li>W3C "Nu Html Checker" https://validator.w3.org/nu/</li>
+      <li>MDN Web Docs「HTML: ハイパーテキストマークアップ言語」https://developer.mozilla.org/ja/docs/Web/HTML</li>
+      <li>MDN Web Docs「CSS: カスケーディングスタイルシート」https://developer.mozilla.org/ja/docs/Web/CSS</li>
+      <li>MDN Web Docs「ボックスモデル」https://developer.mozilla.org/ja/docs/Learn_web_development/Core/Styling_basics/Box_model</li>
+      <li>MDN Web Docs「詳細度」https://developer.mozilla.org/ja/docs/Web/CSS/Guides/Cascade/Specificity</li>
+    </ul>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CMT_OPEN='\x3C!--';
+
+/* ===== タブ ===== */
+const TABS=[['tabEdit','toolEdit'],['tabTree','toolTree'],['tabCss','toolCss'],['tabQuiz','toolQuiz']];
+function showTab(tid){
+  TABS.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  if(tid==='tabTree') analyze();
+  if(tid==='tabCss') c3Draw();
+}
+TABS.forEach(([tid])=>$(tid).addEventListener('click',()=>showTab(tid)));
+
+/* ===================== 画像ファイル（images フォルダ） ===================== */
+const SVG={
+  'ball.svg':'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#E8772E" stroke="#3a2a1a" stroke-width="3"/><path d="M5 50h90M50 5v90M20 18c15 17 15 47 0 64M80 18c-15 17-15 47 0 64" fill="none" stroke="#3a2a1a" stroke-width="3"/></svg>',
+  'flower.svg':'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50 55v40" stroke="#2E7D4F" stroke-width="5"/><ellipse cx="38" cy="80" rx="11" ry="5" fill="#2E7D4F" transform="rotate(-30 38 80)"/><g fill="#F28DB2"><circle cx="50" cy="22" r="14"/><circle cx="72" cy="38" r="14"/><circle cx="64" cy="62" r="14"/><circle cx="36" cy="62" r="14"/><circle cx="28" cy="38" r="14"/></g><circle cx="50" cy="44" r="11" fill="#F6C343"/></svg>',
+  'camera.svg':'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="34" y="16" width="32" height="16" rx="4" fill="#C9D2E0" stroke="#5B6472" stroke-width="2"/><rect x="8" y="28" width="84" height="56" rx="10" fill="#E7ECF5" stroke="#5B6472" stroke-width="2"/><circle cx="50" cy="56" r="20" fill="#5B6472"/><circle cx="50" cy="56" r="12" fill="#2F5496"/><circle cx="78" cy="40" r="4" fill="#C49A2B"/></svg>',
+  'star.svg':'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#2F5496"/><path d="M50 16l9.4 21.6 23.4 2.1-17.7 15.5 5.3 23-20.4-12.1-20.4 12.1 5.3-23-17.7-15.5 23.4-2.1z" fill="#C49A2B"/></svg>',
+};
+const ASSET={}; for(const k in SVG) ASSET[k]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(SVG[k]);
+const IMG_ALT={'ball.svg':'バスケットボールの絵','flower.svg':'ピンクの花の絵','camera.svg':'カメラの絵','star.svg':'青い丸に金色の星のマーク'};
+
+/* ===================== 見本（すべて架空） ===================== */
+const HEAD=(title,extra)=>`<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <link rel="stylesheet" href="style.css">${extra||''}
+</head>
+<body>
+`;
+const SAMPLES=[
+ {name:'見出しと段落', html:HEAD('わたしの町の紹介')+`  <h1>わたしの町の紹介</h1>
+  <p>この町は、川と山にかこまれた静かな町です。</p>
+
+  <h2>町の自まん</h2>
+  <p>春には川ぞいに桜がさきます。<strong>4月の第1日曜日</strong>には桜まつりが開かれます。</p>
+
+  <h2>おすすめの食べ物</h2>
+  <p>名物は「川魚の塩焼き」です。<br>駅前の店で食べられます。</p>
+
+  <p><small>※この町は説明のための架空の町です。</small></p>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  line-height: 1.8;
+  margin: 24px;
+}
+
+h1 {
+  color: #2F5496;
+  border-bottom: 3px solid #2F5496;
+}
+
+h2 {
+  color: #1F3864;
+}
+
+strong {
+  color: #C00000;
+}
+`},
+ {name:'リスト', html:HEAD('遠足の持ち物')+`  <h1>遠足の持ち物</h1>
+
+  <h2>持ってくるもの（順番なし：ul）</h2>
+  <ul>
+    <li>お弁当</li>
+    <li>水筒</li>
+    <li>雨具
+      <ul>
+        <li>かさ</li>
+        <li>または、レインコート</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>当日の流れ（順番あり：ol）</h2>
+  <ol>
+    <li>8時30分　校庭に集合</li>
+    <li>9時　バスで出発</li>
+    <li>12時　昼食</li>
+    <li>15時　学校にもどる</li>
+  </ol>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+h2 {
+  font-size: 18px;
+  color: #2F5496;
+}
+
+li {
+  margin-bottom: 4px;
+}
+
+ol {
+  background-color: #F2F5FA;
+  padding: 12px 12px 12px 36px;
+}
+`},
+ {name:'リンク', html:HEAD('リンクの練習')+`  <h1>リンクの練習</h1>
+
+  <p><a href="https://www.example.com/">example.com</a> へのリンク（絶対パス）です。</p>
+  <p><a href="about.html">同じフォルダの about.html</a> へのリンク（相対パス）です。</p>
+  <p><a href="#contact">このページの「連絡先」</a>へ移動するリンクです。</p>
+
+  <p>リンクは a 要素で作り、href 属性に移動先を書きます。</p>
+
+  <h2 id="contact">連絡先</h2>
+  <p>メール：info@example.com（説明のための例のアドレス）</p>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+  line-height: 1.8;
+}
+
+a {
+  color: #2F5496;
+  font-weight: bold;
+}
+
+#contact {
+  margin-top: 40px;
+  border-left: 6px solid #C49A2B;
+  padding-left: 8px;
+}
+`},
+ {name:'画像', html:HEAD('画像を入れる')+`  <h1>画像を入れる</h1>
+  <p>img 要素で画像を表示します。alt 属性には、画像が伝えている内容を文章で書きます。</p>
+
+  <img src="images/ball.svg" alt="オレンジ色のバスケットボール" width="120">
+
+  <figure>
+    <img src="images/flower.svg" alt="ピンクの花が1輪さいている絵" width="140">
+    <figcaption>図1　花の絵（figcaption は図の説明）</figcaption>
+  </figure>
+
+  <p>次の画像は、ファイル名をまちがえているので表示されず、代わりに alt の文章が出ます。</p>
+  <img src="images/flowr.svg" alt="（ここに花の絵が入るはず）" width="140">
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+figure {
+  margin: 16px 0;
+  padding: 10px;
+  border: 1px solid #C9D2E0;
+  width: 180px;
+}
+
+figcaption {
+  font-size: 13px;
+  color: #5B6472;
+}
+`},
+ {name:'表', html:HEAD('時間割')+`  <h1>1年A組の時間割（架空）</h1>
+
+  <table>
+    <caption>月曜日</caption>
+    <thead>
+      <tr><th>時限</th><th>教科</th><th>教室</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>情報Ⅰ</td><td>PC室</td></tr>
+      <tr><td>2</td><td>数学Ⅰ</td><td>1A教室</td></tr>
+      <tr><td>3</td><td>英語コミュニケーションⅠ</td><td>1A教室</td></tr>
+      <tr><td>4</td><td>体育</td><td>体育館</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #9AA6BC;
+  padding: 6px 14px;
+}
+
+th {
+  background-color: #E7ECF5;
+}
+
+caption {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+`},
+ {name:'色の指定', html:HEAD('色の指定')+`  <h1>同じ赤を3通りで書く</h1>
+  <p class="name">色の名前：red</p>
+  <p class="hex">16進数：#FF0000</p>
+  <p class="rgb">数値：rgb(255 0 0)</p>
+
+  <h2>背景と文字の色</h2>
+  <p class="box">背景を紺、文字を白にしました。</p>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+.name { color: red; }
+.hex  { color: #FF0000; }
+.rgb  { color: rgb(255 0 0); }
+
+.box {
+  background-color: #1F3864;
+  color: #FFFFFF;
+  padding: 12px;
+}
+`},
+ {name:'自己紹介ページ', html:HEAD('自己紹介')+`  `+CMT_OPEN+` 本名・住所・顔写真は書かない。ここでは架空の人物を使う --\x3E
+  <header>
+    <img src="images/star.svg" alt="" width="56">
+    <h1>情報 太郎の自己紹介</h1>
+    <p>情報ラボ高校（架空）1年A組</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>好きなこと</h2>
+      <ul>
+        <li>バスケットボール</li>
+        <li>写真をとること</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>がんばりたいこと</h2>
+      <p>プログラミングで、部活の記録をまとめるアプリを作りたいです。</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>このページの人物と学校は架空のものです。</p>
+  </footer>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 0;
+  background-color: #F2F5FA;
+}
+
+header {
+  background-color: #1F3864;
+  color: #FFFFFF;
+  text-align: center;
+  padding: 20px;
+}
+
+header h1 {
+  margin: 8px 0 4px;
+}
+
+section {
+  background-color: #FFFFFF;
+  margin: 16px;
+  padding: 4px 16px;
+  border-radius: 10px;
+}
+
+footer {
+  font-size: 12px;
+  text-align: center;
+  color: #5B6472;
+}
+`},
+ {name:'部活紹介ページ', html:HEAD('写真部の紹介')+`  <header class="hero">
+    <img src="images/camera.svg" alt="" width="64">
+    <h1>写真部へようこそ</h1>
+    <p>情報ラボ高校（架空）写真部</p>
+  </header>
+
+  <h2>活動内容</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>撮影会</h3>
+      <p>月に1回、近くの公園で撮影します。</p>
+    </div>
+    <div class="card">
+      <h3>展示</h3>
+      <p>文化祭で作品を展示します。</p>
+    </div>
+    <div class="card">
+      <h3>勉強会</h3>
+      <p>カメラの設定を教え合います。</p>
+    </div>
+  </div>
+
+  <h2>活動日</h2>
+  <p>月・水・金の放課後です。<span class="join">見学はいつでも歓迎！</span></p>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 0 0 24px;
+}
+
+.hero {
+  background-color: #1F3864;
+  color: #FFFFFF;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+h2 {
+  color: #2F5496;
+  margin: 20px 16px 8px;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.card {
+  flex: 1 1 160px;
+  border: 2px solid #C9D2E0;
+  border-radius: 12px;
+  padding: 0 14px;
+}
+
+.card h3 {
+  color: #C49A2B;
+}
+
+p {
+  margin: 8px 16px;
+}
+
+.join {
+  font-weight: bold;
+  color: #C00000;
+}
+`},
+ {name:'ひな形（空のページ）', html:HEAD('ページの題名')+`  <h1>ここに見出しを書きます</h1>
+  <p>ここに文章を書きます。</p>
+</body>
+</html>
+`, css:`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+`},
+];
+const BUGGY=`<!DOCTYPE html>
+<html>
+<head>
+  <title>文化祭のお知らせ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>文化祭のお知らせ</h1>
+  <h3>日時</h3>
+  <p>9月20日（土）<b>10時から</p></b>
+
+  <p>場所：
+  <ul>
+    <li>体育館
+    <li>中庭</li>
+  </ul>
+  </p>
+
+  <img src="images/flower.svg" width="100">
+  <div class="box">
+    <p>みなさんの来場をお待ちしています。</p>
+  ＜br＞
+</body>
+</html>
+`;
+const BUGGY_CSS=`body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+h1 {
+  color: #2F5496
+  font-size: 28px;
+}
+
+.box {
+  background-color: #FFF3D6;
+  pading: 8px;
+}
+`;
+
+/* ===================== エディタ ===================== */
+const taH=$('taHtml'), taC=$('taCss');
+let lastEd=taH;
+function mkEditor(ta,gut){
+  const upd=()=>{ const n=ta.value.split('\n').length; if(n!==gut._n){ let h=''; for(let i=1;i<=n;i++) h+='<div>'+i+'</div>'; gut.innerHTML=h; gut._n=n; } gut.scrollTop=ta.scrollTop; };
+  ta.addEventListener('input',()=>{ upd(); schedule(); });
+  ta.addEventListener('scroll',()=>{ gut.scrollTop=ta.scrollTop; });
+  ta.addEventListener('focus',()=>{ lastEd=ta; });
+  let escFlag=false;
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ escFlag=true; return; }
+    if(e.key==='Tab' && !escFlag && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); insertText(ta,'  '); return; }
+    escFlag=false;
+  });
+  ta._upd=upd;
+  return upd;
+}
+function insertText(ta,s,back){
+  const a=ta.selectionStart, b=ta.selectionEnd;
+  ta.setRangeText(s,a,b,'end');
+  if(back){ const p=ta.selectionStart-back; ta.setSelectionRange(p,p); }
+  ta.dispatchEvent(new Event('input'));
+}
+mkEditor(taH,$('gHtml')); mkEditor(taC,$('gCss'));
+$('keys').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const ta=lastEd; ta.focus(); insertText(ta,b.dataset.ins,+(b.dataset.back||0)); });
+function setEditors(html,css){ if(html!=null) taH.value=html; if(css!=null) taC.value=css; taH.scrollTop=0; taC.scrollTop=0; taH._upd(); taC._upd(); render(); }
+function gotoLine(line){
+  showTab('tabEdit');
+  const L=taH.value.split('\n'); let p=0; for(let i=0;i<line-1&&i<L.length;i++) p+=L[i].length+1;
+  const end=p+(L[line-1]||'').length;
+  taH.focus(); taH.setSelectionRange(p,end);
+  taH.scrollTop=Math.max(0,(line-4)*21);
+  $('edHtml').scrollIntoView({block:'nearest'});
+}
+
+/* 見本ボタン */
+let curSample=0;
+function drawSamples(){
+  $('samples').innerHTML=SAMPLES.map((s,i)=>`<button class="chip" data-i="${i}" aria-pressed="${i===curSample}">${esc(s.name)}</button>`).join('');
+}
+$('samples').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; curSample=+b.dataset.i; drawSamples(); setEditors(SAMPLES[curSample].html,SAMPLES[curSample].css); });
+
+/* 画像ボタン */
+$('imgs').innerHTML=Object.keys(SVG).map(k=>`<button data-k="${k}" title="images/${k}"><img src="${ASSET[k]}" alt="">${k}</button>`).join('');
+$('imgs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const k=b.dataset.k; taH.focus(); lastEd=taH; insertText(taH,`<img src="images/${k}" alt="${IMG_ALT[k]}" width="100">`); });
+
+/* ===================== プレビューの組み立て ===================== */
+const CSP=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; media-src data:"><base target="_blank">`;
+function mapUrl(v,forSave,notes){
+  v=v.trim(); if(/^data:/i.test(v)) return v;
+  const n=v.replace(/^\.\//,'');
+  if(n.startsWith('images/') && ASSET[n.slice(7)]) return ASSET[n.slice(7)];
+  if(notes) notes.missing.add(v);
+  return forSave? v : 'data:,';
+}
+function fixCss(css,forSave,notes){
+  return css.replace(/url\(\s*(["']?)([^"')]*)\1\s*\)/gi,(m,q,u)=>`url("${mapUrl(u,forSave,notes)}")`).replace(/<\/style/gi,'<\\/style');
+}
+function attrOf(tag,name){
+  const m=new RegExp('\\b'+name+'\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s>"\']+))','i').exec(tag);
+  return m? (m[1]??m[2]??m[3]??'') : null;
+}
+function buildDoc(html,css,extra,forSave){
+  const notes={missing:new Set(),extCss:new Set(),linked:false,script:false};
+  let h=html.replace(/(<(?:img|source|video|audio|input|embed|track)\b[^>]*?\bsrc\s*=\s*)("([^"]*)"|'([^']*)'|([^\s>"']+))/gi,
+    (m,pre,w,a,b,c)=>pre+'"'+mapUrl(a??b??c??'',forSave,notes)+'"');
+  h=h.replace(/(\bstyle\s*=\s*")([^"]*)"/gi,(m,pre,v)=>pre+fixCss(v,forSave,notes).replace(/"/g,"'")+'"');
+  h=h.replace(/<link\b[^>]*>/gi,tag=>{
+    const rel=attrOf(tag,'rel')||'', href=(attrOf(tag,'href')||'').trim();
+    if(/stylesheet/i.test(rel)){
+      if(href.replace(/^\.\//,'')==='style.css'){ notes.linked=true; return '<style>\n'+fixCss(css,forSave,notes)+'\n</style>'; }
+      notes.extCss.add(href); return forSave? tag : '';
+    }
+    return forSave? tag : '';
+  });
+  h=h.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,(m,a,b,c)=>a+b.replace(/url\(\s*(["']?)([^"')]*)\1\s*\)/gi,(mm,q,u)=>`url("${mapUrl(u,forSave,notes)}")`)+c);
+  notes.script=/<script\b/i.test(html) || /<[a-z][^>]*\son[a-z]+\s*=/i.test(html);
+  if(!forSave){
+    // プレビューでは script を中身のない template 要素に置きかえ、on〜 属性も無効にする（sandbox で止まるが、念のため二重に止める）。
+    // 要素の数と順番は変わらないので、「タグの構造を見る」の位置の指定はずれない
+    h=h.replace(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi,(m,c)=>'<template>'+c.replace(/</g,'&lt;')+'</template>');
+    let prev; do{ prev=h; h=h.replace(/(<[a-zA-Z][^>]*?\s)on([a-z]+\s*=)/gi,'$1data-off-on$2'); }while(h!==prev);
+    const ins=CSP+(extra?'<style>'+extra+'</style>':'');
+    const m=/^\s*(?:\x3C!--[\s\S]*?-->\s*)*<!doctype[^>]*>/i.exec(h);
+    h= m? h.slice(0,m[0].length)+ins+h.slice(m[0].length) : ins+h;
+  }
+  return {doc:h,notes};
+}
+function drawNotes(n,css){
+  const li=[];
+  if(css.trim() && !n.linked) li.push(['w',`HTMLに <code>&lt;link rel="stylesheet" href="style.css"&gt;</code> がないので、style.css は使われていません（実際のWebページでも同じです）。head の中に書き加えましょう。`]);
+  if(n.missing.size) li.push(['w',`見つからない画像：${[...n.missing].slice(0,5).map(x=>'<code>'+esc(x||'（空）')+'</code>').join('、')}。このページで使える画像は <code>images/ball.svg</code> など images フォルダの4つだけです（外部のサイトの画像は読みこみません）。ファイル名やフォルダ名のつづり、大文字・小文字を確かめましょう。`]);
+  if(n.extCss.size) li.push(['w',`style.css 以外のCSSファイル ${[...n.extCss].slice(0,3).map(x=>'<code>'+esc(x)+'</code>').join('、')} は読みこめません。`]);
+  if(n.script) li.push(['',`このプレビューでは、安全のため JavaScript（<code>&lt;script&gt;</code> や onclick など）は実行しません。`]);
+  li.push(['',`プレビューの中のリンクは、安全のため押しても移動しません。`]);
+  $('pvNotes').innerHTML=li.map(([c,t])=>`<li class="${c}">${t}</li>`).join('');
+}
+let timer=null;
+function schedule(){
+  if(!$('optAuto').checked){ $('pvState').textContent='「プレビューを更新」を押すと反映されます'; return; }
+  $('pvState').textContent='入力中…'; clearTimeout(timer); timer=setTimeout(render,450);
+}
+function render(){
+  clearTimeout(timer);
+  const r=buildDoc(taH.value,taC.value,'',false);
+  $('pv').srcdoc=r.doc; drawNotes(r.notes,taC.value);
+  $('pvState').textContent='表示しました';
+}
+$('btnRender').addEventListener('click',render);
+$('optAuto').addEventListener('change',()=>{ if($('optAuto').checked) render(); });
+
+/* 保存と読み込み */
+function download(name,text,type){
+  const blob=new Blob([text],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+$('btnSave').addEventListener('click',()=>{ download('mypage.html',buildDoc(taH.value,taC.value,'',true).doc,'text/html;charset=utf-8'); });
+$('btnSaveHtml').addEventListener('click',()=>download('index.html',taH.value,'text/html;charset=utf-8'));
+$('btnSaveCss').addEventListener('click',()=>download('style.css',taC.value,'text/css;charset=utf-8'));
+$('btnOpen').addEventListener('click',()=>$('fileIn').click());
+$('fileIn').addEventListener('change',e=>{
+  [...e.target.files].forEach(f=>{
+    if(f.size>1024*1024){ alert(f.name+' は大きすぎます（1MBまで）。'); return; }
+    const rd=new FileReader();
+    rd.onload=()=>{ const t=String(rd.result); if(/\.css$/i.test(f.name)) setEditors(null,t); else setEditors(t,null); curSample=-1; drawSamples(); };
+    rd.readAsText(f,'UTF-8');
+  });
+  e.target.value='';
+});
+
+/* ===================== タグの構造を見る ===================== */
+const VOID=new Set('area base br col embed hr img input link meta source track wbr'.split(' '));
+const OPT_END=new Set('html head body p li dt dd option optgroup tr td th thead tbody tfoot colgroup rt rp caption'.split(' '));
+const RAW=new Set(['script','style','textarea','title']);
+const HEAD_OK=new Set('base link meta noscript script style template title'.split(' '));
+const P_CLOSE=new Set('address article aside blockquote details dialog div dl fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header hgroup hr main menu nav ol p pre search section table ul'.split(' '));
+const P_SCOPE=new Set('button table td th caption html template object'.split(' '));
+const KNOWN=new Set(('a abbr address area article aside audio b base bdi bdo blockquote body br button canvas caption cite code col colgroup data datalist dd del details dfn dialog div dl dt em embed fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup hr html i iframe img input ins kbd label legend li link main map mark menu meta meter nav noscript object ol optgroup option output p picture pre progress q rp rt ruby s samp script search section select selectedcontent slot small source span strong style sub summary sup table tbody td template textarea tfoot th thead time title tr track u ul var video wbr svg math').split(' '));
+const OBSOLETE={center:'CSS の text-align',font:'CSS の color や font-size',marquee:'CSS',big:'CSS の font-size',tt:'code 要素や kbd 要素',strike:'del 要素（削除を表すとき）か s 要素',blink:'CSS',acronym:'abbr 要素',dir:'ul 要素',frame:'iframe 要素',frameset:'iframe 要素',basefont:'CSS',nobr:'CSS',applet:'embed 要素や object 要素',spacer:'CSS',multicol:'CSS'};
+const T=s=>'<code>'+esc(s)+'</code>';
+
+function readTag(src,lt){
+  let j=lt+1; const end=src[j]==='/'; if(end) j++;
+  const m=/^[A-Za-z][A-Za-z0-9-]*/.exec(src.slice(j,j+40)); if(!m) return null;
+  const t={end,name:m[0].toLowerCase(),attrs:[],selfClose:false,fw:false,unclosed:false,next:src.length};
+  j+=m[0].length;
+  while(j<src.length){
+    const c=src[j];
+    if(c==='>'){ t.next=j+1; return t; }
+    if(c==='/'){ if(src[j+1]==='>'){ t.selfClose=true; t.next=j+2; return t; } j++; continue; }
+    if(c==='\u3000'){ t.fw=true; j++; continue; }
+    if(/\s/.test(c)){ j++; continue; }
+    if(c==='<'){ t.unclosed=true; t.next=j; return t; }
+    let k=j; while(k<src.length && !/[\s\/>=<]/.test(src[k])) k++;
+    if(k===j){ j++; continue; }
+    const an=src.slice(j,k).toLowerCase(); j=k;
+    while(j<src.length && /[ \t\r\n]/.test(src[j])) j++;
+    let val=null, bad=false;
+    if(src[j]==='='){
+      j++; while(j<src.length && /[ \t\r\n]/.test(src[j])) j++;
+      const q=src[j];
+      if(q==='"'||q==="'"){ const e=src.indexOf(q,j+1); if(e<0){ val=src.slice(j+1); bad=true; j=src.length; } else { val=src.slice(j+1,e); if(/</.test(val)||(/>/.test(val)&&/\n/.test(val))) bad=true; j=e+1; } }
+      else { let e=j; while(e<src.length && !/[\s>]/.test(src[e])) e++; val=src.slice(j,e); j=e; }
+    }
+    t.attrs.push({name:an,val,bad});
+  }
+  t.unclosed=true; return t;
+}
+const getA=(t,n)=>{ const a=t.attrs.find(x=>x.name===n); return a? (a.val??'') : null; };
+
+function lintHtml(src){
+  const out=[]; const add=(lv,line,msg)=>out.push({lv,line,msg});
+  const nl=[0]; for(let i=0;i<src.length;i++) if(src[i]==='\n') nl.push(i+1);
+  const lineOf=pos=>{ let lo=0,hi=nl.length-1; while(lo<hi){ const mid=(lo+hi+1)>>1; if(nl[mid]<=pos) lo=mid; else hi=mid-1; } return lo+1; };
+  const stack=[], ids=new Map(), heads=[], forced=[];
+  let sawDoctype=false, firstTag=false, charset=null, charsetEnd=0, title=null, htmlSeen=false, htmlLang=null, lastAutoP=null, foreign=0;
+  { const re=/[＜＞]/g; let m; const ls=new Set(); while((m=re.exec(src))) ls.add(lineOf(m.index));
+    if(ls.size) add('warn',[...ls][0],`全角の「＜」「＞」があります（${[...ls].slice(0,6).join('・')}行目）。タグのつもりなら、半角の ${T('<')} ${T('>')} で書きます。全角のままだと、ただの文字として表示されます。`); }
+  const top=()=>stack[stack.length-1];
+  function popTo(k,byName,byLine){
+    // stack[k] とそれより上を取り除く。上にあった「省略できない要素」は閉じ忘れとして知らせる
+    const above=stack.slice(k+1).filter(e=>!OPT_END.has(e.name));
+    if(above.length && byName){ const e=above[above.length-1]; add('ng',e.line,`${e.line}行目の ${T('<'+e.name+'>')} が閉じられないまま、${byLine}行目の ${T('<'+byName+'>')} によって外側の要素が終わっています。`); above.forEach(x=>forced.push(x.name)); }
+    stack.length=k;
+  }
+  function findUp(names,bounds){ for(let j=stack.length-1;j>=0;j--){ const n=stack[j].name; if(names.has(n)) return j; if(bounds.has(n)) return -1; } return -1; }
+  function start(t,line,pos){
+    const n=t.name;
+    if(foreign){ if(!t.selfClose){ stack.push({name:n,line,foreign:true}); if(n==='svg'||n==='math') foreign++; } return; }
+    if(n==='html'){ htmlSeen=true; htmlLang=getA(t,'lang'); }
+    if(stack.length && top().name==='head' && !HEAD_OK.has(n) && n!=='head') stack.pop();
+    if(P_CLOSE.has(n)){ const k=findUp(new Set(['p']),P_SCOPE); if(k>=0){ lastAutoP={line:stack[k].line,byLine:line,by:n}; popTo(k,n,line); } }
+    if(n==='li'){ const k=findUp(new Set(['li']),new Set(['ul','ol','menu'])); if(k>=0) popTo(k,n,line); }
+    if(n==='dt'||n==='dd'){ const k=findUp(new Set(['dt','dd']),new Set(['dl'])); if(k>=0) popTo(k,n,line); }
+    if(n==='td'||n==='th'){ const k=findUp(new Set(['td','th']),new Set(['tr','table'])); if(k>=0) popTo(k,n,line); }
+    if(n==='tr'){ const k=findUp(new Set(['tr']),new Set(['table','thead','tbody','tfoot'])); if(k>=0) popTo(k,n,line); }
+    if(n==='thead'||n==='tbody'||n==='tfoot'){ const k=findUp(new Set(['thead','tbody','tfoot']),new Set(['table'])); if(k>=0) popTo(k,n,line); }
+    if(n==='option'){ if(stack.length && top().name==='option') stack.pop(); }
+    const par=stack.length? top().name : '';
+    if(n==='li' && !['ul','ol','menu'].includes(par)) add('warn',line,`${T('<li>')} は ${T('<ul>')} か ${T('<ol>')} の中に書きます。`);
+    if((n==='td'||n==='th') && par!=='tr') add('warn',line,`${T('<'+n+'>')} は ${T('<tr>')}（表の行）の中に書きます。`);
+    if(n==='tr' && !['table','thead','tbody','tfoot'].includes(par)) add('warn',line,`${T('<tr>')} は ${T('<table>')} の中に書きます。`);
+    if(OBSOLETE[n]) add('warn',line,`${T('<'+n+'>')} は古い要素で、今のHTMLでは使いません。代わりに ${OBSOLETE[n]} を使います。`);
+    else if(!KNOWN.has(n) && !n.includes('-')) add('warn',line,`${T('<'+n+'>')} という要素はHTMLにありません。つづりを確かめましょう。`);
+    const seen=new Set();
+    for(const a of t.attrs){
+      if(seen.has(a.name)) add('warn',line,`${T('<'+n+'>')} に ${a.name} 属性が2回書かれています。`); seen.add(a.name);
+      if(a.bad) add('warn',line,`${T('<'+n+'>')} の ${a.name} 属性の値に「&lt;」や改行が入っています。引用符（"）の閉じ忘れかもしれません。`);
+      if(a.name==='align'||a.name==='bgcolor') add('info',line,`${T('<'+n+'>')} の ${a.name} 属性は古い書き方です。見た目は CSS で指定します。`);
+    }
+    const id=getA(t,'id');
+    if(id!==null){ if(id.trim()==='') add('warn',line,`id 属性の値が空です。`); else if(ids.has(id)) add('ng',line,`id="${esc(id)}" が ${ids.get(id)}行目と${line}行目で重なっています。id は文書の中で1つだけにします（何回も使うなら class にします）。`); else ids.set(id,line); }
+    if(n==='img'){ if(getA(t,'alt')===null) add('warn',line,`${T('<img>')} に alt 属性がありません。画像の内容を文章で書きます（飾りだけの画像なら ${T('alt=""')}）。`); if(getA(t,'src')===null) add('warn',line,`${T('<img>')} に src 属性（画像の場所）がありません。`); }
+    if(n==='meta'){ const cs=getA(t,'charset'); if(cs!==null){ charset=cs; charsetEnd=new TextEncoder().encode(src.slice(0,t.next)).length; } }
+    if(/^h[1-6]$/.test(n)) heads.push({lv:+n[1],line});
+    if(t.selfClose && !VOID.has(n)) add('warn',line,`HTMLでは ${T('<'+n+' />')} と書いても閉じたことになりません。${T('</'+n+'>')} で閉じます。`);
+    if(VOID.has(n)) return;
+    if(t.selfClose && (n==='svg'||n==='math')) return;
+    stack.push({name:n,line});
+    if(n==='svg'||n==='math') foreign++;
+  }
+  function end(t,line){
+    const n=t.name;
+    if(foreign){ for(let j=stack.length-1;j>=0;j--){ if(stack[j].name===n){ for(let x=j;x<stack.length;x++) if(stack[x].name==='svg'||stack[x].name==='math') foreign--; stack.length=j; return; } } return; }
+    if(VOID.has(n)){ add('ng',line,`${T('</'+n+'>')} は書きません。${T('<'+n+'>')} は終了タグのない要素（空要素）です。`); return; }
+    let k=-1; for(let j=stack.length-1;j>=0;j--) if(stack[j].name===n){ k=j; break; }
+    if(k<0){
+      const f=forced.lastIndexOf(n); if(f>=0){ forced.splice(f,1); return; }
+      if(n==='p' && lastAutoP){ add('ng',line,`${T('</p>')} に対応する ${T('<p>')} がありません。${lastAutoP.line}行目の ${T('<p>')} は、${lastAutoP.byLine}行目の ${T('<'+lastAutoP.by+'>')} が始まったところで自動的に終わっています（${T('<p>')} の中に ${T('<'+lastAutoP.by+'>')} は入れられません）。このとき、ブラウザは中身のない p 要素を1つ作ります。`); lastAutoP=null; return; }
+      if(n==='head'||n==='body'||n==='html') return;
+      add('ng',line,`${T('</'+n+'>')} に対応する開始タグ ${T('<'+n+'>')} がありません。`); return;
+    }
+    const above=stack.slice(k+1).filter(e=>!OPT_END.has(e.name));
+    if(above.length){
+      if(n==='body'||n==='html'){ above.forEach(e=>add('ng',e.line,`${e.line}行目の ${T('<'+e.name+'>')} が閉じられていません（${T('</'+e.name+'>')} がありません）。`)); }
+      else { const e=above[above.length-1]; add('ng',line,`入れ子のまちがい：${e.line}行目の ${T('<'+e.name+'>')} を閉じる前に ${T('</'+n+'>')} が来ています。あとから開いたタグを先に閉じます（例：${T('<p><b>…</b></p>')}）。`); above.forEach(x=>forced.push(x.name)); }
+    }
+    stack.length=k;
+  }
+  let i=0;
+  while(i<src.length){
+    const lt=src.indexOf('<',i); if(lt<0) break;
+    if(src.startsWith(CMT_OPEN,lt)){ const e=src.indexOf('--\x3E',lt+4); if(e<0){ add('ng',lineOf(lt),`コメントの始まり ${T(CMT_OPEN)} が ${T('--\x3E')} で閉じられていません。ここから後ろがすべてコメントになり、表示されません。`); break; } i=e+3; continue; }
+    if(/^<!doctype/i.test(src.substr(lt,9))){ if(firstTag) add('warn',lineOf(lt),`${T('<!DOCTYPE html>')} は、ファイルのいちばん最初に書きます。`); sawDoctype=true; firstTag=true; const e=src.indexOf('>',lt); i=e<0?src.length:e+1; continue; }
+    const t=readTag(src,lt);
+    if(!t){ if(src[lt+1]===' ' && /[a-zA-Z\/]/.test(src[lt+2]||'')) add('info',lineOf(lt),`「&lt; 」のように ${T('<')} のすぐ後ろに空白があると、タグではなく文字として扱われます。文字として「&lt;」を表示したいときは ${T('&lt;')} と書くのが正式な書き方です。`); i=lt+1; continue; }
+    firstTag=true;
+    const line=lineOf(lt);
+    if(t.unclosed) add('ng',line,`${T('<'+(t.end?'/':'')+t.name)} のタグが「&gt;」で閉じられていません。`);
+    if(t.fw) add('warn',line,`${T('<'+t.name+'>')} のタグの中に全角の空白があります。属性の区切りは半角の空白にします。`);
+    if(t.end) end(t,line); else start(t,line,lt);
+    i=t.next;
+    if(!t.end && RAW.has(t.name) && !foreign){
+      const re=new RegExp('</'+t.name+'\\s*>','ig'); re.lastIndex=i; const m=re.exec(src);
+      if(!m){ add('ng',line,`${T('<'+t.name+'>')} に対応する ${T('</'+t.name+'>')} がありません。`); stack.pop(); break; }
+      if(t.name==='title') title=src.slice(i,m.index).trim();
+      i=m.index;
+    }
+  }
+  stack.forEach(e=>{ if(!OPT_END.has(e.name)) add('ng',e.line,`${e.line}行目の ${T('<'+e.name+'>')} が閉じられていません（${T('</'+e.name+'>')} がありません）。`); });
+  if(!sawDoctype) add('warn',1,`1行目に ${T('<!DOCTYPE html>')} がありません。書かないと、ブラウザが古いページ向けの表示方式を使うことがあります。`);
+  if(htmlSeen && !htmlLang) add('warn',1,`${T('<html>')} に lang 属性がありません。日本語のページなら ${T('<html lang="ja">')} と書きます。`);
+  if(charset===null) add('warn',1,`文字コードの指定 ${T('<meta charset="UTF-8">')} がありません。文字化けの原因になります。head の最初に書きましょう。`);
+  else if(!/^\s*utf-?8\s*$/i.test(charset)) add('warn',1,`文字コードが「${esc(charset)}」になっています。HTMLの仕様では UTF-8 を使うことになっています。`);
+  else if(charsetEnd>1024) add('warn',1,`${T('<meta charset>')} が、ファイルの先頭から1024バイトより後ろにあります。head の最初に書きます。`);
+  if(title===null) add('warn',1,`${T('<title>')}（ページの題名）がありません。ブラウザのタブや検索結果に表示されます。`);
+  else if(title==='') add('warn',1,`${T('<title>')} の中身が空です。`);
+  if(heads.length && !heads.some(h=>h.lv===1)) add('info',heads[0].line,`${T('<h1>')} がありません。ページの一番大きな見出しには h1 を使います。`);
+  for(let j=1;j<heads.length;j++){ const a=heads[j-1], b=heads[j]; if(b.lv>a.lv+1) add('warn',b.line,`見出しの順序：${a.line}行目の ${T('<h'+a.lv+'>')} の次が、${b.line}行目の ${T('<h'+b.lv+'>')} になっています。見出しは1段ずつ下げます（h${a.lv} の次は h${a.lv+1} まで）。`); }
+  const rank={ng:0,warn:1,info:2};
+  out.sort((x,y)=>x.line-y.line||rank[x.lv]-rank[y.lv]);
+  return out;
+}
+
+const KNOWN_PROPS=new Set(('color background background-color background-image background-size background-position background-repeat background-attachment background-clip background-origin opacity font font-family font-size font-weight font-style font-variant line-height letter-spacing word-spacing text-align text-decoration text-decoration-line text-decoration-color text-decoration-style text-decoration-thickness text-underline-offset text-indent text-transform text-shadow text-overflow white-space word-break overflow-wrap word-wrap vertical-align direction writing-mode list-style list-style-type list-style-position list-style-image '+
+ 'margin margin-top margin-right margin-bottom margin-left margin-block margin-inline padding padding-top padding-right padding-bottom padding-left padding-block padding-inline border border-top border-right border-bottom border-left border-width border-style border-color border-radius border-top-left-radius border-top-right-radius border-bottom-left-radius border-bottom-right-radius border-collapse border-spacing border-top-width border-top-style border-top-color border-bottom-width border-bottom-style border-bottom-color border-left-width border-left-style border-left-color border-right-width border-right-style border-right-color outline outline-width outline-style outline-color outline-offset box-shadow box-sizing '+
+ 'width height min-width min-height max-width max-height aspect-ratio display position top right bottom left inset z-index float clear overflow overflow-x overflow-y visibility flex flex-direction flex-wrap flex-flow flex-grow flex-shrink flex-basis justify-content align-items align-content align-self justify-items justify-self place-items place-content place-self order gap row-gap column-gap grid grid-template grid-template-columns grid-template-rows grid-template-areas grid-area grid-column grid-row grid-column-start grid-column-end grid-row-start grid-row-end grid-auto-flow grid-auto-rows grid-auto-columns '+
+ 'transition transition-property transition-duration transform transform-origin rotate scale translate animation animation-name animation-duration animation-delay animation-iteration-count animation-timing-function cursor content quotes table-layout caption-side empty-cells object-fit object-position filter backdrop-filter clip-path user-select pointer-events resize scroll-behavior accent-color caret-color columns column-count column-width column-rule hyphens tab-size counter-reset counter-increment font-feature-settings appearance mix-blend-mode isolation will-change src font-display unicode-range all image-rendering text-wrap').split(' '));
+function lintCss(css,htmlDoc){
+  const out=[]; const add=(lv,line,msg)=>out.push({lv,line,msg});
+  // コメントを同じ長さの空白に置きかえる（行番号を保つ）
+  let s=css.replace(/\/\*[\s\S]*?\*\//g,m=>m.replace(/[^\n]/g,' '));
+  const oc=s.indexOf('/*'); if(oc>=0){ add('ng',css.slice(0,oc).split('\n').length,`コメント ${T('/*')} が ${T('*/')} で閉じられていません。`); s=s.slice(0,oc); }
+  { const ls=new Set(); s.split('\n').forEach((L,i)=>{ if(/[：；｛｝]/.test(L)) ls.add(i+1); });
+    if(ls.size) add('ng',[...ls][0],`全角の「：」「；」「｛」「｝」があります（${[...ls].slice(0,6).join('・')}行目）。CSSの記号は半角で書きます。`); }
+  let line=1, buf='', bufLine=1; const st=[];
+  const checkSel=(pre,ln)=>{
+    pre.split(',').map(x=>x.trim()).filter(Boolean).forEach(sel=>{
+      const bare=sel.replace(/::?[a-zA-Z-]+(\([^)]*\))?/g,'').trim()||'*';
+      try{ if(htmlDoc && htmlDoc.querySelectorAll(bare).length===0) add('info',ln,`セレクタ ${T(sel)} に当てはまる要素が index.html にありません（つづりや、. と # のつけ忘れ・つけすぎを確かめましょう）。`); }
+      catch(e){ add('ng',ln,`セレクタ ${T(sel)} の書き方が正しくありません。`); }
+    });
+  };
+  const checkDecls=(text,ln)=>{
+    let cur=ln;
+    text.split(';').forEach(part=>{
+      const lead=part.match(/^\s*/)[0]; const startLine=cur+(lead.match(/\n/g)||[]).length;
+      cur+=(part.match(/\n/g)||[]).length;
+      const d=part.trim(); if(!d) return;
+      const ci=d.indexOf(':');
+      if(ci<0){ add('ng',startLine,`${T(d.slice(0,40))} に「:」がありません。「プロパティ: 値;」の形で書きます。`); return; }
+      const prop=d.slice(0,ci).trim().toLowerCase(), val=d.slice(ci+1);
+      if(!/url\(/i.test(val) && /\n[^\S\n]*[a-zA-Z-]+[^\S\n]*:/.test(val)){ add('ng',startLine,`${startLine}行目の ${T(prop+': …')} の終わりに「;」がないようです。そのため次の行の指定まで読めなくなっています。`); return; }
+      if(!val.trim()) add('warn',startLine,`${T(prop)} の値がありません。`);
+      if(!prop.startsWith('--') && !/^-(webkit|moz|ms)-/.test(prop) && !KNOWN_PROPS.has(prop)) add('warn',startLine,`${T(prop)} は、このページが知っているプロパティの一覧にありません。つづりを確かめましょう。`);
+    });
+  };
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(c==='{'){
+      if(st.length && st[st.length-1].type==='rule'){
+        // ルールの中で { が来た＝前のルールの } を書き忘れた、と考えて区切り直す
+        const k=buf.lastIndexOf(';'), dp=buf.slice(0,k+1), b0=st.pop();
+        add('ng',b0.line,`${b0.line}行目から始まるルールを閉じる ${T('}')} がないようです（次のルールの ${T('{')} までが1つのルールとして読まれています）。`);
+        checkDecls(dp,bufLine); bufLine+=(dp.match(/\n/g)||[]).length; buf=buf.slice(k+1);
+      }
+      const pre=buf.trim(); const preLine=bufLine+(buf.match(/^\s*/)[0].match(/\n/g)||[]).length;
+      let type='rule';
+      if(pre.startsWith('@')) type=/^@(media|supports|layer|container|document)\b/i.test(pre)?'group':'decl';
+      if(type==='rule'){ if(!pre) add('ng',preLine,`${T('{')} の前にセレクタがありません。`); else checkSel(pre,preLine); }
+      st.push({type,line:preLine}); buf=''; bufLine=line; continue;
+    }
+    if(c==='}'){
+      if(!st.length){ add('ng',line,`${T('}')} に対応する ${T('{')} がありません。`); buf=''; bufLine=line; continue; }
+      const b=st.pop(); if(b.type!=='group') checkDecls(buf,bufLine);
+      buf=''; bufLine=line; continue;
+    }
+    if(c===';' && (!st.length || st[st.length-1].type==='group')){ buf=''; bufLine=line; continue; }
+    if(c==='\n') line++;
+    buf+=c;
+  }
+  st.forEach(b=>add('ng',b.line,`${b.line}行目の ${T('{')} が ${T('}')} で閉じられていません。`));
+  if(!st.length && buf.trim() && !/^@/.test(buf.trim())) add('warn',bufLine+(buf.match(/^\s*/)[0].match(/\n/g)||[]).length,`${T(buf.trim().slice(0,30))} が { } の外にあります。`);
+  out.sort((x,y)=>x.line-y.line);
+  return out;
+}
+
+let treeDoc=null, treeSelEl=null;
+function nodeLabel(el){
+  const tg=el.tagName.toLowerCase();
+  let s=`<span class="tg">&lt;${esc(tg)}</span>`;
+  const show=['id','class','href','src','alt','lang','charset','rel','name','content','type','width'];
+  let k=0;
+  for(const a of el.attributes){ if(!show.includes(a.name) && k>=1) continue; if(k>=3){ s+=' …'; break; }
+    let v=a.value; if(/^data:/i.test(v)) v='data:…'; if(v.length>28) v=v.slice(0,26)+'…';
+    s+=` <span class="an">${esc(a.name)}</span>=<span class="av">"${esc(v)}"</span>`; k++; }
+  return s+'<span class="tg">&gt;</span>';
+}
+function selPath(el){
+  const body=treeDoc.body; if(el===body) return 'body';
+  if(!body.contains(el)) return null;
+  const parts=[]; while(el && el!==body){ let i=1, s=el; while((s=s.previousElementSibling)) i++; parts.unshift(`:nth-child(${i})`); el=el.parentElement; }
+  return 'body > '+parts.join(' > ');
+}
+let tnId=0; const tnMap=new Map();
+function buildTree(el,depth,inHead,stat){
+  stat.n++; stat.d=Math.max(stat.d,depth);
+  const id=++tnId; tnMap.set(String(id),el);
+  const hd=inHead||el.tagName.toLowerCase()==='head';
+  let h=`<li><button class="tn${hd?' hd':''}" data-id="${id}">${nodeLabel(el)}</button>`;
+  const kids=[];
+  const src= el.tagName.toLowerCase()==='template'? el.content.childNodes : el.childNodes;
+  for(const c of src){
+    if(c.nodeType===1) kids.push(buildTree(c,depth+1,hd,stat));
+    else if(c.nodeType===3){ const t=c.textContent.replace(/\s+/g,' ').trim(); if(t) kids.push(`<li class="tx">“${esc(t.length>34?t.slice(0,32)+'…':t)}”</li>`); }
+    else if(c.nodeType===8) kids.push(`<li class="tx">（コメント）</li>`);
+  }
+  if(kids.length) h+=`<ul>${kids.join('')}</ul>`;
+  return h+'</li>';
+}
+function issueList(list){
+  if(!list.length) return `<li class="okline">よくある間違いは見つかりませんでした。</li>`;
+  const L={ng:'まちがい',warn:'注意',info:'ヒント'};
+  return list.map(x=>`<li><span class="lv ${x.lv}">${L[x.lv]}</span><span><button class="lnk" data-line="${x.line}">${x.line}行目</button>：${x.msg}</span></li>`).join('');
+}
+function drawTreePreview(){
+  let extra='';
+  const sel=treeSelEl? selPath(treeSelEl) : null;
+  if(sel) extra=`${sel}{outline:3px solid #C49A2B !important; outline-offset:2px !important;}`;
+  $('pvTree').srcdoc=buildDoc(taH.value,taC.value,extra,false).doc;
+  $('treeSel').textContent= treeSelEl? (sel? `選んでいる要素：<${treeSelEl.tagName.toLowerCase()}>` : `<${treeSelEl.tagName.toLowerCase()}> は head の中にあるので、画面には表示されません`) : '要素を選ぶと枠がつきます';
+}
+function analyze(){
+  const src=taH.value;
+  treeDoc=new DOMParser().parseFromString(src,'text/html');
+  tnId=0; tnMap.clear(); treeSelEl=null;
+  const stat={n:0,d:0};
+  $('tree').innerHTML='<ul>'+buildTree(treeDoc.documentElement,1,false,stat)+'</ul>';
+  $('tCount').textContent=stat.n; $('tDepth').textContent=stat.d+' 段';
+  const li=lintHtml(src), lc=lintCss(taC.value,treeDoc);
+  $('issues').innerHTML=issueList(li); $('cssIssues').innerHTML=issueList(lc);
+  $('tIssues').textContent=li.filter(x=>x.lv!=='info').length+lc.filter(x=>x.lv!=='info').length;
+  drawTreePreview();
+}
+$('tree').addEventListener('click',e=>{ const b=e.target.closest('.tn'); if(!b) return;
+  $('tree').querySelectorAll('.tn.sel').forEach(x=>x.classList.remove('sel')); b.classList.add('sel');
+  treeSelEl=tnMap.get(b.dataset.id); drawTreePreview(); });
+['issues','cssIssues'].forEach(id=>$(id).addEventListener('click',e=>{ const b=e.target.closest('.lnk'); if(!b) return;
+  if(id==='cssIssues'){ showTab('tabEdit'); const L=taC.value.split('\n'); const ln=+b.dataset.line; let p=0; for(let i=0;i<ln-1&&i<L.length;i++) p+=L[i].length+1; taC.focus(); taC.setSelectionRange(p,p+(L[ln-1]||'').length); taC.scrollTop=Math.max(0,(ln-4)*21); }
+  else gotoLine(+b.dataset.line); }));
+$('btnParse').addEventListener('click',analyze);
+$('btnBuggy').addEventListener('click',()=>{ curSample=-1; drawSamples(); setEditors(BUGGY,BUGGY_CSS); analyze(); });
+
+/* ===================== CSSを試す ===================== */
+const C3_HTML=`<h1 id="title">写真部のお知らせ</h1>
+<p class="note">新入部員を募集しています。</p>
+<p>活動日は月・水・金の放課後です。</p>
+<ul class="cards">
+  <li class="card">撮影会</li>
+  <li class="card">展示会<br>（文化祭）</li>
+  <li class="card">勉強会</li>
+</ul>`;
+const C3_BASE=`body { font-family: sans-serif; margin: 16px; line-height: 1.6; }
+.cards { list-style: none; padding: 0; margin: 0; }
+.card { background-color: #E7ECF5; }`;
+const C3_SELS=[
+  {s:'h1',kind:'要素セレクタ',d:'h1 要素すべて'},
+  {s:'p',kind:'要素セレクタ',d:'p 要素すべて'},
+  {s:'.note',kind:'クラスセレクタ',d:'class="note" がついた要素'},
+  {s:'#title',kind:'IDセレクタ',d:'id="title" がついた要素'},
+  {s:'.card',kind:'クラスセレクタ',d:'class="card" がついた要素'},
+];
+const COLORS=[['#1F3864','紺'],['#C00000','赤'],['#2E7D4F','緑'],['#C49A2B','金'],['#FFFFFF','白'],['#FFF3D6','クリーム'],['#E7ECF5','うすい青']];
+const PDEF=[
+  {k:'color',t:'color',lab:'文字の色',g:'text'},
+  {k:'background-color',t:'color',lab:'背景の色',g:'text'},
+  {k:'font-size',t:'range',min:10,max:48,step:1,u:'px',d:24,lab:'文字の大きさ',g:'text'},
+  {k:'font-weight',t:'pick',o:['normal','bold'],lab:'文字の太さ',g:'text'},
+  {k:'text-align',t:'pick',o:['left','center','right'],lab:'文字のそろえ方',g:'text'},
+  {k:'width',t:'range',min:60,max:400,step:10,u:'px',d:200,lab:'幅',g:'box'},
+  {k:'padding',t:'range',min:0,max:40,step:1,u:'px',d:10,lab:'内側の余白',g:'box'},
+  {k:'border',t:'border',lab:'枠線（太さ・線の種類・色）',g:'box'},
+  {k:'margin',t:'range',min:0,max:40,step:1,u:'px',d:20,lab:'外側の余白',g:'box'},
+  {k:'border-radius',t:'range',min:0,max:30,step:1,u:'px',d:8,lab:'角の丸み',g:'box'},
+  {k:'box-sizing',t:'pick',o:['content-box','border-box'],lab:'width の測り方',g:'box'},
+];
+const FDEF=[
+  {k:'flex-direction',o:['row','column'],init:'row',lab:'並ぶ向き'},
+  {k:'justify-content',o:['flex-start','center','flex-end','space-between','space-around'],init:'flex-start',lab:'並ぶ向きのそろえ方'},
+  {k:'align-items',o:['stretch','flex-start','center','flex-end'],init:'stretch',lab:'直角の向きのそろえ方'},
+  {k:'flex-wrap',o:['nowrap','wrap'],init:'nowrap',lab:'折り返し'},
+];
+let R, F, c3cur;
+function c3Init(){
+  R={}; C3_SELS.forEach(x=>R[x.s]={});
+  R['.note']={color:'#C00000','font-weight':'bold'};
+  R['.card']={padding:10,border:{w:2,s:'solid',c:'#1F3864'},margin:6,width:160};
+  F={on:false,'flex-direction':'row','justify-content':'flex-start','align-items':'stretch','flex-wrap':'nowrap',gap:0};
+  c3cur='.card';
+}
+function ctlHtml(p){
+  const name=`<div class="pname">${p.k}<small>${p.lab}</small></div>`;
+  if(p.t==='range') return `<div class="prow">${name}<div class="pctl"><label class="ck"><input type="checkbox" data-en="${p.k}" aria-label="${p.k} を指定する"></label><input type="range" data-r="${p.k}" min="${p.min}" max="${p.max}" step="${p.step}" aria-label="${p.k}"><output data-o="${p.k}"></output></div></div>`;
+  if(p.t==='pick') return `<div class="prow">${name}<div class="pctl"><button class="chip" data-pk="${p.k}" data-v="">未指定</button>${p.o.map(v=>`<button class="chip" data-pk="${p.k}" data-v="${v}">${v}</button>`).join('')}</div></div>`;
+  if(p.t==='color') return `<div class="prow">${name}<div class="pctl"><button class="chip" data-ck="${p.k}" data-v="">未指定</button>${COLORS.map(([c,l])=>`<button class="sw" data-ck="${p.k}" data-v="${c}" style="background:${c}" aria-label="${l}（${c}）" title="${l} ${c}"></button>`).join('')}<input type="color" data-cp="${p.k}" aria-label="${p.k} を自由に選ぶ"><output data-o="${p.k}"></output></div></div>`;
+  if(p.t==='border') return `<div class="prow">${name}<div class="pctl"><label class="ck"><input type="checkbox" data-en="border" aria-label="border を指定する"></label><input type="range" data-r="border" min="0" max="12" step="1" aria-label="枠線の太さ"><output data-o="border"></output>
+    <span style="flex-basis:100%;height:0"></span>${['solid','dashed','dotted','double'].map(v=>`<button class="chip" data-bs="${v}">${v}</button>`).join('')}
+    <span style="flex-basis:100%;height:0"></span>${COLORS.slice(0,4).map(([c,l])=>`<button class="sw" data-bc="${c}" style="background:${c}" aria-label="枠線の色 ${l}" title="${l} ${c}"></button>`).join('')}</div></div>`;
+}
+$('c3Text').innerHTML=PDEF.filter(p=>p.g==='text').map(ctlHtml).join('');
+$('c3Box').innerHTML=PDEF.filter(p=>p.g==='box').map(ctlHtml).join('');
+$('c3Flex').innerHTML=`<div class="prow"><div class="pname">display<small>表示のしかた</small></div><div class="pctl"><button class="chip" data-fon="0">block（初期）</button><button class="chip" data-fon="1">flex</button></div></div>`+
+  FDEF.map(f=>`<div class="prow"><div class="pname">${f.k}<small>${f.lab}</small></div><div class="pctl">${f.o.map(v=>`<button class="chip" data-fk="${f.k}" data-v="${v}">${v}</button>`).join('')}</div></div>`).join('')+
+  `<div class="prow"><div class="pname">gap<small>アイテムの間</small></div><div class="pctl"><input type="range" id="fGap" min="0" max="30" step="1" aria-label="gap"><output id="fGapO"></output></div></div>`+
+  `<p class="hint" id="fHint"></p>`;
+$('c3Sels').innerHTML=C3_SELS.map(x=>`<button class="chip mono" data-s="${x.s}">${esc(x.s)}</button>`).join('');
+
+const fmt=(p,v)=> p.k==='border'? `${v.w}px ${v.s} ${v.c}` : (typeof v==='number'? v+(p.u||'') : v);
+function ruleLines(sel){ const r=R[sel]; return PDEF.filter(p=>r[p.k]!=null).map(p=>[p.k,fmt(p,r[p.k])]); }
+function flexLines(){ if(!F.on) return []; const L=[['display','flex']]; FDEF.forEach(f=>{ if(F[f.k]!==f.init) L.push([f.k,F[f.k]]); }); if(F.gap) L.push(['gap',F.gap+'px']); return L; }
+function genCss(){
+  let s=''; C3_SELS.forEach(x=>{ const L=ruleLines(x.s); if(L.length) s+=`${x.s} {\n${L.map(([k,v])=>`  ${k}: ${v};`).join('\n')}\n}\n`; });
+  const fl=flexLines(); if(fl.length) s+=`.cards {\n${fl.map(([k,v])=>`  ${k}: ${v};`).join('\n')}\n}\n`;
+  return s;
+}
+function cssHtml(){
+  const parts=[];
+  const blk=(sel,L,cur)=>{ const body=L.length? L.map(([k,v])=>`  <span class="pr">${esc(k)}</span>: <span class="vl">${esc(v)}</span>;`).join('\n') : '  <span class="cm">/* まだ何も指定していません */</span>';
+    const t=`<span class="sel">${esc(sel)}</span> {\n${body}\n}`; return cur? `<span class="cur">${t}</span>` : t; };
+  C3_SELS.forEach(x=>{ const L=ruleLines(x.s); if(L.length||x.s===c3cur) parts.push(blk(x.s,L,x.s===c3cur)); });
+  const fl=flexLines(); if(fl.length) parts.push(blk('.cards',fl,false));
+  return parts.join('\n\n');
+}
+function lineHit(line,sel){
+  const m=/<([a-z0-9]+)([^>]*)>/i.exec(line); if(!m) return false;
+  const tag=m[1].toLowerCase(), cls=/class="([^"]*)"/.exec(m[2]), id=/id="([^"]*)"/.exec(m[2]);
+  if(sel[0]==='.') return !!cls && cls[1].split(/\s+/).includes(sel.slice(1));
+  if(sel[0]==='#') return !!id && id[1]===sel.slice(1);
+  return tag===sel;
+}
+function c3Controls(){
+  const r=R[c3cur];
+  document.querySelectorAll('#c3Sels .chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.s===c3cur)));
+  PDEF.forEach(p=>{
+    const v=r[p.k];
+    if(p.t==='range'||p.t==='border'){
+      const en=document.querySelector(`[data-en="${p.k}"]`), rg=document.querySelector(`[data-r="${p.k}"]`), o=document.querySelector(`[data-o="${p.k}"]`);
+      en.checked=v!=null; rg.value= p.t==='border'? (v? v.w : 2) : (v!=null? v : p.d);
+      o.textContent= v!=null? (p.t==='border'? v.w+'px' : v+p.u) : '未指定';
+      if(p.t==='border'){ document.querySelectorAll('[data-bs]').forEach(b=>b.setAttribute('aria-pressed',String(!!v && b.dataset.bs===v.s))); document.querySelectorAll('[data-bc]').forEach(b=>b.setAttribute('aria-pressed',String(!!v && b.dataset.bc===v.c))); }
+    } else if(p.t==='pick'){
+      document.querySelectorAll(`[data-pk="${p.k}"]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===(v||''))));
+    } else if(p.t==='color'){
+      document.querySelectorAll(`[data-ck="${p.k}"]`).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v.toUpperCase()===(v||'').toUpperCase())));
+      const cp=document.querySelector(`[data-cp="${p.k}"]`); cp.value= v || '#000000';
+      document.querySelector(`[data-o="${p.k}"]`).textContent= v? v+'  '+hexToRgb(v) : '未指定';
+    }
+  });
+  document.querySelectorAll('[data-fon]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.fon==='1')===F.on)));
+  FDEF.forEach(f=>document.querySelectorAll(`[data-fk="${f.k}"]`).forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.v===F[f.k])); b.disabled=!F.on; }));
+  $('fGap').value=F.gap; $('fGap').disabled=!F.on; $('fGapO').textContent=F.gap+'px';
+  $('fHint').textContent= F.on? 'display: flex にすると、.cards の子（3つの .card）が横に並びます。justify-content は並ぶ向き、align-items はそれと直角の向きのそろえ方です（「展示会」のカードだけ2行なので、align-items のちがいが分かります）。' : '「flex」を押すと、.cards の中の .card が横に並びます。';
+}
+function hexToRgb(h){ const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h); return m? `= rgb(${parseInt(m[1],16)} ${parseInt(m[2],16)} ${parseInt(m[3],16)})` : ''; }
+function boxCalc(){
+  const r=R[c3cur];
+  const m=r.margin??0, p=r.padding??0, b=r.border? r.border.w : 0, w=r.width??null, bs=r['box-sizing']||'content-box';
+  let cw=null, bw=null, mw=null, formula='';
+  if(w!=null){
+    if(bs==='border-box'){ bw=Math.max(w,2*p+2*b); cw=bw-2*p-2*b; formula=`box-sizing: border-box なので、width ${w}px が枠線の外側までの幅です。内容の幅 ＝ ${w} − ${p}×2 − ${b}×2 ＝ ${cw}px、外側の余白をふくめると ${bw} ＋ ${m}×2 ＝ ${bw+2*m}px。`+(w<2*p+2*b?' ※padding と border の合計が width より大きいので、内容の幅は 0 になります。':''); }
+    else { cw=w; bw=w+2*p+2*b; formula=`box-sizing が content-box（初期の値）なので、width ${w}px は内容の幅です。枠線の外側までの幅 ＝ ${w} ＋ ${p}×2 ＋ ${b}×2 ＝ ${bw}px、外側の余白をふくめると ${bw} ＋ ${m}×2 ＝ ${bw+2*m}px。`; }
+    mw=bw+2*m;
+  } else formula=`width が未指定（auto）なので、幅は親の要素の幅に合わせて決まります。「width」にチェックを入れると、幅の計算を確かめられます。`;
+  if(r.margin==null) formula+=' margin が未指定のとき、h1・p・li の左右の margin は 0 です（上下にはブラウザが初めから余白をつけます）。';
+  if(F.on && c3cur==='.card') formula+=' ※flex のときは、幅が足りないと .card が縮むことがあります。';
+  return {m,p,b,w,cw,bw,mw,bs,formula};
+}
+function drawBox(){
+  const x=boxCalc();
+  $('bxC').textContent= x.cw!=null? x.cw+'px' : 'auto';
+  $('bxB').textContent= x.bw!=null? x.bw+'px' : 'auto';
+  $('bxM').textContent= x.mw!=null? x.mw+'px' : 'auto';
+  $('bxNote').textContent=x.formula;
+  const W=600,H=270; const mi=34, bt=x.b? Math.min(20,Math.max(4,x.b*2)) : 2, pi=34;
+  const r1={x:6,y:6,w:W-12,h:H-12}, r2={x:r1.x+mi,y:r1.y+mi,w:r1.w-2*mi,h:r1.h-2*mi}, r3={x:r2.x+bt,y:r2.y+bt,w:r2.w-2*bt,h:r2.h-2*bt}, r4={x:r3.x+pi,y:r3.y+pi,w:r3.w-2*pi,h:r3.h-2*pi};
+  const rc=(r,f,s,extra)=>`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${f}" ${s||''} ${extra||''}/>`;
+  const tx=(x0,y0,t,a,col,sz)=>`<text x="${x0}" y="${y0}" font-size="${sz||13}" fill="${col||'#1c2430'}" text-anchor="${a||'start'}" font-family="ui-monospace,Consolas,monospace">${esc(t)}</text>`;
+  const bc=(R[c3cur].border&&R[c3cur].border.c)||'#5B6472';
+  const dash=(R[c3cur].border&&R[c3cur].border.s!=='solid')?'stroke-dasharray="6 4"':'';
+  let h=rc(r1,'#FFF3D6','stroke="#C49A2B" stroke-width="1.5" stroke-dasharray="5 4"');
+  h+=rc(r2, x.b? bc : '#C9D2E0','',dash?'opacity=".9"':'');
+  h+=rc(r3,'#E3F1E8');
+  h+=rc(r4,'#DCE6F7','stroke="#2F5496" stroke-width="1"');
+  h+=tx(r1.x+10,r1.y+21,`margin（外側の余白） ${R[c3cur].margin!=null? x.m+'px' : '未指定'}`,'start','#7A5A12');
+  h+=tx(r2.x+r2.w-6,r2.y-6,`border（枠線） ${x.b}px`,'end','#1F3864');
+  h+=tx(r3.x+10,r3.y+22,`padding（内側の余白） ${R[c3cur].padding!=null? x.p+'px' : '未指定'}`,'start','#22513a');
+  h+=tx(r4.x+r4.w/2,r4.y+r4.h/2-4,'content（内容）','middle','#1F3864',15);
+  h+=tx(r4.x+r4.w/2,r4.y+r4.h/2+18,`幅 ${x.cw!=null? x.cw+'px' : 'auto'}`,'middle','#1F3864',14);
+  // 幅の矢印（content-box / border-box で何が width かを示す）
+  if(x.w!=null){ const tr= x.bs==='border-box'? r2 : r4; const yy=tr.y+tr.h-10;
+    h+=`<line x1="${tr.x+4}" y1="${yy}" x2="${tr.x+tr.w-4}" y2="${yy}" stroke="#C00000" stroke-width="2" marker-start="url(#aL)" marker-end="url(#aR)"/>`+tx(tr.x+tr.w/2,yy-5,`width ${x.w}px`,'middle','#C00000',12); }
+  $('c3Svg').innerHTML=`<defs><marker id="aR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C00000"/></marker><marker id="aL" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#C00000"/></marker></defs>`+h;
+}
+function c3Draw(){
+  c3Controls();
+  $('c3Css').innerHTML=cssHtml();
+  const extra= $('c3Mark').checked? `${c3cur}{outline:2px dashed #C00000 !important; outline-offset:3px !important;}` : '';
+  const page=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>CSSを試す</title></head><body>\n${C3_HTML}\n</body></html>`;
+  $('pvCss').srcdoc=buildDoc(page,'',`${C3_BASE}\n${genCss()}\n${extra}`,false).doc;
+  $('c3Html').innerHTML=C3_HTML.split('\n').map(L=>lineHit(L,c3cur)? `<span class="hit">${esc(L)}</span>` : esc(L)).join('\n');
+  $('c3Base').textContent=C3_BASE;
+  const info=C3_SELS.find(x=>x.s===c3cur);
+  const n=new DOMParser().parseFromString(C3_HTML,'text/html').querySelectorAll(c3cur).length;
+  $('c3SelMsg').innerHTML=`<div class="t"><code>${esc(c3cur)}</code>（${info.kind}）で ${n} 個の要素が選ばれます</div>${esc(info.d)}を選びます。`+
+    (c3cur==='#title'?' id は文書の中で1つだけなので、IDセレクタで選ばれるのは1つです。':'')+
+    (c3cur==='p'?' 要素セレクタは、その種類の要素をすべて選びます。class="note" の p も選ばれます。':'')+
+    (c3cur==='.note'?' 同じ p 要素でも、class="note" がついたものだけが選ばれます。':'')+
+    (c3cur==='h1'?' この h1 には id="title" もついているので、#title でも同じ要素を選べます。両方で同じプロパティを指定すると、詳細度の高い #title のほうが使われます。':'');
+  drawBox();
+}
+$('c3Sels').addEventListener('click',e=>{ const b=e.target.closest('[data-s]'); if(!b) return; c3cur=b.dataset.s; c3Draw(); });
+$('c3Mark').addEventListener('change',c3Draw);
+['c3Text','c3Box'].forEach(id=>{
+  const box=$(id);
+  box.addEventListener('input',e=>{
+    const t=e.target, r=R[c3cur];
+    if(t.dataset.r){ const k=t.dataset.r; if(k==='border'){ r.border={...(r.border||{s:'solid',c:'#1F3864'}),w:+t.value}; } else r[k]=+t.value; c3Draw(); }
+    else if(t.dataset.cp){ r[t.dataset.cp]=t.value.toUpperCase(); c3Draw(); }
+  });
+  box.addEventListener('change',e=>{
+    const t=e.target, r=R[c3cur];
+    if(t.dataset.en){ const k=t.dataset.en; if(t.checked){ const p=PDEF.find(x=>x.k===k); if(k==='border') r.border={w:2,s:'solid',c:'#1F3864'}; else r[k]=+document.querySelector(`[data-r="${k}"]`).value||p.d; } else delete r[k]; c3Draw(); }
+  });
+  box.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return; const r=R[c3cur];
+    if(b.dataset.pk){ if(b.dataset.v) r[b.dataset.pk]=b.dataset.v; else delete r[b.dataset.pk]; }
+    else if(b.dataset.ck){ if(b.dataset.v) r[b.dataset.ck]=b.dataset.v; else delete r[b.dataset.ck]; }
+    else if(b.dataset.bs){ r.border={...(r.border||{w:2,c:'#1F3864'}),s:b.dataset.bs}; }
+    else if(b.dataset.bc){ r.border={...(r.border||{w:2,s:'solid'}),c:b.dataset.bc}; }
+    else return;
+    c3Draw();
+  });
+});
+$('c3Flex').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.fon){ F.on=b.dataset.fon==='1'; } else if(b.dataset.fk){ F[b.dataset.fk]=b.dataset.v; } else return; c3Draw(); });
+$('fGap').addEventListener('input',e=>{ F.gap=+e.target.value; c3Draw(); });
+$('c3Reset').addEventListener('click',()=>{ c3Init(); c3Draw(); });
+$('c3Open').addEventListener('click',()=>{
+  const html=HEAD('CSSを試す')+C3_HTML.split('\n').map(L=>'  '+L).join('\n')+'\n</body>\n</html>\n';
+  const css=C3_BASE.replace(/; /g,';\n  ').replace(/\{ /g,'{\n  ').replace(/ \}/g,'\n}')+'\n\n'+genCss();
+  curSample=-1; drawSamples(); setEditors(html,css); showTab('tabEdit');
+});
+
+/* ===================== クイズ ===================== */
+const QUIZ=[
+ {q:'Webページの「見た目」（文字の色や大きさ、余白、並べ方）を主に受け持つ言語はどれでしょう。',c:['HTML','CSS','JavaScript','HTTP'],a:1,why:'CSS（Cascading Style Sheets）は見た目を指定する言語です。HTMLは文書の組み立て、JavaScriptは動き（処理）を受け持ちます。HTTPは言語ではなく、ブラウザとサーバのやり取りの決まり（プロトコル）です。'},
+ {q:'次のうち、終了タグを書かない要素（空要素）はどれでしょう。',c:['<code>&lt;p&gt;</code>','<code>&lt;li&gt;</code>','<code>&lt;br&gt;</code>','<code>&lt;div&gt;</code>'],a:2,why:'br（改行）は内容をもたない空要素で、終了タグ &lt;/br&gt; は書きません。img、meta、link、input なども空要素です。'},
+ {q:'次のHTMLのうち、入れ子が正しいものはどれでしょう。',c:['<code>&lt;p&gt;&lt;b&gt;注意&lt;/p&gt;&lt;/b&gt;</code>','<code>&lt;p&gt;&lt;b&gt;注意&lt;/b&gt;&lt;/p&gt;</code>','<code>&lt;b&gt;&lt;p&gt;注意&lt;/b&gt;&lt;/p&gt;</code>','<code>&lt;p&gt;&lt;b&gt;注意&lt;/p&gt;</code>'],a:1,why:'あとから開いたタグ（b）を先に閉じてから、外側のタグ（p）を閉じます。閉じる順番が逆になると、ブラウザが自動で直すため、意図とちがう形になることがあります。'},
+ {q:'画像の内容を文章で表し、読み上げソフトで読まれたり、画像が表示できないときに代わりに出たりする属性はどれでしょう。',c:['src','alt','href','width'],a:1,why:'alt 属性には画像が伝えている内容を書きます。飾りだけの画像なら alt=""（空）と書きます。src は画像ファイルの場所、href はリンク先です。'},
+ {q:'見出しの使い方として、HTMLの仕様にそっているものはどれでしょう。',c:['文字を大きくしたいので、短い文を h1 にする','h1 の次の見出しに、いきなり h3 を使う','章の見出しに h2、その中の節の見出しに h3 を使う','見出しはすべて h6 にそろえる'],a:2,why:'見出しは文書の階層を表します。見出しの次の見出しは、同じ階層か、より上か、1段だけ下にします。文字の大きさはCSSの font-size で指定します。'},
+ {q:'CSS の <code>.note { color: red; }</code> の <code>.note</code> は、どの種類のセレクタでしょう。',c:['要素（型）セレクタ','クラスセレクタ','IDセレクタ','プロパティ'],a:1,why:'「.」で始まるのはクラスセレクタで、class="note" がついた要素を選びます。「#」で始まるのが IDセレクタ、p や h1 のように要素名だけを書くのが要素セレクタです。'},
+ {q:'<code>&lt;h2 id="contact"&gt;</code> の要素だけを選ぶ CSS のセレクタはどれでしょう。',c:['<code>contact</code>','<code>.contact</code>','<code>#contact</code>','<code>id=contact</code>'],a:2,why:'id 属性で選ぶときは「#」をつけます。id は文書の中で1つだけにするので、#contact で選ばれるのはその1つの要素です。'},
+ {q:'ボックスモデルで、枠線（border）の内側にあって、内容（content）とのすきまを作る余白はどれでしょう。',c:['margin','padding','border','outline'],a:1,why:'内側から content → padding → border → margin の順です。padding は枠線の内側の余白、margin は枠線の外側の余白です。'},
+ {q:'<code>width: 200px; padding: 10px; border: 2px solid; margin: 20px;</code> の要素（box-sizing は初期の content-box）で、枠線の外側までの幅は何pxでしょう。',c:['200px','224px','244px','264px'],a:1,why:'content-box では width は内容の幅です。200 ＋ 10×2（左右の padding）＋ 2×2（左右の border）＝ 224px。margin まで入れると 264px になります。「CSSを試す」の④で確かめられます。'},
+ {q:'CSSで <code>color: #FF0000;</code> と書いたときの文字の色はどれでしょう。',c:['赤','緑','青','黒'],a:0,why:'# のあとの6けたは、2けたずつ赤・緑・青の強さを表します。FF0000 は赤が最大（FF＝255）、緑と青が 0 なので赤です。'},
+ {q:'index.html と同じフォルダにある images フォルダの中の cat.png を、index.html に表示したいとき、src に書く相対パスはどれでしょう。',c:['<code>images/cat.png</code>','<code>../images/cat.png</code>','<code>cat.png</code>','<code>C:\\Users\\taro\\images\\cat.png</code>'],a:0,why:'相対パスは、いま書いているファイル（index.html）のある場所が基準です。同じ場所の images フォルダの中なので images/cat.png です。../ は1つ上のフォルダを表します。自分のパソコンの中の場所を書くと、ほかのコンピュータでは表示されません。'},
+ {q:'部活紹介のページに、部員みんなが写った写真を載せて公開したいと考えています。まずすべきことはどれでしょう。',c:['写っている人に、載せてよいかを確かめる','写真を白黒にする','写真の画質を下げてファイルを小さくする','とくに何もしなくてよい'],a:0,why:'人が写っている写真を公開するときは、写っている人の許可を取ります（肖像権）。顔と学校名などの組み合わせで個人が特定されることもあるので、公開する範囲にも気をつけましょう。'},
+];
+let qi=0; const qAns=QUIZ.map(()=>null);
+function qDraw(){
+  const q=QUIZ[qi];
+  $('qNo').textContent=`第${qi+1}問`;
+  $('qTx').innerHTML=q.q;
+  const done=qAns.filter(x=>x!==null).length, right=qAns.filter((x,i)=>x!==null&&x===QUIZ[i].a).length;
+  $('qScore').textContent=right; $('qDone').textContent=done; $('qAll').textContent=QUIZ.length;
+  const my=qAns[qi];
+  $('qCh').innerHTML=q.c.map((c,i)=>{ const cl=['choice']; if(my!==null){ if(i===q.a) cl.push('right'); else if(i===my) cl.push('wrong'); }
+    return `<button class="${cl.join(' ')}" data-i="${i}" ${my!==null?'disabled':''}>${'ABCD'[i]}．${c}</button>`; }).join('');
+  const m=$('qMsg');
+  if(my===null) m.hidden=true;
+  else{
+    const ok=my===q.a; m.hidden=false; m.className='msg '+(ok?'ok':'ng');
+    m.innerHTML=`<div class="t">${ok?'正解！':'ざんねん'}　答えは ${'ABCD'[q.a]}</div>${q.why}`+
+      (done===QUIZ.length? `<div style="margin-top:10px;color:#ffd97a;font-weight:700;">全${QUIZ.length}問中 ${right}問 正解でした。「最初から」でもう一度挑戦できます。</div>`:'');
+  }
+  $('qPrev').disabled=qi===0; $('qNext').disabled=qi===QUIZ.length-1;
+  $('qDots').innerHTML=QUIZ.map((_,i)=>{ const a=qAns[i]; const c=['dot']; if(i===qi)c.push('cur'); if(a!==null) c.push(a===QUIZ[i].a?'r':'w');
+    return `<button class="${c.join(' ')}" data-i="${i}" aria-label="第${i+1}問">${i+1}</button>`; }).join('');
+}
+$('qCh').addEventListener('click',e=>{ const b=e.target.closest('.choice'); if(!b||qAns[qi]!==null) return; qAns[qi]=+b.dataset.i; qDraw(); });
+$('qDots').addEventListener('click',e=>{ const b=e.target.closest('.dot'); if(!b) return; qi=+b.dataset.i; qDraw(); });
+$('qPrev').addEventListener('click',()=>{ if(qi>0){ qi--; qDraw(); } });
+$('qNext').addEventListener('click',()=>{ if(qi<QUIZ.length-1){ qi++; qDraw(); } });
+$('qReset').addEventListener('click',()=>{ qAns.fill(null); qi=0; qDraw(); });
+
+/* ===== 初期化 ===== */
+drawSamples(); setEditors(SAMPLES[0].html,SAMPLES[0].css);
+c3Init(); c3Draw(); qDraw();
+</script>
+</body>
+</html>
