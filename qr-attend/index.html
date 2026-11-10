@@ -44,13 +44,7 @@
   .err { color: #ff8a80; }
 </style></head><body>
 <div id="regBox" class="reg" hidden>
-  <h2 style="font-size:20px;margin:0 0 8px">この端末を記録用に登録</h2>
-  <p id="regMsg" class="err"></p>
-  <p style="color:#bbb;font-size:14px" id="regHelp">本部から配られた「先生のスマホを登録するQR」をカメラアプリで読み取ってこの画面を開き、記録者として残す名前を入れてください（1回だけ）。</p>
-  <input id="regApi" placeholder="記録先のURL（登録用QRから自動で入ります）" autocomplete="off">
-  <input id="regKey" placeholder="合言葉" autocomplete="off">
-  <input id="regName" placeholder="名前（例：番井）" autocomplete="off">
-  <button id="regBtn">登録する</button>
+  <p id="regMsg" style="color:#999;text-align:center;margin-top:40px"></p>
 </div>
 <div id="main" hidden>
   <div class="top">
@@ -73,25 +67,26 @@
 </div>
 <script>
 (function () {
-  var KEY = 'qr-attend-key', NAME = 'qr-attend-name', API = 'qr-attend-api';
-  function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  var TOKEN = 'qr-attend-token', NAME = 'qr-attend-name', API = 'qr-attend-api';
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
-  // 登録用QRのリンク（…#api=記録先URL&key=合言葉）から設定を取り込む
-  var REG = '';
+  try { localStorage.removeItem('qr-attend-key'); } catch (e) {}
+  // 登録用QRのリンク（…#api=記録先URL&code=1回限りのコード）を読み込む
+  var CODE = '';
   (function () {
     var h = location.hash.replace(/^#/, ''); if (!h) return;
     var q = {}; h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
     if (q.api && /^https:\/\/script\.google\.com\/.+\/exec$/.test(q.api)) store(API, q.api);
-    if (q.key) { store(KEY, q.key); REG = q.key; }
+    if (q.code) CODE = q.code;
     try { history.replaceState(null, '', location.pathname); } catch (e) {}
   })();
   function call(params) {
     var base = load(API);
-    if (!base) return Promise.resolve({ needKey: true, message: '記録先が登録されていません。登録用QRを読み取ってください。' });
+    if (!base) return Promise.resolve({ denied: true, message: '' });
     var qs = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k] == null ? '' : params[k]); }).join('&');
     return fetch(base + '?' + qs, { method: 'GET', redirect: 'follow', cache: 'no-store' }).then(function (r) {
       return r.text().then(function (t) {
-        try { return JSON.parse(t); } catch (e) { throw new Error('記録先から正しい応答がありません（デプロイの「アクセスできるユーザー」が「全員」か確認してください）'); }
+        try { return JSON.parse(t); } catch (e) { throw new Error('記録先から正しい応答がありません'); }
       });
     });
   }
@@ -100,21 +95,20 @@
   var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 
-  function askKey(msg) {
+  // 登録されていない・無効にされた端末では、何も表示しない
+  function askKey(msg, keepToken) {
+    running = false;
+    try { var v = $('video'); if (v.srcObject) v.srcObject.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    if (!keepToken) store(TOKEN, null);
     $('main').hidden = true; $('regBox').hidden = false;
-    $('regMsg').textContent = msg || '';
-    $('regKey').value = load(KEY); $('regName').value = load(NAME); $('regApi').value = load(API);
+    $('regMsg').textContent = msg || 'この画面は表示できません。';
   }
-  $('regBtn').onclick = function () {
-    store(KEY, $('regKey').value.trim()); store(NAME, $('regName').value.trim());
-    if ($('regApi').value.trim()) store(API, $('regApi').value.trim());
-    $('regMsg').textContent = '確認中…'; refresh();
-  };
 
   function refresh(setPoint) {
-    call({ api: 'info', key: load(KEY), name: load(NAME), setPoint: setPoint || '' }).then(function (r) {
-      if (r && r.needKey) { askKey(r.message); return; }
-      if (r && r.error) { askKey('エラー：' + r.error); return; }
+    if (!load(TOKEN)) { askKey(''); return; }
+    call({ api: 'info', token: load(TOKEN), setPoint: setPoint || '' }).then(function (r) {
+      if (r && r.denied) { askKey(''); return; }
+      if (r && r.error) { askKey('エラー：' + r.error, true); return; }
       info = r;
       $('regBox').hidden = true; $('main').hidden = false;
       $('title').textContent = r.title;
@@ -134,7 +128,7 @@
         };
         chips.appendChild(b);
       });
-    }).catch(function (e) { askKey('記録先に接続できません：' + (e && e.message || e)); });
+    }).catch(function (e) { askKey('記録先に接続できません：' + (e && e.message || e), true); });
   }
   $('confirmNo').onclick = function () { $('confirm').style.display = 'none'; };
 
@@ -165,7 +159,7 @@
     unknown: { color: '#c0392b', head: '名簿にないQRです', short: '不明', tone: [240], dur: 0.35, vib: [300] },
   };
   function showResult(r) {
-    if (r && r.needKey) { askKey(r.message); return; }
+    if (r && r.denied) { askKey(''); return; }
     var k = KINDS[r.kind] || KINDS.unknown;
     var card = $('card');
     card.style.background = k.color;
@@ -203,7 +197,7 @@
     lastId = id; lastAt = now;
     if (!/^[A-Za-z0-9_-]{2,40}$/.test(id)) { showResult({ kind: 'unknown', id: id.slice(0, 40), point: info ? info.point : '' }); return; }
     pending(id);
-    call({ api: 'scan', id: id, key: load(KEY), name: load(NAME) }).then(function (r) {
+    call({ api: 'scan', id: id, token: load(TOKEN) }).then(function (r) {
       if (r && r.error) { showResult({ kind: 'unknown', id: id, point: 'エラー：' + r.error }); lastId = ''; return; }
       showResult(r);
     }).catch(function (e) { showResult({ kind: 'unknown', id: id, point: '通信エラー：' + (e && e.message || e) }); lastId = ''; });
@@ -266,6 +260,12 @@
     e.target.value = '';
   };
 
-  if (REG && !load(NAME)) askKey(''); else refresh();
+  if (CODE) {
+    $('regBox').hidden = false; $('regMsg').textContent = '登録しています…';
+    call({ api: 'register', code: CODE }).then(function (r) {
+      if (r && r.token) { store(TOKEN, r.token); store(NAME, r.name || ''); refresh(); }
+      else askKey((r && r.message) || '');
+    }).catch(function (e) { askKey('登録できませんでした：' + (e && e.message || e)); });
+  } else refresh();
 })();
 </script></body></html>
