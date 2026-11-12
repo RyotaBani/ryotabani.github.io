@@ -4,6 +4,7 @@
 exclude:
   - CLAUDE.md
   - _config.yml
+  - tools        # 授業スライドの生成スクリプトなど。サイトには載せない
   # 以下は Jekyll の既定値。exclude を書くと既定が上書きされるので残しておく
   - Gemfile
   - Gemfile.lock

@@ -5,3 +5,7 @@
 _work/
 joholab_*/
 joholab_*.zip
+
+# スライド生成（tools/slide-generator）。依存パッケージと生成物は管理しない
+tools/slide-generator/node_modules/
+*.pptx

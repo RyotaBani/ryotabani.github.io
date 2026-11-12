@@ -19,12 +19,16 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── _config.yml         Jekyllの設定。CLAUDE.md を公開対象から外している
 ├── _tools/             作業用スクリプト（apply-zip.py）。「_」始まりなので公開されない
 ├── _work/              zipとその展開物の置き場。gitignore済み
+├── tools/slide-generator/ 授業スライド（pptx）の生成。_config.yml で公開対象から除外。node_modules と *.pptx は gitignore済み
 ├── image/index.html    画像のデジタル化（標本化・量子化・符号化＋どっと絵）
 ├── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
 ├── bits/index.html     データはすべて0と1（ファイルの中身／画像を音に／音を画像に）
 ├── jpeg/index.html     JPEGをくり返し保存すると（世代劣化。保存のしかた3通り×回数・画質）
 ├── rfid/index.html     RFID（電子タグ）（バーコードとくらべる／読み分けのしくみ／電波が届く距離）
 ├── program/index.html  共通テスト用プログラム表記（プログラムを動かす／フローチャート／Pythonと見比べる／書き方の一覧）
+├── dncl-quiz/index.html プログラムの穴埋め演習（6問・★1〜3・#q1〜#q6 で1問ずつURL）。処理系は program/index.html の写し。
+│                       直したら両方を直す。問題を足したら node _tools/check-dncl-quiz.js で検証する
+├── cross/index.html    領域をまたぐ演習（貸出機の待ち行列×プログラム／パンの仕入れ×データ分析／共通テストと教材の対応）
 ├── web/index.html      Webページが表示されるまで（表示までの流れ／DNSで名前を調べる／URLとHTTP）
 ├── sql/index.html      データベースとSQL（SQLで検索する／選択・射影・結合／正規化）
 ├── copyright/index.html 著作権と知的財産（この使い方はOK？／保護期間を計算／CCライセンス／知的財産権の種類）
