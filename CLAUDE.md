@@ -19,6 +19,7 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── _config.yml         Jekyllの設定。CLAUDE.md を公開対象から外している
 ├── _tools/             作業用スクリプト（apply-zip.py）。「_」始まりなので公開されない
 ├── _work/              zipとその展開物の置き場。gitignore済み
+├── tools/slide-generator/ 授業スライド（pptx）の生成。_config.yml で公開対象から除外。node_modules と *.pptx は gitignore済み
 ├── image/index.html    画像のデジタル化（標本化・量子化・符号化＋どっと絵）
 ├── binary/index.html   2進数・16進数（しくみ／変換練習／ビットゲーム／2進⇔16進ゲーム）
 ├── bits/index.html     データはすべて0と1（ファイルの中身／画像を音に／音を画像に）
