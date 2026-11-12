@@ -2,11 +2,10 @@
 
 ## 状況
 - AdSense で joholab.net が「要確認：有用性の低いコンテンツ」（AdSense 最終更新 2026/10/24）。広告は出ていない
-- 改善はブランチ `feature/adsense-quality` にコミット済み（5コミット）。**main へのマージと push はまだ**
-  - Claude からの push は auto mode の判定（本番デプロイ）で止められたため、Ryota が手で行う
+- 改善はブランチ `feature/adsense-quality` にコミット済み（6コミット）。2026-11-12 に main へマージして push 済み
 - 再審査のリクエストは未実施（Ryota が押す）
 
-## 公開の手順（Ryota）
+## 公開の手順（参考：2026-11-12 に実施済み）
 ```bash
 cd ~/JohoLab
 git checkout main && git pull --ff-only origin main
@@ -75,3 +74,6 @@ git push origin main          # 1〜2分で反映
 - lessons（2044字）、dncl-quiz（2485字）、cross（2292字）は2000字以上だが少なめ
 - personal の「2026年に成立した改正」など、既存ページの事実確認は今回していない
 - 広告枠（.ad-slot）は未設置。審査通過後、広告ユニットの data-ad-slot 番号を取ってから入れる
+
+## 公開後の確認（2026-11-12）
+- 本番で / /contact/ /curriculum/ /about/ /privacy/ /image/ /dncl-quiz/ /cross/ がすべて 200。/image/ に「授業で使うときのポイント」が出ていることを確認
