@@ -29,6 +29,10 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── dncl-quiz/index.html プログラムの穴埋め演習（6問・★1〜3・#q1〜#q6 で1問ずつURL）。処理系は program/index.html の写し。
 │                       直したら両方を直す。問題を足したら node _tools/check-dncl-quiz.js で検証する
 ├── cross/index.html    領域をまたぐ演習（貸出機の待ち行列×プログラム／パンの仕入れ×データ分析／共通テストと教材の対応）
+├── about/index.html   情報ラボについて・運営者情報（誰のためのサイトか、教材の構成、広告について）
+├── contact/index.html お問い合わせ（連絡先、書いてほしいこと、返信について）
+├── privacy/index.html プライバシーポリシー（AdSense・Cookie の記載あり。改定したら最終改定日を更新）
+├── qr-attend/index.html 校内用のQR出欠。noindex・フッターなし・sitemap に載せない
 ├── web/index.html      Webページが表示されるまで（表示までの流れ／DNSで名前を調べる／URLとHTTP）
 ├── sql/index.html      データベースとSQL（SQLで検索する／選択・射影・結合／正規化）
 ├── copyright/index.html 著作権と知的財産（この使い方はOK？／保護期間を計算／CCライセンス／知的財産権の種類）
@@ -97,8 +101,9 @@ python3 _tools/apply-zip.py joholab_v8.zip --apply  # 反映する
 2. タブ（複数モードがある場合）
 3. ツール本体
 4. `section.article` — **解説記事を必ず入れる。2000字以上**
+   記事の終わりに「授業で使うときのポイント」（`<!-- teach:start -->`〜`<!-- teach:end -->`：ねらい・進め方の例・つまずきやすい点・振り返りの問い）を置く
    検索流入とAdSense審査の両方に効くので省略しない
-5. `.ad-slot` 広告枠
+5. `.ad-slot` 広告枠（AdSense の審査に通るまでは置かない。2026年11月時点で未設置）
 6. `.sitefoot` フッター
 
 ### デザイントークン
