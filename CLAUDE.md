@@ -25,6 +25,9 @@ GitHub Pages で公開。`main` に push すると自動デプロイされる（
 ├── jpeg/index.html     JPEGをくり返し保存すると（世代劣化。保存のしかた3通り×回数・画質）
 ├── rfid/index.html     RFID（電子タグ）（バーコードとくらべる／読み分けのしくみ／電波が届く距離）
 ├── program/index.html  共通テスト用プログラム表記（プログラムを動かす／フローチャート／Pythonと見比べる／書き方の一覧）
+├── dncl-quiz/index.html プログラムの穴埋め演習（6問・★1〜3・#q1〜#q6 で1問ずつURL）。処理系は program/index.html の写し。
+│                       直したら両方を直す。問題を足したら node _tools/check-dncl-quiz.js で検証する
+├── cross/index.html    領域をまたぐ演習（貸出機の待ち行列×プログラム／パンの仕入れ×データ分析／共通テストと教材の対応）
 ├── web/index.html      Webページが表示されるまで（表示までの流れ／DNSで名前を調べる／URLとHTTP）
 ├── sql/index.html      データベースとSQL（SQLで検索する／選択・射影・結合／正規化）
 ├── copyright/index.html 著作権と知的財産（この使い方はOK？／保護期間を計算／CCライセンス／知的財産権の種類）

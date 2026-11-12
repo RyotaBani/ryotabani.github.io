@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>領域をまたぐ演習（シミュレーション×プログラム・データ分析×問題解決）｜情報ラボ</title>
+<meta name="description" content="情報Ⅰの複数の分野をつなげて考える無料の演習。貸出機の待ち時間をシミュレーションしてプログラムで確かめる問題と、購買のパンの売れ行きを散布図と回帰直線で分析して仕入れ方を決める問題。共通テストの大問と関連教材の対応表つき。">
+<link rel="canonical" href="https://joholab.net/cross/">
+<meta property="og:title" content="領域をまたぐ演習｜情報ラボ">
+<meta property="og:description" content="シミュレーション×プログラム、データ分析×問題解決をつなげて考える演習。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://joholab.net/cross/">
+<style>
+  :root{
+    --navy:#2F5496; --ink:#1F3864; --paper:#ffffff;
+    --panel:#F2F5FA; --panel2:#E7ECF5; --muted:#5B6472;
+    --line:#C9D2E0; --ok:#2E7D4F; --ng:#C00000; --gold:#C49A2B;
+    --mono:ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+    color:#1c2430; background:var(--paper); line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1060px; margin:0 auto; padding:22px 20px 60px;}
+  header{border-bottom:3px solid var(--navy); padding-bottom:14px; margin-bottom:16px;}
+  .sitenav{margin:0 0 8px; font-size:13px; color:var(--muted);}
+  .sitenav a{color:var(--navy); text-decoration:none;}
+  .sitenav a:hover{text-decoration:underline;}
+  h1{font-size:clamp(22px,3.4vw,30px); color:var(--navy); margin:0 0 6px;}
+  .lead{margin:0; color:var(--muted); font-size:15px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); flex-wrap:wrap;}
+  .tab{border:none; background:none; padding:11px 16px; font-family:inherit; font-size:14.5px;
+    font-weight:700; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px;}
+  .tab[aria-selected=true]{color:var(--navy); border-bottom-color:var(--navy);}
+  .tool{display:none;} .tool.show{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px;}
+  .panel h2{font-size:16px; margin:0 0 10px; color:var(--ink); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .step{display:inline-block; background:var(--navy); color:#fff; border-radius:6px; padding:0 9px; font-size:13px;}
+  .area{font-size:12px; color:var(--navy); border:1px solid var(--navy); border-radius:999px; padding:0 9px; font-weight:400;}
+  .panel p{margin:0 0 10px; font-size:15px;}
+  .hint{font-size:13px; color:var(--muted); margin:10px 0 0;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  button{font-family:inherit;}
+  button.chip{border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:13.5px; cursor:pointer;}
+  button.chip:hover{background:var(--panel2);}
+  button.chip[aria-pressed=true]{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .lbl{font-weight:700; font-size:14px; color:var(--ink);}
+  .sl{flex:1 1 220px;}
+  .sl .top{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .sl .val{font-family:var(--mono); font-size:16px; font-weight:700; color:var(--navy);}
+  .sl input[type=range]{width:100%; accent-color:var(--navy); height:26px;}
+  a.go{display:inline-block; background:var(--navy); color:#fff; text-decoration:none; font-weight:700; padding:10px 20px; border-radius:10px; font-size:15px;}
+  a.go:hover{background:#3a63ad;}
+  .links{display:flex; gap:8px 14px; flex-wrap:wrap; font-size:14px; margin-top:10px;}
+  .links a{color:var(--navy);}
+
+  .stats{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+  .stt{flex:1 1 130px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:10px 14px; text-align:center;}
+  .stt .k{font-size:11px; color:var(--muted);}
+  .stt .v{font-size:20px; font-weight:700; font-family:var(--mono); color:var(--ink);}
+  .stt .v.gold{color:var(--gold);}
+  .chart{background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; margin-top:12px; overflow-x:auto;}
+  .chart svg{display:block; width:100%; height:auto; min-width:480px;}
+  #scatter svg{max-width:640px; margin:0 auto;}
+  .chart text{font-family:var(--mono); font-size:12px; fill:#5B6472;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:6px;}
+  .legend i{display:inline-block; width:14px; height:10px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+
+  table.dt{border-collapse:collapse; background:#fff; font-size:13.5px; width:100%;}
+  table.dt th,table.dt td{border:1px solid var(--line); padding:5px 9px; text-align:right; white-space:nowrap;}
+  table.dt th{background:var(--panel2); color:var(--ink); text-align:center;}
+  table.dt td.l{text-align:left;}
+  table.dt td.over{background:#FFF3D6;}
+  table.dt td.short{background:#FBEDEC; color:var(--ng); font-weight:700;}
+  table.dt tr.best td{background:#EAF5EE;}
+  .tblwrap{overflow-x:auto; margin-top:10px;}
+  ul.think{margin:6px 0 0; padding-left:1.3em; font-size:15px;}
+
+  .map th,.map td{text-align:left; white-space:normal; vertical-align:top;}
+  .map td a{white-space:nowrap;}
+
+  .article{margin-top:38px; padding-top:28px; border-top:1px solid var(--line);}
+  .article h2{font-size:21px; color:var(--ink); margin:28px 0 10px;}
+  .article h2:first-child{margin-top:0;}
+  .article h3{font-size:17px; color:var(--navy); margin:26px 0 6px;}
+  .article p{margin:0 0 14px; font-size:15.5px; line-height:1.9;}
+  .article ul,.article ol{margin:0 0 14px; padding-left:1.3em; font-size:15.5px; line-height:1.9;}
+  .src{font-size:13px; color:var(--muted); line-height:1.8; overflow-wrap:anywhere;}
+
+  .sitefoot{margin-top:40px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px;}
+  .sitefoot a{color:var(--muted);}
+  :focus-visible{outline:3px solid #7FA3E0; outline-offset:2px;}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+</style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7076767152814369" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="sitenav"><a href="/">情報ラボ</a> ＞ 領域をまたぐ演習</p>
+    <h1>領域をまたぐ演習</h1>
+    <p class="lead">シミュレーションとプログラム、データ分析と問題解決。2つの分野をつなげて、1つの課題を解決します。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabA" aria-selected="true" aria-controls="toolA">貸出機を増やす？</button>
+    <button class="tab" role="tab" id="tabB" aria-selected="false" aria-controls="toolB">パンの仕入れ数を決める</button>
+    <button class="tab" role="tab" id="tabM" aria-selected="false" aria-controls="toolM">共通テストと教材の対応</button>
+  </div>
+
+  <!-- ===== セット1 ===== -->
+  <section class="tool show" id="toolA" role="tabpanel" aria-labelledby="tabA">
+    <div class="panel">
+      <h2><span class="step">1</span>課題とモデル化 <span class="area">問題解決</span><span class="area">モデル化</span></h2>
+      <p>図書室の自動貸出機は1台です。昼休みになると、生徒が次々に来て列ができます。図書委員会では「もう1台増やすべきか」を話し合うことにしました。</p>
+      <p>そこで、実際の様子を単純にして考えます（これを<strong>モデル化</strong>といいます）。「生徒が来た時刻」と「1人の手続きにかかる時間」だけを使い、貸出機が空いていればすぐ手続きを始め、ふさがっていれば空くまで待つ、と決めます。</p>
+      <div class="row" style="margin-top:6px;">
+        <span class="lbl">来る生徒</span>
+        <button class="chip" data-arr="0" aria-pressed="true">ふだんの日（7人）</button>
+        <button class="chip" data-arr="1" aria-pressed="false">テスト前（10人）</button>
+      </div>
+      <div class="tblwrap"><table class="dt" id="arrTable"></table></div>
+      <p class="hint">時刻は昼休みが始まってからの分です。数値は説明のために作ったものです。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">2</span>シミュレーションする <span class="area">シミュレーション</span></h2>
+      <div class="row">
+        <span class="lbl">貸出機の台数</span>
+        <button class="chip" data-m="1" aria-pressed="true">1台</button>
+        <button class="chip" data-m="2" aria-pressed="false">2台</button>
+        <div class="sl">
+          <div class="top"><label for="proc">1人の手続き時間</label><span class="val" id="procV">2 分</span></div>
+          <input type="range" id="proc" min="1" max="4" step="1" value="2">
+        </div>
+      </div>
+      <div class="chart" id="tl" aria-label="一人ひとりの待ち時間と手続き時間のグラフ"></div>
+      <div class="legend"><span><i style="background:#E8D3A0"></i>待っている時間</span><span><i style="background:#2F5496"></i>手続きをしている時間</span></div>
+      <div class="stats">
+        <div class="stt"><div class="k">待ち時間の合計</div><div class="v gold" id="sTot">-</div></div>
+        <div class="stt"><div class="k">1人あたりの平均</div><div class="v" id="sAvg">-</div></div>
+        <div class="stt"><div class="k">いちばん長い待ち時間</div><div class="v" id="sMax">-</div></div>
+        <div class="stt"><div class="k">全員が終わる時刻</div><div class="v" id="sEnd">-</div></div>
+      </div>
+      <p class="hint">2台のときは、先に空いた貸出機を使います。乱数を使った待ち行列は<a href="/simulation/">シミュレーションを体験しよう</a>の「レジの待ち行列」で試せます。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">3</span>プログラムで確かめる <span class="area">プログラミング</span></h2>
+      <p>このシミュレーションは、共通テスト用プログラム表記でも書けます。「来た時刻」「手続きを始める時刻」「貸出機が空く時刻」の3つを区別することが鍵です。ふだんの日・1台・2分のときの待ち時間の合計（上のグラフで <b id="refTot">9 分</b>）が、プログラムでも出るか確かめましょう。</p>
+      <a class="go" href="/dncl-quiz/#q6">穴埋め演習 問6「貸出機の待ち時間」を解く →</a>
+      <p class="hint">自分で書いて動かしたいときは<a href="/program/">共通テスト用プログラム表記を動かそう</a>を使います。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">4</span>結果から判断する <span class="area">問題解決</span></h2>
+      <p>シミュレーションの結果だけで「増やすべき」とは決められません。次のことを話し合ってみましょう。</p>
+      <ul class="think">
+        <li>テスト前の日に2台にすると、待ち時間の合計は何分減りますか。ふだんの日ではどうですか。</li>
+        <li>手続き時間を2分から1分に短くする工夫（使い方の掲示など）と、台数を増やすことでは、どちらの効果が大きいですか。</li>
+        <li>このモデルでは考えていないことは何でしょうか（たとえば、列が長いと並ばずに帰る人がいる、など）。</li>
+      </ul>
+      <div class="links"><span>関連：</span><a href="/problem/">問題解決の手法（解決策を比べる）</a><a href="/simulation/">シミュレーション</a><a href="/dncl-quiz/">プログラム穴埋め演習</a></div>
+    </div>
+  </section>
+
+  <!-- ===== セット2 ===== -->
+  <section class="tool" id="toolB" role="tabpanel" aria-labelledby="tabB">
+    <div class="panel">
+      <h2><span class="step">1</span>問題をはっきりさせる <span class="area">問題解決</span></h2>
+      <p>購買の焼きそばパンは、毎日 <b>55個</b> 仕入れています。それでも「売り切れて買えなかった」という声と、「売れ残って捨てている」という声の両方があります。下は12日分の記録です。「買いたい人」は、予約アンケートで数えた人数です。</p>
+      <div class="tblwrap"><table class="dt" id="bTable"></table></div>
+      <div class="stats">
+        <div class="stt"><div class="k">売れ残り（12日の合計）</div><div class="v" id="b55left">-</div></div>
+        <div class="stt"><div class="k">買えなかった人（合計）</div><div class="v gold" id="b55short">-</div></div>
+        <div class="stt"><div class="k">売り切れた日</div><div class="v" id="b55days">-</div></div>
+      </div>
+      <p class="hint">黄色は売れ残りが出た日、赤は売り切れた日です。数値は説明のために作ったものです。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">2</span>データの関係を見る <span class="area">データの分析</span></h2>
+      <p>買いたい人の数は、その日に登校した人数と関係がありそうです（部活の大会や行事で登校する人数が変わります）。散布図にして確かめます。</p>
+      <div class="row"><button class="chip" id="btnLine" aria-pressed="false">回帰直線を引く</button></div>
+      <div class="chart" id="scatter" aria-label="登校者数と買いたい人の散布図"></div>
+      <div class="stats">
+        <div class="stt"><div class="k">相関係数 r</div><div class="v gold" id="bR">-</div></div>
+        <div class="stt"><div class="k">回帰直線</div><div class="v" id="bEq" style="font-size:15px;">-</div></div>
+      </div>
+      <p class="hint">相関係数は −1〜1 の値で、1に近いほど「片方が大きいともう片方も大きい」関係が強いことを表します。くわしくは<a href="/dataviz/">データを分析しよう</a>へ。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">3</span>予測する <span class="area">データの分析</span></h2>
+      <div class="sl">
+        <div class="top"><label for="pred">明日の登校予定者数</label><span class="val" id="predV">600 人</span></div>
+        <input type="range" id="pred" min="450" max="750" step="10" value="600">
+      </div>
+      <div class="stats">
+        <div class="stt"><div class="k">買いたい人の予測</div><div class="v gold" id="predY">-</div></div>
+      </div>
+      <p class="hint">回帰直線の式に登校予定者数を入れて計算しています。予測には誤差があります。くわしくは<a href="/regression/">回帰で予測しよう</a>へ。</p>
+    </div>
+
+    <div class="panel">
+      <h2><span class="step">4</span>仕入れ方を比べて決める <span class="area">問題解決</span></h2>
+      <p>3つの仕入れ方を、同じ12日分のデータで比べます。表計算ソフトなら、1日ごとに「仕入れ数 − 買いたい人」を計算して、正なら売れ残り、負なら買えなかった人として集計します。</p>
+      <div class="sl" style="max-width:420px;">
+        <div class="top"><label for="extra">C案：予測に足す個数</label><span class="val" id="extraV">3 個</span></div>
+        <input type="range" id="extra" min="0" max="8" step="1" value="3">
+      </div>
+      <div class="tblwrap"><table class="dt" id="cmpTable"></table></div>
+      <ul class="think">
+        <li>売れ残り1個と、買えなかった人1人。どちらを重く見るかで、選ぶ案は変わりますか。</li>
+        <li>回帰直線は、この12日分のデータから作りました。同じデータで成績を測ると、実際より良く見えることがあります。新しい日のデータで確かめるにはどうすればよいでしょうか。</li>
+      </ul>
+      <div class="links"><span>関連：</span><a href="/problem/">問題解決の手法</a><a href="/sheet/">表計算のしくみ</a><a href="/regression/">回帰と予測</a><a href="/dataviz/">データの分析</a></div>
+    </div>
+  </section>
+
+  <!-- ===== 対応表 ===== -->
+  <section class="tool" id="toolM" role="tabpanel" aria-labelledby="tabM">
+    <div class="panel">
+      <h2>共通テスト「情報Ⅰ」本試験の大問と、関連する教材</h2>
+      <p>過去の本試験で、それぞれの大問がどの分野から出題されたかと、その分野を体験できる情報ラボの教材をまとめました。問題文は載せていません。問題そのものは大学入試センターの公表資料で確認してください。</p>
+      <div class="tblwrap">
+        <table class="dt map">
+          <tr><th>年度</th><th>大問</th><th>分野・題材</th><th>関連する教材</th></tr>
+          <tr><td rowspan="5" class="l">2025</td><td class="l">第1問</td><td class="l">小問集合（情報通信のしくみ、ビットなど）</td><td class="l"><a href="/bits/">データはすべて0と1</a>・<a href="/binary/">2進数・16進数</a>・<a href="/network/">ネットワーク</a>・<a href="/logic/">論理回路</a></td></tr>
+          <tr><td class="l">第2問A</td><td class="l">情報システムとデータの活用（レシート・ポイントカードの購買データ、本部・店舗・配送の情報の流れ）</td><td class="l"><a href="/sysflow/">情報システムとデータの流れ</a>・<a href="/sql/">データベースとSQL</a>・<a href="/personal/">個人情報とプライバシー</a></td></tr>
+          <tr><td class="l">第2問B</td><td class="l">シミュレーション</td><td class="l"><a href="/simulation/">シミュレーション</a>・<a href="#" data-goto="tabA">このページのセット1</a></td></tr>
+          <tr><td class="l">第3問</td><td class="l">プログラミング（配列・選択・反復）</td><td class="l"><a href="/dncl-quiz/">プログラム穴埋め演習</a>・<a href="/program/">プログラム表記を動かす</a>・<a href="/algorithm/">アルゴリズム</a></td></tr>
+          <tr><td class="l">第4問</td><td class="l">データの分析（散布図・相関係数・箱ひげ図）</td><td class="l"><a href="/dataviz/">データの分析</a>・<a href="/stats/">統計的推測</a>・<a href="/sheet/">表計算のしくみ</a></td></tr>
+          <tr><td rowspan="5" class="l">2026</td><td class="l">第1問</td><td class="l">小問集合（コンピュータのしくみと情報セキュリティ、情報のデジタル化、情報デザインとデータの活用、通信プロトコル）</td><td class="l"><a href="/computer/">コンピュータのしくみ</a>・<a href="/password/">パスワード</a>・<a href="/image/">画像のデジタル化</a>・<a href="/design/">情報デザイン</a>・<a href="/network/">ネットワーク</a></td></tr>
+          <tr><td class="l">第2問A</td><td class="l">情報システムとそのサービス</td><td class="l"><a href="/sysflow/">情報システムとデータの流れ</a>・<a href="/sql/">データベースとSQL</a></td></tr>
+          <tr><td class="l">第2問B</td><td class="l">情報のデジタル化、コンピュータのしくみ</td><td class="l"><a href="/image/">画像のデジタル化</a>・<a href="/bitop/">画像のビット演算</a>・<a href="/color/">色の表し方</a></td></tr>
+          <tr><td class="l">第3問</td><td class="l">プログラミング、モデル化とシミュレーション（待ち時間）</td><td class="l"><a href="#" data-goto="tabA">このページのセット1</a>・<a href="/dncl-quiz/#q6">穴埋め演習 問6</a>・<a href="/simulation/">シミュレーション</a></td></tr>
+          <tr><td class="l">第4問</td><td class="l">データの表現・収集と管理・分析と評価（開花日の推定）</td><td class="l"><a href="#" data-goto="tabB">このページのセット2</a>・<a href="/regression/">回帰と予測</a>・<a href="/dataviz/">データの分析</a></td></tr>
+        </table>
+      </div>
+      <p class="src">出典：大学入試センター「令和7年度大学入学共通テスト 本試験 問題 情報Ⅰ」（2025年の第2問Aを確認）、河合塾「共通テスト 情報Ⅰ 分析」（2026年度）、ed-ict「2025年1月19日共通テスト『情報Ⅰ』まとめ」、ベネッセ教育情報「2025年度大学入学共通テスト 情報Ⅰの分析と対策」をもとに情報ラボが分類。</p>
+    </div>
+  </section>
+
+  <section class="article">
+    <h2>「領域をまたぐ」問題とは</h2>
+    <p>高校の「情報Ⅰ」は、「情報社会の問題解決」「コミュニケーションと情報デザイン」「コンピュータとプログラミング」「情報通信ネットワークとデータの活用」の4つの分野（領域）でできています。教科書ではそれぞれ別の章で学びますが、実際の問題を解決するときには、いくつもの分野の考え方を組み合わせて使います。</p>
+    <p>たとえば「列が長くて困る」という問題を解決するには、まず何が問題なのかをはっきりさせ（問題解決）、状況を単純な形に置きかえて（モデル化）、コンピュータの中で試し（シミュレーション）、その手順をプログラムとして書き（プログラミング）、結果を比べて判断します。1つの課題の中に、いくつもの分野が自然に入っています。こうした問題を、このページでは「領域をまたぐ問題」と呼んでいます。</p>
+    <p>2026年の大学入学共通テスト「情報Ⅰ」では、待ち時間をシミュレーションするプログラミングの問題や、開花日を推定するデータ分析の問題のように、身近な題材で複数の分野をつなげて考える問題が出題されました。平均点は前年より大きく下がり、「知識を覚えているか」だけでなく「知識を組み合わせて使えるか」が問われたといえます。</p>
+    <p class="src">出典：大学入試センター「令和8年度大学入学共通テスト 実施結果の概要」（2026年2月5日公表）。情報Ⅰ 本試験の平均点は56.59点（前年69.26点）。</p>
+
+    <h2>セット1：シミュレーション×プログラム</h2>
+    <p>セット1では、図書室の自動貸出機を増やすべきかを考えます。ステップ1で、実際の様子から「来た時刻」と「手続き時間」だけを取り出してモデルを作ります。ステップ2では、そのモデルを使ってシミュレーションを行い、台数や手続き時間を変えたときに待ち時間がどう変わるかをグラフで確かめます。</p>
+    <p>グラフの1行が1人の生徒です。黄色の部分が待っている時間、紺色の部分が手続きをしている時間を表します。1台のときは、前の人の紺色が終わるまで次の人は始められないので、来る人が重なると黄色がどんどん長くなります。2台にすると、黄色が短くなることが目で見て分かります。</p>
+    <p>ステップ3では、同じしくみを共通テスト用プログラム表記で書いた穴埋め問題を解きます。シミュレーションのグラフで見た「始める時刻」「空く時刻」が、プログラムではどの変数に当たるのかを考えると、プログラムの意味がよく分かります。逆に、プログラムで出した答えが、グラフの数値と一致するかを確かめることもできます。このように、同じことを2つの方法で確かめると、まちがいに気づきやすくなります。</p>
+    <p>ステップ4では、結果をもとに判断します。シミュレーションは「台数を増やすと待ち時間がこれだけ減る」ということは教えてくれますが、「増やすべきかどうか」は、費用や置き場所、ほかの方法（手続きを短くする工夫）との比較など、モデルに入っていないことも考えて決める必要があります。モデルで考えていないことを挙げてみるのも大切な学習です。</p>
+
+    <h2>セット2：データ分析×問題解決</h2>
+    <p>セット2では、購買のパンの仕入れ数を決めます。毎日同じ数を仕入れていると、人が多い日は売り切れ、少ない日は売れ残ります。ステップ1で記録を整理して、問題の大きさ（売れ残りの合計、買えなかった人の合計）を数字で表します。問題を数字で表すと、あとで解決策の効果を比べられるようになります。</p>
+    <p>ステップ2では、登校者数と買いたい人の数の関係を散布図で確かめます。点が右上がりに並んでいれば、登校者数が多い日ほど買いたい人も多いという関係（正の相関）があります。相関係数は、その関係の強さを −1 から 1 の数で表したものです。ただし、相関があるからといって、片方がもう片方の原因であるとは限りません。ここでは「登校者が多いから買う人も多い」と考えるのが自然ですが、いつもそう言えるわけではないことに注意しましょう。</p>
+    <p>ステップ3では、回帰直線を使って、明日の登校予定者数から買いたい人の数を予測します。回帰直線は、散布図の点のなるべく近くを通るように引いた直線で、最小二乗法という方法で求めます。ステップ4では、「毎日55個」「予測どおり」「予測に何個か足す」の3つの仕入れ方を比べます。売れ残りを減らすことと、買えなかった人を減らすことは、どちらかを減らすともう片方が増えやすい関係（トレードオフ）にあります。どちらを重く見るかによって、よい案は変わります。</p>
+    <p>なお、ここでは回帰直線を作ったのと同じ12日分のデータで成績を比べています。同じデータで作って同じデータで測ると、実際に使ったときより良い成績に見えることがあります。本当に役に立つかを確かめるには、新しい日のデータで試す必要があります。これはデータ分析でとても大切な考え方です。</p>
+
+    <h2>授業での使い方</h2>
+    <p>それぞれのセットは、ステップ1から4まで順に進めると、50分の授業1回分の流れになります。単元の導入では、ステップ1と2だけを使って「数字で考えると何が分かるか」を体験させ、単元のまとめでステップ3と4に進むという使い方もできます。</p>
+    <p>題材の数値は、説明のために作ったものです。自分の学校の行事や施設の数字（文化祭の来場者数、体育祭の競技時間、図書室の貸出数など）に置きかえて考えさせると、生徒にとってより身近な課題になります。登録やログインは要らず、操作した内容はすべてその端末の中で処理されます。</p>
+    <p>「共通テストと教材の対応」タブでは、過去の本試験の大問ごとに、関連する情報ラボの教材をまとめています。試験前の復習で、苦手な分野の教材を選ぶときの目安にしてください。</p>
+  </section>
+
+  <div class="sitefoot">
+    <span>&copy; 2026 情報ラボ</span>
+    <a href="/">ホーム</a>
+    <a href="/curriculum/">カリキュラム対応表</a>
+    <a href="/lessons/">授業の進め方ガイド</a>
+    <a href="/problem/">問題解決の手法</a>
+    <a href="/image/">画像のデジタル化</a>
+    <a href="/sound/">音のデジタル化</a>
+    <a href="/vector/">ラスタとベクタ</a>
+    <a href="/bitop/">画像のビット演算</a>
+    <a href="/color/">色の表し方</a>
+    <a href="/design/">情報デザイン</a>
+    <a href="/html/">HTMLとCSS</a>
+    <a href="/binary/">2進数・16進数</a>
+    <a href="/numerr/">数の表し方と計算の誤差</a>
+    <a href="/charcode/">文字コード</a>
+    <a href="/bits/">データはすべて0と1</a>
+    <a href="/parity/">パリティマジック</a>
+    <a href="/computer/">コンピュータのしくみ</a>
+    <a href="/logic/">論理回路</a>
+    <a href="/sensor/">計測と制御</a>
+    <a href="/algorithm/">アルゴリズム</a>
+    <a href="/program/">プログラム表記を動かす</a>
+    <a href="/dncl-quiz/">プログラム穴埋め演習</a>
+    <a href="/network/">ネットワークのしくみ</a>
+    <a href="/web/">Webページが表示されるまで</a>
+    <a href="/mail/">電子メールのしくみ</a>
+    <a href="/sysflow/">情報システムとデータの流れ</a>
+    <a href="/sheet/">表計算のしくみ</a>
+    <a href="/sql/">データベースとSQL</a>
+    <a href="/simulation/">シミュレーション</a>
+    <a href="/dataviz/">データの分析</a>
+    <a href="/textmining/">テキストマイニング</a>
+    <a href="/ml/">機械学習</a>
+    <a href="/regression/">回帰と予測</a>
+    <a href="/cross/">領域をまたぐ演習</a>
+    <a href="/cluster/">クラスタリング</a>
+    <a href="/stats/">統計的推測</a>
+    <a href="/copyright/">著作権と知的財産</a>
+    <a href="/personal/">個人情報とプライバシー</a>
+    <a href="/password/">パスワードの強さ</a>
+    <a href="/crypto/">暗号のしくみ</a>
+    <a href="/hash/">ハッシュと電子署名</a>
+    <a href="/phishing/">あやしいメールを見分ける</a>
+    <a href="/datasize/">データ量の計算</a>
+    <a href="/compress/">データ圧縮</a>
+    <a href="/jpeg/">JPEGのくり返し保存</a>
+    <a href="/rfid/">RFID（電子タグ）</a>
+    <a href="/about/">運営者情報・お問い合わせ</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+    <a href="/updates/">更新履歴</a>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ===== タブ ===== */
+const TABS=[['tabA','toolA'],['tabB','toolB'],['tabM','toolM']];
+function showTab(tid){
+  TABS.forEach(([t,p])=>{ const on=t===tid; $(t).setAttribute('aria-selected',String(on)); $(p).classList.toggle('show',on); });
+  if(tid==='tabB') drawB();
+}
+TABS.forEach(([t])=>$(t).addEventListener('click',()=>showTab(t)));
+document.querySelectorAll('[data-goto]').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); showTab(a.dataset.goto); window.scrollTo({top:0}); }));
+
+/* ===== セット1：貸出機の待ち行列 ===== */
+const ARR=[[0,1,2,6,7,8,9],[0,0,1,1,2,3,3,4,5,6]];
+let arrSet=0, machines=1;
+/* 先に空いた貸出機を使う。返り値は一人ひとりの {来た, 始め, 終わり} */
+function simulate(arr,m,proc){
+  const free=new Array(m).fill(0);
+  return arr.map(t=>{
+    let k=0; for(let j=1;j<m;j++) if(free[j]<free[k]) k=j;
+    const start=Math.max(t,free[k]), end=start+proc; free[k]=end;
+    return {t,start,end,k};
+  });
+}
+function drawArr(){
+  const a=ARR[arrSet];
+  $('arrTable').innerHTML='<tr><th>生徒</th>'+a.map((_,i)=>`<th>${i+1}人目</th>`).join('')+'</tr><tr><th>来た時刻</th>'+a.map(t=>`<td>${t} 分</td>`).join('')+'</tr>';
+}
+function drawA(){
+  const proc=+$('proc').value; $('procV').textContent=proc+' 分';
+  const res=simulate(ARR[arrSet],machines,proc);
+  const waits=res.map(r=>r.start-r.t), tot=waits.reduce((s,x)=>s+x,0), end=Math.max(...res.map(r=>r.end));
+  $('sTot').textContent=tot+' 分'; $('sAvg').textContent=(Math.round(tot/res.length*10)/10)+' 分';
+  $('sMax').textContent=Math.max(...waits)+' 分'; $('sEnd').textContent=end+' 分';
+  const W=640, L=70, R=44, rowH=26, T=10, H=T+res.length*rowH+30, maxT=Math.max(end,10), sx=(W-L-R)/maxT;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="待ち時間のグラフ">`;
+  for(let x=0;x<=maxT;x++){ const X=L+x*sx; s+=`<line x1="${X}" y1="${T}" x2="${X}" y2="${H-24}" stroke="#E6EAF1"/>`; if(x%2===0||maxT<=12) s+=`<text x="${X}" y="${H-8}" text-anchor="middle">${x}</text>`; }
+  res.forEach((r,i)=>{
+    const y=T+i*rowH+4;
+    s+=`<text x="${L-8}" y="${y+13}" text-anchor="end">${i+1}人目${machines>1?'('+(r.k+1)+')':''}</text>`;
+    if(r.start>r.t) s+=`<rect x="${L+r.t*sx}" y="${y}" width="${(r.start-r.t)*sx}" height="18" fill="#E8D3A0" rx="2"/>`;
+    s+=`<rect x="${L+r.start*sx}" y="${y}" width="${(r.end-r.start)*sx}" height="18" fill="#2F5496" rx="2"/>`;
+    s+=`<circle cx="${L+r.t*sx}" cy="${y+9}" r="3" fill="#1F3864"/>`;
+  });
+  s+=`<text x="${W-4}" y="${H-8}" text-anchor="end">（分）</text></svg>`;
+  $('tl').innerHTML=s;
+}
+document.querySelectorAll('[data-arr]').forEach(b=>b.addEventListener('click',()=>{
+  arrSet=+b.dataset.arr; document.querySelectorAll('[data-arr]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); drawArr(); drawA(); }));
+document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{
+  machines=+b.dataset.m; document.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); drawA(); }));
+$('proc').addEventListener('input',drawA);
+
+/* ===== セット2：パンの仕入れ ===== */
+const TOKOU=[520,610,480,700,650,560,720,590,630,500,680,540];
+const KAI  =[ 47, 52, 44, 61, 60, 49, 68, 55, 54, 43, 63, 50];
+const n=TOKOU.length, mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const mx=mean(TOKOU), my=mean(KAI);
+const sxy=TOKOU.reduce((s,x,i)=>s+(x-mx)*(KAI[i]-my),0), sxx=TOKOU.reduce((s,x)=>s+(x-mx)**2,0), syy=KAI.reduce((s,y)=>s+(y-my)**2,0);
+const slope=sxy/sxx, icpt=my-slope*mx, rr=sxy/Math.sqrt(sxx*syy);
+const predict=x=>slope*x+icpt;
+let showLine=false;
+/* 仕入れ数の並びを受け取り、売れ残り・買えなかった人・売り切れ日数を返す */
+function evalPlan(stock){
+  let left=0, short=0, days=0;
+  stock.forEach((s,i)=>{ const d=s-KAI[i]; if(d>0) left+=d; if(d<0){ short-=d; days++; } });
+  return {left,short,days};
+}
+function drawB(){
+  const e55=evalPlan(TOKOU.map(()=>55));
+  $('bTable').innerHTML='<tr><th>日</th>'+TOKOU.map((_,i)=>`<th>${i+1}</th>`).join('')+'</tr>'
+    +'<tr><th>登校者数</th>'+TOKOU.map(x=>`<td>${x}</td>`).join('')+'</tr>'
+    +'<tr><th>買いたい人</th>'+KAI.map(y=>`<td class="${y>55?'short':y<55?'over':''}">${y}</td>`).join('')+'</tr>';
+  $('b55left').textContent=e55.left+' 個'; $('b55short').textContent=e55.short+' 人'; $('b55days').textContent=e55.days+' 日';
+  $('bR').textContent=rr.toFixed(2);
+  $('bEq').textContent=`y = ${slope.toFixed(3)}x ${icpt<0?'−':'+'} ${Math.abs(icpt).toFixed(1)}`;
+  drawScatter(); drawPred(); drawCmp();
+}
+function drawScatter(){
+  const W=560,H=320,L=50,B=40,T=14,R=14, x0=450,x1=750,y0=35,y1=70;
+  const X=x=>L+(x-x0)/(x1-x0)*(W-L-R), Y=y=>H-B-(y-y0)/(y1-y0)*(H-B-T);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="散布図">`;
+  for(let x=x0;x<=x1;x+=50) s+=`<line x1="${X(x)}" y1="${T}" x2="${X(x)}" y2="${H-B}" stroke="#E6EAF1"/><text x="${X(x)}" y="${H-B+16}" text-anchor="middle">${x}</text>`;
+  for(let y=y0;y<=y1;y+=5) s+=`<line x1="${L}" y1="${Y(y)}" x2="${W-R}" y2="${Y(y)}" stroke="#E6EAF1"/><text x="${L-6}" y="${Y(y)+4}" text-anchor="end">${y}</text>`;
+  s+=`<line x1="${X(500)}" y1="${Y(55)}" x2="${W-R}" y2="${Y(55)}" stroke="#C49A2B" stroke-dasharray="5 4"/><text x="${W-R}" y="${Y(55)-5}" text-anchor="end" style="fill:#C49A2B">いまの仕入れ数 55</text>`;
+  if(showLine) s+=`<line x1="${X(x0)}" y1="${Y(predict(x0))}" x2="${X(x1)}" y2="${Y(predict(x1))}" stroke="#C00000" stroke-width="2"/>`;
+  TOKOU.forEach((x,i)=>{ s+=`<circle cx="${X(x)}" cy="${Y(KAI[i])}" r="5.5" fill="#2F5496" fill-opacity=".85"><title>${x}人・${KAI[i]}人</title></circle>`; });
+  s+=`<text x="${(W+L)/2}" y="${H-6}" text-anchor="middle">登校者数（人）</text><text x="${L+6}" y="${T+12}" text-anchor="start">買いたい人（人）</text></svg>`;
+  $('scatter').innerHTML=s;
+}
+function drawPred(){
+  const x=+$('pred').value; $('predV').textContent=x+' 人';
+  $('predY').textContent=`約 ${Math.round(predict(x))} 人`;
+}
+function drawCmp(){
+  const ex=+$('extra').value; $('extraV').textContent=ex+' 個';
+  const plans=[
+    ['A案：毎日55個', TOKOU.map(()=>55)],
+    ['B案：予測どおり', TOKOU.map(x=>Math.round(predict(x)))],
+    ['C案：予測＋'+ex+'個', TOKOU.map(x=>Math.round(predict(x))+ex)]
+  ].map(([name,st])=>({name,...evalPlan(st)}));
+  $('cmpTable').innerHTML='<tr><th>仕入れ方</th><th>売れ残り（合計）</th><th>買えなかった人（合計）</th><th>売り切れた日</th></tr>'
+    +plans.map(p=>`<tr><td class="l">${esc(p.name)}</td><td>${p.left} 個</td><td>${p.short} 人</td><td>${p.days} 日</td></tr>`).join('');
+}
+$('btnLine').addEventListener('click',()=>{ showLine=!showLine; $('btnLine').setAttribute('aria-pressed',String(showLine)); $('btnLine').textContent=showLine?'回帰直線を消す':'回帰直線を引く'; drawScatter(); });
+$('pred').addEventListener('input',drawPred);
+$('extra').addEventListener('input',drawCmp);
+
+// 自己チェック：ステップ3の文と穴埋め演習 問6 の答え（9分）に合っていること
+console.assert(simulate(ARR[0],1,2).reduce((s,r)=>s+r.start-r.t,0)===9,'セット1の数値が問6と合いません');
+drawArr(); drawA();
+</script>
+</body>
+</html>
